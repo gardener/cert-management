@@ -3,35 +3,35 @@
 Manages TLS certificates in Kubernetes clusters using custom resources.
 Currently, it supports certificate authorities using the [Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) like [Let's Encrypt](https://letsencrypt.org/).
 
-I a multi-cluster environment like in Gardener, using existing open source projects
-for certificate management like [cert-manager](https://github.com/jetstack/cert-manager) becomes cumbersome. 
-With this project the separation of concerns between multiple clusters is realized more easily. 
+In a multi-cluster environment like Gardener, using existing open source projects
+for certificate management like [cert-manager](https://github.com/jetstack/cert-manager) becomes cumbersome.
+With this project the separation of concerns between multiple clusters is realized more easily.
 The cert-controller-manager runs in a **secured cluster** where the issuer secrets are stored.
 At the same time it watches an untrusted **source cluster** and can provide certificates for it.
-The cert-controller-manager relies on DNS challenges for validating the domain names of the certificates. 
-For this purpose it creates DNSEntry custom resources (in a possible separete **dns cluster**) to be handled by the compagnion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
+The cert-controller-manager relies on DNS challenges for validating the domain names of the certificates.
+For this purpose it creates DNSEntry custom resources (in a possible separate **dns cluster**) to be handled by the compagnion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
 
 ## Setting up Issuers
 
 Before you can obtain certificates from a certificate authority (CA), you need to set up an issuer.
-The issuer are specified in the `default` cluster, while the certificates are specified in the `source` cluster.
+The issuer is specified in the `default` cluster, while the certificates are specified in the `source` cluster.
 
 The issuer custom resource contains the configuration and registration data for your account at the CA.
 
-Currently, the `cert-controller-manager` only supports certificate authorities via the 
-[Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) 
-protocol like [Let's Encrypt](https://letsencrypt.org/).
+Currently, the `cert-controller-manager` only supports certificate authorities via the
+[Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) protocol like [Let's Encrypt](https://letsencrypt.org/).
 
 Two modes are supported:
+
 - auto registration
-- using existing account 
+- using an existing account
 
 ### Auto registration
 
 Auto registration is mainly used for development and test environments. You only need to provide
 the server URL and an email address. The registration process is done automatically for you
-by creating a private key and performing the registration at the ca.
- 
+by creating a private key and performing the registration at the CA.
+
 For example see [examples/20-issuer-staging.yaml](./examples/20-issuer-staging.yaml):
 
 ```yaml
@@ -78,7 +78,7 @@ spec:
       namespace: default
 ```
 
-In both cases, the stae of an issuer resource can be checked on the `default` cluster with
+In both cases, the state of an issuer resource can be checked on the `default` cluster with
 
 ```bash
 ▶ kubectl get issuer
@@ -100,7 +100,7 @@ If any domain name (`commonName` or any item from `dnsNames`) needs to be valida
 `DNSEntry` in the `dns` cluster.
 When the certificate authority sees the temporary DNS record, the certificate is stored in a secret finally.
 The name of the secret can be specified explicitly with `secretName` and will be stored in the same namespace as the 
-certificate on the `source` cluster. 
+certificate on the `source` cluster.
 
 The certificate is checked for renewal periodically. The renewal is performed automatically and the secret is updated.
 Default values for periodical check is daily, the certificate is renewed if its validity expires within 60 days.
@@ -155,7 +155,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
 
     In order to request a certificate for a domain managed by `cert-controller-manager` an Ingress is required.
     In case you don’t already have one, take the following as an example:
-    
+
     ```yaml
     apiVersion: networking.k8s.io/v1beta1
     kind: Ingress
@@ -233,15 +233,15 @@ spec:
     ./dns-controller-manager --controllers=azure-dns --identifier=myOwnerId --disable-namespace-restriction
     ```
 
-2. Ensure provider and its secret, e.g. 
+2. Ensure provider and its secret, e.g.
 
     ```bash
     kubectl apply -f azure-secret.yaml
     kubectl apply -f azure-provider.yaml
     ```
-   
+
    - check with
-    
+
         ```bash
         ▶ kubectl get dnspr
         NAME               TYPE        STATUS   AGE
@@ -267,7 +267,7 @@ spec:
     ```
 
    - check with
-    
+
         ```bash
         ▶ kubectl get issuer
         NAME             SERVER                                                   EMAIL                    STATUS   TYPE   AGE
@@ -280,12 +280,12 @@ spec:
     kubectl apply -f examples/30-cert-simple.yaml
     ```
 
-    If this certificate has already registered before for the same issuer,
+    If this certificate has been already registered for the same issuer before,
     it will be returned immediately from the ACME server.
     Otherwise a DNS challenge is started using a temporary DNSEntry to be set by `dns-controller-manager`
 
    - check with
-    
+
         ```bash
         ▶ kubectl get cert -o wide
         NAME          COMMON NAME           ISSUER           STATUS   EXPIRATION_DATE        DNS_NAMES                 AGE
