@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
+items:
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    name: issuers.cert.gardener.cloud
+  spec:
+    additionalPrinterColumns:
+    - JSONPath: .spec.acme.server
+      description: ACME Server
+      name: SERVER
+      type: string
+    - JSONPath: .spec.acme.email
+      description: ACME Registration email
+      name: EMAIL
+      type: string
+    - JSONPath: .status.state
+      description: Status of registration
+      name: STATUS
+      type: string
+    - JSONPath: .status.type
+      description: Issuer type
+      name: TYPE
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    conversion:
+      strategy: None
+    group: cert.gardener.cloud
+    names:
+      kind: Issuer
+      listKind: IssuerList
+      plural: issuers
+      shortNames:
+      - issuer
+      singular: issuer
+    scope: Namespaced
+    subresources:
+      status: {}
+    version: v1alpha1
+    versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+- apiVersion: apiextensions.k8s.io/v1beta1
+  kind: CustomResourceDefinition
+  metadata:
+    name: certificates.cert.gardener.cloud
+  spec:
+    additionalPrinterColumns:
+    - JSONPath: .status.commonName
+      description: Subject domain name of certificate
+      name: COMMON NAME
+      type: string
+    - JSONPath: .status.issuerRef.name
+      description: Issuer name
+      name: ISSUER
+      type: string
+    - JSONPath: .status.state
+      description: Status of registration
+      name: STATUS
+      type: string
+    - JSONPath: .status.expirationDate
+      description: Expiration date (not valid anymore after this date)
+      name: EXPIRATION_DATE
+      priority: 500
+      type: string
+    - JSONPath: .status.dnsNames
+      description: Domains names in subject alternative names
+      name: DNS_NAMES
+      priority: 2000
+      type: string
+    - JSONPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    conversion:
+      strategy: None
+    group: cert.gardener.cloud
+    names:
+      kind: Certificate
+      listKind: CertificateList
+      plural: certificates
+      shortNames:
+      - cert
+      singular: certificate
+    scope: Namespaced
+    subresources:
+      status: {}
+    version: v1alpha1
+    versions:
+    - name: v1alpha1
+      served: true
+      storage: true

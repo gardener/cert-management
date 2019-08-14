@@ -1,0 +1,12 @@
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-simple
+  namespace: default
+spec:
+  commonName: cert1.mydomain.com
+  dnsNames:
+  - cert1.my-domain.com
+  # if issuer is not specified, the default issuer is used
+  issuerRef:
+    name: issuer-staging

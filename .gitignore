@@ -1,0 +1,8 @@
+bin/
+.idea/
+*.sw[pq]
+tmp/
+/local/
+/cmd/cert-controller-manager/cert-controller-manager
+/cert-controller-manager
+.vscode/
