@@ -30,16 +30,18 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
-// services share dnsnames
-const ANNOT_DNSNAMES = "dns.gardener.cloud/dnsnames"
-const ANNOT_CLASS = "cert.gardener.cloud/class"
-const ANNOT_SECRETNAME = "cert.gardener.cloud/secretname"
-const ANNOT_ISSUER = "cert.gardener.cloud/issuer"
+const (
+	// ANNOT_DNSNAMES annotation is shared with dns controller manager
+	ANNOT_DNSNAMES   = "dns.gardener.cloud/dnsnames"
+	ANNOT_CLASS      = "cert.gardener.cloud/class"
+	ANNOT_SECRETNAME = "cert.gardener.cloud/secretname"
+	ANNOT_ISSUER     = "cert.gardener.cloud/issuer"
 
-const OPT_CLASS = "cert-class"
-const OPT_TARGETCLASS = "cert-target-class"
-const OPT_NAMESPACE = "target-namespace"
-const OPT_NAMEPREFIX = "target-name-prefix"
+	OPT_CLASS       = "cert-class"
+	OPT_TARGETCLASS = "cert-target-class"
+	OPT_NAMESPACE   = "target-namespace"
+	OPT_NAMEPREFIX  = "target-name-prefix"
+)
 
 var REQUEST = resources.NewGroupKind(api.GroupName, api.CertificateKind)
 

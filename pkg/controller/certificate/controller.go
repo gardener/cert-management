@@ -34,8 +34,8 @@ const ControllerCertificate = "certificate"
 const (
 	OptDefaultIssuer            = "default-issuer"
 	OptIssuerNamespace          = "issuer-namespace"
-	OptDnsNamespace             = "dns-namespace"
-	OptDnsOwnerId               = "dns-owner-id"
+	OptDNSNamespace             = "dns-namespace"
+	OptDNSOwnerId               = "dns-owner-id"
 	OptDefaultIssuerDomainRange = "default-issuer-domain-range"
 	OptRenewalWindow            = "renewal-window"
 
@@ -49,8 +49,8 @@ func init() {
 		DefaultedStringOption(OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
 		DefaultedStringOption(OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
 		StringOption(OptDefaultIssuerDomainRange, "domain range restriction when using default issuer").
-		StringOption(OptDnsNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
-		StringOption(OptDnsOwnerId, "ownerId for creating challenge DNSEntries").
+		StringOption(OptDNSNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
+		StringOption(OptDNSOwnerId, "ownerId for creating challenge DNSEntries").
 		DefaultedDurationOption(OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).

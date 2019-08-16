@@ -81,11 +81,11 @@ func CertReconciler(c controller.Interface) (reconcile.Interface, error) {
 	reconciler.defaultIssuerDomainRange, _ = c.GetStringOption(OptDefaultIssuerDomainRange)
 	reconciler.defaultIssuerDomainRange = utils.NormalizeDomainRange(reconciler.defaultIssuerDomainRange)
 
-	dnsNamespace, _ := c.GetStringOption(OptDnsNamespace)
+	dnsNamespace, _ := c.GetStringOption(OptDNSNamespace)
 	if dnsNamespace != "" {
 		reconciler.dnsNamespace = &dnsNamespace
 	}
-	dnsOwnerId, _ := c.GetStringOption(OptDnsOwnerId)
+	dnsOwnerId, _ := c.GetStringOption(OptDNSOwnerId)
 	if dnsOwnerId != "" {
 		reconciler.dnsOwnerId = &dnsOwnerId
 	}
