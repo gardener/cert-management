@@ -1,4 +1,4 @@
-external-dns-management:
+cert-management:
   template: 'default'
   base_definition:
     repo: ~
