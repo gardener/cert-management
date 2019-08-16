@@ -1,0 +1,9 @@
+helper: (( merge )) 
+
+settings:
+  repokey: ""
+  pipeline: cert-management
+  goVersion: 1.12.7
+  branchsets:
+    main: (( .helper.main_branch("master") ))
+    patch: (( .helper.patch_branch("patch") ))

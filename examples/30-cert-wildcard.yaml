@@ -1,9 +1,0 @@
-apiVersion: cert.gardener.cloud/v1alpha1
-kind: CertRequest
-metadata:
-  name: cert-wildcard
-  namespace: default
-spec:
-  commonName: "*.cert2.martin.mydomain.com"
-  issuerRef:
-    name: issuer-staging
