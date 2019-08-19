@@ -30,7 +30,6 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/utils"
-	dnsutils "github.com/gardener/external-dns-management/pkg/dns/utils"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
@@ -44,11 +43,11 @@ func SourceReconciler(sourceType CertSourceType, rtype controller.ReconcilerType
 			return nil, err
 		}
 		copt, _ := c.GetStringOption(OPT_CLASS)
-		classes := dnsutils.NewClasses(copt)
-		c.SetFinalizerHandler(dnsutils.NewFinalizer(c, c.GetDefinition().FinalizerName(), classes))
+		classes := NewClasses(copt)
+		c.SetFinalizerHandler(NewFinalizer(c, c.GetDefinition().FinalizerName(), classes))
 		targetclass, _ := c.GetStringOption(OPT_TARGETCLASS)
 		if targetclass == "" {
-			if !classes.Contains(dnsutils.DEFAULT_CLASS) && classes.Main() != dnsutils.DEFAULT_CLASS {
+			if !classes.Contains(DefaultClass) && classes.Main() != DefaultClass {
 				targetclass = classes.Main()
 			}
 		}
@@ -82,7 +81,7 @@ type sourceReconciler struct {
 	*reconcilers.NestedReconciler
 	*reconcilers.SlaveAccess
 	source      CertSource
-	classes     *dnsutils.Classes
+	classes     *Classes
 	targetclass string
 	namespace   string
 	nameprefix  string

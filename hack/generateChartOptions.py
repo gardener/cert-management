@@ -8,6 +8,7 @@ import re
 options = """
 cert-class
 cert-target-class
+certificate.cert-class
 certificate.default-issuer
 certificate.default-issuer-domain-range
 certificate.default.pool.resync-period

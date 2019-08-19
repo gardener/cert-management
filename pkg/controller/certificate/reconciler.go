@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"fmt"
+	"github.com/gardener/cert-management/pkg/cert/source"
 	"time"
 	"unicode/utf8"
 
@@ -62,9 +63,13 @@ func CertReconciler(c controller.Interface) (reconcile.Interface, error) {
 		return nil, err
 	}
 
+	copt, _ := c.GetStringOption(source.OPT_CLASS)
+	classes := source.NewClasses(copt)
+
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &certReconciler{
 		Interface:             c,
+		classes:               classes,
 		targetCluster:         targetCluster,
 		dnsCluster:            dnsCluster,
 		issuerResources:       issuerResources,
@@ -118,6 +123,7 @@ type certReconciler struct {
 	dnsOwnerId               *string
 	renewalWindow            time.Duration
 	renewalCheckPeriod       time.Duration
+	classes                  *source.Classes
 }
 
 func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
@@ -125,6 +131,10 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 	crt, ok := obj.Data().(*api.Certificate)
 	if !ok {
 		return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to Certificate failed"))
+	}
+
+	if !r.classes.IsResponsibleFor(logger, obj) {
+		return reconcile.Succeeded(logger)
 	}
 
 	if crt.Spec.SecretRef == nil && r.challengePending(crt) {

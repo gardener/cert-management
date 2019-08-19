@@ -36,6 +36,9 @@ spec:
         {{- if .Values.configuration.certTargetClass }}
         - --cert-target-class={{ .Values.configuration.certTargetClass }}
         {{- end }}
+        {{- if .Values.configuration.certificateCertClass }}
+        - --certificate.cert-class={{ .Values.configuration.certificateCertClass }}
+        {{- end }}
         {{- if .Values.configuration.certificateDefaultIssuer }}
         - --certificate.default-issuer={{ .Values.configuration.certificateDefaultIssuer }}
         {{- end }}

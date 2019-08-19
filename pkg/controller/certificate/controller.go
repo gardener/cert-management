@@ -17,6 +17,7 @@
 package certificate
 
 import (
+	"github.com/gardener/cert-management/pkg/cert/source"
 	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
@@ -51,6 +52,7 @@ func init() {
 		StringOption(OptDefaultIssuerDomainRange, "domain range restriction when using default issuer").
 		StringOption(OptDNSNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
 		StringOption(OptDNSOwnerId, "ownerId for creating challenge DNSEntries").
+		StringOption(source.OPT_CLASS, "Identifier used to differentiate responsible controllers for entries").
 		DefaultedDurationOption(OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).

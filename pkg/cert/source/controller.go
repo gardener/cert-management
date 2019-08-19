@@ -22,7 +22,6 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile/reconcilers"
 	"github.com/gardener/controller-manager-library/pkg/resources"
-	"github.com/gardener/external-dns-management/pkg/dns/utils"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -41,6 +40,8 @@ const (
 	OPT_TARGETCLASS = "cert-target-class"
 	OPT_NAMESPACE   = "target-namespace"
 	OPT_NAMEPREFIX  = "target-name-prefix"
+
+	DefaultClass = "gardencert"
 )
 
 var REQUEST = resources.NewGroupKind(api.GroupName, api.CertificateKind)
@@ -48,7 +49,7 @@ var REQUEST = resources.NewGroupKind(api.GroupName, api.CertificateKind)
 func CertSourceController(source CertSourceType, reconcilerType controller.ReconcilerType) controller.Configuration {
 	gk := source.GroupKind()
 	return controller.Configure(source.Name()).
-		DefaultedStringOption(OPT_CLASS, utils.DEFAULT_CLASS, "Identifier used to differentiate responsible controllers for entries").
+		DefaultedStringOption(OPT_CLASS, DefaultClass, "Identifier used to differentiate responsible controllers for entries").
 		StringOption(OPT_TARGETCLASS, "Identifier used to differentiate responsible dns controllers for target entries").
 		DefaultedStringOption(OPT_NAMESPACE, "", "target namespace for cross cluster generation").
 		DefaultedStringOption(OPT_NAMEPREFIX, "", "name prefix in target namespace for cross cluster generation").

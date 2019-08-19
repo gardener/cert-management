@@ -26,6 +26,7 @@ createCRDs: true
 configuration:
 # certClass:
 # certTargetClass:
+# certificateCertClass:
 # certificateDefaultIssuer:
 # certificateDefaultIssuerDomainRange:
 # certificateDefaultPoolResyncPeriod:
