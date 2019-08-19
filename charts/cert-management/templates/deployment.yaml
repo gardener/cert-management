@@ -1,0 +1,225 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cert-management.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "cert-management.chart" . }}
+    app.kubernetes.io/name: {{ include "cert-management.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cert-management.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "cert-management.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - --name={{ include "cert-management.fullname" . }}
+        ### start generated configuration
+        {{- if .Values.configuration.certClass }}
+        - --cert-class={{ .Values.configuration.certClass }}
+        {{- end }}
+        {{- if .Values.configuration.certTargetClass }}
+        - --cert-target-class={{ .Values.configuration.certTargetClass }}
+        {{- end }}
+        {{- if .Values.configuration.certificateDefaultIssuer }}
+        - --certificate.default-issuer={{ .Values.configuration.certificateDefaultIssuer }}
+        {{- end }}
+        {{- if .Values.configuration.certificateDefaultIssuerDomainRange }}
+        - --certificate.default-issuer-domain-range={{ .Values.configuration.certificateDefaultIssuerDomainRange }}
+        {{- end }}
+        {{- if .Values.configuration.certificateDefaultPoolResyncPeriod }}
+        - --certificate.default.pool.resync-period={{ .Values.configuration.certificateDefaultPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.certificateDefaultPoolSize }}
+        - --certificate.default.pool.size={{ .Values.configuration.certificateDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.certificateDnsNamespace }}
+        - --certificate.dns-namespace={{ .Values.configuration.certificateDnsNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.certificateDnsOwnerId }}
+        - --certificate.dns-owner-id={{ .Values.configuration.certificateDnsOwnerId }}
+        {{- end }}
+        {{- if .Values.configuration.certificateIssuerNamespace }}
+        - --certificate.issuer-namespace={{ .Values.configuration.certificateIssuerNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.certificateRenewalWindow }}
+        - --certificate.renewal-window={{ .Values.configuration.certificateRenewalWindow }}
+        {{- end }}
+        {{- if .Values.configuration.controllers }}
+        - --controllers={{ .Values.configuration.controllers }}
+        {{- end }}
+        {{- if .Values.configuration.cpuprofile }}
+        - --cpuprofile={{ .Values.configuration.cpuprofile }}
+        {{- end }}
+        {{- if .Values.configuration.defaultIssuer }}
+        - --default-issuer={{ .Values.configuration.defaultIssuer }}
+        {{- end }}
+        {{- if .Values.configuration.defaultIssuerDomainRange }}
+        - --default-issuer-domain-range={{ .Values.configuration.defaultIssuerDomainRange }}
+        {{- end }}
+        {{- if .Values.configuration.disableNamespaceRestriction }}
+        - --disable-namespace-restriction={{ .Values.configuration.disableNamespaceRestriction }}
+        {{- end }}
+        {{- if .Values.configuration.dns }}
+        - --dns={{ .Values.configuration.dns }}
+        {{- end }}
+        {{- if .Values.configuration.dnsNamespace }}
+        - --dns-namespace={{ .Values.configuration.dnsNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.dnsOwnerId }}
+        - --dns-owner-id={{ .Values.configuration.dnsOwnerId }}
+        {{- end }}
+        {{- if .Values.configuration.dnsId }}
+        - --dns.id={{ .Values.configuration.dnsId }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertCertClass }}
+        - --ingress-cert.cert-class={{ .Values.configuration.ingressCertCertClass }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertCertTargetClass }}
+        - --ingress-cert.cert-target-class={{ .Values.configuration.ingressCertCertTargetClass }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertDefaultPoolResyncPeriod }}
+        - --ingress-cert.default.pool.resync-period={{ .Values.configuration.ingressCertDefaultPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertDefaultPoolSize }}
+        - --ingress-cert.default.pool.size={{ .Values.configuration.ingressCertDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertTargetNamePrefix }}
+        - --ingress-cert.target-name-prefix={{ .Values.configuration.ingressCertTargetNamePrefix }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertTargetNamespace }}
+        - --ingress-cert.target-namespace={{ .Values.configuration.ingressCertTargetNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertTargetsPoolSize }}
+        - --ingress-cert.targets.pool.size={{ .Values.configuration.ingressCertTargetsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.issuerNamespace }}
+        - --issuer-namespace={{ .Values.configuration.issuerNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDefaultPoolSize }}
+        - --issuer.default.pool.size={{ .Values.configuration.issuerDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.issuerSecretsPoolSize }}
+        - --issuer.secrets.pool.size={{ .Values.configuration.issuerSecretsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.kubeconfig }}
+        - --kubeconfig={{ .Values.configuration.kubeconfig }}
+        {{- end }}
+        {{- if .Values.configuration.kubeconfigId }}
+        - --kubeconfig.id={{ .Values.configuration.kubeconfigId }}
+        {{- end }}
+        {{- if .Values.configuration.logLevel }}
+        - --log-level={{ .Values.configuration.logLevel }}
+        {{- end }}
+        {{- if .Values.configuration.namespace }}
+        - --namespace={{ .Values.configuration.namespace }}
+        {{- end }}
+        {{- if .Values.configuration.namespaceLocalAccessOnly }}
+        - --namespace-local-access-only={{ .Values.configuration.namespaceLocalAccessOnly }}
+        {{- end }}
+        {{- if .Values.configuration.omitLease }}
+        - --omit-lease={{ .Values.configuration.omitLease }}
+        {{- end }}
+        {{- if .Values.configuration.pluginDir }}
+        - --plugin-dir={{ .Values.configuration.pluginDir }}
+        {{- end }}
+        {{- if .Values.configuration.poolResyncPeriod }}
+        - --pool.resync-period={{ .Values.configuration.poolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.poolSize }}
+        - --pool.size={{ .Values.configuration.poolSize }}
+        {{- end }}
+        {{- if .Values.configuration.renewalWindow }}
+        - --renewal-window={{ .Values.configuration.renewalWindow }}
+        {{- end }}
+        {{- if .Values.configuration.serverPortHttp }}
+        - --server-port-http={{ .Values.configuration.serverPortHttp }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertCertClass }}
+        - --service-cert.cert-class={{ .Values.configuration.serviceCertCertClass }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertCertTargetClass }}
+        - --service-cert.cert-target-class={{ .Values.configuration.serviceCertCertTargetClass }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertDefaultPoolResyncPeriod }}
+        - --service-cert.default.pool.resync-period={{ .Values.configuration.serviceCertDefaultPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertDefaultPoolSize }}
+        - --service-cert.default.pool.size={{ .Values.configuration.serviceCertDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertTargetNamePrefix }}
+        - --service-cert.target-name-prefix={{ .Values.configuration.serviceCertTargetNamePrefix }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertTargetNamespace }}
+        - --service-cert.target-namespace={{ .Values.configuration.serviceCertTargetNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertTargetsPoolSize }}
+        - --service-cert.targets.pool.size={{ .Values.configuration.serviceCertTargetsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.source }}
+        - --source={{ .Values.configuration.source }}
+        {{- end }}
+        {{- if .Values.configuration.sourceId }}
+        - --source.id={{ .Values.configuration.sourceId }}
+        {{- end }}
+        {{- if .Values.configuration.target }}
+        - --target={{ .Values.configuration.target }}
+        {{- end }}
+        {{- if .Values.configuration.targetNamePrefix }}
+        - --target-name-prefix={{ .Values.configuration.targetNamePrefix }}
+        {{- end }}
+        {{- if .Values.configuration.targetNamespace }}
+        - --target-namespace={{ .Values.configuration.targetNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.targetId }}
+        - --target.id={{ .Values.configuration.targetId }}
+        {{- end }}
+        ### end generated configuration
+        {{- range $idx, $flag := .Values.additionalConfiguration }}
+        - {{ $flag }}
+        {{- end }}
+        {{- if .Values.configuration.serverPortHttp }}
+        ports:
+        - containerPort: {{ .Values.configuration.serverPortHttp }}
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.configuration.serverPortHttp }}
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+      serviceAccountName: {{ include "cert-management.fullname" . }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

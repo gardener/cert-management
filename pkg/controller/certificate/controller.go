@@ -39,8 +39,8 @@ const (
 	OptDefaultIssuerDomainRange = "default-issuer-domain-range"
 	OptRenewalWindow            = "renewal-window"
 
-	LabelCertificateHashKey = "certificate-hash"
-	LabelCertificateKey     = "certificate"
+	LabelCertificateHashKey = api.GroupName + "/certificate-hash"
+	LabelCertificateKey     = api.GroupName + "/certificate"
 	AnnotationNotAfter      = api.GroupName + "/not-after"
 )
 

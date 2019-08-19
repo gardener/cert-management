@@ -1,0 +1,83 @@
+nameOverride: ""
+fullnameOverride: cert-controller-manager
+
+replicaCount: 1
+
+image:
+  repository: eu.gcr.io/gardener-project/cert-controller-manager
+  tag: 0.2.0-master
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+   cpu: 100m
+   memory: 64Mi
+  limits:
+   cpu: 200m
+   memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+# priorityClassName: ""
+
+createCRDs: true
+
+configuration:
+# certClass:
+# certTargetClass:
+# certificateDefaultIssuer:
+# certificateDefaultIssuerDomainRange:
+# certificateDefaultPoolResyncPeriod:
+# certificateDefaultPoolSize:
+# certificateDnsNamespace:
+# certificateDnsOwnerId:
+# certificateIssuerNamespace:
+# certificateRenewalWindow:
+# controllers:
+# cpuprofile:
+# defaultIssuer:
+# defaultIssuerDomainRange:
+# disableNamespaceRestriction:
+# dns:
+# dnsNamespace:
+# dnsOwnerId:
+# dnsId:
+# ingressCertCertClass:
+# ingressCertCertTargetClass:
+# ingressCertDefaultPoolResyncPeriod:
+# ingressCertDefaultPoolSize:
+# ingressCertTargetNamePrefix:
+# ingressCertTargetNamespace:
+# ingressCertTargetsPoolSize:
+# issuerNamespace:
+# issuerDefaultPoolSize:
+# issuerSecretsPoolSize:
+# kubeconfig:
+# kubeconfigId:
+# logLevel:
+# namespace:
+# namespaceLocalAccessOnly:
+# omitLease:
+# pluginDir:
+# poolResyncPeriod:
+# poolSize:
+# renewalWindow:
+  serverPortHttp: 8080
+# serviceCertCertClass:
+# serviceCertCertTargetClass:
+# serviceCertDefaultPoolResyncPeriod:
+# serviceCertDefaultPoolSize:
+# serviceCertTargetNamePrefix:
+# serviceCertTargetNamespace:
+# serviceCertTargetsPoolSize:
+# source:
+# sourceId:
+# target:
+# targetNamePrefix:
+# targetNamespace:
+# targetId:
+
+
+additionalConfiguration: []
+
