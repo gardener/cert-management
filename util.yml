@@ -60,7 +60,7 @@ helper:
                   steps:
                     build: ~
                 registry: 'gcr-readwrite'
-                image: (( "eu.gcr.io/gardener-project/cert-manager" ( valid(.settings.repokey) -and .settings.repokey != ""  ? "-" .settings.repokey :"" ) ))
+                image: (( "eu.gcr.io/gardener-project/cert-controller-manager" ( valid(.settings.repokey) -and .settings.repokey != ""  ? "-" .settings.repokey :"" ) ))
                 dockerfile: 'build/Dockerfile'
         steps:
           check:
