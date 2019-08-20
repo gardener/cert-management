@@ -14,14 +14,13 @@
  *
  */
 
-package issuer
+package core
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"sync"
 
 	"github.com/gardener/controller-manager-library/pkg/resources"
-
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 func NewReferencedSecrets() *ReferencedSecrets {
@@ -37,19 +36,10 @@ type ReferencedSecrets struct {
 	issuerToSecret  map[resources.ObjectName]resources.ObjectName
 }
 
-func newObjectName(namespace, name string) resources.ObjectName {
-	if namespace == "" {
-		namespace = "default"
-	}
-	return resources.NewObjectName(namespace, name)
-}
-
-func (rs *ReferencedSecrets) RememberIssuerSecret(issuer *api.Issuer) bool {
+func (rs *ReferencedSecrets) RememberIssuerSecret(issuerName resources.ObjectName, secretRef *v1.SecretReference) bool {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
-	secretRef := issuer.Spec.ACME.PrivateKeySecretRef
-	issuerName := newObjectName(issuer.Namespace, issuer.Name)
 	if secretRef == nil {
 		return rs.removeIssuer(issuerName)
 	}

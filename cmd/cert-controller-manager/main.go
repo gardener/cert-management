@@ -25,7 +25,6 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
 
 	ctrl "github.com/gardener/cert-management/pkg/controller"
-	_ "github.com/gardener/cert-management/pkg/controller/certificate"
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
 	_ "github.com/gardener/cert-management/pkg/controller/source/ingress"
 	_ "github.com/gardener/cert-management/pkg/controller/source/service"

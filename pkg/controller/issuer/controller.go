@@ -17,6 +17,10 @@
 package issuer
 
 import (
+	"github.com/gardener/cert-management/pkg/cert/source"
+	"github.com/gardener/cert-management/pkg/controller/issuer/core"
+	"time"
+
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 
 	"github.com/gardener/cert-management/pkg/apis/cert"
@@ -26,19 +30,32 @@ import (
 )
 
 const ControllerIssuer = "issuer"
-const ACMEType = "acme"
 
 func init() {
 	controller.Configure(ControllerIssuer).
+		DefaultedStringOption(core.OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
+		DefaultedStringOption(core.OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
+		StringOption(core.OptDefaultIssuerDomainRange, "domain range restriction when using default issuer").
+		StringOption(core.OptDNSNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
+		StringOption(core.OptDNSOwnerId, "ownerId for creating challenge DNSEntries").
+		StringOption(source.OPT_CLASS, "Identifier used to differentiate responsible controllers for entries").
+		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		FinalizerDomain(cert.GroupName).
+		Cluster(ctrl.TargetCluster).
+		CustomResourceDefinitions(crds.CertificateCRD).
+		DefaultWorkerPool(2, 24*time.Hour).
+		MainResource(api.GroupName, api.CertificateKind).
+		Reconciler(CompoundReconciler).
 		Cluster(ctrl.DefaultCluster).
 		CustomResourceDefinitions(crds.IssuerCRD).
-		DefaultWorkerPool(1, 0).
-		MainResource(api.GroupName, api.IssuerKind).
-		Reconciler(IssuerReconciler).
+		WorkerPool("issuers", 1, 0).
+		Watches(
+			controller.NewResourceKey(api.GroupName, api.IssuerKind),
+		).
 		WorkerPool("secrets", 1, 0).
 		Watches(
 			controller.NewResourceKey("core", "Secret"),
 		).
+		Cluster(ctrl.DNSCluster).
 		MustRegister(ctrl.ControllerGroupCert)
 }

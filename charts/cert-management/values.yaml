@@ -26,15 +26,6 @@ createCRDs: true
 configuration:
 # certClass:
 # certTargetClass:
-# certificateCertClass:
-# certificateDefaultIssuer:
-# certificateDefaultIssuerDomainRange:
-# certificateDefaultPoolResyncPeriod:
-# certificateDefaultPoolSize:
-# certificateDnsNamespace:
-# certificateDnsOwnerId:
-# certificateIssuerNamespace:
-# certificateRenewalWindow:
 # controllers:
 # cpuprofile:
 # defaultIssuer:
@@ -52,7 +43,16 @@ configuration:
 # ingressCertTargetNamespace:
 # ingressCertTargetsPoolSize:
 # issuerNamespace:
+# issuerCertClass:
+# issuerDefaultIssuer:
+# issuerDefaultIssuerDomainRange:
+# issuerDefaultPoolResyncPeriod:
 # issuerDefaultPoolSize:
+# issuerDnsNamespace:
+# issuerDnsOwnerId:
+# issuerIssuerNamespace:
+# issuerIssuersPoolSize:
+# issuerRenewalWindow:
 # issuerSecretsPoolSize:
 # kubeconfig:
 # kubeconfigId:

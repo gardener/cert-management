@@ -14,7 +14,7 @@
  *
  */
 
-package issuer
+package core
 
 import (
 	"fmt"
@@ -67,7 +67,8 @@ func TestRobustRemember(t *testing.T) {
 					Name:      entry.secretName,
 				}
 			}
-			changed = data.RememberIssuerSecret(issuer)
+			changed = data.RememberIssuerSecret(resources.NewObjectName("default", entry.issuerName),
+				issuer.Spec.ACME.PrivateKeySecretRef)
 		case "remove":
 			changed = data.RemoveIssuer(resources.NewObjectName("default", entry.issuerName))
 		case "removeSecret":

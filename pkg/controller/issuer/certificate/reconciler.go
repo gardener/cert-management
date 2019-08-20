@@ -20,7 +20,6 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/cert/source"
 	"time"
 	"unicode/utf8"
 
@@ -38,11 +37,19 @@ import (
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
+	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 )
 
-func CertReconciler(c controller.Interface) (reconcile.Interface, error) {
+const (
+	LabelCertificateHashKey = api.GroupName + "/certificate-hash"
+	LabelCertificateKey     = api.GroupName + "/certificate"
+	AnnotationNotAfter      = api.GroupName + "/not-after"
+)
+
+func CertReconciler(c controller.Interface, support *core.Support) (reconcile.Interface, error) {
 	defaultCluster := c.GetCluster(ctrl.DefaultCluster)
 	issuerResources, err := defaultCluster.Resources().GetByExample(&api.Issuer{})
 	if err != nil {
@@ -68,7 +75,7 @@ func CertReconciler(c controller.Interface) (reconcile.Interface, error) {
 
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &certReconciler{
-		Interface:             c,
+		support:               support,
 		classes:               classes,
 		targetCluster:         targetCluster,
 		dnsCluster:            dnsCluster,
@@ -81,21 +88,16 @@ func CertReconciler(c controller.Interface) (reconcile.Interface, error) {
 		pendingResults:        legobridge.NewPendingResults(),
 	}
 
-	reconciler.defaultIssuer, _ = c.GetStringOption(OptDefaultIssuer)
-	reconciler.issuerNamespace, _ = c.GetStringOption(OptIssuerNamespace)
-	reconciler.defaultIssuerDomainRange, _ = c.GetStringOption(OptDefaultIssuerDomainRange)
-	reconciler.defaultIssuerDomainRange = utils.NormalizeDomainRange(reconciler.defaultIssuerDomainRange)
-
-	dnsNamespace, _ := c.GetStringOption(OptDNSNamespace)
+	dnsNamespace, _ := c.GetStringOption(core.OptDNSNamespace)
 	if dnsNamespace != "" {
 		reconciler.dnsNamespace = &dnsNamespace
 	}
-	dnsOwnerId, _ := c.GetStringOption(OptDNSOwnerId)
+	dnsOwnerId, _ := c.GetStringOption(core.OptDNSOwnerId)
 	if dnsOwnerId != "" {
 		reconciler.dnsOwnerId = &dnsOwnerId
 	}
 
-	renewalWindow, err := c.GetDurationOption(OptRenewalWindow)
+	renewalWindow, err := c.GetDurationOption(core.OptRenewalWindow)
 	if err != nil {
 		return nil, err
 	}
@@ -105,30 +107,27 @@ func CertReconciler(c controller.Interface) (reconcile.Interface, error) {
 }
 
 type certReconciler struct {
-	controller.Interface
 	reconcile.DefaultReconciler
-	targetCluster            cluster.Interface
-	dnsCluster               cluster.Interface
-	issuerResources          resources.Interface
-	issuerSecretResources    resources.Interface
-	certResources            resources.Interface
-	certSecretResources      resources.Interface
-	rateLimiting             time.Duration
-	pendingRequests          *legobridge.PendingCertificateRequests
-	pendingResults           *legobridge.PendingResults
-	defaultIssuer            string
-	issuerNamespace          string
-	defaultIssuerDomainRange string
-	dnsNamespace             *string
-	dnsOwnerId               *string
-	renewalWindow            time.Duration
-	renewalCheckPeriod       time.Duration
-	classes                  *source.Classes
+	support               *core.Support
+	targetCluster         cluster.Interface
+	dnsCluster            cluster.Interface
+	issuerResources       resources.Interface
+	issuerSecretResources resources.Interface
+	certResources         resources.Interface
+	certSecretResources   resources.Interface
+	rateLimiting          time.Duration
+	pendingRequests       *legobridge.PendingCertificateRequests
+	pendingResults        *legobridge.PendingResults
+	dnsNamespace          *string
+	dnsOwnerId            *string
+	renewalWindow         time.Duration
+	renewalCheckPeriod    time.Duration
+	classes               *source.Classes
 }
 
 func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	logger.Infof("reconciling")
-	crt, ok := obj.Data().(*api.Certificate)
+	cert, ok := obj.Data().(*api.Certificate)
 	if !ok {
 		return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to Certificate failed"))
 	}
@@ -137,7 +136,9 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 		return reconcile.Succeeded(logger)
 	}
 
-	if crt.Spec.SecretRef == nil && r.challengePending(crt) {
+	r.support.AddCertificate(logger, cert)
+
+	if cert.Spec.SecretRef == nil && r.challengePending(cert) {
 		return reconcile.Succeeded(logger)
 	}
 
@@ -148,7 +149,7 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 
 		spec := &api.CertificateSpec{CommonName: result.CommonName, DNSNames: result.DNSNames, CSR: result.CSR}
 		specHash := buildSpecHash(spec)
-		secretRef, err := r.writeCertificateSecret(obj.ObjectName(), result.Certificates, specHash, crt.Spec.SecretName)
+		secretRef, err := r.writeCertificateSecret(obj.ObjectName(), result.Certificates, specHash, cert.Spec.SecretName)
 		if err != nil {
 			return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("writing certificate secret failed with %s", err.Error()))
 		}
@@ -163,20 +164,30 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 		return r.updateSecretRefAndSucceeded(logger, obj, secretRef, specHash, notAfter)
 	}
 
-	if crt.Spec.SecretRef == nil {
-		if !r.lastPendingRateLimiting(crt.Status.LastPendingTimestamp) {
+	if cert.Spec.SecretRef == nil {
+		if !r.lastPendingRateLimiting(cert.Status.LastPendingTimestamp) {
 			return r.obtainCertificateAndPending(logger, obj, nil)
 		}
 		return reconcile.Delay(logger, fmt.Errorf("waiting"))
 	} else {
-		specHash := buildSpecHash(&crt.Spec)
-		storedHash := crt.Labels[LabelCertificateHashKey]
+		specHash := buildSpecHash(&cert.Spec)
+		storedHash := cert.Labels[LabelCertificateHashKey]
 		if specHash != storedHash {
 			return r.deleteSecretRefAndRepeat(logger, obj)
 		}
 
 		return r.checkForRenewAndSucceeded(logger, obj)
 	}
+}
+
+func (r *certReconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
+	cert, ok := obj.Data().(*api.Certificate)
+	if !ok {
+		return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to Certificate failed"))
+	}
+	r.support.RemoveCertificate(logger, cert)
+
+	return reconcile.Succeeded(logger)
 }
 
 func (r *certReconciler) lastPendingRateLimiting(timestamp *metav1.Time) bool {
@@ -189,23 +200,23 @@ func (r *certReconciler) challengePending(crt *api.Certificate) bool {
 }
 
 func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, obj resources.Object, renewSecret *corev1.Secret) reconcile.Status {
-	crt := obj.Data().(*api.Certificate)
+	cert := obj.Data().(*api.Certificate)
 
-	reguser, server, err := r.restoreRegUser(crt)
+	reguser, server, err := r.restoreRegUser(cert)
 	if err != nil {
 		return r.failed(logger, obj, api.STATE_ERROR, err)
 	}
 
-	err = r.validatedDomainsAndCsr(&crt.Spec)
+	err = r.validatedDomainsAndCsr(&cert.Spec)
 	if err != nil {
 		return r.failed(logger, obj, api.STATE_ERROR, err)
 	}
 
-	specHash := buildSpecHash(&crt.Spec)
+	specHash := buildSpecHash(&cert.Spec)
 	secretRef, notAfter := r.findSecretByHashLabel(specHash)
 	if secretRef != nil {
 		// reuse found certificate
-		secretRef, err := r.copySecretIfNeeded(obj.ObjectName(), secretRef, specHash, crt.Spec.SecretName)
+		secretRef, err := r.copySecretIfNeeded(obj.ObjectName(), secretRef, specHash, cert.Spec.SecretName)
 		if err != nil {
 			return r.failed(logger, obj, api.STATE_ERROR, err)
 		}
@@ -218,21 +229,22 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	}
 
 	objectName := obj.ObjectName()
-	subLogger := logger.NewContext("callback", crt.Name)
+	subLogger := logger.NewContext("callback", cert.Name)
 	callback := func(output *legobridge.ObtainOutput) {
 		r.pendingRequests.Remove(objectName)
 		r.pendingResults.Add(objectName, output)
-		err := r.EnqueueKey(resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectName.Namespace(), objectName.Name()))
+		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectName.Namespace(), objectName.Name())
+		err := r.support.EnqueueKey(key)
 		if err != nil {
 			subLogger.Warnf("Enqueue %s failed with %s", objectName, err.Error())
 		}
 	}
-	dnsSettings := legobridge.DNSControllerSettings{Namespace: crt.Namespace, OwnerId: r.dnsOwnerId}
+	dnsSettings := legobridge.DNSControllerSettings{Namespace: cert.Namespace, OwnerId: r.dnsOwnerId}
 	if r.dnsNamespace != nil {
 		dnsSettings.Namespace = *r.dnsNamespace
 	}
 	input := legobridge.ObtainInput{User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
-		CaDirURL: server, CommonName: crt.Spec.CommonName, DNSNames: crt.Spec.DNSNames, CSR: crt.Spec.CSR,
+		CaDirURL: server, CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		Callback: callback, RequestName: objectName, RenewCert: renewCert}
 
 	err = legobridge.Obtain(input)
@@ -245,11 +257,11 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 
 func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.RegistrationUser, string, error) {
 	// fetch issuer
-	issuerName := r.defaultIssuer
+	issuerName := r.support.DefaultIssuerName()
 	if crt.Spec.IssuerRef != nil {
 		issuerName = crt.Spec.IssuerRef.Name
 	}
-	issuerObjectName := resources.NewObjectName(r.issuerNamespace, issuerName)
+	issuerObjectName := resources.NewObjectName(r.support.IssuerNamespace(), issuerName)
 	issuer := &api.Issuer{}
 	_, err := r.issuerResources.GetInto(issuerObjectName, issuer)
 	if err != nil {
@@ -310,15 +322,15 @@ func (r *certReconciler) validatedDomainsAndCsr(spec *api.CertificateSpec) error
 }
 
 func (r *certReconciler) checkDomainRangeRestriction(spec *api.CertificateSpec, domains []string) error {
-	issuerName := r.defaultIssuer
+	issuerName := r.support.DefaultIssuerName()
 	if spec.IssuerRef != nil {
 		issuerName = spec.IssuerRef.Name
 	}
 
-	if issuerName == r.defaultIssuer && r.defaultIssuerDomainRange != "" {
+	if issuerName == r.support.DefaultIssuerName() && r.support.DefaultIssuerDomainRange() != "" {
 		for _, domain := range domains {
-			if !utils.IsInDomainRange(domain, r.defaultIssuerDomainRange) {
-				return fmt.Errorf("domain %s is not in domain range of default issuer (%s)", domain, r.defaultIssuerDomainRange)
+			if !utils.IsInDomainRange(domain, r.support.DefaultIssuerDomainRange()) {
+				return fmt.Errorf("domain %s is not in domain range of default issuer (%s)", domain, r.support.DefaultIssuerDomainRange())
 			}
 		}
 	}
@@ -507,7 +519,7 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 
 	issuerRef := crt.Spec.IssuerRef
 	if issuerRef == nil {
-		issuerRef = &api.IssuerRef{r.defaultIssuer}
+		issuerRef = &api.IssuerRef{r.support.DefaultIssuerName()}
 	}
 	if status.IssuerRef == nil || status.IssuerRef.Name != issuerRef.Name {
 		status.IssuerRef = issuerRef
@@ -517,7 +529,7 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	return mod, status
 }
 
-func updateStatus(mod *resources.ModificationState) {
+func (r *certReconciler) updateStatus(mod *resources.ModificationState) {
 	err := mod.UpdateStatus()
 	if err != nil {
 		logger.Warnf("updating status failed with: %s", err)
@@ -528,14 +540,14 @@ func (r *certReconciler) failed(logger logger.LogContext, obj resources.Object, 
 	msg := err.Error()
 
 	mod, _ := r.prepareUpdateStatus(obj, state, &msg)
-	updateStatus(mod)
+	r.updateStatus(mod)
 
 	return reconcile.Failed(logger, err)
 }
 
 func (r *certReconciler) succeeded(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	mod, _ := r.prepareUpdateStatus(obj, api.STATE_READY, nil)
-	updateStatus(mod)
+	r.updateStatus(mod)
 
 	return reconcile.Succeeded(logger)
 }
@@ -545,19 +557,14 @@ func (r *certReconciler) pending(logger logger.LogContext, obj resources.Object)
 	mod, status := r.prepareUpdateStatus(obj, api.STATE_PENDING, &msg)
 	status.LastPendingTimestamp = &metav1.Time{time.Now()}
 	mod.Modified = true
-	updateStatus(mod)
+	r.updateStatus(mod)
 
 	return reconcile.Succeeded(logger)
 }
 
 func (r *certReconciler) repeat(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	mod, _ := r.prepareUpdateStatus(obj, "", nil)
-	updateStatus(mod)
+	r.updateStatus(mod)
 
 	return reconcile.Repeat(logger)
 }
-
-// func (rr *manifest_reconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
-// 	logger.Infof("Delete")
-// 	return reconcile.Succeeded(logger)
-// }

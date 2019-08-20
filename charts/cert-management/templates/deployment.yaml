@@ -36,33 +36,6 @@ spec:
         {{- if .Values.configuration.certTargetClass }}
         - --cert-target-class={{ .Values.configuration.certTargetClass }}
         {{- end }}
-        {{- if .Values.configuration.certificateCertClass }}
-        - --certificate.cert-class={{ .Values.configuration.certificateCertClass }}
-        {{- end }}
-        {{- if .Values.configuration.certificateDefaultIssuer }}
-        - --certificate.default-issuer={{ .Values.configuration.certificateDefaultIssuer }}
-        {{- end }}
-        {{- if .Values.configuration.certificateDefaultIssuerDomainRange }}
-        - --certificate.default-issuer-domain-range={{ .Values.configuration.certificateDefaultIssuerDomainRange }}
-        {{- end }}
-        {{- if .Values.configuration.certificateDefaultPoolResyncPeriod }}
-        - --certificate.default.pool.resync-period={{ .Values.configuration.certificateDefaultPoolResyncPeriod }}
-        {{- end }}
-        {{- if .Values.configuration.certificateDefaultPoolSize }}
-        - --certificate.default.pool.size={{ .Values.configuration.certificateDefaultPoolSize }}
-        {{- end }}
-        {{- if .Values.configuration.certificateDnsNamespace }}
-        - --certificate.dns-namespace={{ .Values.configuration.certificateDnsNamespace }}
-        {{- end }}
-        {{- if .Values.configuration.certificateDnsOwnerId }}
-        - --certificate.dns-owner-id={{ .Values.configuration.certificateDnsOwnerId }}
-        {{- end }}
-        {{- if .Values.configuration.certificateIssuerNamespace }}
-        - --certificate.issuer-namespace={{ .Values.configuration.certificateIssuerNamespace }}
-        {{- end }}
-        {{- if .Values.configuration.certificateRenewalWindow }}
-        - --certificate.renewal-window={{ .Values.configuration.certificateRenewalWindow }}
-        {{- end }}
         {{- if .Values.configuration.controllers }}
         - --controllers={{ .Values.configuration.controllers }}
         {{- end }}
@@ -114,8 +87,35 @@ spec:
         {{- if .Values.configuration.issuerNamespace }}
         - --issuer-namespace={{ .Values.configuration.issuerNamespace }}
         {{- end }}
+        {{- if .Values.configuration.issuerCertClass }}
+        - --issuer.cert-class={{ .Values.configuration.issuerCertClass }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDefaultIssuer }}
+        - --issuer.default-issuer={{ .Values.configuration.issuerDefaultIssuer }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDefaultIssuerDomainRange }}
+        - --issuer.default-issuer-domain-range={{ .Values.configuration.issuerDefaultIssuerDomainRange }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDefaultPoolResyncPeriod }}
+        - --issuer.default.pool.resync-period={{ .Values.configuration.issuerDefaultPoolResyncPeriod }}
+        {{- end }}
         {{- if .Values.configuration.issuerDefaultPoolSize }}
         - --issuer.default.pool.size={{ .Values.configuration.issuerDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDnsNamespace }}
+        - --issuer.dns-namespace={{ .Values.configuration.issuerDnsNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDnsOwnerId }}
+        - --issuer.dns-owner-id={{ .Values.configuration.issuerDnsOwnerId }}
+        {{- end }}
+        {{- if .Values.configuration.issuerIssuerNamespace }}
+        - --issuer.issuer-namespace={{ .Values.configuration.issuerIssuerNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.issuerIssuersPoolSize }}
+        - --issuer.issuers.pool.size={{ .Values.configuration.issuerIssuersPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.issuerRenewalWindow }}
+        - --issuer.renewal-window={{ .Values.configuration.issuerRenewalWindow }}
         {{- end }}
         {{- if .Values.configuration.issuerSecretsPoolSize }}
         - --issuer.secrets.pool.size={{ .Values.configuration.issuerSecretsPoolSize }}

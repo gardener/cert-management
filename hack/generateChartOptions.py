@@ -8,15 +8,6 @@ import re
 options = """
 cert-class
 cert-target-class
-certificate.cert-class
-certificate.default-issuer
-certificate.default-issuer-domain-range
-certificate.default.pool.resync-period
-certificate.default.pool.size
-certificate.dns-namespace
-certificate.dns-owner-id
-certificate.issuer-namespace
-certificate.renewal-window
 controllers
 cpuprofile
 default-issuer
@@ -35,7 +26,16 @@ ingress-cert.target-name-prefix
 ingress-cert.target-namespace
 ingress-cert.targets.pool.size
 issuer-namespace
+issuer.cert-class
+issuer.default-issuer
+issuer.default-issuer-domain-range
+issuer.default.pool.resync-period
 issuer.default.pool.size
+issuer.dns-namespace
+issuer.dns-owner-id
+issuer.issuer-namespace
+issuer.issuers.pool.size
+issuer.renewal-window
 issuer.secrets.pool.size
 kubeconfig
 kubeconfig.id
