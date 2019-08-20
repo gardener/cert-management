@@ -321,14 +321,6 @@ Usage:
 Flags:
       --cert-class string                                  default for all controller "cert-class" options
       --cert-target-class string                           default for all controller "cert-target-class" options
-      --certificate.default-issuer string                  name of default issuer (from default cluster)
-      --certificate.default-issuer-domain-range string     domain range restriction when using default issuer
-      --certificate.default.pool.resync-period duration    Period for resynchronization of pool default of controller certificate (default: 24h0m0s)
-      --certificate.default.pool.size int                  Worker pool size for pool default of controller certificate (default: 2)
-      --certificate.dns-namespace string                   namespace for creating challenge DNSEntries (in DNS cluster)
-      --certificate.dns-owner-id string                    ownerId for creating challenge DNSEntries
-      --certificate.issuer-namespace string                namespace to lookup issuers on default cluster
-      --certificate.renewal-window duration                certificate is renewed if its validity period is shorter
   -c, --controllers string                                 comma separated list of controllers to start (<name>,source,target,all) (default "all")
       --cpuprofile string                                  set file for cpu profiling
       --default-issuer string                              default for all controller "default-issuer" options
@@ -347,7 +339,16 @@ Flags:
       --ingress-cert.target-namespace string               target namespace for cross cluster generation
       --ingress-cert.targets.pool.size int                 Worker pool size for pool targets of controller ingress-cert (default: 2)
       --issuer-namespace string                            default for all controller "issuer-namespace" options
-      --issuer.default.pool.size int                       Worker pool size for pool default of controller issuer (default: 1)
+      --issuer.cert-class string                           Identifier used to differentiate responsible controllers for entries
+      --issuer.default-issuer string                       name of default issuer (from default cluster)
+      --issuer.default-issuer-domain-range string          domain range restriction when using default issuer
+      --issuer.default.pool.resync-period duration         Period for resynchronization of pool default of controller issuer (default: 24h0m0s)
+      --issuer.default.pool.size int                       Worker pool size for pool default of controller issuer (default: 2)
+      --issuer.dns-namespace string                        namespace for creating challenge DNSEntries (in DNS cluster)
+      --issuer.dns-owner-id string                         ownerId for creating challenge DNSEntries
+      --issuer.issuer-namespace string                     namespace to lookup issuers on default cluster
+      --issuer.issuers.pool.size int                       Worker pool size for pool issuers of controller issuer (default: 1)
+      --issuer.renewal-window duration                     certificate is renewed if its validity period is shorter
       --issuer.secrets.pool.size int                       Worker pool size for pool secrets of controller issuer (default: 1)
       --kubeconfig string                                  default cluster access
       --kubeconfig.id string                               id for cluster default
