@@ -127,7 +127,7 @@ type certReconciler struct {
 }
 
 func (r *certReconciler) Start() {
-	r.cleanupOrphanDnsEntriesFromOldChallenges()
+	r.cleanupOrphanDNSEntriesFromOldChallenges()
 }
 
 func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
@@ -583,13 +583,13 @@ func (r *certReconciler) repeat(logger logger.LogContext, obj resources.Object) 
 	return reconcile.Repeat(logger)
 }
 
-func (r *certReconciler) cleanupOrphanDnsEntriesFromOldChallenges() {
+func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() {
 	// find orphan dnsentries from DNSChallenges and try to delete them
 	// should only happen if cert-manager is terminated during running DNS challenge(s)
 
 	entriesResource, err := r.dnsCluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
-		logger.Warnf("issuer: cleanupOrphanDnsEntriesFromOldChallenges failed with: %s", err)
+		logger.Warnf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %s", err)
 		return
 	}
 	var objects []resources.Object
@@ -599,7 +599,7 @@ func (r *certReconciler) cleanupOrphanDnsEntriesFromOldChallenges() {
 		objects, err = entriesResource.List(metav1.ListOptions{})
 	}
 	if err != nil {
-		logger.Warnf("issuer: cleanupOrphanDnsEntriesFromOldChallenges failed with: %s", err)
+		logger.Warnf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %s", err)
 		return
 	}
 	count := 0
@@ -608,7 +608,7 @@ func (r *certReconciler) cleanupOrphanDnsEntriesFromOldChallenges() {
 		if ok && r.classes.Contains(class) {
 			err = entriesResource.Delete(obj.Data())
 			if err != nil {
-				logger.Warnf("issuer: cleanupOrphanDnsEntriesFromOldChallenges failed with: %s", err)
+				logger.Warnf("issuer: deleting DNS entry %s/%s failed with: %s", obj.GetNamespace(), obj.GetName(), err)
 			} else {
 				count++
 			}
