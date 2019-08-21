@@ -21,35 +21,35 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type State struct {
+type state struct {
 	secrets      *ReferencedSecrets
 	certificates *AssociatedObjects
 }
 
-func NewState() *State {
-	return &State{secrets: NewReferencedSecrets(), certificates: NewAssociatedObjects()}
+func newState() *state {
+	return &state{secrets: NewReferencedSecrets(), certificates: NewAssociatedObjects()}
 }
 
-func (s *State) RemoveIssuer(name resources.ObjectName) bool {
+func (s *state) RemoveIssuer(name resources.ObjectName) bool {
 	return s.secrets.RemoveIssuer(name)
 }
 
-func (s *State) AddCertAssoc(issuer resources.ObjectName, cert resources.ObjectName) {
-	s.certificates.AddDest(issuer, cert)
+func (s *state) AddCertAssoc(issuer resources.ObjectName, cert resources.ObjectName) {
+	s.certificates.AddAssoc(issuer, cert)
 }
 
-func (s *State) RemoveCertAssoc(issuer resources.ObjectName, cert resources.ObjectName) {
-	s.certificates.RemoveDest(issuer, cert)
+func (s *state) RemoveCertAssoc(cert resources.ObjectName) {
+	s.certificates.RemoveByDest(cert)
 }
 
-func (s *State) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {
+func (s *state) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {
 	return s.certificates.DestinationsAsArray(issuer)
 }
 
-func (s *State) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {
+func (s *state) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {
 	return s.secrets.IssuerNamesFor(secretName)
 }
 
-func (s *State) RememberIssuerSecret(issuer resources.ObjectName, secretRef *v1.SecretReference) {
+func (s *state) RememberIssuerSecret(issuer resources.ObjectName, secretRef *v1.SecretReference) {
 	s.secrets.RememberIssuerSecret(issuer, secretRef)
 }

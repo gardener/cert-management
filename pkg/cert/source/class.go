@@ -53,15 +53,24 @@ func (this *Classes) Main() string {
 	return this.main
 }
 
+func (this *Classes) Classes() utils.StringSet {
+	return this.classes.Copy()
+}
+
 func (this *Classes) Contains(class string) bool {
 	return this.classes.Contains(class)
 }
 
-func (this *Classes) IsResponsibleFor(logger logger.LogContext, obj resources.Object) bool {
-	oclass := obj.GetAnnotations()[ANNOT_CLASS]
-	if oclass == "" {
+func (this *Classes) GetAnnotatedClass(obj resources.Object) string {
+	oclass, ok := resources.GetAnnotation(obj.Data(), ANNOT_CLASS)
+	if !ok {
 		oclass = DefaultClass
 	}
+	return oclass
+}
+
+func (this *Classes) IsResponsibleFor(logger logger.LogContext, obj resources.Object) bool {
+	oclass := this.GetAnnotatedClass(obj)
 	if !this.classes.Contains(oclass) {
 		logger.Debugf("%s: annotated cert class %q does not match specified class set %s -> skip ",
 			obj.ObjectName(), oclass, this.classes)

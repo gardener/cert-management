@@ -18,6 +18,7 @@ package legobridge
 
 import (
 	"fmt"
+	"github.com/gardener/cert-management/pkg/cert/source"
 
 	"github.com/go-acme/lego/challenge"
 	"github.com/go-acme/lego/challenge/dns01"
@@ -29,13 +30,13 @@ import (
 )
 
 func newDNSControllerProvider(logger logger.LogContext, cluster resources.Cluster, settings DNSControllerSettings,
-	certificateName resources.ObjectName) (challenge.Provider, error) {
+	certificateName resources.ObjectName, targetClass string) (challenge.Provider, error) {
 	itf, err := cluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DNSEntry resources: %s", err.Error())
 	}
 	return &dnsControllerProvider{logger: logger, settings: settings, entryResources: itf,
-		certificateName: certificateName}, nil
+		certificateName: certificateName, targetClass: targetClass}, nil
 }
 
 type dnsControllerProvider struct {
@@ -43,6 +44,7 @@ type dnsControllerProvider struct {
 	settings        DNSControllerSettings
 	entryResources  resources.Interface
 	certificateName resources.ObjectName
+	targetClass     string
 }
 
 var _ challenge.Provider = &dnsControllerProvider{}
@@ -55,6 +57,7 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 	entry.Spec.DNSName = dns.NormalizeHostname(fqdn)
 	entry.Spec.OwnerId = p.settings.OwnerId
 	entry.Spec.Text = []string{value}
+	resources.SetAnnotation(entry, source.ANNOT_CLASS, p.targetClass)
 
 	logger.Infof("presenting DNSEntry %s/%s for certificate resource %s", entry.Namespace, entry.Name, p.certificateName)
 

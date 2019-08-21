@@ -24,51 +24,62 @@ import (
 
 func NewAssociatedObjects() *AssociatedObjects {
 	return &AssociatedObjects{
-		objects: map[resources.ObjectName]resources.ObjectNameSet{},
+		srcToDest: map[resources.ObjectName]resources.ObjectNameSet{},
+		destToSrc: map[resources.ObjectName]resources.ObjectName{},
 	}
 }
 
 type AssociatedObjects struct {
-	lock    sync.Mutex
-	objects map[resources.ObjectName]resources.ObjectNameSet
+	lock      sync.Mutex
+	srcToDest map[resources.ObjectName]resources.ObjectNameSet
+	destToSrc map[resources.ObjectName]resources.ObjectName
 }
 
-func (ao *AssociatedObjects) AddDest(src, dst resources.ObjectName) {
+func (ao *AssociatedObjects) AddAssoc(src, dst resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
-	set := ao.objects[src]
+	set := ao.srcToDest[src]
 	if set == nil {
 		set = resources.ObjectNameSet{}
-		ao.objects[src] = set
+		ao.srcToDest[src] = set
 	}
 	set.Add(dst)
+	ao.destToSrc[dst] = src
 }
 
-func (ao *AssociatedObjects) RemoveDest(src, dst resources.ObjectName) {
+func (ao *AssociatedObjects) RemoveByDest(dst resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
-	set := ao.objects[src]
-	if set == nil {
-		return
+	if src := ao.destToSrc[dst]; src != nil {
+		set := ao.srcToDest[src]
+		if set != nil {
+			set.Remove(dst)
+			if len(set) == 0 {
+				delete(ao.srcToDest, src)
+			}
+		}
+		delete(ao.destToSrc, dst)
 	}
-	set.Remove(dst)
 }
 
-func (ao *AssociatedObjects) RemoveSource(src resources.ObjectName) {
+func (ao *AssociatedObjects) RemoveBySource(src resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
-	delete(ao.objects, src)
+	for dst := range ao.srcToDest[src] {
+		delete(ao.destToSrc, dst)
+	}
+	delete(ao.srcToDest, src)
 }
 
 func (ao *AssociatedObjects) DestinationsAsArray(src resources.ObjectName) []resources.ObjectName {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
-	set, ok := ao.objects[src]
-	if !ok {
+	set := ao.srcToDest[src]
+	if set == nil {
 		return nil
 	}
 	return set.AsArray()

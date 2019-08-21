@@ -75,6 +75,8 @@ func (r *acmeIssuerReconciler) Reconcile(logger logger.LogContext, obj resources
 		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("missing server in ACME spec"))
 	}
 
+	r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef)
+
 	var secret *corev1.Secret
 	var err error
 	if acme.PrivateKeySecretRef != nil {
@@ -108,6 +110,7 @@ func (r *acmeIssuerReconciler) Reconcile(logger logger.LogContext, obj resources
 		}
 		if secretRef != nil {
 			issuer.Spec.ACME.PrivateKeySecretRef = secretRef
+			r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef)
 		}
 
 		issuer.Status.State = api.STATE_READY
@@ -121,6 +124,11 @@ func (r *acmeIssuerReconciler) Reconcile(logger logger.LogContext, obj resources
 	} else {
 		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
 	}
+}
+
+func (r *acmeIssuerReconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
+	r.support.RemoveIssuer(obj.ObjectName())
+	return reconcile.Succeeded(logger)
 }
 
 func (r *acmeIssuerReconciler) failedAcme(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {

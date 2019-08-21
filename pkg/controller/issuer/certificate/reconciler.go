@@ -34,6 +34,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
@@ -125,6 +126,10 @@ type certReconciler struct {
 	classes               *source.Classes
 }
 
+func (r *certReconciler) Start() {
+	r.cleanupOrphanDnsEntriesFromOldChallenges()
+}
+
 func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	logger.Infof("reconciling")
 	cert, ok := obj.Data().(*api.Certificate)
@@ -149,7 +154,7 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 
 		spec := &api.CertificateSpec{CommonName: result.CommonName, DNSNames: result.DNSNames, CSR: result.CSR}
 		specHash := buildSpecHash(spec)
-		secretRef, err := r.writeCertificateSecret(obj.ObjectName(), result.Certificates, specHash, cert.Spec.SecretName)
+		secretRef, err := r.writeCertificateSecret(cert.ObjectMeta, result.Certificates, specHash, cert.Spec.SecretName)
 		if err != nil {
 			return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("writing certificate secret failed with %s", err.Error()))
 		}
@@ -180,12 +185,8 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 	}
 }
 
-func (r *certReconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
-	cert, ok := obj.Data().(*api.Certificate)
-	if !ok {
-		return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to Certificate failed"))
-	}
-	r.support.RemoveCertificate(logger, cert)
+func (r *certReconciler) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
+	r.support.RemoveCertificate(logger, key.ObjectName())
 
 	return reconcile.Succeeded(logger)
 }
@@ -216,7 +217,7 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	secretRef, notAfter := r.findSecretByHashLabel(specHash)
 	if secretRef != nil {
 		// reuse found certificate
-		secretRef, err := r.copySecretIfNeeded(obj.ObjectName(), secretRef, specHash, cert.Spec.SecretName)
+		secretRef, err := r.copySecretIfNeeded(cert.ObjectMeta, secretRef, specHash, cert.Spec.SecretName)
 		if err != nil {
 			return r.failed(logger, obj, api.STATE_ERROR, err)
 		}
@@ -243,9 +244,10 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	if r.dnsNamespace != nil {
 		dnsSettings.Namespace = *r.dnsNamespace
 	}
+	targetClass := r.classes.GetAnnotatedClass(obj)
 	input := legobridge.ObtainInput{User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
 		CaDirURL: server, CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		Callback: callback, RequestName: objectName, RenewCert: renewCert}
+		TargetClass: targetClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
 
 	err = legobridge.Obtain(input)
 	if err != nil {
@@ -348,6 +350,17 @@ func (r *certReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev1.
 	return secret, nil
 }
 
+func (r *certReconciler) deleteSecret(secretRef *corev1.SecretReference) error {
+	if secretRef == nil {
+		return nil
+	}
+
+	secret := &metav1.ObjectMeta{}
+	secret.SetName(secretRef.Name)
+	secret.SetNamespace(secretRef.Namespace)
+	return r.certSecretResources.DeleteByName(secret)
+}
+
 func (r *certReconciler) checkForRenewAndSucceeded(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	crt := obj.Data().(*api.Certificate)
 
@@ -426,7 +439,7 @@ func (r *certReconciler) findSecretByHashLabel(specHash string) (*corev1.SecretR
 	return ref, &bestNotAfter
 }
 
-func (r *certReconciler) copySecretIfNeeded(objectName resources.ObjectName, secretRef *corev1.SecretReference, specHash string, secretName *string) (*corev1.SecretReference, error) {
+func (r *certReconciler) copySecretIfNeeded(objectMeta metav1.ObjectMeta, secretRef *corev1.SecretReference, specHash string, secretName *string) (*corev1.SecretReference, error) {
 	if secretName == nil || secretRef.Name == *secretName {
 		return secretRef, nil
 	}
@@ -435,24 +448,25 @@ func (r *certReconciler) copySecretIfNeeded(objectName resources.ObjectName, sec
 		return nil, err
 	}
 	certificates := legobridge.SecretDataToCertificates(secret.Data)
-	return r.writeCertificateSecret(objectName, certificates, specHash, secretName)
+	return r.writeCertificateSecret(objectMeta, certificates, specHash, secretName)
 }
 
-func (r *certReconciler) writeCertificateSecret(objectName resources.ObjectName, certificates *certificate.Resource,
+func (r *certReconciler) writeCertificateSecret(objectMeta metav1.ObjectMeta, certificates *certificate.Resource,
 	specHash string, secretName *string) (*corev1.SecretReference, error) {
 	secret := &corev1.Secret{}
-	if objectName.Namespace() != "" {
-		secret.SetNamespace(objectName.Namespace())
+	if objectMeta.GetNamespace() != "" {
+		secret.SetNamespace(objectMeta.GetNamespace())
 	} else {
 		secret.SetNamespace("default")
 	}
 	if secretName != nil {
 		secret.SetName(*secretName)
 	} else {
-		secret.SetGenerateName(objectName.Name() + "-")
+		secret.SetGenerateName(objectMeta.GetName() + "-")
 	}
 	secret.Labels = map[string]string{LabelCertificateHashKey: specHash, LabelCertificateKey: "true"}
 	secret.Data = legobridge.CertificatesToSecretData(certificates)
+	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.CertificateKind, Name: objectMeta.GetName(), UID: objectMeta.GetUID()}})
 
 	obj, err := r.targetCluster.Resources().CreateOrUpdateObject(secret)
 	if err != nil {
@@ -567,4 +581,38 @@ func (r *certReconciler) repeat(logger logger.LogContext, obj resources.Object) 
 	r.updateStatus(mod)
 
 	return reconcile.Repeat(logger)
+}
+
+func (r *certReconciler) cleanupOrphanDnsEntriesFromOldChallenges() {
+	// find orphan dnsentries from DNSChallenges and try to delete them
+	// should only happen if cert-manager is terminated during running DNS challenge(s)
+
+	entriesResource, err := r.dnsCluster.Resources().GetByExample(&dnsapi.DNSEntry{})
+	if err != nil {
+		logger.Warnf("issuer: cleanupOrphanDnsEntriesFromOldChallenges failed with: %s", err)
+		return
+	}
+	var objects []resources.Object
+	if r.dnsNamespace != nil {
+		objects, err = entriesResource.Namespace(*r.dnsNamespace).List(metav1.ListOptions{})
+	} else {
+		objects, err = entriesResource.List(metav1.ListOptions{})
+	}
+	if err != nil {
+		logger.Warnf("issuer: cleanupOrphanDnsEntriesFromOldChallenges failed with: %s", err)
+		return
+	}
+	count := 0
+	for _, obj := range objects {
+		class, ok := resources.GetAnnotation(obj.Data(), source.ANNOT_CLASS)
+		if ok && r.classes.Contains(class) {
+			err = entriesResource.Delete(obj.Data())
+			if err != nil {
+				logger.Warnf("issuer: cleanupOrphanDnsEntriesFromOldChallenges failed with: %s", err)
+			} else {
+				count++
+			}
+		}
+	}
+	logger.Infof("issuer: cleanup: %d orphan DNS entries deleted", count)
 }

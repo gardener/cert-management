@@ -35,8 +35,7 @@ import (
 func CompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
 	defaultCluster := c.GetCluster(ctrl.DefaultCluster)
 	targetCluster := c.GetCluster(ctrl.TargetCluster)
-	state := core.NewState()
-	support := core.NewSupport(c, state, defaultCluster, targetCluster)
+	support := core.NewSupport(c, defaultCluster, targetCluster)
 	certReconciler, err := certificate.CertReconciler(c, support)
 	if err != nil {
 		return nil, err
@@ -49,7 +48,6 @@ func CompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
 		support:               support,
 		certificateReconciler: certReconciler,
 		acmeReconciler:        acmeReconciler,
-		state:                 state,
 	}, nil
 }
 
@@ -58,9 +56,6 @@ type compoundReconciler struct {
 	support               *core.Support
 	certificateReconciler reconcile.Interface
 	acmeReconciler        reconcile.Interface
-	state                 *core.State
-	defaultCluster        resources.Cluster
-	targetCluster         resources.Cluster
 }
 
 func (r *compoundReconciler) Setup() {
@@ -79,7 +74,6 @@ func (r *compoundReconciler) Reconcile(logger logger.LogContext, obj resources.O
 		logger.Infof("reconciling")
 		issuer := obj.Data().(*api.Issuer)
 		if issuer.Spec.ACME != nil {
-			defer r.state.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef)
 			return r.acmeReconciler.Reconcile(logger, obj)
 		}
 		return r.support.FailedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("ACME not specified"))
@@ -98,8 +92,6 @@ func (r *compoundReconciler) Delete(logger logger.LogContext, obj resources.Obje
 		if issuer.Spec.ACME != nil {
 			return r.acmeReconciler.Reconcile(logger, obj)
 		}
-	case obj.IsA(&api.Certificate{}):
-		return r.certificateReconciler.Delete(logger, obj)
 	}
 	return reconcile.Succeeded(logger)
 }
@@ -108,8 +100,8 @@ func (r *compoundReconciler) Deleted(logger logger.LogContext, objKey resources.
 	switch objKey.Kind() {
 	case "Secret":
 		return r.reconcileSecretByObjectName(logger, objKey.ObjectName())
-	case api.IssuerKind:
-		r.state.RemoveIssuer(objKey.ObjectName())
+	case api.CertificateKind:
+		return r.certificateReconciler.Deleted(logger, objKey)
 	}
 
 	return reconcile.Succeeded(logger)
@@ -120,10 +112,10 @@ func (r *compoundReconciler) reconcileSecret(logger logger.LogContext, obj resou
 }
 
 func (r *compoundReconciler) reconcileSecretByObjectName(logger logger.LogContext, objName resources.ObjectName) reconcile.Status {
-	issuers := r.state.IssuerNamesForSecret(objName)
+	issuers := r.support.IssuerNamesForSecret(objName)
 	if issuers != nil {
 		groupKind := api.Kind(api.IssuerKind)
-		clusterId := r.defaultCluster.GetId()
+		clusterId := r.support.GetDefaultClusterId()
 		for issuerName := range issuers {
 			key := resources.NewClusterKey(clusterId, groupKind, issuerName.Namespace(), issuerName.Name())
 			_ = r.support.EnqueueKey(key)

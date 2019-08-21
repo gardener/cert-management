@@ -36,7 +36,8 @@ type Enqueuer interface {
 	EnqueueKey(key resources.ClusterObjectKey) error
 }
 
-func NewSupport(c controller.Interface, state *State, defaultCluster, targetCluster resources.Cluster) *Support {
+func NewSupport(c controller.Interface, defaultCluster, targetCluster resources.Cluster) *Support {
+	state := newState()
 	s := &Support{enqueuer: c, state: state, defaultCluster: defaultCluster, targetCluster: targetCluster}
 
 	s.defaultIssuerName, _ = c.GetStringOption(OptDefaultIssuer)
@@ -49,7 +50,7 @@ func NewSupport(c controller.Interface, state *State, defaultCluster, targetClus
 
 type Support struct {
 	enqueuer                 Enqueuer
-	state                    *State
+	state                    *state
 	defaultCluster           resources.Cluster
 	targetCluster            resources.Cluster
 	defaultIssuerName        string
@@ -180,9 +181,8 @@ func (s *Support) AddCertificate(logger logger.LogContext, cert *api.Certificate
 	s.state.AddCertAssoc(issuerObjName, certObjName)
 }
 
-func (s *Support) RemoveCertificate(logger logger.LogContext, cert *api.Certificate) {
-	certObjName, issuerObjName := s.calcAssocObjectNames(cert)
-	s.state.RemoveCertAssoc(issuerObjName, certObjName)
+func (s *Support) RemoveCertificate(logger logger.LogContext, certObjName resources.ObjectName) {
+	s.state.RemoveCertAssoc(certObjName)
 }
 
 func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectName, resources.ObjectName) {
@@ -212,4 +212,24 @@ func (s *Support) IssuerNamespace() string {
 
 func (s *Support) DefaultIssuerDomainRange() string {
 	return s.defaultIssuerDomainRange
+}
+
+func (s *Support) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {
+	return s.state.CertificateNamesForIssuer(issuer)
+}
+
+func (s *Support) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {
+	return s.state.IssuerNamesForSecret(secretName)
+}
+
+func (s *Support) RememberIssuerSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference) {
+	s.state.RememberIssuerSecret(issuer, secretRef)
+}
+
+func (s *Support) RemoveIssuer(name resources.ObjectName) bool {
+	return s.state.RemoveIssuer(name)
+}
+
+func (s *Support) GetDefaultClusterId() string {
+	return s.defaultCluster.GetId()
 }

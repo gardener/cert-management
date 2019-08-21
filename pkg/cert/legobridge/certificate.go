@@ -44,6 +44,7 @@ type ObtainInput struct {
 	DNSNames    []string
 	CSR         []byte
 	RequestName resources.ObjectName
+	TargetClass string
 	Callback    ObtainerCallback
 	RenewCert   *certificate.Resource
 }
@@ -98,7 +99,7 @@ func Obtain(input ObtainInput) error {
 		return err
 	}
 
-	provider, err := newDNSControllerProvider(input.Logger, input.DNSCluster, input.DNSSettings, input.RequestName)
+	provider, err := newDNSControllerProvider(input.Logger, input.DNSCluster, input.DNSSettings, input.RequestName, input.TargetClass)
 	if err != nil {
 		return err
 	}
