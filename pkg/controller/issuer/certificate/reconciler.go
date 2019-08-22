@@ -51,16 +51,6 @@ const (
 )
 
 func CertReconciler(c controller.Interface, support *core.Support) (reconcile.Interface, error) {
-	defaultCluster := c.GetCluster(ctrl.DefaultCluster)
-	issuerResources, err := defaultCluster.Resources().GetByExample(&api.Issuer{})
-	if err != nil {
-		return nil, err
-	}
-	issuerSecretResources, err := defaultCluster.Resources().GetByExample(&corev1.Secret{})
-	if err != nil {
-		return nil, err
-	}
-
 	targetCluster := c.GetCluster(ctrl.TargetCluster)
 	certResources, err := targetCluster.Resources().GetByExample(&api.Certificate{})
 	if err != nil {
@@ -76,17 +66,15 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &certReconciler{
-		support:               support,
-		classes:               classes,
-		targetCluster:         targetCluster,
-		dnsCluster:            dnsCluster,
-		issuerResources:       issuerResources,
-		issuerSecretResources: issuerSecretResources,
-		certResources:         certResources,
-		certSecretResources:   certSecretResources,
-		rateLimiting:          120 * time.Second,
-		pendingRequests:       legobridge.NewPendingRequests(),
-		pendingResults:        legobridge.NewPendingResults(),
+		support:             support,
+		classes:             classes,
+		targetCluster:       targetCluster,
+		dnsCluster:          dnsCluster,
+		certResources:       certResources,
+		certSecretResources: certSecretResources,
+		rateLimiting:        120 * time.Second,
+		pendingRequests:     legobridge.NewPendingRequests(),
+		pendingResults:      legobridge.NewPendingResults(),
 	}
 
 	dnsNamespace, _ := c.GetStringOption(core.OptDNSNamespace)
@@ -109,21 +97,19 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 
 type certReconciler struct {
 	reconcile.DefaultReconciler
-	support               *core.Support
-	targetCluster         cluster.Interface
-	dnsCluster            cluster.Interface
-	issuerResources       resources.Interface
-	issuerSecretResources resources.Interface
-	certResources         resources.Interface
-	certSecretResources   resources.Interface
-	rateLimiting          time.Duration
-	pendingRequests       *legobridge.PendingCertificateRequests
-	pendingResults        *legobridge.PendingResults
-	dnsNamespace          *string
-	dnsOwnerId            *string
-	renewalWindow         time.Duration
-	renewalCheckPeriod    time.Duration
-	classes               *source.Classes
+	support             *core.Support
+	targetCluster       cluster.Interface
+	dnsCluster          cluster.Interface
+	certResources       resources.Interface
+	certSecretResources resources.Interface
+	rateLimiting        time.Duration
+	pendingRequests     *legobridge.PendingCertificateRequests
+	pendingResults      *legobridge.PendingResults
+	dnsNamespace        *string
+	dnsOwnerId          *string
+	renewalWindow       time.Duration
+	renewalCheckPeriod  time.Duration
+	classes             *source.Classes
 }
 
 func (r *certReconciler) Start() {
@@ -187,6 +173,7 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 
 func (r *certReconciler) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
 	r.support.RemoveCertificate(logger, key.ObjectName())
+	logger.Infof("deleted")
 
 	return reconcile.Succeeded(logger)
 }
@@ -265,7 +252,7 @@ func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.Regis
 	}
 	issuerObjectName := resources.NewObjectName(r.support.IssuerNamespace(), issuerName)
 	issuer := &api.Issuer{}
-	_, err := r.issuerResources.GetInto(issuerObjectName, issuer)
+	_, err := r.support.GetIssuerResources().GetInto(issuerObjectName, issuer)
 	if err != nil {
 		return nil, "", fmt.Errorf("fetching issuer failed with %s", err.Error())
 	}
@@ -280,7 +267,7 @@ func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.Regis
 	}
 	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
 	issuerSecret := &corev1.Secret{}
-	_, err = r.issuerSecretResources.GetInto(issuerSecretObjectName, issuerSecret)
+	_, err = r.support.GetIssuerSecretResources().GetInto(issuerSecretObjectName, issuerSecret)
 	if err != nil {
 		return nil, "", fmt.Errorf("fetching issuer secret failed with %s", err.Error())
 	}

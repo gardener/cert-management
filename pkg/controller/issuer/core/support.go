@@ -30,22 +30,117 @@ import (
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
 type Enqueuer interface {
 	EnqueueKey(key resources.ClusterObjectKey) error
 }
 
-func NewSupport(c controller.Interface, defaultCluster, targetCluster resources.Cluster) *Support {
+type IssuerHandlerFactory func(support *Support) (IssuerHandler, error)
+
+type IssuerHandler interface {
+	Type() string
+	CanReconcile(issuer *api.Issuer) bool
+	Reconcile(logger logger.LogContext, obj resources.Object, issuer *api.Issuer) reconcile.Status
+}
+
+func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory) (*CompoundHandler, *Support, error) {
+	defaultCluster := c.GetCluster(ctrl.DefaultCluster)
+	targetCluster := c.GetCluster(ctrl.TargetCluster)
+	issuerResources, err := defaultCluster.Resources().GetByExample(&api.Issuer{})
+	if err != nil {
+		return nil, nil, err
+	}
+	issuerSecretResources, err := defaultCluster.Resources().GetByExample(&corev1.Secret{})
+	if err != nil {
+		return nil, nil, err
+	}
+
 	state := newState()
-	s := &Support{enqueuer: c, state: state, defaultCluster: defaultCluster, targetCluster: targetCluster}
+	s := &Support{
+		enqueuer:              c,
+		state:                 state,
+		issuerResources:       issuerResources,
+		issuerSecretResources: issuerSecretResources,
+		defaultCluster:        defaultCluster,
+		targetCluster:         targetCluster,
+	}
 
 	s.defaultIssuerName, _ = c.GetStringOption(OptDefaultIssuer)
 	s.issuerNamespace, _ = c.GetStringOption(OptIssuerNamespace)
 	s.defaultIssuerDomainRange, _ = c.GetStringOption(OptDefaultIssuerDomainRange)
 	s.defaultIssuerDomainRange = utils.NormalizeDomainRange(s.defaultIssuerDomainRange)
 
-	return s
+	h := &CompoundHandler{support: s}
+	err = h.addIssuerHandlerFactories(factories)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return h, s, nil
+}
+
+type CompoundHandler struct {
+	support  *Support
+	handlers []IssuerHandler
+}
+
+func (h *CompoundHandler) ReconcileIssuer(logger logger.LogContext, obj resources.Object) reconcile.Status {
+	logger.Infof("reconciling")
+	issuer, ok := obj.Data().(*api.Issuer)
+	if !ok {
+		return h.failedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to issuer failed"))
+	}
+	for _, handler := range h.handlers {
+		if handler.CanReconcile(issuer) {
+			return handler.Reconcile(logger, obj, issuer)
+		}
+	}
+	return h.failedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("concrete issuer unspecified"))
+}
+
+func (h *CompoundHandler) DeletedIssuer(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
+	h.support.RemoveIssuer(key.ObjectName())
+	logger.Infof("deleted")
+	return reconcile.Succeeded(logger)
+}
+
+func (h *CompoundHandler) ReconcileSecret(logger logger.LogContext, obj resources.Object) reconcile.Status {
+	return h.enqueueIssuers(logger, obj.ObjectName())
+}
+
+func (h *CompoundHandler) DeletedSecret(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
+	return h.enqueueIssuers(logger, key.ObjectName())
+}
+
+func (h *CompoundHandler) failedNoType(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
+	return h.support.Failed(logger, obj, state, nil, err)
+
+}
+
+func (h *CompoundHandler) addIssuerHandlerFactories(factories []IssuerHandlerFactory) error {
+	for _, factory := range factories {
+		handler, err := factory(h.support)
+		if err != nil {
+			return err
+		}
+		h.handlers = append(h.handlers, handler)
+	}
+	return nil
+}
+
+func (h *CompoundHandler) enqueueIssuers(logger logger.LogContext, objName resources.ObjectName) reconcile.Status {
+	issuers := h.support.IssuerNamesForSecret(objName)
+	if issuers != nil {
+		groupKind := api.Kind(api.IssuerKind)
+		clusterId := h.support.GetDefaultClusterId()
+		for issuerName := range issuers {
+			key := resources.NewClusterKey(clusterId, groupKind, issuerName.Namespace(), issuerName.Name())
+			_ = h.support.EnqueueKey(key)
+		}
+	}
+	return reconcile.Succeeded(logger)
 }
 
 type Support struct {
@@ -53,6 +148,8 @@ type Support struct {
 	state                    *state
 	defaultCluster           resources.Cluster
 	targetCluster            resources.Cluster
+	issuerResources          resources.Interface
+	issuerSecretResources    resources.Interface
 	defaultIssuerName        string
 	issuerNamespace          string
 	defaultIssuerDomainRange string
@@ -150,11 +247,6 @@ func (s *Support) updateStatus(mod *resources.ModificationState) {
 	}
 }
 
-func (s *Support) FailedNoType(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
-	return s.Failed(logger, obj, state, nil, err)
-
-}
-
 func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state string, itype *string, err error) reconcile.Status {
 	msg := err.Error()
 
@@ -232,4 +324,12 @@ func (s *Support) RemoveIssuer(name resources.ObjectName) bool {
 
 func (s *Support) GetDefaultClusterId() string {
 	return s.defaultCluster.GetId()
+}
+
+func (s *Support) GetIssuerResources() resources.Interface {
+	return s.issuerResources
+}
+
+func (s *Support) GetIssuerSecretResources() resources.Interface {
+	return s.issuerSecretResources
 }

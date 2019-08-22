@@ -21,14 +21,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 )
 
@@ -36,36 +34,30 @@ const ACMEType = "acme"
 
 var acmeType = ACMEType
 
-func ACMEIssuerReconciler(c controller.Interface, support *core.Support) (reconcile.Interface, error) {
-	defaultCluster := c.GetCluster(ctrl.DefaultCluster)
-	issuerResources, err := defaultCluster.Resources().GetByExample(&api.Issuer{})
-	if err != nil {
-		return nil, err
-	}
-	return &acmeIssuerReconciler{
-		Interface:       c,
-		issuerResources: issuerResources,
-		support:         support,
+func NewACMEIssuerHandler(support *core.Support) (core.IssuerHandler, error) {
+	return &acmeIssuerHandler{
+		support: support,
 	}, nil
 }
 
-type acmeIssuerReconciler struct {
-	controller.Interface
-	reconcile.DefaultReconciler
-	issuerResources resources.Interface
-	support         *core.Support
+type acmeIssuerHandler struct {
+	support *core.Support
 }
 
-func (r *acmeIssuerReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
+func (r *acmeIssuerHandler) Type() string {
+	return ACMEType
+}
+
+func (r *acmeIssuerHandler) CanReconcile(issuer *api.Issuer) bool {
+	return issuer != nil && issuer.Spec.ACME != nil
+}
+
+func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Object, issuer *api.Issuer) reconcile.Status {
 	logger.Infof("reconciling")
-	issuer, ok := obj.Data().(*api.Issuer)
-	if !ok {
-		return r.support.FailedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to issuer failed"))
-	}
 
 	acme := issuer.Spec.ACME
 	if acme == nil {
-		return r.support.FailedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("missing ACME spec"))
+		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("missing ACME spec"))
 	}
 
 	if acme.Email == "" {
@@ -115,7 +107,7 @@ func (r *acmeIssuerReconciler) Reconcile(logger logger.LogContext, obj resources
 
 		issuer.Status.State = api.STATE_READY
 		issuer.Status.Message = nil
-		newObj, err := r.issuerResources.Update(issuer)
+		newObj, err := r.support.GetIssuerResources().Update(issuer)
 		if err != nil {
 			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("updating resource failed with %s", err.Error()))
 		}
@@ -126,11 +118,6 @@ func (r *acmeIssuerReconciler) Reconcile(logger logger.LogContext, obj resources
 	}
 }
 
-func (r *acmeIssuerReconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
-	r.support.RemoveIssuer(obj.ObjectName())
-	return reconcile.Succeeded(logger)
-}
-
-func (r *acmeIssuerReconciler) failedAcme(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
+func (r *acmeIssuerHandler) failedAcme(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
 	return r.support.Failed(logger, obj, state, &acmeType, err)
 }
