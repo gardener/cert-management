@@ -96,11 +96,16 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("creating registration user failed with %s", err.Error()))
 		}
 
-		secretRef, err := r.support.WriteIssuerSecret(issuer.ObjectMeta, user, secret)
-		if err != nil {
-			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
-		}
-		if secretRef != nil {
+		if secret != nil {
+			err = r.support.UpdateIssuerSecret(issuer.ObjectMeta, user, secret)
+			if err != nil {
+				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
+			}
+		} else {
+			secretRef, err := r.support.WriteIssuerSecretFromRegistrationUser(issuer.ObjectMeta, user, acme.AutoRegistrationSecretName)
+			if err != nil {
+				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
+			}
 			issuer.Spec.ACME.PrivateKeySecretRef = secretRef
 			r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef)
 		}

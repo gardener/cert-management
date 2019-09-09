@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var GracePeriod time.Duration
+
 type Config struct {
 	lock                        sync.Mutex
 	LogLevel                    string
@@ -95,7 +97,12 @@ func (this *Config) AddDurationOption(name string) (*ArbitraryOption, bool) {
 	return this.AddOption(name, reflect.TypeOf((*time.Duration)(nil)).Elem())
 }
 
+func (this *Config) AddBoolOption(name string) (*ArbitraryOption, bool) {
+	return this.AddOption(name, reflect.TypeOf((*bool)(nil)).Elem())
+}
+
 func (this *Config) AddToCommand(cmd *cobra.Command) {
+	cmd.PersistentFlags().DurationVarP(&GracePeriod, "grace-period", "", 0, "inactivity grace period for detecting end of cleanup for shutdown")
 	cmd.PersistentFlags().StringVarP(&this.Name, "name", "", "", "name used for controller manager")
 	cmd.PersistentFlags().StringVarP(&this.Namespace, "namespace", "", "", "namespace for lease")
 	cmd.PersistentFlags().BoolVarP(&this.OmitLease, "omit-lease", "", false, "omit lease for development")

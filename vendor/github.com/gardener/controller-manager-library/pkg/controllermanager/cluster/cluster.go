@@ -22,22 +22,22 @@ import (
 	"os"
 	"time"
 
+	"github.com/Masterminds/semver"
+
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/config"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	// "github.com/gardener/controller-manager-library/pkg/client/gardenextensions/clientset/versioned/scheme"
-
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/utils"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 const DEFAULT = "default"
 
-const ID_SUB_OPTION = ".id"
+const SUBOPTION_ID = ".id"
+const SUBOPTION_DISABLE_DEPLOY_CRDS = ".disable-deploy-crds"
 
 func Canonical(names []string) []string {
 	if names == nil {
@@ -61,6 +61,7 @@ func Canonical(names []string) []string {
 type Interface interface {
 	GetName() string
 	GetId() string
+	GetServerVersion() *semver.Version
 	GetAttr(key interface{}) interface{}
 	SetAttr(key, value interface{})
 	GetObject(interface{}) (resources.Object, error)
@@ -160,6 +161,10 @@ func (this *_Cluster) GetCachedObject(spec interface{}) (resources.Object, error
 
 func (this *_Cluster) GetResource(groupKind schema.GroupKind) (resources.Interface, error) {
 	return this.resources.Get(groupKind)
+}
+
+func (this *_Cluster) GetServerVersion() *semver.Version {
+	return this.rctx.GetServerVersion()
 }
 
 func (this *_Cluster) setup(logger logger.LogContext) error {
@@ -306,7 +311,7 @@ func (this *_Clusters) GetObject(key resources.ClusterObjectKey) (resources.Obje
 	if cluster == nil {
 		return nil, fmt.Errorf("cluster with id %q not found")
 	}
-	return cluster.GetObject(key.ObjectKey)
+	return cluster.GetObject(key.ObjectKey())
 }
 
 func (this *_Clusters) GetCachedObject(key resources.ClusterObjectKey) (resources.Object, error) {
@@ -314,5 +319,5 @@ func (this *_Clusters) GetCachedObject(key resources.ClusterObjectKey) (resource
 	if cluster == nil {
 		return nil, fmt.Errorf("cluster with id %q not found")
 	}
-	return cluster.GetCachedObject(key.ObjectKey)
+	return cluster.GetCachedObject(key.ObjectKey())
 }

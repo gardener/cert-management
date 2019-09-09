@@ -8,3 +8,4 @@ spec:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     email: some.user@mydomain.com
     autoRegistration: true
+    autoRegistrationSecretName: issuer-staging-secret

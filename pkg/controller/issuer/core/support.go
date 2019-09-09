@@ -159,45 +159,52 @@ func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
 	return s.enqueuer.EnqueueKey(key)
 }
 
-func (s *Support) WriteIssuerSecret(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
-	secret *corev1.Secret) (*corev1.SecretReference, error) {
+func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
+	secretName string) (*corev1.SecretReference, error) {
 	var err error
-	if secret == nil {
-		secret = &corev1.Secret{}
-		secret.SetGenerateName(issuer.GetName() + "-")
-		namespace := "default"
-		if issuer.GetNamespace() != "" {
-			namespace = issuer.GetNamespace()
-		}
-		secret.SetNamespace(namespace)
-		secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.IssuerKind, Name: issuer.Name, UID: issuer.GetUID()}})
-		secret.Data, err = reguser.ToSecretData()
-		if err != nil {
-			return nil, err
-		}
 
-		obj, err := s.defaultCluster.Resources().CreateOrUpdateObject(secret)
-		if err != nil {
-			return nil, fmt.Errorf("creating/updating issuer secret failed with %s", err.Error())
-		}
-
-		return &corev1.SecretReference{Name: obj.GetName(), Namespace: secret.GetNamespace()}, nil
+	secret := &corev1.Secret{}
+	if secretName != "" {
+		secret.SetName(secretName)
 	} else {
-		secret.Data, err = reguser.ToSecretData()
-		if err != nil {
-			return nil, err
-		}
-		obj, err := s.defaultCluster.Resources().Wrap(secret)
-		if err != nil {
-			return nil, fmt.Errorf("wrapping issuer secret failed with %s", err.Error())
-		}
-		err = obj.Update()
-		if err != nil {
-			return nil, fmt.Errorf("updating issuer secret failed with %s", err.Error())
-		}
+		secret.SetGenerateName(issuer.GetName() + "-")
+	}
+	namespace := "default"
+	if issuer.GetNamespace() != "" {
+		namespace = issuer.GetNamespace()
+	}
+	secret.SetNamespace(namespace)
+	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.IssuerKind, Name: issuer.Name, UID: issuer.GetUID()}})
+	secret.Data, err = reguser.ToSecretData()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	obj, err := s.defaultCluster.Resources().CreateOrUpdateObject(secret)
+	if err != nil {
+		return nil, fmt.Errorf("creating/updating issuer secret failed with %s", err.Error())
+	}
+
+	return &corev1.SecretReference{Name: obj.GetName(), Namespace: secret.GetNamespace()}, nil
+}
+
+func (s *Support) UpdateIssuerSecret(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
+	secret *corev1.Secret) error {
+	var err error
+	secret.Data, err = reguser.ToSecretData()
+	if err != nil {
+		return err
+	}
+	obj, err := s.defaultCluster.Resources().Wrap(secret)
+	if err != nil {
+		return fmt.Errorf("wrapping issuer secret failed with %s", err.Error())
+	}
+	err = obj.Update()
+	if err != nil {
+		return fmt.Errorf("updating issuer secret failed with %s", err.Error())
+	}
+
+	return nil
 }
 
 func (s *Support) ReadIssuerSecret(ref *corev1.SecretReference) (*corev1.Secret, error) {

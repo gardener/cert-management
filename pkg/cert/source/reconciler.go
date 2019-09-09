@@ -43,8 +43,8 @@ func SourceReconciler(sourceType CertSourceType, rtype controller.ReconcilerType
 			return nil, err
 		}
 		copt, _ := c.GetStringOption(OPT_CLASS)
-		classes := NewClasses(copt)
-		c.SetFinalizerHandler(NewFinalizer(c, c.GetDefinition().FinalizerName(), classes))
+		classes := controller.NewClasses(c, copt, ANNOT_CLASS, DefaultClass)
+		c.SetFinalizerHandler(controller.NewFinalizerForClasses(c, c.GetDefinition().FinalizerName(), classes))
 		targetclass, _ := c.GetStringOption(OPT_TARGETCLASS)
 		if targetclass == "" {
 			if !classes.Contains(DefaultClass) && classes.Main() != DefaultClass {
@@ -81,7 +81,7 @@ type sourceReconciler struct {
 	*reconcilers.NestedReconciler
 	*reconcilers.SlaveAccess
 	source      CertSource
-	classes     *Classes
+	classes     *controller.Classes
 	targetclass string
 	namespace   string
 	nameprefix  string

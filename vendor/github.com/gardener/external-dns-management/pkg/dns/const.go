@@ -11,39 +11,14 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
-package utils
+package dns
 
-import (
-	"github.com/gardener/controller-manager-library/pkg/resources"
-	"sync"
-)
 
-type Elements []resources.Object
-type Executor func(resources.Object)
-
-func ProcessElements(elems Elements, exec Executor, processors int) {
-	ch := make(chan resources.Object, processors)
-	wg := sync.WaitGroup{}
-
-	for i := 1; i <= processors; i++ {
-		wg.Add(1)
-		go func() {
-			for {
-				e, ok := <-ch
-				if !ok {
-					break
-				}
-				exec(e)
-			}
-			wg.Done()
-		}()
-	}
-	for _, e := range elems {
-		ch <- e
-	}
-	close(ch)
-	wg.Wait()
-}
+const DEFAULT_CLASS = "gardendns"
+const ANNOTATION_GROUP = "dns.gardener.cloud"
+const CLASS_ANNOTATION = ANNOTATION_GROUP+"/class"
+const REALM_ANNOTATION = ANNOTATION_GROUP+"/realms"
