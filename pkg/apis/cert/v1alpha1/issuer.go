@@ -44,12 +44,6 @@ type Issuer struct {
 type IssuerSpec struct {
 	// +optional
 	ACME *ACMESpec `json:"acme,omitempty"`
-
-	// +optional
-	SelfSigned *SelfSignedSpec `json:"selfSigned,omitempty"`
-
-	// +optional
-	CA *CASpec `json:"ca,omitempty"`
 }
 
 type ACMESpec struct {
@@ -62,13 +56,6 @@ type ACMESpec struct {
 
 	// +optional
 	PrivateKeySecretRef *corev1.SecretReference `json:"privateKeySecretRef,omitempty"`
-}
-
-type SelfSignedSpec struct {
-}
-
-type CASpec struct {
-	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
 }
 
 type IssuerStatus struct {

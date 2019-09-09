@@ -329,7 +329,9 @@ Flags:
       --dns string                                         cluster for writing challenge DNS entries
       --dns-namespace string                               default for all controller "dns-namespace" options
       --dns-owner-id string                                default for all controller "dns-owner-id" options
+      --dns.disable-deploy-crds                            disable deployment of required crds for cluster dns
       --dns.id string                                      id for cluster dns
+      --grace-period duration                              inactivity grace period for detecting end of cleanup for shutdown
   -h, --help                                               help for cert-controller-manager
       --ingress-cert.cert-class string                     Identifier used to differentiate responsible controllers for entries
       --ingress-cert.cert-target-class string              Identifier used to differentiate responsible dns controllers for target entries
@@ -351,6 +353,7 @@ Flags:
       --issuer.renewal-window duration                     certificate is renewed if its validity period is shorter
       --issuer.secrets.pool.size int                       Worker pool size for pool secrets of controller issuer (default: 1)
       --kubeconfig string                                  default cluster access
+      --kubeconfig.disable-deploy-crds                     disable deployment of required crds for cluster default
       --kubeconfig.id string                               id for cluster default
   -D, --log-level string                                   logrus log level
       --name string                                        name used for controller manager
@@ -370,10 +373,12 @@ Flags:
       --service-cert.target-namespace string               target namespace for cross cluster generation
       --service-cert.targets.pool.size int                 Worker pool size for pool targets of controller service-cert (default: 2)
       --source string                                      source cluster to look for ingresses, services and own issuers
+      --source.disable-deploy-crds                         disable deployment of required crds for cluster source
       --source.id string                                   id for cluster source
       --target string                                      target cluster for certificates
       --target-name-prefix string                          default for all controller "target-name-prefix" options
       --target-namespace string                            default for all controller "target-namespace" options
+      --target.disable-deploy-crds                         disable deployment of required crds for cluster target
       --target.id string                                   id for cluster target
 ```
  
