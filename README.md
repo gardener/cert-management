@@ -372,7 +372,7 @@ Flags:
       --service-cert.target-name-prefix string             name prefix in target namespace for cross cluster generation
       --service-cert.target-namespace string               target namespace for cross cluster generation
       --service-cert.targets.pool.size int                 Worker pool size for pool targets of controller service-cert (default: 2)
-      --source string                                      source cluster to look for ingresses, services and own issuers
+      --source string                                      source cluster to watch for ingresses and services
       --source.disable-deploy-crds                         disable deployment of required crds for cluster source
       --source.id string                                   id for cluster source
       --target string                                      target cluster for certificates

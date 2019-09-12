@@ -42,7 +42,7 @@ func init() {
 	cluster.Configure(
 		ctrl.SourceCluster,
 		"source",
-		"source cluster to look for ingresses, services and own issuers",
+		"source cluster to watch for ingresses and services",
 	).MustRegister()
 
 	cluster.Configure(
