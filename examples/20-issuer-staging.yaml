@@ -8,4 +8,7 @@ spec:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     email: some.user@mydomain.com
     autoRegistration: true
-    autoRegistrationSecretName: issuer-staging-secret
+    # with 'autoRegistration: true' a new account will be created if the secretRef is not existing
+    privateKeySecretRef:
+      name: issuer-staging-secret
+      namespace: default

@@ -160,18 +160,21 @@ func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
 }
 
 func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
-	secretName string) (*corev1.SecretReference, error) {
+	secretRef *corev1.SecretReference) (*corev1.SecretReference, error) {
 	var err error
 
 	secret := &corev1.Secret{}
-	if secretName != "" {
-		secret.SetName(secretName)
-	} else {
-		secret.SetGenerateName(issuer.GetName() + "-")
-	}
 	namespace := "default"
 	if issuer.GetNamespace() != "" {
 		namespace = issuer.GetNamespace()
+	}
+	if secretRef != nil && secretRef.Name != "" {
+		secret.SetName(secretRef.Name)
+		if secretRef.Namespace != "" {
+			namespace = secretRef.Namespace
+		}
+	} else {
+		secret.SetGenerateName(issuer.GetName() + "-")
 	}
 	secret.SetNamespace(namespace)
 	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.IssuerKind, Name: issuer.Name, UID: issuer.GetUID()}})

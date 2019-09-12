@@ -74,7 +74,11 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 	if acme.PrivateKeySecretRef != nil {
 		secret, err = r.support.ReadIssuerSecret(acme.PrivateKeySecretRef)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
+			if acme.AutoRegistration {
+				logger.Info("spec.acme.privateKeySecretRef not existing, creating new account")
+			} else {
+				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
+			}
 		}
 	}
 	if secret != nil && legobridge.SecretDataHasRegistration(secret.Data) {
@@ -102,7 +106,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
 			}
 		} else {
-			secretRef, err := r.support.WriteIssuerSecretFromRegistrationUser(issuer.ObjectMeta, user, acme.AutoRegistrationSecretName)
+			secretRef, err := r.support.WriteIssuerSecretFromRegistrationUser(issuer.ObjectMeta, user, acme.PrivateKeySecretRef)
 			if err != nil {
 				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
 			}

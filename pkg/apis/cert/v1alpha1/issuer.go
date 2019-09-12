@@ -51,8 +51,7 @@ type ACMESpec struct {
 	Email  string `json:"email"`
 
 	// +optional
-	AutoRegistration           bool   `json:"autoRegistration,omitempty"`
-	AutoRegistrationSecretName string `json:"autoRegistrationSecretName,omitempty"`
+	AutoRegistration bool `json:"autoRegistration,omitempty"`
 
 	// +optional
 	PrivateKeySecretRef *corev1.SecretReference `json:"privateKeySecretRef,omitempty"`
