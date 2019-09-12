@@ -1,0 +1,6 @@
+issuers:
+- name: functest-staging
+  type: acme
+  autoRegistration: true
+  server: https://acme-staging-v02.api.letsencrypt.org/directory
+  email: some.user@mydomain.com

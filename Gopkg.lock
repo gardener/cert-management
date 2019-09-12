@@ -89,12 +89,13 @@
   revision = "2212c59b771e592728f7dc31ecb9dd91eefc639c"
 
 [[projects]]
-  digest = "1:7d9faaa3dca330493ef82ec18a00a54d9070d808d9839f4447dcbf52eb50240a"
+  digest = "1:319e176c4180876e5b6c99fa68c5ab222f2b85a6e5010be3e18ce26ce19e21fe"
   name = "github.com/gardener/external-dns-management"
   packages = [
     "pkg/apis/dns",
     "pkg/apis/dns/v1alpha1",
     "pkg/dns",
+    "test/functional/config",
   ]
   pruneopts = "NUT"
   revision = "5a124144036605ddfbe4ba2d27fb7c92b64ede93"
@@ -222,6 +223,20 @@
   version = "v0.5.1"
 
 [[projects]]
+  digest = "1:41933d387bfa3eaa6a82647914ed7044f7b8355764c24fb920892bc8c03ef0c3"
+  name = "github.com/hpcloud/tail"
+  packages = [
+    ".",
+    "ratelimiter",
+    "util",
+    "watch",
+    "winfile",
+  ]
+  pruneopts = "NUT"
+  revision = "a30252cb686a21eb2d0b98132633053ec2f7f1e5"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:aaa38889f11896ee3644d77e17dc7764cc47f5f3d3b488268df2af2b52541c5f"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -290,6 +305,56 @@
   version = "1.0.1"
 
 [[projects]]
+  digest = "1:a8ce19ad7ec609c1b417d0719810d603e691941f3dac17fed958eee74b1e3622"
+  name = "github.com/onsi/ginkgo"
+  packages = [
+    ".",
+    "config",
+    "internal/codelocation",
+    "internal/containernode",
+    "internal/failer",
+    "internal/leafnodes",
+    "internal/remote",
+    "internal/spec",
+    "internal/spec_iterator",
+    "internal/specrunner",
+    "internal/suite",
+    "internal/testingtproxy",
+    "internal/writer",
+    "reporters",
+    "reporters/stenographer",
+    "reporters/stenographer/support/go-colorable",
+    "reporters/stenographer/support/go-isatty",
+    "types",
+  ]
+  pruneopts = "NUT"
+  revision = "974566c482abc93ffd3df6f4626e79076c7ed290"
+  version = "v1.10.1"
+
+[[projects]]
+  digest = "1:54d431997e03a30ebafa431088bc50da6340791ca1b6b414c5cec405df0b8524"
+  name = "github.com/onsi/gomega"
+  packages = [
+    ".",
+    "format",
+    "gstruct",
+    "gstruct/errors",
+    "internal/assertion",
+    "internal/asyncassertion",
+    "internal/oraclematcher",
+    "internal/testingtsupport",
+    "matchers",
+    "matchers/support/goraph/bipartitegraph",
+    "matchers/support/goraph/edge",
+    "matchers/support/goraph/node",
+    "matchers/support/goraph/util",
+    "types",
+  ]
+  pruneopts = "NUT"
+  revision = "bdebf9e0ece900259084cfa4121b97ce1a540939"
+  version = "v1.7.0"
+
+[[projects]]
   digest = "1:14715f705ff5dfe0ffd6571d7d201dd8e921030f8070321a79380d8ca4ec1a24"
   name = "github.com/pkg/errors"
   packages = ["."]
@@ -337,12 +402,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ab1eca3eb5d9e6e78f87ed7debe4d8a49a0b96e76ef5bcaaa62acbb646821e4f"
+  digest = "1:a4440c6f219f7c6e832b40697a2578debd5f44d87b5179458e9242a2bc998497"
   name = "golang.org/x/net"
   packages = [
     "bpf",
     "context",
     "context/ctxhttp",
+    "html",
+    "html/atom",
+    "html/charset",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -378,11 +446,21 @@
   revision = "3ef323f4f1fd101bc77a8d8ebdd224dfdb707e93"
 
 [[projects]]
-  digest = "1:66a2f252a58b4fbbad0e4e180e1d85a83c222b6bce09c3dcdef3dc87c72eda7c"
+  digest = "1:0b5dc8c3581fc3ea2b80cc2e360dfb9c2d61dd0cba0d2fe247e8edd3e83f7551"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
+    "encoding",
+    "encoding/charmap",
+    "encoding/htmlindex",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/korean",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
+    "encoding/unicode",
     "internal/colltab",
     "internal/gen",
     "internal/language",
@@ -390,7 +468,9 @@
     "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "internal/utf8internal",
     "language",
+    "runes",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -449,6 +529,15 @@
   version = "v1.5.0"
 
 [[projects]]
+  digest = "1:1b91ae0dc69a41d4c2ed23ea5cffb721ea63f5037ca4b81e6d6771fbb8f45129"
+  name = "gopkg.in/fsnotify.v1"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  source = "https://github.com/fsnotify/fsnotify.git"
+  version = "v1.4.7"
+
+[[projects]]
   digest = "1:2d1fbdc6777e5408cabeb02bf336305e724b925ff4546ded0fa8715a7267922a"
   name = "gopkg.in/inf.v0"
   packages = ["."]
@@ -467,6 +556,14 @@
   pruneopts = "NUT"
   revision = "730df5f748271903322feb182be83b43ebbbe27d"
   version = "v2.3.1"
+
+[[projects]]
+  branch = "v1"
+  digest = "1:8fb1ccb16a6cfecbfdfeb84d8ea1cc7afa8f9ef16526bc2326f72d993e32cef1"
+  name = "gopkg.in/tomb.v1"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "dd632973f1e7218eb1089048e0798ec9ae7dceb8"
 
 [[projects]]
   digest = "1:18108594151654e9e696b27b181b953f9a90b16bf14d253dd1b397b025a1487f"
@@ -772,11 +869,15 @@
     "github.com/gardener/controller-manager-library/pkg/utils",
     "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1",
     "github.com/gardener/external-dns-management/pkg/dns",
+    "github.com/gardener/external-dns-management/test/functional/config",
     "github.com/go-acme/lego/certificate",
     "github.com/go-acme/lego/challenge",
     "github.com/go-acme/lego/challenge/dns01",
     "github.com/go-acme/lego/lego",
     "github.com/go-acme/lego/registration",
+    "github.com/onsi/ginkgo",
+    "github.com/onsi/gomega",
+    "github.com/onsi/gomega/gstruct",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
@@ -789,6 +890,7 @@
     "k8s.io/apimachinery/pkg/selection",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/runtime",
+    "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
