@@ -17,10 +17,10 @@
 package core
 
 const (
-	OptDefaultIssuer            = "default-issuer"
-	OptIssuerNamespace          = "issuer-namespace"
-	OptDNSNamespace             = "dns-namespace"
-	OptDNSOwnerId               = "dns-owner-id"
-	OptDefaultIssuerDomainRange = "default-issuer-domain-range"
-	OptRenewalWindow            = "renewal-window"
+	OptDefaultIssuer             = "default-issuer"
+	OptIssuerNamespace           = "issuer-namespace"
+	OptDNSNamespace              = "dns-namespace"
+	OptDNSOwnerId                = "dns-owner-id"
+	OptDefaultIssuerDomainRanges = "default-issuer-domain-ranges"
+	OptRenewalWindow             = "renewal-window"
 )

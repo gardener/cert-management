@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,8 +70,14 @@ func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory
 
 	s.defaultIssuerName, _ = c.GetStringOption(OptDefaultIssuer)
 	s.issuerNamespace, _ = c.GetStringOption(OptIssuerNamespace)
-	s.defaultIssuerDomainRange, _ = c.GetStringOption(OptDefaultIssuerDomainRange)
-	s.defaultIssuerDomainRange = utils.NormalizeDomainRange(s.defaultIssuerDomainRange)
+	domainRangesStr, _ := c.GetStringOption(OptDefaultIssuerDomainRanges)
+	if domainRangesStr != "" {
+		parts := strings.Split(domainRangesStr, ",")
+		for i := range parts {
+			parts[i] = utils.NormalizeDomainRange(parts[i])
+		}
+		s.defaultIssuerDomainRanges = parts
+	}
 
 	h := &CompoundHandler{support: s}
 	err = h.addIssuerHandlerFactories(factories)
@@ -144,15 +151,15 @@ func (h *CompoundHandler) enqueueIssuers(logger logger.LogContext, objName resou
 }
 
 type Support struct {
-	enqueuer                 Enqueuer
-	state                    *state
-	defaultCluster           resources.Cluster
-	targetCluster            resources.Cluster
-	issuerResources          resources.Interface
-	issuerSecretResources    resources.Interface
-	defaultIssuerName        string
-	issuerNamespace          string
-	defaultIssuerDomainRange string
+	enqueuer                  Enqueuer
+	state                     *state
+	defaultCluster            resources.Cluster
+	targetCluster             resources.Cluster
+	issuerResources           resources.Interface
+	issuerSecretResources     resources.Interface
+	defaultIssuerName         string
+	issuerNamespace           string
+	defaultIssuerDomainRanges []string
 }
 
 func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
@@ -312,8 +319,8 @@ func (s *Support) IssuerNamespace() string {
 	return s.issuerNamespace
 }
 
-func (s *Support) DefaultIssuerDomainRange() string {
-	return s.defaultIssuerDomainRange
+func (s *Support) DefaultIssuerDomainRanges() []string {
+	return s.defaultIssuerDomainRanges
 }
 
 func (s *Support) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {

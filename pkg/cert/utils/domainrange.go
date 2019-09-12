@@ -29,6 +29,18 @@ func NormalizeDomainRange(domainRange string) string {
 	return normalized
 }
 
+func IsInDomainRanges(domain string, domainRanges []string) bool {
+	if domainRanges == nil {
+		return true
+	}
+	for _, domainRange := range domainRanges {
+		if IsInDomainRange(domain, domainRange) {
+			return true
+		}
+	}
+	return false
+}
+
 func IsInDomainRange(domain, domainRange string) bool {
 	if domainRange == "" {
 		return true

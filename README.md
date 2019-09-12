@@ -30,7 +30,8 @@ Two modes are supported:
 
 Auto registration is mainly used for development and test environments. You only need to provide
 the server URL and an email address. The registration process is done automatically for you
-by creating a private key and performing the registration at the CA.
+by creating a private key and performing the registration at the CA. Optionally you can provide
+the target secret with the privateKeySecretRef section.
 
 For example see [examples/20-issuer-staging.yaml](./examples/20-issuer-staging.yaml):
 
@@ -45,6 +46,10 @@ spec:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     email: some.user@mydomain.com
     autoRegistration: true
+    # with 'autoRegistration: true' a new account will be created if the secretRef is not existing
+    privateKeySecretRef:
+      name: issuer-staging-secret
+      namespace: default
 ``` 
 
 ### Using existing account
@@ -127,6 +132,8 @@ spec:
 
 ### Using a certificate signing request (CSR)
 
+You can provide a complete CSR in PEM format (and encoded as Base64).
+
 For example see [examples/30-cert-csr.yaml](./examples/30-cert-csr.yaml):
 
 ```yaml
@@ -143,15 +150,18 @@ spec:
 
 ## Requesting a Certificate for Ingress 
 
-The `cert-controller-manager` supports the same mechanism as the [Gardener Cert-Broker](https://github.com/gardener/cert-broker)
-for automatically requesting a certificate for an ingress resource.
-You need to add the label `garden.sapcloud.io/purpose: managed-cert` to the Ingress resource.
+Add the annotation `cert.gardener.cloud/purpose: managed` to the Ingress resource.
+The `cert-controller-manager` will then automatically request a certificate for all domains given by the hosts in the
+`tls` section of the Ingress spec.
+
+For compatibility with the [Gardener Cert-Broker](https://github.com/gardener/cert-broker), you can
+alternatively use the label `garden.sapcloud.io/purpose: managed-cert` for the same outcome.
 
 See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheaders.yaml):
 
 ### Process
 
-1. Create Ingress Resource (optional)
+1. Create the Ingress Resource (optional)
 
     In order to request a certificate for a domain managed by `cert-controller-manager` an Ingress is required.
     In case you don’t already have one, take the following as an example:
@@ -178,18 +188,18 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
               servicePort: 8080
     ```
 
-2. Label Ingress Resource
+2. Annotate the Ingress Resource
 
-   The label `garden.sapcloud.io/purpose: managed-cert` instructs `cert-controller-manager` to handle certificate issuance for the domains found in labeled Ingress.
+   The annotation `cert.gardener.cloud/purpose: managed` instructs `cert-controller-manager` to handle certificate issuance for the domains found in labeled Ingress.
 
     ```yaml
     apiVersion: networking.k8s.io/v1beta1
     kind: Ingress
     metadata:
       name: tls-example-ingress
-      labels:
+      annotations:
         # Let Gardener manage certificates for this Ingress.
-        garden.sapcloud.io/purpose: managed-cert
+        cert.gardener.cloud/purpose: managed
     ...
     ```
 
@@ -324,7 +334,7 @@ Flags:
   -c, --controllers string                                 comma separated list of controllers to start (<name>,source,target,all) (default "all")
       --cpuprofile string                                  set file for cpu profiling
       --default-issuer string                              default for all controller "default-issuer" options
-      --default-issuer-domain-range string                 default for all controller "default-issuer-domain-range" options
+      --default-issuer-domain-ranges string                default for all controller "default-issuer-domain-ranges" options
       --disable-namespace-restriction                      disable access restriction for namespace local access only
       --dns string                                         cluster for writing challenge DNS entries
       --dns-namespace string                               default for all controller "dns-namespace" options
@@ -343,7 +353,7 @@ Flags:
       --issuer-namespace string                            default for all controller "issuer-namespace" options
       --issuer.cert-class string                           Identifier used to differentiate responsible controllers for entries
       --issuer.default-issuer string                       name of default issuer (from default cluster)
-      --issuer.default-issuer-domain-range string          domain range restriction when using default issuer
+      --issuer.default-issuer-domain-ranges string         domain range restrictions when using default issuer separated by comma
       --issuer.default.pool.resync-period duration         Period for resynchronization of pool default of controller issuer (default: 24h0m0s)
       --issuer.default.pool.size int                       Worker pool size for pool default of controller issuer (default: 2)
       --issuer.dns-namespace string                        namespace for creating challenge DNSEntries (in DNS cluster)

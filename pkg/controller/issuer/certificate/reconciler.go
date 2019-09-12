@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"fmt"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -324,10 +325,11 @@ func (r *certReconciler) checkDomainRangeRestriction(spec *api.CertificateSpec, 
 		issuerName = spec.IssuerRef.Name
 	}
 
-	if issuerName == r.support.DefaultIssuerName() && r.support.DefaultIssuerDomainRange() != "" {
+	if issuerName == r.support.DefaultIssuerName() && r.support.DefaultIssuerDomainRanges() != nil {
+		ranges := r.support.DefaultIssuerDomainRanges()
 		for _, domain := range domains {
-			if !utils.IsInDomainRange(domain, r.support.DefaultIssuerDomainRange()) {
-				return fmt.Errorf("domain %s is not in domain range of default issuer (%s)", domain, r.support.DefaultIssuerDomainRange())
+			if !utils.IsInDomainRanges(domain, ranges) {
+				return fmt.Errorf("domain %s is not in domain ranges of default issuer (%s)", domain, strings.Join(ranges, ","))
 			}
 		}
 	}

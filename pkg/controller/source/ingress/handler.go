@@ -32,8 +32,12 @@ type IngressSource struct {
 	source.DefaultCertSource
 }
 
-const LabelNamePurpose = "garden.sapcloud.io/purpose"
-const LabelValueManaged = "managed-cert"
+const (
+	AnnotationPurposeKey          = "cert.gardener.cloud/purpose"
+	AnnotationPurposeValueManaged = "managed"
+	DeprecatedLabelNamePurpose    = "garden.sapcloud.io/purpose"
+	DeprecatedLabelValueManaged   = "managed-cert"
+)
 
 func NewIngressSource(_ controller.Interface) (source.CertSource, error) {
 	return &IngressSource{DefaultCertSource: source.DefaultCertSource{Events: map[resources.ClusterObjectKey]map[string]string{}}}, nil
@@ -43,9 +47,10 @@ func (this *IngressSource) GetCertsInfo(logger logger.LogContext, obj resources.
 	info := this.NewCertsInfo(logger, obj)
 
 	data := obj.Data().(*api.Ingress)
-	value, _ := resources.GetLabel(data, LabelNamePurpose)
-	managed := value == LabelValueManaged
-	if data.Spec.TLS == nil || !managed {
+	annotValue, _ := resources.GetAnnotation(data, AnnotationPurposeKey)
+	labelValue, _ := resources.GetLabel(data, DeprecatedLabelNamePurpose)
+	managed := annotValue == AnnotationPurposeValueManaged || labelValue == DeprecatedLabelValueManaged
+	if !managed || data.Spec.TLS == nil {
 		return info, nil
 	}
 

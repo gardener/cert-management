@@ -11,7 +11,7 @@ cert-target-class
 controllers
 cpuprofile
 default-issuer
-default-issuer-domain-range
+default-issuer-domain-ranges
 disable-namespace-restriction
 dns
 dns-namespace
@@ -28,7 +28,7 @@ ingress-cert.targets.pool.size
 issuer-namespace
 issuer.cert-class
 issuer.default-issuer
-issuer.default-issuer-domain-range
+issuer.default-issuer-domain-ranges
 issuer.default.pool.resync-period
 issuer.default.pool.size
 issuer.dns-namespace

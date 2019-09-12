@@ -45,8 +45,8 @@ spec:
         {{- if .Values.configuration.defaultIssuer }}
         - --default-issuer={{ .Values.configuration.defaultIssuer }}
         {{- end }}
-        {{- if .Values.configuration.defaultIssuerDomainRange }}
-        - --default-issuer-domain-range={{ .Values.configuration.defaultIssuerDomainRange }}
+        {{- if .Values.configuration.defaultIssuerDomainRanges }}
+        - --default-issuer-domain-ranges={{ .Values.configuration.defaultIssuerDomainRanges }}
         {{- end }}
         {{- if .Values.configuration.disableNamespaceRestriction }}
         - --disable-namespace-restriction={{ .Values.configuration.disableNamespaceRestriction }}
@@ -93,8 +93,8 @@ spec:
         {{- if .Values.configuration.issuerDefaultIssuer }}
         - --issuer.default-issuer={{ .Values.configuration.issuerDefaultIssuer }}
         {{- end }}
-        {{- if .Values.configuration.issuerDefaultIssuerDomainRange }}
-        - --issuer.default-issuer-domain-range={{ .Values.configuration.issuerDefaultIssuerDomainRange }}
+        {{- if .Values.configuration.issuerDefaultIssuerDomainRanges }}
+        - --issuer.default-issuer-domain-ranges={{ .Values.configuration.issuerDefaultIssuerDomainRanges }}
         {{- end }}
         {{- if .Values.configuration.issuerDefaultPoolResyncPeriod }}
         - --issuer.default.pool.resync-period={{ .Values.configuration.issuerDefaultPoolResyncPeriod }}

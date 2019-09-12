@@ -35,7 +35,7 @@ func init() {
 	controller.Configure(ControllerIssuer).
 		DefaultedStringOption(core.OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
 		DefaultedStringOption(core.OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
-		StringOption(core.OptDefaultIssuerDomainRange, "domain range restriction when using default issuer").
+		StringOption(core.OptDefaultIssuerDomainRanges, "domain range restrictions when using default issuer separated by comma").
 		StringOption(core.OptDNSNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
 		StringOption(core.OptDNSOwnerId, "ownerId for creating challenge DNSEntries").
 		StringOption(source.OPT_CLASS, "Identifier used to differentiate responsible controllers for entries").
