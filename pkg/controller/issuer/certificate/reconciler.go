@@ -139,8 +139,13 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 			return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("obtaining certificate failed with %s", result.Err.Error()))
 		}
 
-		spec := &api.CertificateSpec{CommonName: result.CommonName, DNSNames: result.DNSNames, CSR: result.CSR}
-		specHash := buildSpecHash(spec)
+		spec := &api.CertificateSpec{
+			CommonName: result.CommonName,
+			DNSNames:   result.DNSNames,
+			CSR:        result.CSR,
+			IssuerRef:  &api.IssuerRef{Name: result.IssuerName},
+		}
+		specHash := r.buildSpecHash(spec)
 		secretRef, err := r.writeCertificateSecret(cert.ObjectMeta, result.Certificates, specHash, cert.Spec.SecretName)
 		if err != nil {
 			return r.failed(logger, obj, api.STATE_ERROR, fmt.Errorf("writing certificate secret failed with %s", err.Error()))
@@ -163,7 +168,7 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 		remainingSeconds := r.lastPendingRateLimitingSeconds(cert.Status.LastPendingTimestamp)
 		return reconcile.Delay(logger, fmt.Errorf("waiting for end of pending rate limiting in %d seconds", remainingSeconds))
 	} else {
-		specHash := buildSpecHash(&cert.Spec)
+		specHash := r.buildSpecHash(&cert.Spec)
 		storedHash := cert.Labels[LabelCertificateHashKey]
 		if specHash != storedHash {
 			return r.deleteSecretRefAndRepeat(logger, obj)
@@ -213,7 +218,7 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 		return r.failed(logger, obj, api.STATE_ERROR, err)
 	}
 
-	specHash := buildSpecHash(&cert.Spec)
+	specHash := r.buildSpecHash(&cert.Spec)
 	secretRef, notAfter := r.findSecretByHashLabel(specHash)
 	if secretRef != nil {
 		// reuse found certificate
@@ -246,7 +251,8 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	}
 	targetClass := r.getAnnotatedClass(obj)
 	input := legobridge.ObtainInput{User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
-		CaDirURL: server, CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
+		CaDirURL: server, IssuerName: r.issuerName(&cert.Spec),
+		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		TargetClass: targetClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
 
 	err = legobridge.Obtain(input)
@@ -267,11 +273,7 @@ func (r *certReconciler) getAnnotatedClass(obj resources.Object) string {
 
 func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.RegistrationUser, string, error) {
 	// fetch issuer
-	issuerName := r.support.DefaultIssuerName()
-	if crt.Spec.IssuerRef != nil {
-		issuerName = crt.Spec.IssuerRef.Name
-	}
-	issuerObjectName := resources.NewObjectName(r.support.IssuerNamespace(), issuerName)
+	issuerObjectName := r.issuerObjectName(&crt.Spec)
 	issuer := &api.Issuer{}
 	_, err := r.support.GetIssuerResources().GetInto(issuerObjectName, issuer)
 	if err != nil {
@@ -331,12 +333,20 @@ func (r *certReconciler) validatedDomainsAndCsr(spec *api.CertificateSpec) error
 	return err
 }
 
-func (r *certReconciler) checkDomainRangeRestriction(spec *api.CertificateSpec, domains []string) error {
+func (r *certReconciler) issuerName(spec *api.CertificateSpec) string {
 	issuerName := r.support.DefaultIssuerName()
 	if spec.IssuerRef != nil {
 		issuerName = spec.IssuerRef.Name
 	}
+	return issuerName
+}
 
+func (r *certReconciler) issuerObjectName(spec *api.CertificateSpec) resources.ObjectName {
+	return resources.NewObjectName(r.support.IssuerNamespace(), r.issuerName(spec))
+}
+
+func (r *certReconciler) checkDomainRangeRestriction(spec *api.CertificateSpec, domains []string) error {
+	issuerName := r.issuerName(spec)
 	if issuerName == r.support.DefaultIssuerName() && r.support.DefaultIssuerDomainRanges() != nil {
 		ranges := r.support.DefaultIssuerDomainRanges()
 		for _, domain := range domains {
@@ -393,7 +403,7 @@ func (r *certReconciler) checkForRenewAndSucceeded(logger logger.LogContext, obj
 	return r.succeeded(logger, obj)
 }
 
-func buildSpecHash(spec *api.CertificateSpec) string {
+func (r *certReconciler) buildSpecHash(spec *api.CertificateSpec) string {
 	h := sha256.New224()
 	if spec.CommonName != nil {
 		h.Write([]byte(*spec.CommonName))
@@ -408,6 +418,10 @@ func buildSpecHash(spec *api.CertificateSpec) string {
 		h.Write(spec.CSR)
 		h.Write([]byte{0})
 	}
+	issuer := r.issuerObjectName(spec)
+	hash := r.support.GetIssuerSecretHash(issuer)
+	h.Write([]byte(hash))
+	h.Write([]byte{0})
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 

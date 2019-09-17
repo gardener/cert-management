@@ -34,20 +34,22 @@ func TestRobustRemember(t *testing.T) {
 		command         string
 		issuerName      string
 		secretName      string
+		secretHash      string
 		expectedChange  bool
 		expectedContent string
 	}{
-		{"add", "A", "", false, ""},
-		{"add", "A", "s", true, "s:A"},
-		{"add", "A", "s", false, "s:A"},
-		{"add", "B", "s", true, "s:A,B"},
-		{"add", "C", "t", true, "s:A,B;t:C"},
-		{"add", "D", "s", true, "s:A,B,D;t:C"},
-		{"add", "B", "u", true, "s:A,D;t:C;u:B"},
-		{"remove", "B", "", true, "s:A,D;t:C"},
-		{"remove", "B", "", false, "s:A,D;t:C"},
-		{"removeSecret", "", "s", true, "t:C"},
-		{"removeSecret", "", "s", false, "t:C"},
+		{"add", "A", "", "", false, ""},
+		{"add", "A", "s", "h1", true, "s:A"},
+		{"add", "A", "s", "h1", false, "s:A"},
+		{"add", "A", "s", "h2", true, "s:A"},
+		{"add", "B", "s", "h", true, "s:A,B"},
+		{"add", "C", "t", "h", true, "s:A,B;t:C"},
+		{"add", "D", "s", "h", true, "s:A,B,D;t:C"},
+		{"add", "B", "u", "h", true, "s:A,D;t:C;u:B"},
+		{"remove", "B", "", "h", true, "s:A,D;t:C"},
+		{"remove", "B", "", "h", false, "s:A,D;t:C"},
+		{"removeSecret", "", "s", "h", true, "t:C"},
+		{"removeSecret", "", "s", "h", false, "t:C"},
 	}
 	data := NewReferencedSecrets()
 	for _, entry := range table {
@@ -68,7 +70,7 @@ func TestRobustRemember(t *testing.T) {
 				}
 			}
 			changed = data.RememberIssuerSecret(resources.NewObjectName("default", entry.issuerName),
-				issuer.Spec.ACME.PrivateKeySecretRef)
+				issuer.Spec.ACME.PrivateKeySecretRef, entry.secretHash)
 		case "remove":
 			changed = data.RemoveIssuer(resources.NewObjectName("default", entry.issuerName))
 		case "removeSecret":

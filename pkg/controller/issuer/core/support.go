@@ -17,21 +17,22 @@
 package core
 
 import (
+	"crypto/sha256"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/cert/utils"
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
+	"sort"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/cert/utils"
+	ctrl "github.com/gardener/cert-management/pkg/controller"
+	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
-
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
 type Enqueuer interface {
@@ -167,7 +168,7 @@ func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
 }
 
 func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
-	secretRef *corev1.SecretReference) (*corev1.SecretReference, error) {
+	secretRef *corev1.SecretReference) (*corev1.SecretReference, *corev1.Secret, error) {
 	var err error
 
 	secret := &corev1.Secret{}
@@ -187,15 +188,15 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta
 	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.IssuerKind, Name: issuer.Name, UID: issuer.GetUID()}})
 	secret.Data, err = reguser.ToSecretData()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	obj, err := s.defaultCluster.Resources().CreateOrUpdateObject(secret)
 	if err != nil {
-		return nil, fmt.Errorf("creating/updating issuer secret failed with %s", err.Error())
+		return nil, nil, fmt.Errorf("creating/updating issuer secret failed with %s", err.Error())
 	}
 
-	return &corev1.SecretReference{Name: obj.GetName(), Namespace: secret.GetNamespace()}, nil
+	return &corev1.SecretReference{Name: obj.GetName(), Namespace: secret.GetNamespace()}, secret, nil
 }
 
 func (s *Support) UpdateIssuerSecret(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
@@ -331,8 +332,12 @@ func (s *Support) IssuerNamesForSecret(secretName resources.ObjectName) resource
 	return s.state.IssuerNamesForSecret(secretName)
 }
 
-func (s *Support) RememberIssuerSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference) {
-	s.state.RememberIssuerSecret(issuer, secretRef)
+func (s *Support) RememberIssuerSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference, hash string) {
+	s.state.RememberIssuerSecret(issuer, secretRef, hash)
+}
+
+func (s *Support) GetIssuerSecretHash(issuer resources.ObjectName) string {
+	return s.state.GetIssuerSecretHash(issuer)
 }
 
 func (s *Support) RemoveIssuer(name resources.ObjectName) bool {
@@ -349,4 +354,22 @@ func (s *Support) GetIssuerResources() resources.Interface {
 
 func (s *Support) GetIssuerSecretResources() resources.Interface {
 	return s.issuerSecretResources
+}
+
+func (s *Support) CalcSecretHash(secret *corev1.Secret) string {
+	if secret == nil {
+		return ""
+	}
+	keys := []string{}
+	for k := range secret.Data {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	h := sha256.New224()
+	for _, k := range keys {
+		h.Write([]byte(k))
+		h.Write([]byte{0})
+		h.Write(secret.Data[k])
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

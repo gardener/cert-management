@@ -40,6 +40,7 @@ type ObtainInput struct {
 	DNSCluster  resources.Cluster
 	DNSSettings DNSControllerSettings
 	CaDirURL    string
+	IssuerName  string
 	CommonName  *string
 	DNSNames    []string
 	CSR         []byte
@@ -59,6 +60,7 @@ type DNSControllerSettings struct {
 
 type ObtainOutput struct {
 	Certificates *certificate.Resource
+	IssuerName   string
 	CommonName   *string
 	DNSNames     []string
 	CSR          []byte
@@ -122,7 +124,15 @@ func Obtain(input ObtainInput) error {
 				certificates, err = obtainForCSR(client, input.CSR)
 			}
 		}
-		output := &ObtainOutput{certificates, input.CommonName, input.DNSNames, input.CSR, input.RenewCert != nil, err}
+		output := &ObtainOutput{
+			Certificates: certificates,
+			IssuerName:   input.IssuerName,
+			CommonName:   input.CommonName,
+			DNSNames:     input.DNSNames,
+			CSR:          input.CSR,
+			Renew:        input.RenewCert != nil,
+			Err:          err,
+		}
 		input.Callback(output)
 	}()
 

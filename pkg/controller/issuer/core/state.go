@@ -50,6 +50,10 @@ func (s *state) IssuerNamesForSecret(secretName resources.ObjectName) resources.
 	return s.secrets.IssuerNamesFor(secretName)
 }
 
-func (s *state) RememberIssuerSecret(issuer resources.ObjectName, secretRef *v1.SecretReference) {
-	s.secrets.RememberIssuerSecret(issuer, secretRef)
+func (s *state) RememberIssuerSecret(issuer resources.ObjectName, secretRef *v1.SecretReference, hash string) {
+	s.secrets.RememberIssuerSecret(issuer, secretRef, hash)
+}
+
+func (s *state) GetIssuerSecretHash(issuerName resources.ObjectName) string {
+	return s.secrets.GetIssuerSecretHash(issuerName)
 }

@@ -39,7 +39,9 @@ spec:
     server: {{.Server}}
     email: {{.Email}}
     autoRegistration: {{.AutoRegistration}}
-    autoRegistrationSecretName: {{.Name}}-secret
+    privateKeySecretRef:
+      name: {{.Name}}-secret
+      namespace: {{.Namespace}}
 {{end}}
 ---
 apiVersion: cert.gardener.cloud/v1alpha1

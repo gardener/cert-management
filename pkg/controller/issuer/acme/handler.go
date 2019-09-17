@@ -67,7 +67,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("missing server in ACME spec"))
 	}
 
-	r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef)
+	r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, "")
 
 	var secret *corev1.Secret
 	var err error
@@ -80,6 +80,8 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
 			}
 		}
+		hash := r.support.CalcSecretHash(secret)
+		r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
 	}
 	if secret != nil && legobridge.SecretDataHasRegistration(secret.Data) {
 		user, err := legobridge.RegistrationUserFromSecretData(secret.Data)
@@ -106,12 +108,13 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
 			}
 		} else {
-			secretRef, err := r.support.WriteIssuerSecretFromRegistrationUser(issuer.ObjectMeta, user, acme.PrivateKeySecretRef)
+			secretRef, secret, err := r.support.WriteIssuerSecretFromRegistrationUser(issuer.ObjectMeta, user, acme.PrivateKeySecretRef)
 			if err != nil {
 				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
 			}
 			issuer.Spec.ACME.PrivateKeySecretRef = secretRef
-			r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef)
+			hash := r.support.CalcSecretHash(secret)
+			r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
 		}
 
 		issuer.Status.State = api.STATE_READY

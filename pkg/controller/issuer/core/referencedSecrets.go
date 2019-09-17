@@ -26,17 +26,22 @@ import (
 func NewReferencedSecrets() *ReferencedSecrets {
 	return &ReferencedSecrets{
 		secretToIssuers: map[resources.ObjectName]resources.ObjectNameSet{},
-		issuerToSecret:  map[resources.ObjectName]resources.ObjectName{},
+		issuerToSecret:  map[resources.ObjectName]secretAndHash{},
 	}
+}
+
+type secretAndHash struct {
+	secretName resources.ObjectName
+	hash       string
 }
 
 type ReferencedSecrets struct {
 	lock            sync.Mutex
 	secretToIssuers map[resources.ObjectName]resources.ObjectNameSet
-	issuerToSecret  map[resources.ObjectName]resources.ObjectName
+	issuerToSecret  map[resources.ObjectName]secretAndHash
 }
 
-func (rs *ReferencedSecrets) RememberIssuerSecret(issuerName resources.ObjectName, secretRef *v1.SecretReference) bool {
+func (rs *ReferencedSecrets) RememberIssuerSecret(issuerName resources.ObjectName, secretRef *v1.SecretReference, hash string) bool {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
@@ -44,7 +49,7 @@ func (rs *ReferencedSecrets) RememberIssuerSecret(issuerName resources.ObjectNam
 		return rs.removeIssuer(issuerName)
 	}
 	secretName := newObjectName(secretRef.Namespace, secretRef.Name)
-	return rs.updateIssuerSecret(issuerName, secretName)
+	return rs.updateIssuerSecret(issuerName, secretName, hash)
 }
 
 func (rs *ReferencedSecrets) RemoveIssuer(issuerName resources.ObjectName) bool {
@@ -52,6 +57,17 @@ func (rs *ReferencedSecrets) RemoveIssuer(issuerName resources.ObjectName) bool 
 	defer rs.lock.Unlock()
 
 	return rs.removeIssuer(issuerName)
+}
+
+func (rs *ReferencedSecrets) GetIssuerSecretHash(issuerName resources.ObjectName) string {
+	rs.lock.Lock()
+	defer rs.lock.Unlock()
+
+	obj, ok := rs.issuerToSecret[issuerName]
+	if !ok {
+		return ""
+	}
+	return obj.hash
 }
 
 func (rs *ReferencedSecrets) IssuerNamesFor(secretName resources.ObjectName) resources.ObjectNameSet {
@@ -66,26 +82,26 @@ func (rs *ReferencedSecrets) IssuerNamesFor(secretName resources.ObjectName) res
 }
 
 func (rs *ReferencedSecrets) removeIssuer(issuerName resources.ObjectName) bool {
-	secretName, ok := rs.issuerToSecret[issuerName]
+	obj, ok := rs.issuerToSecret[issuerName]
 	if ok {
 		delete(rs.issuerToSecret, issuerName)
-		rs.secretToIssuers[secretName].Remove(issuerName)
-		if len(rs.secretToIssuers[secretName]) == 0 {
-			delete(rs.secretToIssuers, secretName)
+		rs.secretToIssuers[obj.secretName].Remove(issuerName)
+		if len(rs.secretToIssuers[obj.secretName]) == 0 {
+			delete(rs.secretToIssuers, obj.secretName)
 		}
 	}
 	return ok
 }
 
-func (rs *ReferencedSecrets) updateIssuerSecret(issuerName, secretName resources.ObjectName) bool {
-	oldSecretName, ok := rs.issuerToSecret[issuerName]
-	if ok && oldSecretName == secretName {
+func (rs *ReferencedSecrets) updateIssuerSecret(issuerName, secretName resources.ObjectName, hash string) bool {
+	old, ok := rs.issuerToSecret[issuerName]
+	if ok && old.secretName == secretName && old.hash == hash {
 		return false
 	}
 
 	rs.removeIssuer(issuerName)
 
-	rs.issuerToSecret[issuerName] = secretName
+	rs.issuerToSecret[issuerName] = secretAndHash{secretName, hash}
 	set := rs.secretToIssuers[secretName]
 	if set == nil {
 		set = resources.ObjectNameSet{}
