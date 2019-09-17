@@ -254,7 +254,7 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 func (this *sourceReconciler) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
 	logger.Infof("%s finally deleted", key)
 	failed := false
-	for _, s := range this.Slaves().GetByKey(key) {
+	for _, s := range this.Slaves().GetByOwnerKey(key) {
 		err := s.Delete()
 		commonName := certutils.Certificate(s).SafeCommonName()
 		if err != nil && !errors.IsNotFound(err) {
@@ -275,7 +275,7 @@ func (this *sourceReconciler) Deleted(logger logger.LogContext, key resources.Cl
 func (this *sourceReconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	failed := false
 	logger.Infof("certificate source is deleting -> delete certificate")
-	for _, s := range this.Slaves().Get(obj) {
+	for _, s := range this.Slaves().GetByOwner(obj) {
 		commonName := certutils.Certificate(s).SafeCommonName()
 		logger.Infof("delete certificate %s(%s)", s.ObjectName(), commonName)
 		err := s.Delete()
@@ -307,8 +307,9 @@ func (this *sourceReconciler) Delete(logger logger.LogContext, obj resources.Obj
 func (this *sourceReconciler) createEntryFor(logger logger.LogContext, obj resources.Object, info CertInfo, feedback CertFeedback) error {
 	cert := &api.Certificate{}
 	cert.GenerateName = strings.ToLower(this.nameprefix + obj.GetName() + "-" + obj.GroupKind().Kind + "-")
+	resources.SetAnnotation(cert, ANNOT_FORWARD_OWNER_REFS, "true")
 	if this.targetclass != "" {
-		cert.SetAnnotations(map[string]string{ANNOT_CLASS: this.targetclass})
+		resources.SetAnnotation(cert, ANNOT_CLASS, this.targetclass)
 	}
 	if len(info.Domains) >= 0 {
 		cert.Spec.CommonName = &info.Domains[0]
@@ -360,7 +361,8 @@ func (this *sourceReconciler) updateEntry(logger logger.LogContext, info CertInf
 	f := func(o resources.ObjectData) (bool, error) {
 		spec := &o.(*api.Certificate).Spec
 		mod := &utils.ModificationState{}
-		var changed bool
+		changed := resources.SetAnnotation(o, ANNOT_FORWARD_OWNER_REFS, "true")
+		mod.Modify(changed)
 		if this.targetclass == "" {
 			changed = resources.RemoveAnnotation(o, ANNOT_CLASS)
 		} else {

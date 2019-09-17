@@ -160,7 +160,8 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 		if !r.lastPendingRateLimiting(cert.Status.LastPendingTimestamp) {
 			return r.obtainCertificateAndPending(logger, obj, nil)
 		}
-		return reconcile.Delay(logger, fmt.Errorf("waiting"))
+		remainingSeconds := r.lastPendingRateLimitingSeconds(cert.Status.LastPendingTimestamp)
+		return reconcile.Delay(logger, fmt.Errorf("waiting for end of pending rate limiting in %d seconds", remainingSeconds))
 	} else {
 		specHash := buildSpecHash(&cert.Spec)
 		storedHash := cert.Labels[LabelCertificateHashKey]
@@ -181,6 +182,17 @@ func (r *certReconciler) Deleted(logger logger.LogContext, key resources.Cluster
 
 func (r *certReconciler) lastPendingRateLimiting(timestamp *metav1.Time) bool {
 	return timestamp != nil && timestamp.Add(r.rateLimiting).After(time.Now())
+}
+
+func (r *certReconciler) lastPendingRateLimitingSeconds(timestamp *metav1.Time) int {
+	if timestamp == nil {
+		return 0
+	}
+	seconds := int(timestamp.Add(r.rateLimiting).Sub(time.Now()).Seconds() + 0.5)
+	if seconds > 0 {
+		return seconds
+	}
+	return 0
 }
 
 func (r *certReconciler) challengePending(crt *api.Certificate) bool {
@@ -463,7 +475,13 @@ func (r *certReconciler) writeCertificateSecret(objectMeta metav1.ObjectMeta, ce
 	}
 	secret.Labels = map[string]string{LabelCertificateHashKey: specHash, LabelCertificateKey: "true"}
 	secret.Data = legobridge.CertificatesToSecretData(certificates)
-	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.CertificateKind, Name: objectMeta.GetName(), UID: objectMeta.GetUID()}})
+	ownerReferences := []metav1.OwnerReference{{APIVersion: api.Version, Kind: api.CertificateKind, Name: objectMeta.GetName(), UID: objectMeta.GetUID()}}
+	if objectMeta.GetAnnotations() != nil && objectMeta.GetAnnotations()[source.ANNOT_FORWARD_OWNER_REFS] == "true" {
+		if objectMeta.OwnerReferences != nil {
+			ownerReferences = append(ownerReferences, objectMeta.OwnerReferences...)
+		}
+	}
+	secret.SetOwnerReferences(ownerReferences)
 
 	obj, err := r.targetCluster.Resources().CreateOrUpdateObject(secret)
 	if err != nil {

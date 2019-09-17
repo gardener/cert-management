@@ -31,10 +31,11 @@ import (
 
 const (
 	// ANNOT_DNSNAMES annotation is shared with dns controller manager
-	ANNOT_DNSNAMES   = "dns.gardener.cloud/dnsnames"
-	ANNOT_CLASS      = "cert.gardener.cloud/class"
-	ANNOT_SECRETNAME = "cert.gardener.cloud/secretname"
-	ANNOT_ISSUER     = "cert.gardener.cloud/issuer"
+	ANNOT_DNSNAMES           = "dns.gardener.cloud/dnsnames"
+	ANNOT_CLASS              = "cert.gardener.cloud/class"
+	ANNOT_FORWARD_OWNER_REFS = "cert.gardener.cloud/forward-owner-refs"
+	ANNOT_SECRETNAME         = "cert.gardener.cloud/secretname"
+	ANNOT_ISSUER             = "cert.gardener.cloud/issuer"
 
 	OPT_CLASS       = "cert-class"
 	OPT_TARGETCLASS = "cert-target-class"
