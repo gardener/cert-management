@@ -62,7 +62,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:36ab9386058ac36d8b522d1504f6c6374fa7c57571ef9da4289d7111f02217d9"
+  digest = "1:c1641ff10530e2c634828c0be6bd7398ef0187426a8184f3751505e862d2e6e6"
   name = "github.com/gardener/controller-manager-library"
   packages = [
     "pkg/controllermanager",
@@ -86,16 +86,15 @@
     "pkg/utils",
   ]
   pruneopts = "NUT"
-  revision = "2212c59b771e592728f7dc31ecb9dd91eefc639c"
+  revision = "d73a6cfab8805170f84d7fc8398e76e35e74db50"
 
 [[projects]]
-  digest = "1:319e176c4180876e5b6c99fa68c5ab222f2b85a6e5010be3e18ce26ce19e21fe"
+  digest = "1:7d9faaa3dca330493ef82ec18a00a54d9070d808d9839f4447dcbf52eb50240a"
   name = "github.com/gardener/external-dns-management"
   packages = [
     "pkg/apis/dns",
     "pkg/apis/dns/v1alpha1",
     "pkg/dns",
-    "test/functional/config",
   ]
   pruneopts = "NUT"
   revision = "5a124144036605ddfbe4ba2d27fb7c92b64ede93"
@@ -869,7 +868,6 @@
     "github.com/gardener/controller-manager-library/pkg/utils",
     "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1",
     "github.com/gardener/external-dns-management/pkg/dns",
-    "github.com/gardener/external-dns-management/test/functional/config",
     "github.com/go-acme/lego/certificate",
     "github.com/go-acme/lego/challenge",
     "github.com/go-acme/lego/challenge/dns01",
