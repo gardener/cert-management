@@ -329,6 +329,7 @@ Usage:
   cert-controller-manager [flags]
 
 Flags:
+      --cascade-delete                                     default for all controller "cascade-delete" options
       --cert-class string                                  default for all controller "cert-class" options
       --cert-target-class string                           default for all controller "cert-target-class" options
   -c, --controllers string                                 comma separated list of controllers to start (<name>,source,target,all) (default "all")
@@ -351,6 +352,7 @@ Flags:
       --ingress-cert.target-namespace string               target namespace for cross cluster generation
       --ingress-cert.targets.pool.size int                 Worker pool size for pool targets of controller ingress-cert (default: 2)
       --issuer-namespace string                            default for all controller "issuer-namespace" options
+      --issuer.cascade-delete                              If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted
       --issuer.cert-class string                           Identifier used to differentiate responsible controllers for entries
       --issuer.default-issuer string                       name of default issuer (from default cluster)
       --issuer.default-issuer-domain-ranges string         domain range restrictions when using default issuer separated by comma

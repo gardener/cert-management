@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -58,8 +59,9 @@ type ACMESpec struct {
 }
 
 type IssuerStatus struct {
-	ObservedGeneration int64   `json:"observedGeneration,omitempty"`
-	State              string  `json:"state"`
-	Message            *string `json:"message,omitempty"`
-	Type               *string `json:"type"`
+	ObservedGeneration int64                 `json:"observedGeneration,omitempty"`
+	State              string                `json:"state"`
+	Message            *string               `json:"message,omitempty"`
+	Type               *string               `json:"type"`
+	ACME               *runtime.RawExtension `json:"acme,omitempty"`
 }

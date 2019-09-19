@@ -83,15 +83,15 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		hash := r.support.CalcSecretHash(secret)
 		r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
 	}
-	if secret != nil && legobridge.SecretDataHasRegistration(secret.Data) {
-		user, err := legobridge.RegistrationUserFromSecretData(secret.Data)
+	if secret != nil && issuer.Status.ACME != nil && issuer.Status.ACME.Raw != nil {
+		user, err := legobridge.RegistrationUserFromSecretData(issuer.Status.ACME.Raw, secret.Data)
 		if err != nil {
 			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
 		}
 		if user.Email != acme.Email {
 			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("email of registration user from secret does not match %s != %s", user.Email, acme.Email))
 		}
-		return r.support.SucceededAndTriggerCertificates(logger, obj, &acmeType)
+		return r.support.SucceededAndTriggerCertificates(logger, obj, &acmeType, issuer.Status.ACME.Raw)
 	} else if secret != nil || acme.AutoRegistration {
 		var secretData map[string][]byte
 		if secret != nil {
@@ -117,14 +117,16 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 			r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
 		}
 
-		issuer.Status.State = api.STATE_READY
-		issuer.Status.Message = nil
+		regRaw, err := user.RawRegistration()
+		if err != nil {
+			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("registration marshalling failed with %s", err.Error()))
+		}
 		newObj, err := r.support.GetIssuerResources().Update(issuer)
 		if err != nil {
 			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("updating resource failed with %s", err.Error()))
 		}
 
-		return r.support.SucceededAndTriggerCertificates(logger, newObj, &acmeType)
+		return r.support.SucceededAndTriggerCertificates(logger, newObj, &acmeType, regRaw)
 	} else {
 		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
 	}

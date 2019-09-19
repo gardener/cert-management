@@ -38,6 +38,7 @@ func init() {
 		StringOption(core.OptDefaultIssuerDomainRanges, "domain range restrictions when using default issuer separated by comma").
 		StringOption(core.OptDNSNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
 		StringOption(core.OptDNSOwnerId, "ownerId for creating challenge DNSEntries").
+		BoolOption(core.OptCascadeDelete, "If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted").
 		StringOption(source.OPT_CLASS, "Identifier used to differentiate responsible controllers for entries").
 		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		FinalizerDomain(cert.GroupName).

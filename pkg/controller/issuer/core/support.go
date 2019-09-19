@@ -17,13 +17,14 @@
 package core
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"sort"
-	"strings"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sort"
+	"strings"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
@@ -274,13 +275,20 @@ func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state s
 	return reconcile.Failed(logger, err)
 }
 
-func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj resources.Object, itype *string) reconcile.Status {
+func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj resources.Object, itype *string, regRaw []byte) reconcile.Status {
 	s.triggerCertificates(logger, obj.ObjectName())
-	return s.Succeeded(logger, obj, itype, nil)
-}
 
-func (s *Support) Succeeded(logger logger.LogContext, obj resources.Object, itype *string, msg *string) reconcile.Status {
-	mod, _ := s.prepareUpdateStatus(obj, api.STATE_READY, itype, msg)
+	mod, status := s.prepareUpdateStatus(obj, api.STATE_READY, itype, nil)
+	changedRegistration := false
+	if status.ACME == nil || status.ACME.Raw == nil {
+		changedRegistration = regRaw != nil
+	} else {
+		changedRegistration = !bytes.Equal(status.ACME.Raw, regRaw)
+	}
+	if changedRegistration {
+		status.ACME = &runtime.RawExtension{Raw: regRaw}
+		mod.Modify(true)
+	}
 	s.updateStatus(mod)
 
 	return reconcile.Succeeded(logger)

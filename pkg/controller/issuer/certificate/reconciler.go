@@ -86,6 +86,7 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	if dnsOwnerId != "" {
 		reconciler.dnsOwnerId = &dnsOwnerId
 	}
+	reconciler.cascadeDelete, _ = c.GetBoolOption(core.OptCascadeDelete)
 
 	renewalWindow, err := c.GetDurationOption(core.OptRenewalWindow)
 	if err != nil {
@@ -94,6 +95,19 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	reconciler.renewalWindow = renewalWindow
 
 	return reconciler, nil
+}
+
+type recoverableError struct {
+	Msg string
+}
+
+func (err *recoverableError) Error() string {
+	return err.Msg
+}
+
+func isRecoverableError(err error) bool {
+	_, ok := err.(*recoverableError)
+	return ok
 }
 
 type certReconciler struct {
@@ -111,6 +125,7 @@ type certReconciler struct {
 	renewalWindow       time.Duration
 	renewalCheckPeriod  time.Duration
 	classes             *controller.Classes
+	cascadeDelete       bool
 }
 
 func (r *certReconciler) Start() {
@@ -286,7 +301,13 @@ func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.Regis
 		return nil, "", fmt.Errorf("missing secret ref in issuer")
 	}
 	if issuer.Status.State != api.STATE_READY {
+		if issuer.Status.State != api.STATE_ERROR {
+			return nil, "", &recoverableError{fmt.Sprintf("referenced issuer not ready: state=%s", issuer.Status.State)}
+		}
 		return nil, "", fmt.Errorf("referenced issuer not ready: state=%s", issuer.Status.State)
+	}
+	if issuer.Status.ACME == nil || issuer.Status.ACME.Raw == nil {
+		return nil, "", fmt.Errorf("ACME registration missing in status")
 	}
 	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
 	issuerSecret := &corev1.Secret{}
@@ -295,7 +316,7 @@ func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.Regis
 		return nil, "", fmt.Errorf("fetching issuer secret failed with %s", err.Error())
 	}
 
-	reguser, err := legobridge.RegistrationUserFromSecretData(issuerSecret.Data)
+	reguser, err := legobridge.RegistrationUserFromSecretData(issuer.Status.ACME.Raw, issuerSecret.Data)
 	if err != nil {
 		return nil, "", fmt.Errorf("restoring registration issuer from issuer secret failed with %s", err.Error())
 	}
@@ -489,13 +510,15 @@ func (r *certReconciler) writeCertificateSecret(objectMeta metav1.ObjectMeta, ce
 	}
 	secret.Labels = map[string]string{LabelCertificateHashKey: specHash, LabelCertificateKey: "true"}
 	secret.Data = legobridge.CertificatesToSecretData(certificates)
-	ownerReferences := []metav1.OwnerReference{{APIVersion: api.Version, Kind: api.CertificateKind, Name: objectMeta.GetName(), UID: objectMeta.GetUID()}}
-	if objectMeta.GetAnnotations() != nil && objectMeta.GetAnnotations()[source.ANNOT_FORWARD_OWNER_REFS] == "true" {
-		if objectMeta.OwnerReferences != nil {
-			ownerReferences = append(ownerReferences, objectMeta.OwnerReferences...)
+	if r.cascadeDelete {
+		ownerReferences := []metav1.OwnerReference{{APIVersion: api.Version, Kind: api.CertificateKind, Name: objectMeta.GetName(), UID: objectMeta.GetUID()}}
+		if objectMeta.GetAnnotations() != nil && objectMeta.GetAnnotations()[source.ANNOT_FORWARD_OWNER_REFS] == "true" {
+			if objectMeta.OwnerReferences != nil {
+				ownerReferences = append(ownerReferences, objectMeta.OwnerReferences...)
+			}
 		}
+		secret.SetOwnerReferences(ownerReferences)
 	}
-	secret.SetOwnerReferences(ownerReferences)
 
 	obj, err := r.targetCluster.Resources().CreateOrUpdateObject(secret)
 	if err != nil {
@@ -585,6 +608,9 @@ func (r *certReconciler) failed(logger logger.LogContext, obj resources.Object, 
 	mod, _ := r.prepareUpdateStatus(obj, state, &msg)
 	r.updateStatus(mod)
 
+	if isRecoverableError(err) {
+		return reconcile.Delay(logger, err)
+	}
 	return reconcile.Failed(logger, err)
 }
 

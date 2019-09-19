@@ -32,9 +32,8 @@ import (
 )
 
 const (
-	KEY_EMAIL        = "email"
-	KEY_REGISTRATION = "registration"
-	KEY_PRIVATE_KEY  = "privateKey"
+	KEY_EMAIL       = "email"
+	KEY_PRIVATE_KEY = "privateKey"
 )
 
 type RegistrationUser struct {
@@ -143,19 +142,18 @@ func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("encoding private key failed: %s", err.Error())
 	}
+	return map[string][]byte{KEY_PRIVATE_KEY: privkey, KEY_EMAIL: []byte(u.Email)}, nil
+}
+
+func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 	reg, err := json.Marshal(u.Registration)
 	if err != nil {
 		return nil, fmt.Errorf("encoding registration failed: %s", err.Error())
 	}
-	return map[string][]byte{KEY_PRIVATE_KEY: privkey, KEY_REGISTRATION: reg, KEY_EMAIL: []byte(u.Email)}, nil
+	return reg, nil
 }
 
-func SecretDataHasRegistration(data map[string][]byte) bool {
-	_, ok := data[KEY_REGISTRATION]
-	return ok
-}
-
-func RegistrationUserFromSecretData(data map[string][]byte) (*RegistrationUser, error) {
+func RegistrationUserFromSecretData(registrationRaw []byte, data map[string][]byte) (*RegistrationUser, error) {
 	privkeyBytes, ok := data[KEY_PRIVATE_KEY]
 	if !ok {
 		return nil, fmt.Errorf("`%s` data not found in secret", KEY_PRIVATE_KEY)
@@ -165,12 +163,8 @@ func RegistrationUserFromSecretData(data map[string][]byte) (*RegistrationUser, 
 		return nil, err
 	}
 
-	regBytes, ok := data[KEY_REGISTRATION]
-	if !ok {
-		return nil, fmt.Errorf("`%s` data not found in secret", KEY_REGISTRATION)
-	}
 	reg := &registration.Resource{}
-	err = json.Unmarshal(regBytes, reg)
+	err = json.Unmarshal(registrationRaw, reg)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling registration json failed with %s", err.Error())
 	}

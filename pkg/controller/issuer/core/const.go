@@ -23,4 +23,5 @@ const (
 	OptDNSOwnerId                = "dns-owner-id"
 	OptDefaultIssuerDomainRanges = "default-issuer-domain-ranges"
 	OptRenewalWindow             = "renewal-window"
+	OptCascadeDelete             = "cascade-delete"
 )

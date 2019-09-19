@@ -309,6 +309,11 @@ func (in *IssuerStatus) DeepCopyInto(out *IssuerStatus) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.ACME != nil {
+		in, out := &in.ACME, &out.ACME
+		*out = new(runtime.RawExtension)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

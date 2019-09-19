@@ -105,7 +105,7 @@ func Obtain(input ObtainInput) error {
 	if err != nil {
 		return err
 	}
-	nameservers := []string{"8.8.8.8", "8.8.4.4", "1.1.1.1"}
+	nameservers := []string{"8.8.8.8", "8.8.4.4"}
 	err = client.Challenge.SetDNS01Provider(provider, dns01.AddRecursiveNameservers(dns01.ParseNameservers(nameservers)))
 	if err != nil {
 		return err
