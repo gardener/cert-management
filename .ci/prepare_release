@@ -16,11 +16,9 @@
 
 set -e
 
-
 # add full-fleshed tar
 apk update
 apk add --no-cache tar
-
 
 if [[ -z "${SOURCE_PATH}" ]]; then
   export SOURCE_PATH="$(readlink -f "$(dirname ${0})/..")"
@@ -28,10 +26,12 @@ else
   export SOURCE_PATH="$(readlink -f "${SOURCE_PATH}")"
 fi
 
-"${SOURCE_PATH}/hack/generate-controller-registration.sh" \
-  cert-management \
-  "${SOURCE_PATH}/charts/cert-management/" \
-  "${SOURCE_PATH}/examples/gardener-controllerregistration.yaml" 
+## currently disabled, as controller registration happens per shoot by extension-shoot-cert-service
+#"${SOURCE_PATH}/hack/generate-controller-registration.sh" \
+#  cert-management \
+#  "${SOURCE_PATH}/charts/cert-management/" \
+#  "${SOURCE_PATH}/examples/gardener-controllerregistration.yaml" \
+#  Issuer:gardener
 
 VERSION_FILE="$(readlink -f "${SOURCE_PATH}/VERSION")"
 VERSION="$(cat "${VERSION_FILE}")"
