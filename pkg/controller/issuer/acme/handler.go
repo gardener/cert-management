@@ -84,7 +84,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
 	}
 	if secret != nil && issuer.Status.ACME != nil && issuer.Status.ACME.Raw != nil {
-		user, err := legobridge.RegistrationUserFromSecretData(issuer.Status.ACME.Raw, secret.Data)
+		user, err := legobridge.RegistrationUserFromSecretData(acme.Email, issuer.Status.ACME.Raw, secret.Data)
 		if err != nil {
 			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
 		}

@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	KEY_EMAIL       = "email"
 	KEY_PRIVATE_KEY = "privateKey"
 )
 
@@ -142,7 +141,7 @@ func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("encoding private key failed: %s", err.Error())
 	}
-	return map[string][]byte{KEY_PRIVATE_KEY: privkey, KEY_EMAIL: []byte(u.Email)}, nil
+	return map[string][]byte{KEY_PRIVATE_KEY: privkey}, nil
 }
 
 func (u *RegistrationUser) RawRegistration() ([]byte, error) {
@@ -153,7 +152,7 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 	return reg, nil
 }
 
-func RegistrationUserFromSecretData(registrationRaw []byte, data map[string][]byte) (*RegistrationUser, error) {
+func RegistrationUserFromSecretData(email string, registrationRaw []byte, data map[string][]byte) (*RegistrationUser, error) {
 	privkeyBytes, ok := data[KEY_PRIVATE_KEY]
 	if !ok {
 		return nil, fmt.Errorf("`%s` data not found in secret", KEY_PRIVATE_KEY)
@@ -168,10 +167,5 @@ func RegistrationUserFromSecretData(registrationRaw []byte, data map[string][]by
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling registration json failed with %s", err.Error())
 	}
-
-	emailBytes, ok := data[KEY_EMAIL]
-	if !ok {
-		return nil, fmt.Errorf("`%s` data not found in secret", KEY_EMAIL)
-	}
-	return &RegistrationUser{Email: string(emailBytes), Registration: reg, key: privateKey}, nil
+	return &RegistrationUser{Email: email, Registration: reg, key: privateKey}, nil
 }

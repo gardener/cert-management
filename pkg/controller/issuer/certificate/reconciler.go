@@ -316,7 +316,7 @@ func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.Regis
 		return nil, "", fmt.Errorf("fetching issuer secret failed with %s", err.Error())
 	}
 
-	reguser, err := legobridge.RegistrationUserFromSecretData(issuer.Status.ACME.Raw, issuerSecret.Data)
+	reguser, err := legobridge.RegistrationUserFromSecretData(issuer.Spec.ACME.Email, issuer.Status.ACME.Raw, issuerSecret.Data)
 	if err != nil {
 		return nil, "", fmt.Errorf("restoring registration issuer from issuer secret failed with %s", err.Error())
 	}
