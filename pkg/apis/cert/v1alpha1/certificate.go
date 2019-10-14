@@ -55,12 +55,17 @@ type IssuerRef struct {
 }
 
 type CertificateStatus struct {
-	ObservedGeneration   int64        `json:"observedGeneration,omitempty"`
-	State                string       `json:"state"`
-	Message              *string      `json:"message,omitempty"`
-	LastPendingTimestamp *metav1.Time `json:"lastPendingTimestamp"`
-	CommonName           *string      `json:"commonName,omitempty"`
-	DNSNames             []string     `json:"dnsNames,omitempty"`
-	IssuerRef            *IssuerRef   `json:"issuerRef,omitempty"`
-	ExpirationDate       *string      `json:"expirationDate,omitempty"`
+	ObservedGeneration   int64                   `json:"observedGeneration,omitempty"`
+	State                string                  `json:"state"`
+	Message              *string                 `json:"message,omitempty"`
+	LastPendingTimestamp *metav1.Time            `json:"lastPendingTimestamp"`
+	CommonName           *string                 `json:"commonName,omitempty"`
+	DNSNames             []string                `json:"dnsNames,omitempty"`
+	IssuerRef            *IssuerRefWithNamespace `json:"issuerRef,omitempty"`
+	ExpirationDate       *string                 `json:"expirationDate,omitempty"`
+}
+
+type IssuerRefWithNamespace struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }

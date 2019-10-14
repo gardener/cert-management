@@ -19,6 +19,7 @@ package issuer
 import (
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
+	"github.com/gardener/controller-manager-library/pkg/resources"
 	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
@@ -50,13 +51,15 @@ func init() {
 		Cluster(ctrl.DefaultCluster).
 		CustomResourceDefinitions(crds.IssuerCRD).
 		WorkerPool("issuers", 1, 0).
-		Watches(
-			controller.NewResourceKey(api.GroupName, api.IssuerKind),
-		).
+		SelectedWatch(selectIssuerNamespaceSelectionFunction, api.GroupName, api.IssuerKind).
 		WorkerPool("secrets", 1, 0).
-		Watches(
-			controller.NewResourceKey("core", "Secret"),
-		).
+		SelectedWatch(selectIssuerNamespaceSelectionFunction, "core", "Secret").
 		Cluster(ctrl.DNSCluster).
 		MustRegister(ctrl.ControllerGroupCert)
+}
+
+func selectIssuerNamespaceSelectionFunction(c controller.Interface) (string, resources.TweakListOptionsFunc) {
+	var options resources.TweakListOptionsFunc
+	issuerNamespace, _ := c.GetStringOption(core.OptIssuerNamespace)
+	return issuerNamespace, options
 }

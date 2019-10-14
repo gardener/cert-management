@@ -84,3 +84,25 @@ func (ao *AssociatedObjects) DestinationsAsArray(src resources.ObjectName) []res
 	}
 	return set.AsArray()
 }
+
+func (ao *AssociatedObjects) DestinationsCount(src resources.ObjectName) int {
+	ao.lock.Lock()
+	defer ao.lock.Unlock()
+
+	set := ao.srcToDest[src]
+	if set == nil {
+		return 0
+	}
+	return len(set)
+}
+
+func (ao *AssociatedObjects) Sources() []resources.ObjectName {
+	ao.lock.Lock()
+	defer ao.lock.Unlock()
+
+	sources := []resources.ObjectName{}
+	for src := range ao.srcToDest {
+		sources = append(sources, src)
+	}
+	return sources
+}

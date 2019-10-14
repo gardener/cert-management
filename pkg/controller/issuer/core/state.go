@@ -31,6 +31,7 @@ func newState() *state {
 }
 
 func (s *state) RemoveIssuer(name resources.ObjectName) bool {
+	s.certificates.RemoveBySource(name)
 	return s.secrets.RemoveIssuer(name)
 }
 
@@ -44,6 +45,14 @@ func (s *state) RemoveCertAssoc(cert resources.ObjectName) {
 
 func (s *state) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {
 	return s.certificates.DestinationsAsArray(issuer)
+}
+
+func (s *state) CertificateCountForIssuer(issuer resources.ObjectName) int {
+	return s.certificates.DestinationsCount(issuer)
+}
+
+func (s *state) KnownIssuers() []resources.ObjectName {
+	return s.certificates.Sources()
 }
 
 func (s *state) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {

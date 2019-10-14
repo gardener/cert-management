@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
 
 	"github.com/go-acme/lego/certificate"
 	"github.com/go-acme/lego/challenge/dns01"
@@ -101,7 +102,8 @@ func Obtain(input ObtainInput) error {
 		return err
 	}
 
-	provider, err := newDNSControllerProvider(input.Logger, input.DNSCluster, input.DNSSettings, input.RequestName, input.TargetClass)
+	provider, err := newDNSControllerProvider(input.Logger, input.DNSCluster, input.DNSSettings, input.RequestName,
+		input.TargetClass, input.IssuerName)
 	if err != nil {
 		return err
 	}
@@ -124,6 +126,8 @@ func Obtain(input ObtainInput) error {
 				certificates, err = obtainForCSR(client, input.CSR)
 			}
 		}
+		count := provider.GetChallengesCount()
+		metrics.AddACMEObtain(input.IssuerName, err == nil, count, input.RenewCert != nil)
 		output := &ObtainOutput{
 			Certificates: certificates,
 			IssuerName:   input.IssuerName,

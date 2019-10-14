@@ -26,6 +26,8 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"net/url"
 
 	"github.com/go-acme/lego/lego"
 	"github.com/go-acme/lego/registration"
@@ -88,6 +90,13 @@ func NewRegistrationUserFromEmailAndPrivateKey(email string, caDirURL string, pr
 		return user, err
 	}
 	user.Registration = reg
+
+	server := "unknown"
+	urlObj, err := url.Parse(caDirURL)
+	if urlObj != nil {
+		server = urlObj.Host
+	}
+	metrics.AddACMEAccountRegistration(server, email)
 
 	return user, nil
 }

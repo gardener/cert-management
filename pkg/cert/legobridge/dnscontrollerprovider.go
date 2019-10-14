@@ -18,7 +18,9 @@ package legobridge
 
 import (
 	"fmt"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/source"
+	"sync/atomic"
 
 	"github.com/go-acme/lego/challenge"
 	"github.com/go-acme/lego/challenge/dns01"
@@ -29,14 +31,19 @@ import (
 	"github.com/gardener/external-dns-management/pkg/dns"
 )
 
+type ProviderWithCount interface {
+	challenge.Provider
+	GetChallengesCount() int
+}
+
 func newDNSControllerProvider(logger logger.LogContext, cluster resources.Cluster, settings DNSControllerSettings,
-	certificateName resources.ObjectName, targetClass string) (challenge.Provider, error) {
+	certificateName resources.ObjectName, targetClass, issuerName string) (ProviderWithCount, error) {
 	itf, err := cluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DNSEntry resources: %s", err.Error())
 	}
 	return &dnsControllerProvider{logger: logger, settings: settings, entryResources: itf,
-		certificateName: certificateName, targetClass: targetClass}, nil
+		certificateName: certificateName, targetClass: targetClass, issuerName: issuerName}, nil
 }
 
 type dnsControllerProvider struct {
@@ -45,11 +52,15 @@ type dnsControllerProvider struct {
 	entryResources  resources.Interface
 	certificateName resources.ObjectName
 	targetClass     string
+	issuerName      string
+	count           int32
 }
 
 var _ challenge.Provider = &dnsControllerProvider{}
 
 func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
+	metrics.AddActiveACMEDNSChallenge(p.issuerName)
+	atomic.AddInt32(&p.count, 1)
 	fqdn, value := dns01.GetRecord(domain, keyAuth)
 	entry := &dnsapi.DNSEntry{}
 	entry.Name = domain
@@ -69,6 +80,7 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 }
 
 func (p *dnsControllerProvider) CleanUp(domain, token, keyAuth string) error {
+	metrics.RemoveActiveACMEDNSChallenge(p.issuerName)
 	entry := &dnsapi.DNSEntry{}
 	entry.Name = domain
 	entry.Namespace = p.settings.Namespace
@@ -80,4 +92,8 @@ func (p *dnsControllerProvider) CleanUp(domain, token, keyAuth string) error {
 		return fmt.Errorf("deleting DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
 	}
 	return nil
+}
+
+func (p *dnsControllerProvider) GetChallengesCount() int {
+	return int(atomic.LoadInt32(&p.count))
 }

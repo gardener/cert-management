@@ -587,8 +587,8 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	if issuerRef == nil {
 		issuerRef = &api.IssuerRef{r.support.DefaultIssuerName()}
 	}
-	if status.IssuerRef == nil || status.IssuerRef.Name != issuerRef.Name {
-		status.IssuerRef = issuerRef
+	if status.IssuerRef == nil || status.IssuerRef.Name != issuerRef.Name || status.IssuerRef.Namespace != r.support.IssuerNamespace() {
+		status.IssuerRef = &api.IssuerRefWithNamespace{Name: issuerRef.Name, Namespace: r.support.IssuerNamespace()}
 		mod.Modify(true)
 	}
 

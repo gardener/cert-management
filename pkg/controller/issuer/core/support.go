@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -100,6 +101,9 @@ func (h *CompoundHandler) ReconcileIssuer(logger logger.LogContext, obj resource
 	issuer, ok := obj.Data().(*api.Issuer)
 	if !ok {
 		return h.failedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to issuer failed"))
+	}
+	if issuer.Namespace != h.support.IssuerNamespace() {
+		reconcile.Succeeded(logger)
 	}
 	for _, handler := range h.handlers {
 		if handler.CanReconcile(issuer) {
@@ -297,10 +301,23 @@ func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj 
 func (s *Support) AddCertificate(logger logger.LogContext, cert *api.Certificate) {
 	certObjName, issuerObjName := s.calcAssocObjectNames(cert)
 	s.state.AddCertAssoc(issuerObjName, certObjName)
+	s.reportCertificateMetrics(issuerObjName)
 }
 
 func (s *Support) RemoveCertificate(logger logger.LogContext, certObjName resources.ObjectName) {
 	s.state.RemoveCertAssoc(certObjName)
+	s.reportAllCertificateMetrics()
+}
+
+func (s *Support) reportCertificateMetrics(issuerObjName resources.ObjectName) {
+	count := s.state.CertificateCountForIssuer(issuerObjName)
+	metrics.ReportCertEntries("acme", issuerObjName.Name(), count)
+}
+
+func (s *Support) reportAllCertificateMetrics() {
+	for _, issuerObjName := range s.state.KnownIssuers() {
+		s.reportCertificateMetrics(issuerObjName)
+	}
 }
 
 func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectName, resources.ObjectName) {
@@ -349,7 +366,9 @@ func (s *Support) GetIssuerSecretHash(issuer resources.ObjectName) string {
 }
 
 func (s *Support) RemoveIssuer(name resources.ObjectName) bool {
-	return s.state.RemoveIssuer(name)
+	b := s.state.RemoveIssuer(name)
+	metrics.DeleteCertEntries("acme", name.Name())
+	return b
 }
 
 func (s *Support) GetDefaultClusterId() string {

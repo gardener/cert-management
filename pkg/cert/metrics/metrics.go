@@ -17,131 +17,77 @@
 package metrics
 
 import (
-	"sync"
-
 	"github.com/gardener/controller-manager-library/pkg/server"
-	"github.com/gardener/controller-manager-library/pkg/utils"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"strconv"
 )
 
 func init() {
-	prometheus.MustRegister(Requests)
-	prometheus.MustRegister(Accounts)
-	prometheus.MustRegister(Entries)
+	prometheus.MustRegister(ACMEAccountRegistrations)
+	prometheus.MustRegister(ACMETotalObtains)
+	prometheus.MustRegister(ACMEActiveDNSChallenges)
+	prometheus.MustRegister(CertEntries)
 
 	server.RegisterHandler("/metrics", promhttp.Handler())
 }
 
 var (
-	Requests = prometheus.NewCounterVec(
+	ACMEAccountRegistrations = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "total_provider_requests",
-			Help: "Total requests per provider type and credential set",
+			Name: "acme_account_registrations",
+			Help: "Number of ACME account registrations",
 		},
-		[]string{"providertype", "accounthash", "requesttype"},
+		[]string{"server", "email"},
 	)
 
-	Accounts = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "account_providers",
-			Help: "Total number of providers per account",
+	ACMETotalObtains = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "acme_obtains",
+			Help: "Total number of ACME obtains",
 		},
-		[]string{"providertype", "accounthash"},
+		[]string{"issuer", "success", "dns_challenges", "renew"},
 	)
 
-	Entries = prometheus.NewGaugeVec(
+	ACMEActiveDNSChallenges = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "dns_entries",
-			Help: "Total number of dns entries per hosted zone",
+			Name: "acme_active_dns_challenges",
+			Help: "Currently active number of ACME DNS challenges",
 		},
-		[]string{"providertype", "zone"},
+		[]string{"issuer"},
+	)
+
+	CertEntries = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cert_entries",
+			Help: "Total number of cert entries per issuer",
+		},
+		[]string{"issuertype", "issuer"},
 	)
 )
 
-var theRequestLabels = &requestLabels{lock: sync.Mutex{}, known: map[ptypeAccount]utils.StringSet{}}
-
-type ptypeAccount struct {
-	ptype   string
-	account string
+func AddACMEAccountRegistration(server, email string) {
+	ACMEAccountRegistrations.WithLabelValues(server, email).Inc()
 }
 
-type requestLabels struct {
-	lock  sync.Mutex
-	known map[ptypeAccount]utils.StringSet
-}
-
-func (this *requestLabels) AddRequestLabel(ptype, account, requestType string) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	key := ptypeAccount{ptype, account}
-	set, ok := this.known[key]
-	if !ok {
-		set = utils.StringSet{}
-		this.known[key] = set
+func AddACMEObtain(issuer string, success bool, count int, renew bool) {
+	if count > 0 {
+		ACMETotalObtains.WithLabelValues(issuer, strconv.FormatBool(success), strconv.FormatInt(int64(count), 10), strconv.FormatBool(renew)).Inc()
 	}
-	set.Add(requestType)
 }
 
-func (this *requestLabels) Delete(ptype, account string) utils.StringSet {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-
-	key := ptypeAccount{ptype, account}
-	set := this.known[key]
-	delete(this.known, key)
-	return set
+func AddActiveACMEDNSChallenge(issuer string) {
+	ACMEActiveDNSChallenges.WithLabelValues(issuer).Inc()
 }
 
-func DeleteAccount(ptype, account string) {
-	Accounts.DeleteLabelValues(ptype, account)
-	requestTypes := theRequestLabels.Delete(ptype, account)
-	for rtype := range requestTypes {
-		Requests.DeleteLabelValues(ptype, account, rtype)
-	}
-	Entries.DeleteLabelValues(ptype, account)
+func RemoveActiveACMEDNSChallenge(issuer string) {
+	ACMEActiveDNSChallenges.WithLabelValues(issuer).Dec()
 }
 
-func ReportAccountProviders(ptype, account string, amount int) {
-	Accounts.WithLabelValues(ptype, account).Set(float64(amount))
+func ReportCertEntries(issuertype, issuer string, count int) {
+	CertEntries.WithLabelValues(issuertype, issuer).Set(float64(count))
 }
 
-func AddRequests(ptype, account, requestType string, no int) {
-	theRequestLabels.AddRequestLabel(ptype, account, requestType)
-	Requests.WithLabelValues(ptype, account, requestType).Add(float64(no))
-}
-
-type ZoneProviderTypes struct {
-	lock      sync.Mutex
-	providers map[string]string
-}
-
-func (this *ZoneProviderTypes) Add(ptype, zone string) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	this.providers[zone] = ptype
-}
-
-func (this *ZoneProviderTypes) Remove(zone string) string {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	ptype := this.providers[zone]
-	delete(this.providers, zone)
-	return ptype
-}
-
-var zoneProviders = &ZoneProviderTypes{providers: map[string]string{}}
-
-func ReportZoneEntries(ptype, zone string, amount int) {
-	Entries.WithLabelValues(ptype, zone).Set(float64(amount))
-	zoneProviders.Add(ptype, zone)
-}
-
-func DeleteZone(zone string) {
-	ptype := zoneProviders.Remove(zone)
-	if ptype != "" {
-		Entries.DeleteLabelValues(ptype, zone)
-	}
+func DeleteCertEntries(issuertype, issuer string) {
+	CertEntries.DeleteLabelValues(issuertype, issuer)
 }
