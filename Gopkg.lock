@@ -26,6 +26,14 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  digest = "1:707ebe952a8b3d00b343c01536c79c73771d100f63ec6babeaed5c79e2b8a8dd"
+  name = "github.com/beorn7/perks"
+  packages = ["quantile"]
+  pruneopts = "NUT"
+  revision = "37c8de3658fcb183f997c4e13e8337516ab753e6"
+  version = "v1.0.1"
+
+[[projects]]
   digest = "1:cdee563173093e5ae7ab2a19c298e0904129719e1919a3c532b7bb0c3398b818"
   name = "github.com/cenkalti/backoff"
   packages = ["."]
@@ -62,7 +70,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c1641ff10530e2c634828c0be6bd7398ef0187426a8184f3751505e862d2e6e6"
+  digest = "1:7a17ef2db2259396e7973d70418e66df340d758e9de9660e1390a3e2c41c6083"
   name = "github.com/gardener/controller-manager-library"
   packages = [
     "pkg/controllermanager",
@@ -72,6 +80,7 @@
     "pkg/controllermanager/controller/groups",
     "pkg/controllermanager/controller/mappings",
     "pkg/controllermanager/controller/reconcile",
+    "pkg/controllermanager/controller/reconcile/conditions",
     "pkg/controllermanager/controller/reconcile/reconcilers",
     "pkg/ctxutil",
     "pkg/fieldpath",
@@ -86,7 +95,7 @@
     "pkg/utils",
   ]
   pruneopts = "NUT"
-  revision = "d73a6cfab8805170f84d7fc8398e76e35e74db50"
+  revision = "aa84113701ed2c4a23d1eb0db990725fd6c629cb"
 
 [[projects]]
   digest = "1:7d9faaa3dca330493ef82ec18a00a54d9070d808d9839f4447dcbf52eb50240a"
@@ -280,6 +289,14 @@
   revision = "1ea4449da9834f4d333f1cc461c374aea217d249"
 
 [[projects]]
+  digest = "1:5985ef4caf91ece5d54817c11ea25f182697534f8ae6521eadcd628c142ac4b6"
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  packages = ["pbutil"]
+  pruneopts = "NUT"
+  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+  version = "v1.0.1"
+
+[[projects]]
   digest = "1:acf729cc7eeff8fe111ffce5f7cf9caa34ca71eea99a3650563ea598bed64717"
   name = "github.com/miekg/dns"
   packages = ["."]
@@ -360,6 +377,50 @@
   pruneopts = "NUT"
   revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
   version = "v0.8.1"
+
+[[projects]]
+  digest = "1:3d7ad9c93ee2e43dc7dd48b76f96804c365be7fe30e75f7405028c4e633d189a"
+  name = "github.com/prometheus/client_golang"
+  packages = [
+    "prometheus",
+    "prometheus/internal",
+    "prometheus/promhttp",
+  ]
+  pruneopts = "NUT"
+  revision = "2641b987480bca71fb39738eb8c8b0d577cb1d76"
+  version = "v0.9.4"
+
+[[projects]]
+  branch = "master"
+  digest = "1:2d5cd61daa5565187e1d96bae64dbbc6080dacf741448e9629c64fd93203b0d4"
+  name = "github.com/prometheus/client_model"
+  packages = ["go"]
+  pruneopts = "NUT"
+  revision = "14fe0d1b01d4d5fc031dd4bec1823bd3ebbe8016"
+
+[[projects]]
+  digest = "1:98278956c7c550efc75a027e528aa51743f06fd0e33613d7ed224432a11e5ecf"
+  name = "github.com/prometheus/common"
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model",
+  ]
+  pruneopts = "NUT"
+  revision = "287d3e634a1e550c9e463dd7e5a75a422c614505"
+  version = "v0.7.0"
+
+[[projects]]
+  digest = "1:bbbacd138cb711e328390a2d4bfaca1a41a8575f3c893450bf2ea1b74acdc7be"
+  name = "github.com/prometheus/procfs"
+  packages = [
+    ".",
+    "internal/fs",
+    "internal/util",
+  ]
+  pruneopts = "NUT"
+  revision = "499c85531f756d1129edd26485a5f73871eeb308"
+  version = "v0.0.5"
 
 [[projects]]
   digest = "1:f4aaa07a6c33f2b354726d0571acbc8ca118837c75709f6353203ae1a3f8eeab"
@@ -865,6 +926,7 @@
     "github.com/gardener/controller-manager-library/pkg/logger",
     "github.com/gardener/controller-manager-library/pkg/resources",
     "github.com/gardener/controller-manager-library/pkg/resources/apiextensions",
+    "github.com/gardener/controller-manager-library/pkg/server",
     "github.com/gardener/controller-manager-library/pkg/utils",
     "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1",
     "github.com/gardener/external-dns-management/pkg/dns",
@@ -876,6 +938,8 @@
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gstruct",
+    "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/promhttp",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",

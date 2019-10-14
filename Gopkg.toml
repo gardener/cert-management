@@ -43,6 +43,10 @@ required = [
   name = "k8s.io/code-generator"
   version = "kubernetes-1.14.4"
 
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  version = "v0.9.4"
+
 # Dependencies for testing purposes only
 [[constraint]]
   name = "github.com/onsi/gomega"
