@@ -262,6 +262,11 @@ https://github.com/onsi/ginkgo
 Copyright (c) 2013-2014 Onsi Fakhouri  
 MIT license (https://github.com/onsi/gomega/blob/master/LICENSE)  
 
+Prometheus Go client library 
+https://github.com/prometheus/client_golang
+Copyright 2014-2019 The Prometheus Authors
+Apache 2 license (https://github.com/prometheus/client_golang/blob/master/LICENSE)  
+
 ------
 
 ## MIT License
