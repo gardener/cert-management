@@ -177,19 +177,13 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta
 	var err error
 
 	secret := &corev1.Secret{}
-	namespace := "default"
-	if issuer.GetNamespace() != "" {
-		namespace = issuer.GetNamespace()
-	}
 	if secretRef != nil && secretRef.Name != "" {
 		secret.SetName(secretRef.Name)
-		if secretRef.Namespace != "" {
-			namespace = secretRef.Namespace
-		}
+		secret.SetNamespace(NormalizeNamespace(secretRef.Namespace))
 	} else {
 		secret.SetGenerateName(issuer.GetName() + "-")
+		secret.SetNamespace(NormalizeNamespace(issuer.GetNamespace()))
 	}
-	secret.SetNamespace(namespace)
 	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.IssuerKind, Name: issuer.Name, UID: issuer.GetUID()}})
 	secret.Data, err = reguser.ToSecretData()
 	if err != nil {
@@ -330,10 +324,15 @@ func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectN
 	return certObjName, newObjectName(cert.Namespace, issuerName)
 }
 
-func newObjectName(namespace, name string) resources.ObjectName {
-	if namespace == "" {
-		namespace = "default"
+func NormalizeNamespace(namespace string) string {
+	if namespace != "" {
+		return namespace
 	}
+	return "default"
+}
+
+func newObjectName(namespace, name string) resources.ObjectName {
+	namespace = NormalizeNamespace(namespace)
 	return resources.NewObjectName(namespace, name)
 }
 
