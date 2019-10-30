@@ -484,7 +484,7 @@ func (r *certReconciler) findSecretByHashLabel(specHash string) (*corev1.SecretR
 }
 
 func (r *certReconciler) copySecretIfNeeded(objectMeta metav1.ObjectMeta, secretRef *corev1.SecretReference, specHash string, secretName *string) (*corev1.SecretReference, error) {
-	if secretName == nil || secretRef.Name == *secretName {
+	if secretName == nil || (secretRef.Name == *secretName && core.NormalizeNamespace(secretRef.Namespace) == core.NormalizeNamespace(objectMeta.Namespace)) {
 		return secretRef, nil
 	}
 	secret, err := r.loadSecret(secretRef)
@@ -498,11 +498,8 @@ func (r *certReconciler) copySecretIfNeeded(objectMeta metav1.ObjectMeta, secret
 func (r *certReconciler) writeCertificateSecret(objectMeta metav1.ObjectMeta, certificates *certificate.Resource,
 	specHash string, secretName *string) (*corev1.SecretReference, error) {
 	secret := &corev1.Secret{}
-	if objectMeta.GetNamespace() != "" {
-		secret.SetNamespace(objectMeta.GetNamespace())
-	} else {
-		secret.SetNamespace("default")
-	}
+	namespace := core.NormalizeNamespace(objectMeta.GetNamespace())
+	secret.SetNamespace(namespace)
 	if secretName != nil {
 		secret.SetName(*secretName)
 	} else {
