@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/source"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sync/atomic"
+	"time"
 
 	"github.com/go-acme/lego/challenge"
 	"github.com/go-acme/lego/challenge/dns01"
@@ -43,7 +45,10 @@ func newDNSControllerProvider(logger logger.LogContext, cluster resources.Cluste
 		return nil, fmt.Errorf("cannot get DNSEntry resources: %s", err.Error())
 	}
 	return &dnsControllerProvider{logger: logger, settings: settings, entryResources: itf,
-		certificateName: certificateName, targetClass: targetClass, issuerName: issuerName}, nil
+		certificateName: certificateName, targetClass: targetClass, issuerName: issuerName,
+		ttl:         int64(0.501 * dns01.DefaultPropagationTimeout.Seconds()),
+		initialWait: true,
+		presenting:  map[string][]string{}}, nil
 }
 
 type dnsControllerProvider struct {
@@ -54,39 +59,119 @@ type dnsControllerProvider struct {
 	targetClass     string
 	issuerName      string
 	count           int32
+	ttl             int64
+	presenting      map[string][]string
+	multiValues     bool
+	initialWait     bool
 }
 
 var _ challenge.Provider = &dnsControllerProvider{}
+var _ challenge.ProviderTimeout = &dnsControllerProvider{}
+
+var backoff = wait.Backoff{
+	Steps:    4,
+	Duration: 500 * time.Millisecond,
+	Factor:   2.0,
+	Jitter:   0.1,
+	Cap:      2500 * time.Millisecond,
+}
+
+type updateError struct {
+	msg string
+}
+
+func (e *updateError) Error() string {
+	return e.msg
+}
+
+func retryOnUpdateError(fn func() error) error {
+	var lastUpdateErr error
+	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+		err := fn()
+		_, isUpdateErr := err.(*updateError)
+		switch {
+		case err == nil:
+			return true, nil
+		case isUpdateErr:
+			lastUpdateErr = err
+			return false, nil
+		default:
+			return false, err
+		}
+	})
+	if err == wait.ErrWaitTimeout {
+		err = lastUpdateErr
+	}
+	return err
+}
 
 func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 	metrics.AddActiveACMEDNSChallenge(p.issuerName)
 	atomic.AddInt32(&p.count, 1)
 	fqdn, value := dns01.GetRecord(domain, keyAuth)
-	entry := &dnsapi.DNSEntry{}
-	entry.Name = domain
-	entry.Namespace = p.settings.Namespace
-	entry.Spec.DNSName = dns.NormalizeHostname(fqdn)
-	entry.Spec.OwnerId = p.settings.OwnerId
-	entry.Spec.Text = []string{value}
-	resources.SetAnnotation(entry, source.ANNOT_CLASS, p.targetClass)
 
-	logger.Infof("presenting DNSEntry %s/%s for certificate resource %s", entry.Namespace, entry.Name, p.certificateName)
+	values := p.addPresentingDomainValue(domain, value)
 
-	_, err := p.entryResources.CreateOrUpdate(entry)
-	if err != nil {
-		return fmt.Errorf("creating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
+	setSpec := func(e *dnsapi.DNSEntry) {
+		e.Spec.DNSName = dns.NormalizeHostname(fqdn)
+		e.Spec.OwnerId = p.settings.OwnerId
+		e.Spec.TTL = &p.ttl
+		e.Spec.Text = values
+		resources.SetAnnotation(e, source.ANNOT_CLASS, p.targetClass)
 	}
-	return nil
+
+	entry := p.prepareEntry(domain)
+	if len(values) == 1 {
+		setSpec(entry)
+		p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %ss", entry.Namespace, entry.Name, p.certificateName)
+		_, err := p.entryResources.Create(entry)
+		if err != nil {
+			return fmt.Errorf("creating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
+		}
+		return nil
+	} else {
+		p.multiValues = true
+		err := retryOnUpdateError(func() error {
+			obj, err := p.entryResources.Get_(entry)
+			if err != nil {
+				return fmt.Errorf("getting DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
+			}
+			entry = obj.Data().(*dnsapi.DNSEntry)
+			setSpec(entry)
+			p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %s with %d values", entry.Namespace, entry.Name, p.certificateName, len(values))
+			_, err = p.entryResources.Update(entry)
+			if err != nil {
+				return &updateError{msg: fmt.Sprintf("updating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())}
+			}
+			return nil
+		})
+		return err
+	}
+}
+
+func (p *dnsControllerProvider) addPresentingDomainValue(domain, value string) []string {
+	values := append(p.presenting[domain], value)
+	p.presenting[domain] = values
+	return values
+}
+
+func (p *dnsControllerProvider) removePresentingDomain(domain string) bool {
+	if _, found := p.presenting[domain]; !found {
+		return false
+	}
+	delete(p.presenting, domain)
+	return true
 }
 
 func (p *dnsControllerProvider) CleanUp(domain, token, keyAuth string) error {
 	metrics.RemoveActiveACMEDNSChallenge(p.issuerName)
-	entry := &dnsapi.DNSEntry{}
-	entry.Name = domain
-	entry.Namespace = p.settings.Namespace
 
-	logger.Infof("cleanup DNSEntry %s/%s for request %s", entry.Namespace, entry.Name, p.certificateName)
+	if !p.removePresentingDomain(domain) {
+		return nil
+	}
 
+	entry := p.prepareEntry(domain)
+	p.logger.Infof("cleanup DNSEntry %s/%s for request %s", entry.Namespace, entry.Name, p.certificateName)
 	err := p.entryResources.Delete(entry)
 	if err != nil {
 		return fmt.Errorf("deleting DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
@@ -96,4 +181,60 @@ func (p *dnsControllerProvider) CleanUp(domain, token, keyAuth string) error {
 
 func (p *dnsControllerProvider) GetChallengesCount() int {
 	return int(atomic.LoadInt32(&p.count))
+}
+
+func (p *dnsControllerProvider) prepareEntry(domain string) *dnsapi.DNSEntry {
+	entry := &dnsapi.DNSEntry{}
+	entry.Name = "cert--" + domain
+	entry.Namespace = p.settings.Namespace
+	return entry
+}
+
+func (p *dnsControllerProvider) dnsEntryPending(domain string, valuesCount int) bool {
+	entry := p.prepareEntry(domain)
+	obj, err := p.entryResources.Get_(entry)
+	if err != nil {
+		return false // no more waiting
+	}
+	entry = obj.Data().(*dnsapi.DNSEntry)
+	return entry.Status.State == "Pending" || entry.Status.State == "Ready" && len(entry.Status.Targets) != valuesCount
+}
+
+func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
+	if p.initialWait {
+		p.initialWait = false
+		// The Timeout function is called several times after all domains are "presented".
+		// On the first call it is checked that no DNS entries are pending anymore.
+		// Depending on number of domain names and possible parallel other work,
+		// the dns-controller-manager may need several change batches
+		// until all entries are ready
+		rounds := 10
+		waitTime := dns01.DefaultPropagationTimeout / time.Duration(rounds)
+	outer:
+		for i := 0; i < rounds; i++ {
+			ready := true
+			for domain, values := range p.presenting {
+				if p.dnsEntryPending(domain, len(values)) {
+					ready = false
+					break
+				}
+			}
+			if ready {
+				break outer
+			}
+			p.logger.Infof("Waiting %d seconds for DNS entries getting ready...", int(waitTime.Seconds()))
+			time.Sleep(waitTime)
+		}
+
+		// wait some additional time for DNS record propagation
+		propagationWaitTime := 10
+		if p.multiValues {
+			// If there are multiple DNSChallenges for one domain the DNS record may be propagated with incomplete values
+			// Therefore await end of live of the first, incomplete DNS record
+			propagationWaitTime += int(p.ttl)
+		}
+		p.logger.Infof("Waiting %d seconds for initial DNS record propagation...", int(propagationWaitTime))
+		time.Sleep(time.Duration(propagationWaitTime) * time.Second)
+	}
+	return dns01.DefaultPropagationTimeout, dns01.DefaultPollingInterval
 }

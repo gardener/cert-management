@@ -265,7 +265,7 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 		dnsSettings.Namespace = *r.dnsNamespace
 	}
 	targetClass := r.getAnnotatedClass(obj)
-	input := legobridge.ObtainInput{User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
+	input := legobridge.ObtainInput{Logger: logger, User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
 		CaDirURL: server, IssuerName: r.issuerName(&cert.Spec),
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		TargetClass: targetClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
