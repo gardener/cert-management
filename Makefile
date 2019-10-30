@@ -3,7 +3,7 @@ PROJECT=github.com/gardener/cert-management
 VERSION=$(shell cat VERSION)
 
 
-.PHONY: local-build build release test alltests
+.PHONY: build-local build release test alltests
 
 
 build:
@@ -12,7 +12,7 @@ build:
 	    ./cmd/cert-controller-manager
 
 
-local-build:
+build-local:
 	go build -o $(EXECUTABLE) \
 	    -ldflags "-X main.Version=$(VERSION)-$(shell git rev-parse HEAD)"\
 	    ./cmd/cert-controller-manager
