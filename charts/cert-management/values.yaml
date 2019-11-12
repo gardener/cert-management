@@ -21,7 +21,9 @@ tolerations: []
 affinity: {}
 # priorityClassName: ""
 
-createCRDs: true
+createCRDs:
+  issuers: true
+  certificates: true
 
 configuration:
 # certClass:
