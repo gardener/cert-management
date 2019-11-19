@@ -311,7 +311,7 @@ func (this *sourceReconciler) createEntryFor(logger logger.LogContext, obj resou
 	if this.targetclass != "" {
 		resources.SetAnnotation(cert, ANNOT_CLASS, this.targetclass)
 	}
-	if len(info.Domains) >= 0 {
+	if len(info.Domains) > 0 {
 		cert.Spec.CommonName = &info.Domains[0]
 		cert.Spec.DNSNames = info.Domains[1:]
 	}
@@ -371,7 +371,7 @@ func (this *sourceReconciler) updateEntry(logger logger.LogContext, info CertInf
 		mod.Modify(changed)
 		var cn *string
 		var dnsNames []string
-		if len(info.Domains) >= 0 {
+		if len(info.Domains) > 0 {
 			cn = &info.Domains[0]
 			dnsNames = info.Domains[1:]
 		}
