@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: echoheaders
   namespace: default
-  annotation:
+  annotations:
     cert.gardener.cloud/purpose: managed
 spec:
   tls:
