@@ -518,6 +518,18 @@ func (r *certReconciler) writeCertificateSecret(objectMeta metav1.ObjectMeta, ce
 	}
 
 	obj, err := r.targetCluster.Resources().CreateOrUpdateObject(secret)
+	if err != nil && secretName != nil {
+		// for migration from cert-manager: check if secret exists with type SecretTypeTLS and retry update with this type
+		// (on updating a secret changing the type is not allowed)
+		oldSecret := &corev1.Secret{}
+		_, err2 := r.targetCluster.Resources().GetObjectInto(resources.NewObjectName(secret.Namespace, secret.Name), oldSecret)
+		if err2 == nil {
+			if oldSecret.Type == corev1.SecretTypeTLS {
+				secret.Type = corev1.SecretTypeTLS
+				obj, err = r.targetCluster.Resources().CreateOrUpdateObject(secret)
+			}
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("creating/updating certificate secret failed with %s", err.Error())
 	}
