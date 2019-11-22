@@ -14,11 +14,9 @@
 
 FROM alpine:3.10
 
-RUN apk add --update bash curl tzdata
-RUN mkdir /plugins
-
-ADD bin/rel/cert-controller-manager /cert-controller-manager
-
+RUN addgroup -S app && adduser -S -G app app
 WORKDIR /
+ADD bin/rel/cert-controller-manager /cert-controller-manager
+USER app
 
 ENTRYPOINT ["/cert-controller-manager"]
