@@ -397,18 +397,11 @@ func (g openAPITypeWriter) generateStructExtensions(t *types.Type) error {
 	// Initially, we will only log struct extension errors.
 	if len(errors) > 0 {
 		for _, e := range errors {
-			klog.Errorf("[%s]: %s\n", t.String(), e)
+			klog.V(2).Infof("[%s]: %s\n", t.String(), e)
 		}
 	}
-	unions, errors := parseUnions(t)
-	if len(errors) > 0 {
-		for _, e := range errors {
-			klog.Errorf("[%s]: %s\n", t.String(), e)
-		}
-	}
-
 	// TODO(seans3): Validate struct extensions here.
-	g.emitExtensions(extensions, unions)
+	g.emitExtensions(extensions)
 	return nil
 }
 
@@ -423,13 +416,13 @@ func (g openAPITypeWriter) generateMemberExtensions(m *types.Member, parent *typ
 			klog.V(2).Infof("%s %s\n", errorPrefix, e)
 		}
 	}
-	g.emitExtensions(extensions, nil)
+	g.emitExtensions(extensions)
 	return nil
 }
 
-func (g openAPITypeWriter) emitExtensions(extensions []extension, unions []union) {
+func (g openAPITypeWriter) emitExtensions(extensions []extension) {
 	// If any extensions exist, then emit code to create them.
-	if len(extensions) == 0 && len(unions) == 0 {
+	if len(extensions) == 0 {
 		return
 	}
 	g.Do("VendorExtensible: spec.VendorExtensible{\nExtensions: spec.Extensions{\n", nil)
@@ -444,13 +437,6 @@ func (g openAPITypeWriter) emitExtensions(extensions []extension, unions []union
 		if extension.hasMultipleValues() {
 			g.Do("},\n", nil)
 		}
-	}
-	if len(unions) > 0 {
-		g.Do("\"x-kubernetes-unions\": []interface{}{\n", nil)
-		for _, u := range unions {
-			u.emit(g)
-		}
-		g.Do("},\n", nil)
 	}
 	g.Do("},\n},\n", nil)
 }
