@@ -79,7 +79,7 @@ helper:
             inject_effective_version: true
           publish:
             dockerimages:
-              controller-manager:
+              cert-management:
                 inputs:
                   repos:
                     source: ~ # default
