@@ -8,11 +8,11 @@ cert-management:
       component_descriptor: ~ 
     steps:
       check:
-        image: 'golang:1.12.8'
+        image: 'golang:1.13.3'
       test:
-        image: 'golang:1.12.8'
+        image: 'golang:1.13.3'
       build:
-        image: 'golang:1.12.8'
+        image: 'golang:1.13.3'
   jobs:
     release:
       traits:
