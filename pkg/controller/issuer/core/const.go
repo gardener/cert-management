@@ -17,11 +17,18 @@
 package core
 
 const (
-	OptDefaultIssuer             = "default-issuer"
-	OptIssuerNamespace           = "issuer-namespace"
-	OptDNSNamespace              = "dns-namespace"
-	OptDNSOwnerId                = "dns-owner-id"
+	// OptDefaultIssuer is the default-issuer command line option.
+	OptDefaultIssuer = "default-issuer"
+	// OptIssuerNamespace is the issuer namespace command line option.
+	OptIssuerNamespace = "issuer-namespace"
+	// OptDNSNamespace is the DNS namespace command line option.
+	OptDNSNamespace = "dns-namespace"
+	// OptDNSOwnerID is the DNS owner identifier command line option.
+	OptDNSOwnerID = "dns-owner-id"
+	// OptDefaultIssuerDomainRanges are the domain ranges the default issuer is restricted to.
 	OptDefaultIssuerDomainRanges = "default-issuer-domain-ranges"
-	OptRenewalWindow             = "renewal-window"
-	OptCascadeDelete             = "cascade-delete"
+	// OptRenewalWindow is the renewal window command line option.
+	OptRenewalWindow = "renewal-window"
+	// OptCascadeDelete is the cascade delete command line option.
+	OptCascadeDelete = "cascade-delete"
 )

@@ -30,24 +30,22 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
-const ControllerIssuer = "issuer"
-
 func init() {
-	controller.Configure(ControllerIssuer).
+	controller.Configure("issuer").
 		DefaultedStringOption(core.OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
 		DefaultedStringOption(core.OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
 		StringOption(core.OptDefaultIssuerDomainRanges, "domain range restrictions when using default issuer separated by comma").
 		StringOption(core.OptDNSNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
-		StringOption(core.OptDNSOwnerId, "ownerId for creating challenge DNSEntries").
+		StringOption(core.OptDNSOwnerID, "ownerId for creating challenge DNSEntries").
 		BoolOption(core.OptCascadeDelete, "If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted").
-		StringOption(source.OPT_CLASS, "Identifier used to differentiate responsible controllers for entries").
+		StringOption(source.OptClass, "Identifier used to differentiate responsible controllers for entries").
 		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).
 		CustomResourceDefinitions(crds.CertificateCRD).
 		DefaultWorkerPool(2, 24*time.Hour).
 		MainResource(api.GroupName, api.CertificateKind).
-		Reconciler(CompoundReconciler).
+		Reconciler(newCompoundReconciler).
 		Cluster(ctrl.DefaultCluster).
 		CustomResourceDefinitions(crds.IssuerCRD).
 		WorkerPool("issuers", 1, 0).

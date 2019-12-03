@@ -31,42 +31,67 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
+// TLSCAKey is the secret data key for the CA key.
 const TLSCAKey = "ca.crt"
 
+// ObtainerCallback is callback function type
 type ObtainerCallback func(output *ObtainOutput)
 
+// ObtainInput contains all data needed to obtain a certificate.
 type ObtainInput struct {
-	Logger      logger.LogContext
-	User        *RegistrationUser
-	DNSCluster  resources.Cluster
+	// Logger is the logger to use for logging.
+	Logger logger.LogContext
+	// User is the registration user.
+	User *RegistrationUser
+	// DNSCluster is the cluster to use for writing DNS entries for DNS challenges.
+	DNSCluster resources.Cluster
+	// DNSSettings are the settings for the DNSController.
 	DNSSettings DNSControllerSettings
-	CaDirURL    string
-	IssuerName  string
-	CommonName  *string
-	DNSNames    []string
-	CSR         []byte
+	// CaDirURL is the URL of the ACME CA directory.
+	CaDirURL string
+	// IssuerName is the name of the issuer to use.
+	IssuerName string
+	// CommonName is the CN.
+	CommonName *string
+	// DNSNames are optional domain names.
+	DNSNames []string
+	// CSR is the optional Certificate Signing Request.
+	CSR []byte
+	// Request name is the request object name.
 	RequestName resources.ObjectName
+	// TargetClass is the target class of the DNSEntry.
 	TargetClass string
-	Callback    ObtainerCallback
-	RenewCert   *certificate.Resource
+	// Callback is the callback function to return the ObtainOutput.
+	Callback ObtainerCallback
+	// RenewCert is the certificate to renew.
+	RenewCert *certificate.Resource
 }
 
+// DNSControllerSettings are the settings for the DNSController.
 type DNSControllerSettings struct {
 	// Namespace to set for challenge DNSEntry
 	Namespace string `json:"namespace,omitempty"`
-	// OwnerId to set for challenge DNSEntry
+	// OwnerID to set for challenge DNSEntry
 	// +optional
-	OwnerId *string `json:"owner,omitempty"`
+	OwnerID *string `json:"owner,omitempty"`
 }
 
+// ObtainOutput is the result of the certificate obtain request.
 type ObtainOutput struct {
+	// Certificates contains the certificates.
 	Certificates *certificate.Resource
-	IssuerName   string
-	CommonName   *string
-	DNSNames     []string
-	CSR          []byte
-	Renew        bool
-	Err          error
+	// IssuerName is the name of the issuer.
+	IssuerName string
+	// CommonName is the copy from the input.
+	CommonName *string
+	// DNSNames are the copies from the input.
+	DNSNames []string
+	// CSR is the copy from the input.
+	CSR []byte
+	// Renew is the flag if this was a renew request.
+	Renew bool
+	// Err contains the obtain request error.
+	Err error
 }
 
 func obtainForDomains(client *lego.Client, domains []string) (*certificate.Resource, error) {
@@ -93,6 +118,7 @@ func renew(client *lego.Client, renewCert *certificate.Resource) (*certificate.R
 	return client.Certificate.Renew(*renewCert, true, false)
 }
 
+// Obtain starts the async obtain request.
 func Obtain(input ObtainInput) error {
 	config := input.User.NewConfig(input.CaDirURL)
 
@@ -143,6 +169,7 @@ func Obtain(input ObtainInput) error {
 	return nil
 }
 
+// CertificatesToSecretData converts a certificate resource to secret data.
 func CertificatesToSecretData(certificates *certificate.Resource) map[string][]byte {
 	data := map[string][]byte{}
 
@@ -153,6 +180,7 @@ func CertificatesToSecretData(certificates *certificate.Resource) map[string][]b
 	return data
 }
 
+// SecretDataToCertificates converts secret data to a certicate resource.
 func SecretDataToCertificates(data map[string][]byte) *certificate.Resource {
 	certificates := &certificate.Resource{}
 	certificates.Certificate = data[corev1.TLSCertKey]
@@ -161,6 +189,7 @@ func SecretDataToCertificates(data map[string][]byte) *certificate.Resource {
 	return certificates
 }
 
+// DecodeCertificateFromSecretData decodes the cert key from secret data to a x509 certificate.
 func DecodeCertificateFromSecretData(data map[string][]byte) (*x509.Certificate, error) {
 	tlsCrt, ok := data[corev1.TLSCertKey]
 	if !ok {
@@ -169,6 +198,7 @@ func DecodeCertificateFromSecretData(data map[string][]byte) (*x509.Certificate,
 	return DecodeCertificate(tlsCrt)
 }
 
+// DecodeCertificate decodes the crt byte array.
 func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(tlsCrt)
 	if block == nil {
@@ -181,6 +211,7 @@ func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
+// ExtractCommonNameAnDNSNames extracts values from a CSR (Certificate Signing Request).
 func ExtractCommonNameAnDNSNames(csr []byte) (cn *string, san []string, err error) {
 	block, _ := pem.Decode(csr)
 	if block == nil {

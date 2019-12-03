@@ -30,7 +30,7 @@ import (
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
-func CompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
+func newCompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
 	handler, support, err := core.NewHandlerSupport(c, acme.NewACMEIssuerHandler)
 	if err != nil {
 		return nil, err

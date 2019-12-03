@@ -34,33 +34,42 @@ import (
 )
 
 const (
-	KEY_PRIVATE_KEY = "privateKey"
+	// KeyPrivateKey is the secret data key for the private key.
+	KeyPrivateKey = "privateKey"
 )
 
+// RegistrationUser contains the data of a registration user.
 type RegistrationUser struct {
 	Email        string
 	Registration *registration.Resource
 	key          crypto.PrivateKey
 }
 
+// GetEmail returns the email of the registration user.
 func (u *RegistrationUser) GetEmail() string {
 	return u.Email
 }
+
+// GetRegistration returns the registration resource.
 func (u *RegistrationUser) GetRegistration() *registration.Resource {
 	return u.Registration
 }
+
+// GetPrivateKey returns the private key of the registration user.
 func (u *RegistrationUser) GetPrivateKey() crypto.PrivateKey {
 	return u.key
 }
 
+// NewConfig creates a new lego config.
 func (u *RegistrationUser) NewConfig(caDirURL string) *lego.Config {
 	config := lego.NewConfig(u)
 	config.CADirURL = caDirURL
 	return config
 }
 
+// NewRegistrationUserFromEmail generates a private key and requests a new registration for the user.
 func NewRegistrationUserFromEmail(email string, caDirURL string, secretData map[string][]byte) (*RegistrationUser, error) {
-	privkeyData, ok := secretData[KEY_PRIVATE_KEY]
+	privkeyData, ok := secretData[KeyPrivateKey]
 	var privateKey crypto.PrivateKey
 	var err error
 	if ok {
@@ -75,6 +84,7 @@ func NewRegistrationUserFromEmail(email string, caDirURL string, secretData map[
 	return NewRegistrationUserFromEmailAndPrivateKey(email, caDirURL, privateKey)
 }
 
+// NewRegistrationUserFromEmailAndPrivateKey requests a user registration.
 func NewRegistrationUserFromEmailAndPrivateKey(email string, caDirURL string, privateKey crypto.PrivateKey) (*RegistrationUser, error) {
 	user := &RegistrationUser{Email: email, key: privateKey}
 	config := user.NewConfig(caDirURL)
@@ -145,14 +155,16 @@ func bytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
 	return key2, nil
 }
 
+// ToSecretData returns the registration user as a secret data map.
 func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
 	privkey, err := privateKeyToBytes(u.key)
 	if err != nil {
 		return nil, fmt.Errorf("encoding private key failed: %s", err.Error())
 	}
-	return map[string][]byte{KEY_PRIVATE_KEY: privkey}, nil
+	return map[string][]byte{KeyPrivateKey: privkey}, nil
 }
 
+// RawRegistration returns the registration as a byte array.
 func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 	reg, err := json.Marshal(u.Registration)
 	if err != nil {
@@ -161,10 +173,11 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 	return reg, nil
 }
 
+// RegistrationUserFromSecretData restores a RegistrationUser from a secret data map.
 func RegistrationUserFromSecretData(email string, registrationRaw []byte, data map[string][]byte) (*RegistrationUser, error) {
-	privkeyBytes, ok := data[KEY_PRIVATE_KEY]
+	privkeyBytes, ok := data[KeyPrivateKey]
 	if !ok {
-		return nil, fmt.Errorf("`%s` data not found in secret", KEY_PRIVATE_KEY)
+		return nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
 	}
 	privateKey, err := bytesToPrivateKey(privkeyBytes)
 	if err != nil {

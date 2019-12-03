@@ -16,7 +16,11 @@
 
 package v1alpha1
 
-const STATE_PENDING = "Pending"
-const STATE_ERROR = "Error"
-const STATE_READY = "Ready"
-const STATE_DELETING = "Deleting"
+const (
+	// StatePending is the pending state.
+	StatePending = "Pending"
+	// StateError is the error state.
+	StateError = "Error"
+	// StateReady is the ready state.
+	StateReady = "Ready"
+)

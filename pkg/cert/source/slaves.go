@@ -24,6 +24,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile/reconcilers"
 )
 
+// SlaveReconcilerType creates a slaveReconciler.
 func SlaveReconcilerType(c controller.Interface) (reconcile.Interface, error) {
 	reconciler := &slaveReconciler{
 		controller: c,
@@ -38,17 +39,17 @@ type slaveReconciler struct {
 	slaves     *reconcilers.SlaveReconciler
 }
 
-func (this *slaveReconciler) Start() {
-	this.controller.Infof("determining dangling certificates...")
-	cluster := this.controller.GetMainCluster()
+func (r *slaveReconciler) Start() {
+	r.controller.Infof("determining dangling certificates...")
+	cluster := r.controller.GetMainCluster()
 	main := cluster.GetId()
-	for k := range this.slaves.GetMasters(false) {
+	for k := range r.slaves.GetMasters(false) {
 		if k.Cluster() == main {
 			if _, err := cluster.GetCachedObject(k); errors.IsNotFound(err) {
-				this.controller.Infof("trigger vanished origin %s", k.ObjectKey())
-				this.controller.EnqueueKey(k)
+				r.controller.Infof("trigger vanished origin %s", k.ObjectKey())
+				r.controller.EnqueueKey(k)
 			} else {
-				this.controller.Debugf("found origin %s", k.ObjectKey())
+				r.controller.Debugf("found origin %s", k.ObjectKey())
 			}
 		}
 	}

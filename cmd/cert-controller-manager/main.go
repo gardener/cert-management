@@ -30,7 +30,7 @@ import (
 	_ "github.com/gardener/cert-management/pkg/controller/source/service"
 )
 
-var Version string
+var version string
 
 func init() {
 	cluster.Configure(
@@ -60,7 +60,7 @@ func init() {
 
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "version" {
-		fmt.Println(Version)
+		fmt.Println(version)
 		os.Exit(0)
 	}
 	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing")

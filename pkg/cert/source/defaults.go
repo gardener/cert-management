@@ -34,55 +34,61 @@ import (
 // EventFeedback
 ////////////////////////////////////////////////////////////////////////////////
 
+// EventFeedback is struct to store events
 type EventFeedback struct {
 	logger logger.LogContext
 	source resources.Object
 	events map[string]string
 }
 
+// NewEventFeedback creates a new EventFeedback
 func NewEventFeedback(logger logger.LogContext, obj resources.Object, events map[string]string) CertFeedback {
 	return &EventFeedback{logger, obj, events}
 }
 
-func (this *EventFeedback) Ready(info *CertInfo, msg string) {
+// Ready adds a ready event
+func (f *EventFeedback) Ready(info *CertInfo, msg string) {
 	if msg == "" {
 		msg = fmt.Sprintf("cert request is ready")
 	}
-	this.event(info, msg)
+	f.event(info, msg)
 }
 
-func (this *EventFeedback) Pending(info *CertInfo, msg string) {
+// Pending adds a pending event.
+func (f *EventFeedback) Pending(info *CertInfo, msg string) {
 	if msg == "" {
 		msg = fmt.Sprintf("cert request is pending")
 	}
-	this.event(info, msg)
+	f.event(info, msg)
 }
 
-func (this *EventFeedback) Failed(info *CertInfo, err error) {
+// Failed adds a failed event.
+func (f *EventFeedback) Failed(info *CertInfo, err error) {
 	if err == nil {
 		err = fmt.Errorf("cert request is errornous")
 	}
-	this.event(info, err.Error())
+	f.event(info, err.Error())
 }
 
-func (this *EventFeedback) Succeeded() {
+// Succeeded addas a succeeded event.
+func (f *EventFeedback) Succeeded() {
 }
 
-func (this *EventFeedback) event(info *CertInfo, msg string) {
+func (f *EventFeedback) event(info *CertInfo, msg string) {
 	channel := ""
 	if info != nil {
 		channel = info.SecretName
 	}
-	if msg != this.events[channel] {
-		key := this.source.ClusterKey()
-		this.events[channel] = msg
+	if msg != f.events[channel] {
+		key := f.source.ClusterKey()
+		f.events[channel] = msg
 		if channel != "" {
-			this.logger.Infof("event for %q(%s): %s", key, channel, msg)
-			this.source.Event(v1.EventTypeNormal, "cert-annotation",
+			f.logger.Infof("event for %q(%s): %s", key, channel, msg)
+			f.source.Event(v1.EventTypeNormal, "cert-annotation",
 				fmt.Sprintf("%s: %s", channel, msg))
 		} else {
-			this.logger.Infof("event for %q: %s", key, msg)
-			this.source.Event(v1.EventTypeNormal, "cert-annotation", msg)
+			f.logger.Infof("event for %q: %s", key, msg)
+			f.source.Event(v1.EventTypeNormal, "cert-annotation", msg)
 		}
 	}
 }
@@ -91,6 +97,7 @@ func (this *EventFeedback) event(info *CertInfo, msg string) {
 // CertSource
 ////////////////////////////////////////////////////////////////////////////////
 
+// DefaultCertSource is the standard CertSource implementation.
 type DefaultCertSource struct {
 	lock    sync.Mutex
 	handler CertTargetExtractor
@@ -99,52 +106,62 @@ type DefaultCertSource struct {
 
 var _ CertSource = &DefaultCertSource{}
 
+// NewDefaultCertSource creates a DefaultCertSource
 func NewDefaultCertSource(handler CertTargetExtractor, _ schema.GroupKind) DefaultCertSource {
 	return DefaultCertSource{handler: handler, Events: map[resources.ClusterObjectKey]map[string]string{}}
 }
 
-func (this *certsourcetype) Name() string {
-	return this.name
+// Name is the name
+func (t *certsourcetype) Name() string {
+	return t.name
 }
 
-func (this *certsourcetype) GroupKind() schema.GroupKind {
-	return this.kind
+// GroupKind is the group kind
+func (t *certsourcetype) GroupKind() schema.GroupKind {
+	return t.kind
 }
 
-func (this *handlercertsourcetype) Create(c controller.Interface) (CertSource, error) {
-	return this, nil
+// Create creates a CertSource.
+func (t *handlercertsourcetype) Create(c controller.Interface) (CertSource, error) {
+	return t, nil
 }
 
-func (this *creatorcertsourcetype) Create(c controller.Interface) (CertSource, error) {
-	return this.handler(c)
+// Create creates a CertSource.
+func (t *creatorcertsourcetype) Create(c controller.Interface) (CertSource, error) {
+	return t.handler(c)
 }
 
-func (this *DefaultCertSource) Setup() {
+// Setup is the setup method.
+func (s *DefaultCertSource) Setup() {
 }
 
-func (this *DefaultCertSource) Start() {
+// Start is the start method.
+func (s *DefaultCertSource) Start() {
 }
 
-func (this *DefaultCertSource) GetEvents(key resources.ClusterObjectKey) map[string]string {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	events := this.Events[key]
+// GetEvents returns the events for a cluster object key.
+func (s *DefaultCertSource) GetEvents(key resources.ClusterObjectKey) map[string]string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	events := s.Events[key]
 	if events == nil {
 		events = map[string]string{}
-		this.Events[key] = events
+		s.Events[key] = events
 	}
 	return events
 }
 
-func (this *DefaultCertSource) NewCertsInfo(logger logger.LogContext, obj resources.Object) *CertsInfo {
-	events := this.GetEvents(obj.ClusterKey())
+// NewCertsInfo creates a CertsInfo
+func (s *DefaultCertSource) NewCertsInfo(logger logger.LogContext, obj resources.Object) *CertsInfo {
+	events := s.GetEvents(obj.ClusterKey())
 	return &CertsInfo{Certs: map[string]CertInfo{}, Feedback: NewEventFeedback(logger, obj, events)}
 }
 
-func (this *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (*CertsInfo, error) {
-	info := this.NewCertsInfo(logger, obj)
-	secretName, err := this.handler(logger, obj, current)
-	a, ok := resources.GetAnnotation(obj.Data(), ANNOT_DNSNAMES)
+// GetCertsInfo fills a CertsInfo for an object.
+func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (*CertsInfo, error) {
+	info := s.NewCertsInfo(logger, obj)
+	secretName, err := s.handler(logger, obj, current)
+	a, ok := resources.GetAnnotation(obj.Data(), AnnotDnsnames)
 	if err != nil || !ok {
 		return nil, nil
 	}
@@ -158,7 +175,7 @@ func (this *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resour
 	}
 
 	var issuer *string
-	annotatedIssuer, ok := resources.GetAnnotation(obj.Data(), ANNOT_ISSUER)
+	annotatedIssuer, ok := resources.GetAnnotation(obj.Data(), AnnotIssuer)
 	if ok {
 		issuer = &annotatedIssuer
 	}
@@ -167,13 +184,15 @@ func (this *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resour
 	return info, nil
 }
 
-func (this *DefaultCertSource) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
-	this.Deleted(logger, obj.ClusterKey())
+// Delete deleted a object.
+func (s *DefaultCertSource) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
+	s.Deleted(logger, obj.ClusterKey())
 	return reconcile.Succeeded(logger)
 }
 
-func (this *DefaultCertSource) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) {
-	this.lock.Lock()
-	defer this.lock.Unlock()
-	delete(this.Events, key)
+// Deleted performs cleanup.
+func (s *DefaultCertSource) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	delete(s.Events, key)
 }

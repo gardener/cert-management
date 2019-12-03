@@ -23,18 +23,20 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
-func (this *sourceReconciler) getCertsInfo(logger logger.LogContext, obj resources.Object, s CertSource, current *CertCurrentState) (*CertsInfo, error) {
-	if !this.classes.IsResponsibleFor(logger, obj) {
+func (r *sourceReconciler) getCertsInfo(logger logger.LogContext, obj resources.Object, s CertSource, current *CertCurrentState) (*CertsInfo, error) {
+	if !r.classes.IsResponsibleFor(logger, obj) {
 		return &CertsInfo{}, nil
 	}
 	info, err := s.GetCertsInfo(logger, obj, current)
 	return info, err
 }
 
+// DomainsString returns all domains as comma separated string (common name and DNS names)
 func (info CertInfo) DomainsString() string {
 	return DomainsString(info.Domains)
 }
 
+// DomainsString creates a comma separated string.
 func DomainsString(domains []string) string {
 	if domains == nil {
 		return ""

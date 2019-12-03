@@ -27,15 +27,16 @@ import (
 	"github.com/gardener/cert-management/pkg/cert/source"
 )
 
+// GetSecretName finds the secret name from the object annotations
 func GetSecretName(_ logger.LogContext, obj resources.Object, _ *source.CertCurrentState) (string, error) {
 	svc := obj.Data().(*api.Service)
 	if svc.Spec.Type != api.ServiceTypeLoadBalancer {
 		return "", fmt.Errorf("service is not of type LoadBalancer")
 	}
 
-	secretName, _ := resources.GetAnnotation(svc, source.ANNOT_SECRETNAME)
+	secretName, _ := resources.GetAnnotation(svc, source.AnnotSecretname)
 	if secretName == "" {
-		return "", fmt.Errorf("Missing annotation '%s'", source.ANNOT_SECRETNAME)
+		return "", fmt.Errorf("Missing annotation '%s'", source.AnnotSecretname)
 	}
 	return secretName, nil
 }

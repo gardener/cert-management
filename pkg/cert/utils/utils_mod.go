@@ -18,6 +18,7 @@ package utils
 
 import "github.com/gardener/controller-manager-library/pkg/utils"
 
+// AssureStringArray handles modification of a string array.
 func AssureStringArray(mod *utils.ModificationState, dst *[]string, value []string) {
 	if value == nil {
 		value = []string{}
@@ -28,6 +29,7 @@ func AssureStringArray(mod *utils.ModificationState, dst *[]string, value []stri
 	}
 }
 
+// EqualStringArray compares string arrays.
 func EqualStringArray(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

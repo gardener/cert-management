@@ -36,16 +36,17 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
-func SourceReconciler(sourceType CertSourceType, rtype controller.ReconcilerType) controller.ReconcilerType {
+// SrcReconciler create a source reconciler.
+func SrcReconciler(sourceType CertSourceType, rtype controller.ReconcilerType) controller.ReconcilerType {
 	return func(c controller.Interface) (reconcile.Interface, error) {
 		s, err := sourceType.Create(c)
 		if err != nil {
 			return nil, err
 		}
-		copt, _ := c.GetStringOption(OPT_CLASS)
-		classes := controller.NewClasses(c, copt, ANNOT_CLASS, DefaultClass)
+		copt, _ := c.GetStringOption(OptClass)
+		classes := controller.NewClasses(c, copt, AnnotClass, DefaultClass)
 		c.SetFinalizerHandler(controller.NewFinalizerForClasses(c, c.GetDefinition().FinalizerName(), classes))
-		targetclass, _ := c.GetStringOption(OPT_TARGETCLASS)
+		targetclass, _ := c.GetStringOption(OptTargetclass)
 		if targetclass == "" {
 			if !classes.Contains(DefaultClass) && classes.Main() != DefaultClass {
 				targetclass = classes.Main()
@@ -54,14 +55,14 @@ func SourceReconciler(sourceType CertSourceType, rtype controller.ReconcilerType
 		c.Infof("responsible for classes: %s (%s)", classes, classes.Main())
 		c.Infof("target class           : %s", targetclass)
 		reconciler := &sourceReconciler{
-			SlaveAccess: reconcilers.NewSlaveAccess(c, sourceType.Name(), SlaveResources, MasterResourcesType(sourceType.GroupKind())),
+			SlaveAccess: reconcilers.NewSlaveAccess(c, sourceType.Name(), slaveResources, MasterResourcesType(sourceType.GroupKind())),
 			source:      s,
 			classes:     classes,
 			targetclass: targetclass,
 		}
 
-		reconciler.namespace, _ = c.GetStringOption(OPT_NAMESPACE)
-		reconciler.nameprefix, _ = c.GetStringOption(OPT_NAMEPREFIX)
+		reconciler.namespace, _ = c.GetStringOption(OptNamespace)
+		reconciler.nameprefix, _ = c.GetStringOption(OptNameprefix)
 
 		if c.GetMainCluster() == c.GetCluster(ctrl.TargetCluster) {
 			reconciler.namespace = ""
@@ -87,16 +88,16 @@ type sourceReconciler struct {
 	nameprefix  string
 }
 
-func (this *sourceReconciler) Start() {
-	this.SlaveAccess.Start()
-	this.source.Start()
-	this.NestedReconciler.Start()
+func (r *sourceReconciler) Start() {
+	r.SlaveAccess.Start()
+	r.source.Start()
+	r.NestedReconciler.Start()
 }
 
-func (this *sourceReconciler) Setup() {
-	this.SlaveAccess.Setup()
-	this.source.Setup()
-	this.NestedReconciler.Setup()
+func (r *sourceReconciler) Setup() {
+	r.SlaveAccess.Setup()
+	r.source.Setup()
+	r.NestedReconciler.Setup()
 }
 
 func getCertificateSecretName(obj resources.Object) string {
@@ -109,8 +110,8 @@ func getCertificateSecretName(obj resources.Object) string {
 	panic("missing secret name")
 }
 
-func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
-	slaves := this.LookupSlaves(obj.ClusterKey())
+func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
+	slaves := r.LookupSlaves(obj.ClusterKey())
 	currentState := &CertCurrentState{CertStates: map[string]*CertState{}}
 	for _, s := range slaves {
 		crt := certutils.Certificate(s).Certificate()
@@ -119,7 +120,7 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 			State: crt.Status.State, Message: crt.Status.Message, CreationTimestamp: crt.CreationTimestamp}
 	}
 
-	info, err := this.getCertsInfo(logger, obj, this.source, currentState)
+	info, err := r.getCertsInfo(logger, obj, r.source, currentState)
 	if err != nil {
 		obj.Event(core.EventTypeWarning, "reconcile", err.Error())
 	}
@@ -131,13 +132,13 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 		return reconcile.Succeeded(logger).Stop()
 	}
 
-	if len(info.Certs) > 0 && requireFinalizer(obj, this.SlaveResoures()[0].GetCluster()) {
-		err := this.SetFinalizer(obj)
+	if len(info.Certs) > 0 && requireFinalizer(obj, r.SlaveResoures()[0].GetCluster()) {
+		err := r.SetFinalizer(obj)
 		if err != nil {
 			return reconcile.Delay(logger, fmt.Errorf("cannot set finalizer: %s", err))
 		}
 	} else {
-		err := this.RemoveFinalizer(obj)
+		err := r.RemoveFinalizer(obj)
 		if err != nil {
 			return reconcile.Delay(logger, fmt.Errorf("cannot remove finalizer: %s", err))
 		}
@@ -168,7 +169,7 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 	if len(missingSecretNames) > 0 {
 		logger.Infof("found missing secrets: %s", missingSecretNames)
 		for secretName := range missingSecretNames {
-			err := this.createEntryFor(logger, obj, info.Certs[secretName], info.Feedback)
+			err := r.createEntryFor(logger, obj, info.Certs[secretName], info.Feedback)
 			if err != nil {
 				notifiedErrors = append(notifiedErrors, fmt.Sprintf("cannot create certificate for secret %s: %s ", secretName, err))
 			}
@@ -179,7 +180,7 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 		logger.Infof("found obsolete secrets: %s", obsoleteSecretNames)
 		for _, o := range obsolete {
 			secretName := getCertificateSecretName(o)
-			err := this.deleteEntry(logger, obj, o)
+			err := r.deleteEntry(logger, obj, o)
 			if err != nil {
 				notifiedErrors = append(notifiedErrors, fmt.Sprintf("cannot remove certificate %q for secret %s: %s",
 					o.ClusterKey(), secretName, err))
@@ -189,7 +190,7 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 
 	for _, o := range current {
 		secretName := getCertificateSecretName(o)
-		mod, err := this.updateEntry(logger, info.Certs[secretName], o)
+		mod, err := r.updateEntry(logger, info.Certs[secretName], o)
 		modified[secretName] = mod
 		if err != nil {
 			notifiedErrors = append(notifiedErrors, fmt.Sprintf("cannot update certificate %q for secret %s: %s",
@@ -211,19 +212,19 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 			s := currentState.CertStates[secretName]
 			if s != nil && !modified[secretName] {
 				switch s.State {
-				case api.STATE_ERROR:
+				case api.StateError:
 					err := fmt.Errorf("errornous certificate")
 					if s.Message != nil {
 						err = fmt.Errorf("%s: %s", err, *s.Message)
 					}
 					info.Feedback.Failed(&certInfo, err)
-				case api.STATE_PENDING:
+				case api.StatePending:
 					msg := fmt.Sprintf("certificate pending")
 					if s.Message != nil {
 						msg = fmt.Sprintf("%s: %s", msg, *s.Message)
 					}
 					info.Feedback.Pending(&certInfo, msg)
-				case api.STATE_READY:
+				case api.StateReady:
 					msg := "certificate ready"
 					if s.Message != nil {
 						msg = *s.Message
@@ -239,7 +240,7 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 		info.Feedback.Succeeded()
 	}
 
-	status := this.NestedReconciler.Reconcile(logger, obj)
+	status := r.NestedReconciler.Reconcile(logger, obj)
 	if status.IsSucceeded() {
 		if len(info.Certs) == 0 {
 			return status.Stop()
@@ -251,10 +252,10 @@ func (this *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.
 // Deleted is used as fallback, if the source object in another cluster is
 //  deleted unexpectedly (by removing the finalizer).
 //  It checks whether a slave is still available and deletes it.
-func (this *sourceReconciler) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
+func (r *sourceReconciler) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
 	logger.Infof("%s finally deleted", key)
 	failed := false
-	for _, s := range this.Slaves().GetByOwnerKey(key) {
+	for _, s := range r.Slaves().GetByOwnerKey(key) {
 		err := s.Delete()
 		commonName := certutils.Certificate(s).SafeCommonName()
 		if err != nil && !errors.IsNotFound(err) {
@@ -268,14 +269,14 @@ func (this *sourceReconciler) Deleted(logger logger.LogContext, key resources.Cl
 		return reconcile.Delay(logger, nil)
 	}
 
-	this.source.Deleted(logger, key)
-	return this.NestedReconciler.Deleted(logger, key)
+	r.source.Deleted(logger, key)
+	return r.NestedReconciler.Deleted(logger, key)
 }
 
-func (this *sourceReconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
+func (r *sourceReconciler) Delete(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	failed := false
 	logger.Infof("certificate source is deleting -> delete certificate")
-	for _, s := range this.Slaves().GetByOwner(obj) {
+	for _, s := range r.Slaves().GetByOwner(obj) {
 		commonName := certutils.Certificate(s).SafeCommonName()
 		logger.Infof("delete certificate %s(%s)", s.ObjectName(), commonName)
 		err := s.Delete()
@@ -288,11 +289,11 @@ func (this *sourceReconciler) Delete(logger logger.LogContext, obj resources.Obj
 		return reconcile.Delay(logger, nil)
 	}
 
-	status := this.source.Delete(logger, obj)
+	status := r.source.Delete(logger, obj)
 	if status.IsSucceeded() {
-		status = this.NestedReconciler.Delete(logger, obj)
+		status = r.NestedReconciler.Delete(logger, obj)
 		if status.IsSucceeded() {
-			err := this.RemoveFinalizer(obj)
+			err := r.RemoveFinalizer(obj)
 			if err != nil {
 				return reconcile.Delay(logger, err)
 			}
@@ -304,30 +305,30 @@ func (this *sourceReconciler) Delete(logger logger.LogContext, obj resources.Obj
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func (this *sourceReconciler) createEntryFor(logger logger.LogContext, obj resources.Object, info CertInfo, feedback CertFeedback) error {
+func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resources.Object, info CertInfo, feedback CertFeedback) error {
 	cert := &api.Certificate{}
-	cert.GenerateName = strings.ToLower(this.nameprefix + obj.GetName() + "-" + obj.GroupKind().Kind + "-")
-	resources.SetAnnotation(cert, ANNOT_FORWARD_OWNER_REFS, "true")
-	if this.targetclass != "" {
-		resources.SetAnnotation(cert, ANNOT_CLASS, this.targetclass)
+	cert.GenerateName = strings.ToLower(r.nameprefix + obj.GetName() + "-" + obj.GroupKind().Kind + "-")
+	resources.SetAnnotation(cert, AnnotForwardOwnerRefs, "true")
+	if r.targetclass != "" {
+		resources.SetAnnotation(cert, AnnotClass, r.targetclass)
 	}
 	if len(info.Domains) > 0 {
 		cert.Spec.CommonName = &info.Domains[0]
 		cert.Spec.DNSNames = info.Domains[1:]
 	}
 	if info.IssuerName != nil {
-		cert.Spec.IssuerRef = &api.IssuerRef{*info.IssuerName}
+		cert.Spec.IssuerRef = &api.IssuerRef{Name: *info.IssuerName}
 	}
 	cert.Spec.SecretName = &info.SecretName
-	if this.namespace == "" {
+	if r.namespace == "" {
 		cert.Namespace = obj.GetNamespace()
 	} else {
-		cert.Namespace = this.namespace
+		cert.Namespace = r.namespace
 	}
 
-	e, _ := this.SlaveResoures()[0].Wrap(cert)
+	e, _ := r.SlaveResoures()[0].Wrap(cert)
 
-	err := this.Slaves().CreateSlave(obj, e)
+	err := r.Slaves().CreateSlave(obj, e)
 	if err != nil {
 		if feedback != nil {
 			feedback.Failed(&info, err)
@@ -342,7 +343,7 @@ func (this *sourceReconciler) createEntryFor(logger logger.LogContext, obj resou
 	return nil
 }
 
-func (this *sourceReconciler) deleteEntry(logger logger.LogContext, obj resources.Object, e resources.Object) error {
+func (r *sourceReconciler) deleteEntry(logger logger.LogContext, obj resources.Object, e resources.Object) error {
 	err := e.Delete()
 	if err == nil {
 		obj.Eventf(core.EventTypeNormal, "reconcile", "deleted certificate object %s", e.ObjectName())
@@ -357,16 +358,16 @@ func (this *sourceReconciler) deleteEntry(logger logger.LogContext, obj resource
 	return err
 }
 
-func (this *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, obj resources.Object) (bool, error) {
+func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, obj resources.Object) (bool, error) {
 	f := func(o resources.ObjectData) (bool, error) {
 		spec := &o.(*api.Certificate).Spec
 		mod := &utils.ModificationState{}
-		changed := resources.SetAnnotation(o, ANNOT_FORWARD_OWNER_REFS, "true")
+		changed := resources.SetAnnotation(o, AnnotForwardOwnerRefs, "true")
 		mod.Modify(changed)
-		if this.targetclass == "" {
-			changed = resources.RemoveAnnotation(o, ANNOT_CLASS)
+		if r.targetclass == "" {
+			changed = resources.RemoveAnnotation(o, AnnotClass)
 		} else {
-			changed = resources.SetAnnotation(o, ANNOT_CLASS, this.targetclass)
+			changed = resources.SetAnnotation(o, AnnotClass, r.targetclass)
 		}
 		mod.Modify(changed)
 		var cn *string
@@ -380,7 +381,7 @@ func (this *sourceReconciler) updateEntry(logger logger.LogContext, info CertInf
 		certutils.AssureStringArray(mod, &spec.DNSNames, dnsNames)
 		if info.IssuerName != nil {
 			if spec.IssuerRef == nil || spec.IssuerRef.Name != *info.IssuerName {
-				spec.IssuerRef = &api.IssuerRef{*info.IssuerName}
+				spec.IssuerRef = &api.IssuerRef{Name: *info.IssuerName}
 				mod.Modify(true)
 			}
 		} else {

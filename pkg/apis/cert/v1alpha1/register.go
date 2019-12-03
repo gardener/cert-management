@@ -27,16 +27,24 @@ import (
 )
 
 const (
-	Version   = "v1alpha1"
+	// Version is the version of the API.
+	Version = "v1alpha1"
+	// GroupName is the group name of the API.
 	GroupName = cert.GroupName
 
-	IssuerKind   = "Issuer"
+	// IssuerKind is the issuer kind.
+	IssuerKind = "Issuer"
+	// IssuerPlural is its plural form.
 	IssuerPlural = "issuers"
-	IssuerShort  = "issuer"
+	// IssuerShort is the short name.
+	IssuerShort = "issuer"
 
-	CertificateKind   = "Certificate"
+	// CertificateKind is the certificate kind.
+	CertificateKind = "Certificate"
+	// CertificatePlural is its plural form.
 	CertificatePlural = "certificates"
-	CertificateShort  = "cert"
+	// CertificateShort is the short name.
+	CertificateShort = "cert"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -53,8 +61,10 @@ func Resource(resource string) schema.GroupResource {
 }
 
 var (
+	// SchemeBuilder is a new Scheme Builder which registers our API.
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	// AddToScheme is a reference to the Scheme Builder's AddToScheme function.
+	AddToScheme = SchemeBuilder.AddToScheme
 )
 
 // Adds the list of known types to Scheme.

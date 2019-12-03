@@ -33,6 +33,7 @@ import (
 	"github.com/gardener/external-dns-management/pkg/dns"
 )
 
+// ProviderWithCount is an extended Provider interface.
 type ProviderWithCount interface {
 	challenge.Provider
 	GetChallengesCount() int
@@ -114,13 +115,14 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 
 	setSpec := func(e *dnsapi.DNSEntry) {
 		e.Spec.DNSName = dns.NormalizeHostname(fqdn)
-		e.Spec.OwnerId = p.settings.OwnerId
+		e.Spec.OwnerId = p.settings.OwnerID
 		e.Spec.TTL = &p.ttl
 		e.Spec.Text = values
-		resources.SetAnnotation(e, source.ANNOT_CLASS, p.targetClass)
+		resources.SetAnnotation(e, source.AnnotClass, p.targetClass)
 	}
 
 	entry := p.prepareEntry(domain)
+
 	if len(values) == 1 {
 		setSpec(entry)
 		p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %ss", entry.Namespace, entry.Name, p.certificateName)
@@ -129,24 +131,24 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 			return fmt.Errorf("creating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
 		}
 		return nil
-	} else {
-		p.multiValues = true
-		err := retryOnUpdateError(func() error {
-			obj, err := p.entryResources.Get_(entry)
-			if err != nil {
-				return fmt.Errorf("getting DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
-			}
-			entry = obj.Data().(*dnsapi.DNSEntry)
-			setSpec(entry)
-			p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %s with %d values", entry.Namespace, entry.Name, p.certificateName, len(values))
-			_, err = p.entryResources.Update(entry)
-			if err != nil {
-				return &updateError{msg: fmt.Sprintf("updating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())}
-			}
-			return nil
-		})
-		return err
 	}
+
+	p.multiValues = true
+	err := retryOnUpdateError(func() error {
+		obj, err := p.entryResources.Get_(entry)
+		if err != nil {
+			return fmt.Errorf("getting DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
+		}
+		entry = obj.Data().(*dnsapi.DNSEntry)
+		setSpec(entry)
+		p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %s with %d values", entry.Namespace, entry.Name, p.certificateName, len(values))
+		_, err = p.entryResources.Update(entry)
+		if err != nil {
+			return &updateError{msg: fmt.Sprintf("updating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())}
+		}
+		return nil
+	})
+	return err
 }
 
 func (p *dnsControllerProvider) addPresentingDomainValue(domain, value string) []string {

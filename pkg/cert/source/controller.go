@@ -30,44 +30,55 @@ import (
 )
 
 const (
-	// ANNOT_DNSNAMES annotation is shared with dns controller manager
-	ANNOT_DNSNAMES           = "dns.gardener.cloud/dnsnames"
-	ANNOT_CLASS              = "cert.gardener.cloud/class"
-	ANNOT_FORWARD_OWNER_REFS = "cert.gardener.cloud/forward-owner-refs"
-	ANNOT_SECRETNAME         = "cert.gardener.cloud/secretname"
-	ANNOT_ISSUER             = "cert.gardener.cloud/issuer"
+	// AnnotDnsnames annotation is shared with dns controller manager
+	AnnotDnsnames = "dns.gardener.cloud/dnsnames"
+	// AnnotClass is the annotation for the cert class
+	AnnotClass = "cert.gardener.cloud/class"
+	// AnnotForwardOwnerRefs is the annotation for the forward owner references
+	AnnotForwardOwnerRefs = "cert.gardener.cloud/forward-owner-refs"
+	// AnnotSecretname is the annotation for the secret name
+	AnnotSecretname = "cert.gardener.cloud/secretname"
+	// AnnotIssuer is the annotation for the issuer name
+	AnnotIssuer = "cert.gardener.cloud/issuer"
 
-	OPT_CLASS       = "cert-class"
-	OPT_TARGETCLASS = "cert-target-class"
-	OPT_NAMESPACE   = "target-namespace"
-	OPT_NAMEPREFIX  = "target-name-prefix"
+	// OptClass is the cert-class command line option
+	OptClass = "cert-class"
+	// OptTargetclass is the target-cert-class command line option
+	OptTargetclass = "cert-target-class"
+	// OptNamespace is the namespace command line option
+	OptNamespace = "target-namespace"
+	// OptNameprefix is the target-name-prefix command line option
+	OptNameprefix = "target-name-prefix"
 
+	// DefaultClass is the default cert-class
 	DefaultClass = "gardencert"
 )
 
-var REQUEST = resources.NewGroupKind(api.GroupName, api.CertificateKind)
+var certificateGroupKind = resources.NewGroupKind(api.GroupName, api.CertificateKind)
 
+// CertSourceController creates a CertSource controller.
 func CertSourceController(source CertSourceType, reconcilerType controller.ReconcilerType) controller.Configuration {
 	gk := source.GroupKind()
 	return controller.Configure(source.Name()).
-		DefaultedStringOption(OPT_CLASS, DefaultClass, "Identifier used to differentiate responsible controllers for entries").
-		StringOption(OPT_TARGETCLASS, "Identifier used to differentiate responsible dns controllers for target entries").
-		DefaultedStringOption(OPT_NAMESPACE, "", "target namespace for cross cluster generation").
-		DefaultedStringOption(OPT_NAMEPREFIX, "", "name prefix in target namespace for cross cluster generation").
+		DefaultedStringOption(OptClass, DefaultClass, "Identifier used to differentiate responsible controllers for entries").
+		StringOption(OptTargetclass, "Identifier used to differentiate responsible dns controllers for target entries").
+		DefaultedStringOption(OptNamespace, "", "target namespace for cross cluster generation").
+		DefaultedStringOption(OptNameprefix, "", "name prefix in target namespace for cross cluster generation").
 		FinalizerDomain(api.GroupName).
-		Reconciler(SourceReconciler(source, reconcilerType)).
+		Reconciler(SrcReconciler(source, reconcilerType)).
 		Cluster(ctrl.SourceCluster).
 		DefaultWorkerPool(2, 120*time.Second).
 		MainResource(gk.Group, gk.Kind).
-		Reconciler(reconcilers.SlaveReconcilerType(source.Name(), SlaveResources, SlaveReconcilerType, MasterResourcesType(source.GroupKind())), "certificates").
+		Reconciler(reconcilers.SlaveReconcilerType(source.Name(), slaveResources, SlaveReconcilerType, MasterResourcesType(source.GroupKind())), "certificates").
 		Cluster(ctrl.TargetCluster).
 		CustomResourceDefinitions(crds.CertificateCRD).
 		WorkerPool("targets", 2, 0).
 		ReconcilerWatch("certificates", api.GroupName, api.CertificateKind)
 }
 
-var SlaveResources = reconcilers.ClusterResources(ctrl.TargetCluster, REQUEST)
+var slaveResources = reconcilers.ClusterResources(ctrl.TargetCluster, certificateGroupKind)
 
+// MasterResourcesType creates the master resource type interfaces function.
 func MasterResourcesType(kind schema.GroupKind) reconcilers.Resources {
 	return func(c controller.Interface) []resources.Interface {
 		target := c.GetMainCluster()

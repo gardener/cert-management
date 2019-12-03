@@ -28,23 +28,30 @@ import (
 	"github.com/gardener/cert-management/pkg/cert/source"
 )
 
-type IngressSource struct {
+// CIngressSource is the ingress CertSource
+type CIngressSource struct {
 	source.DefaultCertSource
 }
 
 const (
-	AnnotationPurposeKey          = "cert.gardener.cloud/purpose"
+	// AnnotationPurposeKey is the annotation key for the purpose
+	AnnotationPurposeKey = "cert.gardener.cloud/purpose"
+	// AnnotationPurposeValueManaged is the managed value for the purpose annotation
 	AnnotationPurposeValueManaged = "managed"
-	DeprecatedLabelNamePurpose    = "garden.sapcloud.io/purpose"
-	DeprecatedLabelValueManaged   = "managed-cert"
+	// DeprecatedLabelNamePurpose is the label key for the purpose
+	DeprecatedLabelNamePurpose = "garden.sapcloud.io/purpose"
+	// DeprecatedLabelValueManaged is the managed value for the purpose label
+	DeprecatedLabelValueManaged = "managed-cert"
 )
 
+// NewIngressSource creates a CertSource
 func NewIngressSource(_ controller.Interface) (source.CertSource, error) {
-	return &IngressSource{DefaultCertSource: source.DefaultCertSource{Events: map[resources.ClusterObjectKey]map[string]string{}}}, nil
+	return &CIngressSource{DefaultCertSource: source.DefaultCertSource{Events: map[resources.ClusterObjectKey]map[string]string{}}}, nil
 }
 
-func (this *IngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *source.CertCurrentState) (*source.CertsInfo, error) {
-	info := this.NewCertsInfo(logger, obj)
+// GetCertsInfo returns CertsInfo for the given object
+func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *source.CertCurrentState) (*source.CertsInfo, error) {
+	info := s.NewCertsInfo(logger, obj)
 
 	data := obj.Data().(*api.Ingress)
 	annotValue, _ := resources.GetAnnotation(data, AnnotationPurposeKey)
@@ -55,7 +62,7 @@ func (this *IngressSource) GetCertsInfo(logger logger.LogContext, obj resources.
 	}
 
 	var issuer *string
-	annotatedIssuer, ok := resources.GetAnnotation(data, source.ANNOT_ISSUER)
+	annotatedIssuer, ok := resources.GetAnnotation(data, source.AnnotIssuer)
 	if ok {
 		issuer = &annotatedIssuer
 	}

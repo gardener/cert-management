@@ -22,27 +22,33 @@ import (
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
-var IssuerType = (*api.Issuer)(nil)
+var issuerType = (*api.Issuer)(nil)
 
+// IssuerObject encapsulates the issuer resource object.
 type IssuerObject struct {
 	resources.Object
 }
 
-func (this *IssuerObject) Issuer() *api.Issuer {
-	return this.Data().(*api.Issuer)
+// Issuer returns the issuer.
+func (o *IssuerObject) Issuer() *api.Issuer {
+	return o.Data().(*api.Issuer)
 }
 
+// Issuer returns the issuer object.
 func Issuer(o resources.Object) *IssuerObject {
 
-	if o.IsA(CertificateType) {
+	if o.IsA(issuerType) {
 		return &IssuerObject{o}
 	}
 	return nil
 }
 
-func (this *IssuerObject) Spec() *api.IssuerSpec {
-	return &this.Issuer().Spec
+// Spec returns the issuer resource object spec.
+func (o *IssuerObject) Spec() *api.IssuerSpec {
+	return &o.Issuer().Spec
 }
-func (this *IssuerObject) Status() *api.IssuerStatus {
-	return &this.Issuer().Status
+
+// Status returns the issuer resource object status.
+func (o *IssuerObject) Status() *api.IssuerStatus {
+	return &o.Issuer().Status
 }

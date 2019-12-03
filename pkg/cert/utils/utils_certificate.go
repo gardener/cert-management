@@ -22,35 +22,42 @@ import (
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
-var CertificateType = (*api.Certificate)(nil)
+var certificateType = (*api.Certificate)(nil)
 
+// CertificateObject encapsulates the certificate resource object.
 type CertificateObject struct {
 	resources.Object
 }
 
-func (this *CertificateObject) Certificate() *api.Certificate {
-	return this.Data().(*api.Certificate)
+// Certificate casts the object to certificate.
+func (o *CertificateObject) Certificate() *api.Certificate {
+	return o.Data().(*api.Certificate)
 }
 
+// Certificate returns the certificate object
 func Certificate(o resources.Object) *CertificateObject {
 
-	if o.IsA(CertificateType) {
+	if o.IsA(certificateType) {
 		return &CertificateObject{o}
 	}
 	return nil
 }
 
-func (this *CertificateObject) Spec() *api.CertificateSpec {
-	return &this.Certificate().Spec
-}
-func (this *CertificateObject) Status() *api.CertificateStatus {
-	return &this.Certificate().Status
+// Spec returns the certificate spec
+func (o *CertificateObject) Spec() *api.CertificateSpec {
+	return &o.Certificate().Spec
 }
 
-func (this *CertificateObject) SafeCommonName() string {
-	cn := this.Spec().CommonName
+// Status returns the certificate status
+func (o *CertificateObject) Status() *api.CertificateStatus {
+	return &o.Certificate().Status
+}
+
+// SafeCommonName return the common name or "".
+func (o *CertificateObject) SafeCommonName() string {
+	cn := o.Spec().CommonName
 	if cn == nil {
-		cn = this.Status().CommonName
+		cn = o.Status().CommonName
 	}
 	if cn == nil {
 		return ""

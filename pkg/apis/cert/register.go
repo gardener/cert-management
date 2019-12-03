@@ -17,5 +17,6 @@
 package cert
 
 const (
+	// GroupName is the name of the certificate API group.
 	GroupName = "cert.gardener.cloud"
 )

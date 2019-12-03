@@ -23,15 +23,18 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
+// PendingCertificateRequests contains the pending certificate requests.
 type PendingCertificateRequests struct {
 	lock     sync.Mutex
 	requests map[resources.ObjectName]time.Time
 }
 
+// NewPendingRequests creates a new PendingCertificateRequests
 func NewPendingRequests() *PendingCertificateRequests {
 	return &PendingCertificateRequests{requests: map[resources.ObjectName]time.Time{}}
 }
 
+// Add adds a certificate object name.
 func (pr *PendingCertificateRequests) Add(name resources.ObjectName) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
@@ -39,6 +42,7 @@ func (pr *PendingCertificateRequests) Add(name resources.ObjectName) {
 	pr.requests[name] = time.Now()
 }
 
+// Contains check if a certificate object name is pending.
 func (pr *PendingCertificateRequests) Contains(name resources.ObjectName) bool {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
@@ -47,6 +51,7 @@ func (pr *PendingCertificateRequests) Contains(name resources.ObjectName) bool {
 	return ok && !t.Add(5*time.Minute).Before(time.Now())
 }
 
+// Remove removes a certificate object name from the pending list.
 func (pr *PendingCertificateRequests) Remove(name resources.ObjectName) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
@@ -54,15 +59,18 @@ func (pr *PendingCertificateRequests) Remove(name resources.ObjectName) {
 	delete(pr.requests, name)
 }
 
+// PendingResults caches the ObtainOutput results.
 type PendingResults struct {
 	lock    sync.Mutex
 	results map[resources.ObjectName]*ObtainOutput
 }
 
+// NewPendingResults creates a new PendingResults.
 func NewPendingResults() *PendingResults {
 	return &PendingResults{results: map[resources.ObjectName]*ObtainOutput{}}
 }
 
+// Add adds a object name / ObtainOutput pair.
 func (pr *PendingResults) Add(name resources.ObjectName, result *ObtainOutput) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
@@ -70,6 +78,7 @@ func (pr *PendingResults) Add(name resources.ObjectName, result *ObtainOutput) {
 	pr.results[name] = result
 }
 
+// Remove removes a pending result by object name.
 func (pr *PendingResults) Remove(name resources.ObjectName) *ObtainOutput {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()

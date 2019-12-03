@@ -23,6 +23,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
+// NewReferencedSecrets create a ReferencedSecrets
 func NewReferencedSecrets() *ReferencedSecrets {
 	return &ReferencedSecrets{
 		secretToIssuers: map[resources.ObjectName]resources.ObjectNameSet{},
@@ -35,12 +36,14 @@ type secretAndHash struct {
 	hash       string
 }
 
+// ReferencedSecrets stores references between issuers and their secrets.
 type ReferencedSecrets struct {
 	lock            sync.Mutex
 	secretToIssuers map[resources.ObjectName]resources.ObjectNameSet
 	issuerToSecret  map[resources.ObjectName]secretAndHash
 }
 
+// RememberIssuerSecret stores a secretRef for an issuer.
 func (rs *ReferencedSecrets) RememberIssuerSecret(issuerName resources.ObjectName, secretRef *v1.SecretReference, hash string) bool {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
@@ -52,6 +55,7 @@ func (rs *ReferencedSecrets) RememberIssuerSecret(issuerName resources.ObjectNam
 	return rs.updateIssuerSecret(issuerName, secretName, hash)
 }
 
+// RemoveIssuer removes all secretRefs for an issuer.
 func (rs *ReferencedSecrets) RemoveIssuer(issuerName resources.ObjectName) bool {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
@@ -59,6 +63,7 @@ func (rs *ReferencedSecrets) RemoveIssuer(issuerName resources.ObjectName) bool 
 	return rs.removeIssuer(issuerName)
 }
 
+// GetIssuerSecretHash gets the for an issuer secret
 func (rs *ReferencedSecrets) GetIssuerSecretHash(issuerName resources.ObjectName) string {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
@@ -70,6 +75,7 @@ func (rs *ReferencedSecrets) GetIssuerSecretHash(issuerName resources.ObjectName
 	return obj.hash
 }
 
+// IssuerNamesFor finds issuers for given secret name.
 func (rs *ReferencedSecrets) IssuerNamesFor(secretName resources.ObjectName) resources.ObjectNameSet {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()

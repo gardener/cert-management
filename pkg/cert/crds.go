@@ -24,6 +24,7 @@ import (
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
+// IssuerCRD contains the standard columns for the issuer CRD.
 var IssuerCRD = apiextensions.CreateCRDObjectWithStatus(v1alpha1.GroupName, v1alpha1.Version, v1alpha1.IssuerKind,
 	v1alpha1.IssuerPlural, v1alpha1.IssuerShort, true,
 	v1beta1.CustomResourceColumnDefinition{
@@ -52,6 +53,7 @@ var IssuerCRD = apiextensions.CreateCRDObjectWithStatus(v1alpha1.GroupName, v1al
 	},
 )
 
+// CertificateCRD contains the standard columns for the certificate CRD.
 var CertificateCRD = apiextensions.CreateCRDObjectWithStatus(v1alpha1.GroupName, v1alpha1.Version, v1alpha1.CertificateKind,
 	v1alpha1.CertificatePlural, v1alpha1.CertificateShort, true,
 	v1beta1.CustomResourceColumnDefinition{

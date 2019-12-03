@@ -22,6 +22,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
+// NewAssociatedObjects creates an AssociatedObjects
 func NewAssociatedObjects() *AssociatedObjects {
 	return &AssociatedObjects{
 		srcToDest: map[resources.ObjectName]resources.ObjectNameSet{},
@@ -29,12 +30,14 @@ func NewAssociatedObjects() *AssociatedObjects {
 	}
 }
 
+// AssociatedObjects stores bidi-associations between source and dest.
 type AssociatedObjects struct {
 	lock      sync.Mutex
 	srcToDest map[resources.ObjectName]resources.ObjectNameSet
 	destToSrc map[resources.ObjectName]resources.ObjectName
 }
 
+// AddAssoc adds an association.
 func (ao *AssociatedObjects) AddAssoc(src, dst resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
@@ -48,6 +51,7 @@ func (ao *AssociatedObjects) AddAssoc(src, dst resources.ObjectName) {
 	ao.destToSrc[dst] = src
 }
 
+// RemoveByDest removes an association by dest.
 func (ao *AssociatedObjects) RemoveByDest(dst resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
@@ -64,6 +68,7 @@ func (ao *AssociatedObjects) RemoveByDest(dst resources.ObjectName) {
 	}
 }
 
+// RemoveBySource removes an association by src.
 func (ao *AssociatedObjects) RemoveBySource(src resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
@@ -74,6 +79,7 @@ func (ao *AssociatedObjects) RemoveBySource(src resources.ObjectName) {
 	delete(ao.srcToDest, src)
 }
 
+// DestinationsAsArray returns all destinations for the given source.
 func (ao *AssociatedObjects) DestinationsAsArray(src resources.ObjectName) []resources.ObjectName {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
@@ -85,6 +91,7 @@ func (ao *AssociatedObjects) DestinationsAsArray(src resources.ObjectName) []res
 	return set.AsArray()
 }
 
+// DestinationsCount counts the destinations for the given source.
 func (ao *AssociatedObjects) DestinationsCount(src resources.ObjectName) int {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
@@ -96,6 +103,7 @@ func (ao *AssociatedObjects) DestinationsCount(src resources.ObjectName) int {
 	return len(set)
 }
 
+// Sources returns all sources.
 func (ao *AssociatedObjects) Sources() []resources.ObjectName {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()

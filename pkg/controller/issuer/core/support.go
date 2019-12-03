@@ -37,18 +37,22 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
+// Enqueuer is an interface to allow enqueue a key
 type Enqueuer interface {
 	EnqueueKey(key resources.ClusterObjectKey) error
 }
 
+// IssuerHandlerFactory is a function type to create an issuer handler
 type IssuerHandlerFactory func(support *Support) (IssuerHandler, error)
 
+// IssuerHandler can reconcile issuers.
 type IssuerHandler interface {
 	Type() string
 	CanReconcile(issuer *api.Issuer) bool
 	Reconcile(logger logger.LogContext, obj resources.Object, issuer *api.Issuer) reconcile.Status
 }
 
+// NewHandlerSupport creates CompoundHandler and Support
 func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory) (*CompoundHandler, *Support, error) {
 	defaultCluster := c.GetCluster(ctrl.DefaultCluster)
 	targetCluster := c.GetCluster(ctrl.TargetCluster)
@@ -91,16 +95,18 @@ func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory
 	return h, s, nil
 }
 
+// CompoundHandler is an array of IssuerHandler
 type CompoundHandler struct {
 	support  *Support
 	handlers []IssuerHandler
 }
 
+// ReconcileIssuer reconciles an issuer and forward it to the correct IssuerHandler
 func (h *CompoundHandler) ReconcileIssuer(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	logger.Infof("reconciling")
 	issuer, ok := obj.Data().(*api.Issuer)
 	if !ok {
-		return h.failedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("casting to issuer failed"))
+		return h.failedNoType(logger, obj, api.StateError, fmt.Errorf("casting to issuer failed"))
 	}
 	if issuer.Namespace != h.support.IssuerNamespace() {
 		reconcile.Succeeded(logger)
@@ -110,19 +116,22 @@ func (h *CompoundHandler) ReconcileIssuer(logger logger.LogContext, obj resource
 			return handler.Reconcile(logger, obj, issuer)
 		}
 	}
-	return h.failedNoType(logger, obj, api.STATE_ERROR, fmt.Errorf("concrete issuer unspecified"))
+	return h.failedNoType(logger, obj, api.StateError, fmt.Errorf("concrete issuer unspecified"))
 }
 
+// DeletedIssuer deletes an issuer
 func (h *CompoundHandler) DeletedIssuer(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
 	h.support.RemoveIssuer(key.ObjectName())
 	logger.Infof("deleted")
 	return reconcile.Succeeded(logger)
 }
 
+// ReconcileSecret reconciles secrets (for issuers)
 func (h *CompoundHandler) ReconcileSecret(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	return h.enqueueIssuers(logger, obj.ObjectName())
 }
 
+// DeletedSecret updates issuers on deleted secret
 func (h *CompoundHandler) DeletedSecret(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
 	return h.enqueueIssuers(logger, key.ObjectName())
 }
@@ -147,15 +156,16 @@ func (h *CompoundHandler) enqueueIssuers(logger logger.LogContext, objName resou
 	issuers := h.support.IssuerNamesForSecret(objName)
 	if issuers != nil {
 		groupKind := api.Kind(api.IssuerKind)
-		clusterId := h.support.GetDefaultClusterId()
+		clusterID := h.support.GetDefaultClusterID()
 		for issuerName := range issuers {
-			key := resources.NewClusterKey(clusterId, groupKind, issuerName.Namespace(), issuerName.Name())
+			key := resources.NewClusterKey(clusterID, groupKind, issuerName.Namespace(), issuerName.Name())
 			_ = h.support.EnqueueKey(key)
 		}
 	}
 	return reconcile.Succeeded(logger)
 }
 
+// Support provides common issuer/credentials functionality.
 type Support struct {
 	enqueuer                  Enqueuer
 	state                     *state
@@ -168,10 +178,12 @@ type Support struct {
 	defaultIssuerDomainRanges []string
 }
 
+// EnqueueKey forwards to an enqueuer
 func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
 	return s.enqueuer.EnqueueKey(key)
 }
 
+// WriteIssuerSecretFromRegistrationUser writes an issuer secret
 func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
 	secretRef *corev1.SecretReference) (*corev1.SecretReference, *corev1.Secret, error) {
 	var err error
@@ -198,6 +210,7 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta
 	return &corev1.SecretReference{Name: obj.GetName(), Namespace: secret.GetNamespace()}, secret, nil
 }
 
+// UpdateIssuerSecret updates an issuer secret
 func (s *Support) UpdateIssuerSecret(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
 	secret *corev1.Secret) error {
 	var err error
@@ -217,6 +230,7 @@ func (s *Support) UpdateIssuerSecret(issuer metav1.ObjectMeta, reguser *legobrid
 	return nil
 }
 
+// ReadIssuerSecret reads a issuer secret
 func (s *Support) ReadIssuerSecret(ref *corev1.SecretReference) (*corev1.Secret, error) {
 	secret := &corev1.Secret{}
 	itf, err := s.defaultCluster.Resources().GetByExample(secret)
@@ -234,11 +248,11 @@ func (s *Support) ReadIssuerSecret(ref *corev1.SecretReference) (*corev1.Secret,
 
 func (s *Support) triggerCertificates(logger logger.LogContext, issuerName resources.ObjectName) {
 	array := s.state.CertificateNamesForIssuer(issuerName)
-	clusterId := s.targetCluster.GetId()
+	clusterID := s.targetCluster.GetId()
 	if len(array) > 0 {
 		logger.Infof("Trigger reconcile for %d certificates of issuer %s", len(array), issuerName)
 		for _, objName := range array {
-			key := resources.NewClusterKey(clusterId, api.Kind(api.CertificateKind), objName.Namespace(), objName.Name())
+			key := resources.NewClusterKey(clusterID, api.Kind(api.CertificateKind), objName.Namespace(), objName.Name())
 			_ = s.enqueuer.EnqueueKey(key)
 		}
 	}
@@ -264,6 +278,7 @@ func (s *Support) updateStatus(mod *resources.ModificationState) {
 	}
 }
 
+// Failed handles failed.
 func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state string, itype *string, err error) reconcile.Status {
 	msg := err.Error()
 
@@ -273,10 +288,11 @@ func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state s
 	return reconcile.Failed(logger, err)
 }
 
+// SucceededAndTriggerCertificates handles succeeded and trigger certificates.
 func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj resources.Object, itype *string, regRaw []byte) reconcile.Status {
 	s.triggerCertificates(logger, obj.ObjectName())
 
-	mod, status := s.prepareUpdateStatus(obj, api.STATE_READY, itype, nil)
+	mod, status := s.prepareUpdateStatus(obj, api.StateReady, itype, nil)
 	changedRegistration := false
 	if status.ACME == nil || status.ACME.Raw == nil {
 		changedRegistration = regRaw != nil
@@ -292,12 +308,14 @@ func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj 
 	return reconcile.Succeeded(logger)
 }
 
+// AddCertificate adds a certificate
 func (s *Support) AddCertificate(logger logger.LogContext, cert *api.Certificate) {
 	certObjName, issuerObjName := s.calcAssocObjectNames(cert)
 	s.state.AddCertAssoc(issuerObjName, certObjName)
 	s.reportCertificateMetrics(issuerObjName)
 }
 
+// RemoveCertificate removes a certificate
 func (s *Support) RemoveCertificate(logger logger.LogContext, certObjName resources.ObjectName) {
 	s.state.RemoveCertAssoc(certObjName)
 	s.reportAllCertificateMetrics()
@@ -324,6 +342,7 @@ func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectN
 	return certObjName, newObjectName(cert.Namespace, issuerName)
 }
 
+// NormalizeNamespace returns the namespace or "default" for an empty input.
 func NormalizeNamespace(namespace string) string {
 	if namespace != "" {
 		return namespace
@@ -336,52 +355,64 @@ func newObjectName(namespace, name string) resources.ObjectName {
 	return resources.NewObjectName(namespace, name)
 }
 
+// DefaultIssuerName returns the default issuer name
 func (s *Support) DefaultIssuerName() string {
 	return s.defaultIssuerName
 }
 
+// IssuerNamespace returns the issuer namespace
 func (s *Support) IssuerNamespace() string {
 	return s.issuerNamespace
 }
 
+// DefaultIssuerDomainRanges returns the default issuer domain ranges.
 func (s *Support) DefaultIssuerDomainRanges() []string {
 	return s.defaultIssuerDomainRanges
 }
 
+// CertificateNamesForIssuer returns the certificate names for an issuer
 func (s *Support) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {
 	return s.state.CertificateNamesForIssuer(issuer)
 }
 
+// IssuerNamesForSecret returns issuer names for a secret name
 func (s *Support) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {
 	return s.state.IssuerNamesForSecret(secretName)
 }
 
+// RememberIssuerSecret stores issuer secret ref pair.
 func (s *Support) RememberIssuerSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference, hash string) {
 	s.state.RememberIssuerSecret(issuer, secretRef, hash)
 }
 
+// GetIssuerSecretHash returns the issuer secret hash code
 func (s *Support) GetIssuerSecretHash(issuer resources.ObjectName) string {
 	return s.state.GetIssuerSecretHash(issuer)
 }
 
+// RemoveIssuer removes an issuer
 func (s *Support) RemoveIssuer(name resources.ObjectName) bool {
 	b := s.state.RemoveIssuer(name)
 	metrics.DeleteCertEntries("acme", name.Name())
 	return b
 }
 
-func (s *Support) GetDefaultClusterId() string {
+// GetDefaultClusterID returns the cluster id of the default cluster
+func (s *Support) GetDefaultClusterID() string {
 	return s.defaultCluster.GetId()
 }
 
+// GetIssuerResources returns the resources for issuer.
 func (s *Support) GetIssuerResources() resources.Interface {
 	return s.issuerResources
 }
 
+// GetIssuerSecretResources returns the resources for issuer secrets.
 func (s *Support) GetIssuerSecretResources() resources.Interface {
 	return s.issuerSecretResources
 }
 
+// CalcSecretHash calculates the secret hash
 func (s *Support) CalcSecretHash(secret *corev1.Secret) string {
 	if secret == nil {
 		return ""

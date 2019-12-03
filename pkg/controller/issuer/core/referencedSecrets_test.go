@@ -61,7 +61,7 @@ func TestRobustRemember(t *testing.T) {
 					Name:      entry.issuerName,
 					Namespace: "",
 				},
-				Spec: api.IssuerSpec{&api.ACMESpec{}},
+				Spec: api.IssuerSpec{ACME: &api.ACMESpec{}},
 			}
 			if entry.secretName != "" {
 				issuer.Spec.ACME.PrivateKeySecretRef = &v1.SecretReference{

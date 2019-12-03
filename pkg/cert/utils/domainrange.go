@@ -18,6 +18,7 @@ package utils
 
 import "strings"
 
+// NormalizeDomainRange normalizes domain to lower case, drops wildcard and suffix dot.
 func NormalizeDomainRange(domainRange string) string {
 	normalized := strings.ToLower(domainRange)
 	if strings.HasPrefix(normalized, "*.") {
@@ -29,6 +30,7 @@ func NormalizeDomainRange(domainRange string) string {
 	return normalized
 }
 
+// IsInDomainRanges returns true if domain is in domain ranges.
 func IsInDomainRanges(domain string, domainRanges []string) bool {
 	if domainRanges == nil {
 		return true
@@ -41,6 +43,7 @@ func IsInDomainRanges(domain string, domainRanges []string) bool {
 	return false
 }
 
+// IsInDomainRange returns true if domain is in domain range.
 func IsInDomainRange(domain, domainRange string) bool {
 	if domainRange == "" {
 		return true

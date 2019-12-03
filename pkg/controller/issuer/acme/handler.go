@@ -30,10 +30,12 @@ import (
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 )
 
+// ACMEType is the type name for ACME.
 const ACMEType = "acme"
 
 var acmeType = ACMEType
 
+// NewACMEIssuerHandler creates an ACME IssuerHandler.
 func NewACMEIssuerHandler(support *core.Support) (core.IssuerHandler, error) {
 	return &acmeIssuerHandler{
 		support: support,
@@ -57,14 +59,14 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 
 	acme := issuer.Spec.ACME
 	if acme == nil {
-		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("missing ACME spec"))
+		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("missing ACME spec"))
 	}
 
 	if acme.Email == "" {
-		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("missing email in ACME spec"))
+		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("missing email in ACME spec"))
 	}
 	if acme.Server == "" {
-		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("missing server in ACME spec"))
+		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("missing server in ACME spec"))
 	}
 
 	r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, "")
@@ -77,7 +79,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 			if acme.AutoRegistration {
 				logger.Info("spec.acme.privateKeySecretRef not existing, creating new account")
 			} else {
-				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
+				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
 			}
 		}
 		hash := r.support.CalcSecretHash(secret)
@@ -86,10 +88,10 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 	if secret != nil && issuer.Status.ACME != nil && issuer.Status.ACME.Raw != nil {
 		user, err := legobridge.RegistrationUserFromSecretData(acme.Email, issuer.Status.ACME.Raw, secret.Data)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
 		}
 		if user.Email != acme.Email {
-			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("email of registration user from secret does not match %s != %s", user.Email, acme.Email))
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.Email, acme.Email))
 		}
 		return r.support.SucceededAndTriggerCertificates(logger, obj, &acmeType, issuer.Status.ACME.Raw)
 	} else if secret != nil || acme.AutoRegistration {
@@ -99,18 +101,18 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		}
 		user, err := legobridge.NewRegistrationUserFromEmail(acme.Email, acme.Server, secretData)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("creating registration user failed with %s", err.Error()))
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("creating registration user failed with %s", err.Error()))
 		}
 
 		if secret != nil {
 			err = r.support.UpdateIssuerSecret(issuer.ObjectMeta, user, secret)
 			if err != nil {
-				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
+				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
 			}
 		} else {
 			secretRef, secret, err := r.support.WriteIssuerSecretFromRegistrationUser(issuer.ObjectMeta, user, acme.PrivateKeySecretRef)
 			if err != nil {
-				return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
+				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
 			}
 			issuer.Spec.ACME.PrivateKeySecretRef = secretRef
 			hash := r.support.CalcSecretHash(secret)
@@ -119,16 +121,16 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 
 		regRaw, err := user.RawRegistration()
 		if err != nil {
-			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("registration marshalling failed with %s", err.Error()))
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("registration marshalling failed with %s", err.Error()))
 		}
 		newObj, err := r.support.GetIssuerResources().Update(issuer)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("updating resource failed with %s", err.Error()))
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("updating resource failed with %s", err.Error()))
 		}
 
 		return r.support.SucceededAndTriggerCertificates(logger, newObj, &acmeType, regRaw)
 	} else {
-		return r.failedAcme(logger, obj, api.STATE_ERROR, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
+		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
 	}
 }
 

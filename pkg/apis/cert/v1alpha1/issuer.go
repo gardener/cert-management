@@ -22,8 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+// IssuerList is the list of Issuers
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 type IssuerList struct {
 	metav1.TypeMeta `json:",inline"`
 	// Standard list metadata
@@ -32,9 +32,9 @@ type IssuerList struct {
 	Items           []Issuer `json:"items"`
 }
 
+// Issuer is the issuer CR.
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 type Issuer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -42,26 +42,39 @@ type Issuer struct {
 	Status            IssuerStatus `json:"status"`
 }
 
+// IssuerSpec is the spec of the issuer.
 type IssuerSpec struct {
+	// ACME is the ACME protocol specific spec.
 	// +optional
 	ACME *ACMESpec `json:"acme,omitempty"`
 }
 
+// ACMESpec is the ACME specific part of the spec.
 type ACMESpec struct {
+	// Server is the URL of the ACME server.
 	Server string `json:"server"`
-	Email  string `json:"email"`
+	// Email is the email address to use for user registration.
+	Email string `json:"email"`
 
+	// AutoRegistration is the flag if automatic registration should be applied if needed.
 	// +optional
 	AutoRegistration bool `json:"autoRegistration,omitempty"`
 
+	// PrivateKeySecretRef is the secret ref to the ACME private key.
 	// +optional
 	PrivateKeySecretRef *corev1.SecretReference `json:"privateKeySecretRef,omitempty"`
 }
 
+// IssuerStatus is the status of the issuer.
 type IssuerStatus struct {
-	ObservedGeneration int64                 `json:"observedGeneration,omitempty"`
-	State              string                `json:"state"`
-	Message            *string               `json:"message,omitempty"`
-	Type               *string               `json:"type"`
-	ACME               *runtime.RawExtension `json:"acme,omitempty"`
+	// ObservedGeneration is the observed generation of the spec.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// State is either empty, 'Pending', 'Error', or 'Ready'.
+	State string `json:"state"`
+	// Message is the status or error message.
+	Message *string `json:"message,omitempty"`
+	// Type is the issuer type. Currently only 'acme' is supported.
+	Type *string `json:"type"`
+	// ACME is the ACME specific status.
+	ACME *runtime.RawExtension `json:"acme,omitempty"`
 }
