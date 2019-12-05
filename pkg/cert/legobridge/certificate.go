@@ -21,6 +21,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"sync"
+	"time"
 
 	"github.com/go-acme/lego/certificate"
 	"github.com/go-acme/lego/challenge/dns01"
@@ -94,6 +96,33 @@ type ObtainOutput struct {
 	Err error
 }
 
+// Obtainer provides a Obtain method to start a certificate request
+type Obtainer interface {
+	// Obtain starts the async obtain request.
+	Obtain(input ObtainInput) error
+}
+
+// ConcurrentObtainError is returned if Obtain should be postponed because of concurrent obtain request for
+// at least one domain name.
+type ConcurrentObtainError struct {
+	// DomainName is the domain name concurrently requested
+	DomainName string
+}
+
+func (d *ConcurrentObtainError) Error() string {
+	return fmt.Sprintf("concurrent obtain for domain name %s", d.DomainName)
+}
+
+type obtainer struct {
+	lock           sync.Mutex
+	pendingDomains map[string]time.Time
+}
+
+// NewObtainer creates a new Obtainer
+func NewObtainer() Obtainer {
+	return &obtainer{pendingDomains: map[string]time.Time{}}
+}
+
 func obtainForDomains(client *lego.Client, domains []string) (*certificate.Resource, error) {
 	request := certificate.ObtainRequest{
 		Domains: domains,
@@ -103,15 +132,19 @@ func obtainForDomains(client *lego.Client, domains []string) (*certificate.Resou
 }
 
 func obtainForCSR(client *lego.Client, csr []byte) (*certificate.Resource, error) {
-	block, _ := pem.Decode(csr)
-	if block == nil {
-		return nil, fmt.Errorf("decoding CSR failed")
-	}
-	cert, err := x509.ParseCertificateRequest(block.Bytes)
+	cert, err := extractCertificateRequest(csr)
 	if err != nil {
 		return nil, err
 	}
 	return client.Certificate.ObtainForCSR(*cert, true)
+}
+
+func extractCertificateRequest(csr []byte) (*x509.CertificateRequest, error) {
+	block, _ := pem.Decode(csr)
+	if block == nil {
+		return nil, fmt.Errorf("decoding CSR failed")
+	}
+	return x509.ParseCertificateRequest(block.Bytes)
 }
 
 func renew(client *lego.Client, renewCert *certificate.Resource) (*certificate.Resource, error) {
@@ -119,23 +152,30 @@ func renew(client *lego.Client, renewCert *certificate.Resource) (*certificate.R
 }
 
 // Obtain starts the async obtain request.
-func Obtain(input ObtainInput) error {
+func (o *obtainer) Obtain(input ObtainInput) error {
+	err := o.setPending(input)
+	if err != nil {
+		return err
+	}
 	config := input.User.NewConfig(input.CaDirURL)
 
 	// A client facilitates communication with the CA server.
 	client, err := lego.NewClient(config)
 	if err != nil {
+		o.releasePending(input)
 		return err
 	}
 
 	provider, err := newDNSControllerProvider(input.Logger, input.DNSCluster, input.DNSSettings, input.RequestName,
 		input.TargetClass, input.IssuerName)
 	if err != nil {
+		o.releasePending(input)
 		return err
 	}
 	nameservers := []string{"8.8.8.8", "8.8.4.4"}
 	err = client.Challenge.SetDNS01Provider(provider, dns01.AddRecursiveNameservers(dns01.ParseNameservers(nameservers)))
 	if err != nil {
+		o.releasePending(input)
 		return err
 	}
 
@@ -164,9 +204,52 @@ func Obtain(input ObtainInput) error {
 			Err:          err,
 		}
 		input.Callback(output)
+		o.releasePending(input)
 	}()
 
 	return nil
+}
+
+func (o *obtainer) setPending(input ObtainInput) error {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+
+	names, err := o.collectDomainNames(input)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	outdated := now.Add(-10 * time.Minute)
+	for _, name := range names {
+		t, ok := o.pendingDomains[name]
+		// checking for outdated is only defensive programming
+		if ok && t.After(outdated) {
+			return &ConcurrentObtainError{DomainName: name}
+		}
+		o.pendingDomains[name] = now
+	}
+	return nil
+}
+
+func (o *obtainer) releasePending(input ObtainInput) {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+
+	names, _ := o.collectDomainNames(input)
+	for _, name := range names {
+		delete(o.pendingDomains, name)
+	}
+}
+
+func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
+	if input.CSR == nil {
+		return append([]string{*input.CommonName}, input.DNSNames...), nil
+	}
+	cn, san, err := ExtractCommonNameAnDNSNames(input.CSR)
+	if err != nil {
+		return nil, err
+	}
+	return append([]string{*cn}, san...), nil
 }
 
 // CertificatesToSecretData converts a certificate resource to secret data.
@@ -213,17 +296,13 @@ func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 
 // ExtractCommonNameAnDNSNames extracts values from a CSR (Certificate Signing Request).
 func ExtractCommonNameAnDNSNames(csr []byte) (cn *string, san []string, err error) {
-	block, _ := pem.Decode(csr)
-	if block == nil {
-		err = fmt.Errorf("decoding CSR pem failed")
-		return
-	}
-	certificateRequest, err := x509.ParseCertificateRequest(block.Bytes)
+	certificateRequest, err := extractCertificateRequest(csr)
 	if err != nil {
 		err = fmt.Errorf("parsing CSR failed with: %s", err)
 		return
 	}
-	cn = &certificateRequest.Subject.CommonName
+	cnvalue := certificateRequest.Subject.CommonName
+	cn = &cnvalue
 	san = certificateRequest.DNSNames[:]
 	for _, ip := range certificateRequest.IPAddresses {
 		san = append(san, ip.String())
