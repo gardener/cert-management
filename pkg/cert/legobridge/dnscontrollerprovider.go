@@ -125,7 +125,11 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 
 	if len(values) == 1 {
 		setSpec(entry)
-		p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %ss", entry.Namespace, entry.Name, p.certificateName)
+		p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %s", entry.Namespace, entry.Name, p.certificateName)
+		if p.existsBlockingEntry(entry) {
+			p.removePresentingDomain(domain)
+			return fmt.Errorf("already existing DNSEntry %s/%s for certificate resource %s", entry.Namespace, entry.Name, p.certificateName)
+		}
 		_, err := p.entryResources.Create(entry)
 		if err != nil {
 			return fmt.Errorf("creating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
@@ -149,6 +153,21 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 		return nil
 	})
 	return err
+}
+
+func (p *dnsControllerProvider) existsBlockingEntry(entry *dnsapi.DNSEntry) bool {
+	objectName := resources.NewObjectName(entry.Namespace, entry.Name)
+	obj, err := p.entryResources.Get_(objectName)
+	if err != nil {
+		return false
+	}
+
+	keep := obj.GetCreationTimestamp().Add(3 * time.Minute).After(time.Now())
+	if !keep {
+		// delete outdated or foreign DNSEntry
+		_ = p.entryResources.DeleteByName(objectName)
+	}
+	return keep
 }
 
 func (p *dnsControllerProvider) addPresentingDomainValue(domain, value string) []string {

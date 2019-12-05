@@ -72,6 +72,7 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &certReconciler{
 		support:             support,
+		obtainer:            legobridge.NewObtainer(),
 		classes:             classes,
 		targetCluster:       targetCluster,
 		dnsCluster:          dnsCluster,
@@ -117,6 +118,7 @@ func isRecoverableError(err error) bool {
 type certReconciler struct {
 	reconcile.DefaultReconciler
 	support             *core.Support
+	obtainer            legobridge.Obtainer
 	targetCluster       cluster.Interface
 	dnsCluster          cluster.Interface
 	certResources       resources.Interface
@@ -273,9 +275,14 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		TargetClass: targetClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
 
-	err = legobridge.Obtain(input)
+	err = r.obtainer.Obtain(input)
 	if err != nil {
-		return r.failed(logger, obj, api.StateError, fmt.Errorf("preparing obtaining certificates with %s", err.Error()))
+		switch err.(type) {
+		case *legobridge.ConcurrentObtainError:
+			return r.delay(logger, obj, api.StatePending, err)
+		default:
+			return r.failed(logger, obj, api.StateError, fmt.Errorf("preparing obtaining certificates with %s", err.Error()))
+		}
 	}
 	r.pendingRequests.Add(objectName)
 	return r.pending(logger, obj)
@@ -624,6 +631,10 @@ func (r *certReconciler) failed(logger logger.LogContext, obj resources.Object, 
 		return reconcile.Delay(logger, err)
 	}
 	return reconcile.Failed(logger, err)
+}
+
+func (r *certReconciler) delay(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
+	return r.failed(logger, obj, state, &recoverableError{Msg: err.Error()})
 }
 
 func (r *certReconciler) succeeded(logger logger.LogContext, obj resources.Object) reconcile.Status {
