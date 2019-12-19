@@ -1,3 +1,5 @@
+# github.com/BurntSushi/toml v0.3.1
+github.com/BurntSushi/toml
 # github.com/Masterminds/semver v1.4.2
 github.com/Masterminds/semver
 # github.com/PuerkitoBio/purell v1.1.1
@@ -6,6 +8,8 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 github.com/ahmetb/gen-crd-api-reference-docs
+# github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
+github.com/alessio/shellescape
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/cenkalti/backoff v2.2.1+incompatible
@@ -105,6 +109,8 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
+# github.com/mattn/go-isatty v0.0.10
+github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/miekg/dns v1.1.12
@@ -154,6 +160,8 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
+# github.com/pelletier/go-toml v1.2.0
+github.com/pelletier/go-toml
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.0.0
@@ -176,9 +184,9 @@ github.com/russross/blackfriday/v2
 github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# github.com/spf13/cobra v0.0.3
+# github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
-# github.com/spf13/pflag v1.0.3
+# github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
 # golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 golang.org/x/crypto/ed25519
@@ -207,7 +215,7 @@ golang.org/x/net/ipv6
 # golang.org/x/oauth2 v0.0.0-20191122200657-5d9234df094c
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f
+# golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.2
@@ -265,8 +273,10 @@ gopkg.in/square/go-jose.v2/cipher
 gopkg.in/square/go-jose.v2/json
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 gopkg.in/tomb.v1
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.5
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20191106092431-e228e37189d3
+gopkg.in/yaml.v3
 # k8s.io/api v0.0.0-20190708174958-539a33f6e817 => k8s.io/api v0.0.0-20191004102349-159aefb8556b
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -307,7 +317,7 @@ k8s.io/api/storage/v1beta1
 # k8s.io/apiextensions-apiserver v0.0.0-20190502093314-7526e4c489ad => k8s.io/apiextensions-apiserver v0.0.0-20190315093550-53c4693659ed
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
-# k8s.io/apimachinery v0.0.0-20190502092502-a44ef629a3c9 => k8s.io/apimachinery v0.0.0-20191004074956-c5d2f014d689
+# k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb => k8s.io/apimachinery v0.0.0-20191004074956-c5d2f014d689
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/api/resource
@@ -344,6 +354,7 @@ k8s.io/apimachinery/pkg/util/sets
 k8s.io/apimachinery/pkg/util/strategicpatch
 k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/validation/field
+k8s.io/apimachinery/pkg/util/version
 k8s.io/apimachinery/pkg/util/wait
 k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/version
@@ -468,5 +479,71 @@ k8s.io/kube-openapi/pkg/util/sets
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/trace
+# sigs.k8s.io/kind v0.6.1
+sigs.k8s.io/kind
+sigs.k8s.io/kind/cmd/kind/app
+sigs.k8s.io/kind/pkg/apis/config/defaults
+sigs.k8s.io/kind/pkg/apis/config/v1alpha3
+sigs.k8s.io/kind/pkg/apis/config/v1alpha4
+sigs.k8s.io/kind/pkg/build/base
+sigs.k8s.io/kind/pkg/build/node
+sigs.k8s.io/kind/pkg/build/node/internal/container/docker
+sigs.k8s.io/kind/pkg/build/node/internal/kube
+sigs.k8s.io/kind/pkg/cluster
+sigs.k8s.io/kind/pkg/cluster/constants
+sigs.k8s.io/kind/pkg/cluster/nodes
+sigs.k8s.io/kind/pkg/cluster/nodeutils
+sigs.k8s.io/kind/pkg/cmd
+sigs.k8s.io/kind/pkg/cmd/kind
+sigs.k8s.io/kind/pkg/cmd/kind/build
+sigs.k8s.io/kind/pkg/cmd/kind/build/baseimage
+sigs.k8s.io/kind/pkg/cmd/kind/build/nodeimage
+sigs.k8s.io/kind/pkg/cmd/kind/completion
+sigs.k8s.io/kind/pkg/cmd/kind/completion/bash
+sigs.k8s.io/kind/pkg/cmd/kind/completion/zsh
+sigs.k8s.io/kind/pkg/cmd/kind/create
+sigs.k8s.io/kind/pkg/cmd/kind/create/cluster
+sigs.k8s.io/kind/pkg/cmd/kind/delete
+sigs.k8s.io/kind/pkg/cmd/kind/delete/cluster
+sigs.k8s.io/kind/pkg/cmd/kind/export
+sigs.k8s.io/kind/pkg/cmd/kind/export/kubeconfig
+sigs.k8s.io/kind/pkg/cmd/kind/export/logs
+sigs.k8s.io/kind/pkg/cmd/kind/get
+sigs.k8s.io/kind/pkg/cmd/kind/get/clusters
+sigs.k8s.io/kind/pkg/cmd/kind/get/kubeconfig
+sigs.k8s.io/kind/pkg/cmd/kind/get/kubeconfigpath
+sigs.k8s.io/kind/pkg/cmd/kind/get/nodes
+sigs.k8s.io/kind/pkg/cmd/kind/load
+sigs.k8s.io/kind/pkg/cmd/kind/load/docker-image
+sigs.k8s.io/kind/pkg/cmd/kind/load/image-archive
+sigs.k8s.io/kind/pkg/cmd/kind/version
+sigs.k8s.io/kind/pkg/errors
+sigs.k8s.io/kind/pkg/exec
+sigs.k8s.io/kind/pkg/fs
+sigs.k8s.io/kind/pkg/internal/apis/config
+sigs.k8s.io/kind/pkg/internal/apis/config/encoding
+sigs.k8s.io/kind/pkg/internal/cluster/context
+sigs.k8s.io/kind/pkg/internal/cluster/create
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions/config
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installcni
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installstorage
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions/kubeadminit
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions/kubeadmjoin
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions/loadbalancer
+sigs.k8s.io/kind/pkg/internal/cluster/create/actions/waitforready
+sigs.k8s.io/kind/pkg/internal/cluster/delete
+sigs.k8s.io/kind/pkg/internal/cluster/kubeadm
+sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig
+sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig/internal/kubeconfig
+sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer
+sigs.k8s.io/kind/pkg/internal/cluster/logs
+sigs.k8s.io/kind/pkg/internal/cluster/providers/docker
+sigs.k8s.io/kind/pkg/internal/cluster/providers/provider
+sigs.k8s.io/kind/pkg/internal/cluster/providers/provider/common
+sigs.k8s.io/kind/pkg/internal/util/cli
+sigs.k8s.io/kind/pkg/internal/util/env
+sigs.k8s.io/kind/pkg/internal/util/patch
+sigs.k8s.io/kind/pkg/log
 # sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml
