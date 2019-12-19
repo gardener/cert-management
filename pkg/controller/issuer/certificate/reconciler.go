@@ -139,20 +139,21 @@ func (r *certReconciler) Start() {
 }
 
 func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
-	logger.Infof("reconciling")
+	logger.Infof("reconciling certificate")
 	cert, ok := obj.Data().(*api.Certificate)
 	if !ok {
 		return r.failed(logger, obj, api.StateError, fmt.Errorf("casting to Certificate failed"))
 	}
 
 	if !r.classes.IsResponsibleFor(logger, obj) {
+		logger.Infof("not responsible")
 		return reconcile.Succeeded(logger)
 	}
 
 	r.support.AddCertificate(logger, cert)
 
-	if cert.Spec.SecretRef == nil && r.challengePending(cert) {
-		return reconcile.Succeeded(logger)
+	if r.challengePending(cert) {
+		return reconcile.Recheck(logger, fmt.Errorf("challenge pending for at least one domain of certificate"), 30*time.Second)
 	}
 
 	if result := r.pendingResults.Remove(obj.ObjectName()); result != nil {
@@ -227,6 +228,7 @@ func (r *certReconciler) challengePending(crt *api.Certificate) bool {
 
 func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, obj resources.Object, renewSecret *corev1.Secret) reconcile.Status {
 	cert := obj.Data().(*api.Certificate)
+	logger.Infof("obtain certificate")
 
 	reguser, server, err := r.restoreRegUser(cert)
 	if err != nil {
