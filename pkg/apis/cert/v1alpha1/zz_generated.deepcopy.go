@@ -78,7 +78,7 @@ func (in *Certificate) DeepCopyObject() runtime.Object {
 func (in *CertificateList) DeepCopyInto(out *CertificateList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Certificate, len(*in))
@@ -230,7 +230,7 @@ func (in *Issuer) DeepCopyObject() runtime.Object {
 func (in *IssuerList) DeepCopyInto(out *IssuerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Issuer, len(*in))

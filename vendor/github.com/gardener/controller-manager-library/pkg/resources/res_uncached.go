@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -46,17 +46,21 @@ func (this *AbstractResource) CreateOrUpdate(obj ObjectData) (Object, error) {
 	if err := this.helper.CheckOType(obj); err != nil {
 		return nil, err
 	}
-	result, err := this.self.I_create(obj)
-	if err != nil {
-		if errors.IsAlreadyExists(err) {
-			result, err = this.self.I_update(obj)
-			if err != nil {
-				return nil, err
-			}
-		} else {
+	if obj.GetResourceVersion() == "" {
+		result, err := this.helper.Internal.I_create(obj)
+		if err == nil {
+			return this.helper.ObjectAsResource(result), err
+
+		}
+		if !k8serr.IsAlreadyExists(err) {
 			return nil, err
 		}
 	}
+	result, err := this.helper.Internal.I_update(obj)
+	if err != nil {
+		return nil, err
+	}
+
 	return this.helper.ObjectAsResource(result), nil
 }
 

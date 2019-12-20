@@ -30,6 +30,8 @@ type ModificationHandler interface {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////
+
 // Condition reflects a dedicated condition for a dedicated object. It can
 // be retrieved for a dedicated object using a ConditionType object.
 type Condition struct {
@@ -293,17 +295,15 @@ func (this *Condition) SetLastUpdateTime(v time.Time) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// ConditionType represents a dedicated kind of condition for a dedicated
-// class of condition carrying objects. Therefore it holds field name
+// ConditionLayout represents a dedicated kind of condition layout for a
+// dedicated class of condition carrying objects. Therefore it holds field name
 // information to to access conditions in this class of objects and
 // about the representation of some standard field like Type and Status
 // inside a condition entry.
 // A ConditionType is configured using
 // an arbitrary set of TweakFunctions. There are dedicated creator
 // functions for all modifyable attributes.
-type ConditionType struct {
-	name string
-
+type ConditionLayout struct {
 	statusField     string
 	conditionsField string
 
@@ -315,9 +315,8 @@ type ConditionType struct {
 	cUpdateField     string
 }
 
-func NewConditionType(name string, cfg ...TweakFunction) *ConditionType {
-	c := &ConditionType{
-		name:            name,
+func NewConditionLayout(cfg ...TweakFunction) *ConditionLayout {
+	c := &ConditionLayout{
 		statusField:     "Status",
 		conditionsField: "Conditions",
 
@@ -330,6 +329,30 @@ func NewConditionType(name string, cfg ...TweakFunction) *ConditionType {
 	}
 	for _, f := range cfg {
 		f(c)
+	}
+	return c
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// ConditionType represents a dedicated kind of condition for a dedicated
+// class of condition carrying objects using a dedicated condition layout.
+// Therefore is is configured by a name for the dedicated condition kind
+// a condition layout.
+type ConditionType struct {
+	name string
+	*ConditionLayout
+}
+
+var defaultLayout = NewConditionLayout()
+
+func NewConditionType(name string, t *ConditionLayout) *ConditionType {
+	if t == nil {
+		t = defaultLayout
+	}
+	c := &ConditionType{
+		name:            name,
+		ConditionLayout: t,
 	}
 	return c
 }
@@ -495,53 +518,50 @@ func (this *ConditionType) GetLastUpdateTime(o interface{}) time.Time {
 
 // TweakFunction is used to configure a ConditionType for a dedicated
 // class of objects
-type TweakFunction func(c *ConditionType)
+type TweakFunction func(c *ConditionLayout)
 
-func Inherit(b *ConditionType) TweakFunction {
-	return func(this *ConditionType) {
-		n := this.name
+func Inherit(b *ConditionLayout) TweakFunction {
+	return func(this *ConditionLayout) {
 		*this = *b
-		this.name = n
 	}
 }
-
 func ObjectStatusField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.statusField = field
 	}
 }
 func ConditionsField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.conditionsField = field
 	}
 }
 func TypeField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.cTypeField = field
 	}
 }
 func StatusField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.cStatusField = field
 	}
 }
 func MessageField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.cMessageField = field
 	}
 }
 func ReasonField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.cReasonField = field
 	}
 }
 func TransitionTimeField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.cTransitionField = field
 	}
 }
 func LastUpdateTimeField(field string) TweakFunction {
-	return func(this *ConditionType) {
+	return func(this *ConditionLayout) {
 		this.cUpdateField = field
 	}
 }
