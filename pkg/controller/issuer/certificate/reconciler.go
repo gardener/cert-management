@@ -514,10 +514,16 @@ func (r *certReconciler) writeCertificateSecret(objectMeta metav1.ObjectMeta, ce
 	secret.SetNamespace(namespace)
 	if secretName != nil {
 		secret.SetName(*secretName)
+		// reuse existing secret (especially keep existing annotations and labels)
+		obj, err := r.targetCluster.Resources().GetObject(secret)
+		if err == nil {
+			secret = obj.Data().(*corev1.Secret)
+		}
 	} else {
 		secret.SetGenerateName(objectMeta.GetName() + "-")
 	}
-	secret.Labels = map[string]string{LabelCertificateHashKey: specHash, LabelCertificateKey: "true"}
+	resources.SetLabel(secret, LabelCertificateHashKey, specHash)
+	resources.SetLabel(secret, LabelCertificateKey, "true")
 	secret.Data = legobridge.CertificatesToSecretData(certificates)
 	if r.cascadeDelete {
 		ownerReferences := []metav1.OwnerReference{{APIVersion: api.Version, Kind: api.CertificateKind, Name: objectMeta.GetName(), UID: objectMeta.GetUID()}}
