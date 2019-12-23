@@ -29,8 +29,6 @@ spec:
     - JSONPath: .metadata.creationTimestamp
       name: AGE
       type: date
-  conversion:
-    strategy: None
   group: cert.gardener.cloud
   names:
     kind: Issuer
@@ -86,8 +84,6 @@ spec:
     - JSONPath: .metadata.creationTimestamp
       name: AGE
       type: date
-  conversion:
-    strategy: None
   group: cert.gardener.cloud
   names:
     kind: Certificate
