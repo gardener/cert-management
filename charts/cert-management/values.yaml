@@ -34,6 +34,7 @@ configuration:
 # defaultIssuerDomainRange:
 # disableNamespaceRestriction:
 # dns:
+# dnsClass:
 # dnsNamespace:
 # dnsOwnerId:
 # dnsId:
@@ -50,6 +51,7 @@ configuration:
 # issuerDefaultIssuerDomainRange:
 # issuerDefaultPoolResyncPeriod:
 # issuerDefaultPoolSize:
+# issuerDnsClass:
 # issuerDnsNamespace:
 # issuerDnsOwnerId:
 # issuerIssuerNamespace:

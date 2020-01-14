@@ -32,6 +32,8 @@ import (
 const (
 	// AnnotDnsnames annotation is shared with dns controller manager
 	AnnotDnsnames = "dns.gardener.cloud/dnsnames"
+	// AnnotDNSClass is the annotation for the dns class
+	AnnotDNSClass = "dns.gardener.cloud/class"
 	// AnnotClass is the annotation for the cert class
 	AnnotClass = "cert.gardener.cloud/class"
 	// AnnotForwardOwnerRefs is the annotation for the forward owner references

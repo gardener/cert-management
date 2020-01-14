@@ -87,6 +87,10 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	if dnsNamespace != "" {
 		reconciler.dnsNamespace = &dnsNamespace
 	}
+	dnsClass, _ := c.GetStringOption(core.OptDNSClass)
+	if dnsClass != "" {
+		reconciler.dnsClass = &dnsClass
+	}
 	dnsOwnerID, _ := c.GetStringOption(core.OptDNSOwnerID)
 	if dnsOwnerID != "" {
 		reconciler.dnsOwnerID = &dnsOwnerID
@@ -127,6 +131,7 @@ type certReconciler struct {
 	pendingRequests     *legobridge.PendingCertificateRequests
 	pendingResults      *legobridge.PendingResults
 	dnsNamespace        *string
+	dnsClass            *string
 	dnsOwnerID          *string
 	renewalWindow       time.Duration
 	renewalCheckPeriod  time.Duration
@@ -271,11 +276,14 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	if r.dnsNamespace != nil {
 		dnsSettings.Namespace = *r.dnsNamespace
 	}
-	targetClass := r.getAnnotatedClass(obj)
+	targetDNSClass := ""
+	if r.dnsClass != nil {
+		targetDNSClass = *r.dnsClass
+	}
 	input := legobridge.ObtainInput{Logger: logger, User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
 		CaDirURL: server, IssuerName: r.issuerName(&cert.Spec),
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		TargetClass: targetClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
+		TargetClass: targetDNSClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
@@ -288,14 +296,6 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	}
 	r.pendingRequests.Add(objectName)
 	return r.pending(logger, obj)
-}
-
-func (r *certReconciler) getAnnotatedClass(obj resources.Object) string {
-	oclass, ok := resources.GetAnnotation(obj.Data(), source.AnnotClass)
-	if !ok {
-		oclass = source.DefaultClass
-	}
-	return oclass
 }
 
 func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.RegistrationUser, string, error) {

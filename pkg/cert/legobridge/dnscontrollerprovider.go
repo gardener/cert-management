@@ -118,7 +118,9 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 		e.Spec.OwnerId = p.settings.OwnerID
 		e.Spec.TTL = &p.ttl
 		e.Spec.Text = values
-		resources.SetAnnotation(e, source.AnnotClass, p.targetClass)
+		if p.targetClass != "" {
+			resources.SetAnnotation(e, source.AnnotDNSClass, p.targetClass)
+		}
 	}
 
 	entry := p.prepareEntry(domain)
