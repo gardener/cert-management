@@ -54,6 +54,9 @@ spec:
         {{- if .Values.configuration.dns }}
         - --dns={{ .Values.configuration.dns }}
         {{- end }}
+        {{- if .Values.configuration.dnsClass }}
+        - --dns-class={{ .Values.configuration.dnsClass }}
+        {{- end }}
         {{- if .Values.configuration.dnsNamespace }}
         - --dns-namespace={{ .Values.configuration.dnsNamespace }}
         {{- end }}
@@ -101,6 +104,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.issuerDefaultPoolSize }}
         - --issuer.default.pool.size={{ .Values.configuration.issuerDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDnsClass }}
+        - --issuer.dns-class={{ .Values.configuration.issuerDnsClass }}
         {{- end }}
         {{- if .Values.configuration.issuerDnsNamespace }}
         - --issuer.dns-namespace={{ .Values.configuration.issuerDnsNamespace }}
