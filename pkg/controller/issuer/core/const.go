@@ -23,6 +23,8 @@ const (
 	OptIssuerNamespace = "issuer-namespace"
 	// OptDNSNamespace is the DNS namespace command line option.
 	OptDNSNamespace = "dns-namespace"
+	// OptDNSClass is the DNS class command line option.
+	OptDNSClass = "dns-class"
 	// OptDNSOwnerID is the DNS owner identifier command line option.
 	OptDNSOwnerID = "dns-owner-id"
 	// OptDefaultIssuerDomainRanges are the domain ranges the default issuer is restricted to.

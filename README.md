@@ -338,6 +338,7 @@ Flags:
       --default-issuer-domain-ranges string                default for all controller "default-issuer-domain-ranges" options
       --disable-namespace-restriction                      disable access restriction for namespace local access only
       --dns string                                         cluster for writing challenge DNS entries
+      --dns-class string                                   default for all controller "dns-class" options
       --dns-namespace string                               default for all controller "dns-namespace" options
       --dns-owner-id string                                default for all controller "dns-owner-id" options
       --dns.disable-deploy-crds                            disable deployment of required crds for cluster dns
@@ -358,6 +359,7 @@ Flags:
       --issuer.default-issuer-domain-ranges string         domain range restrictions when using default issuer separated by comma
       --issuer.default.pool.resync-period duration         Period for resynchronization of pool default of controller issuer (default: 24h0m0s)
       --issuer.default.pool.size int                       Worker pool size for pool default of controller issuer (default: 2)
+      --issuer.dns-class string                            class for creating challenge DNSEntries (in DNS cluster)
       --issuer.dns-namespace string                        namespace for creating challenge DNSEntries (in DNS cluster)
       --issuer.dns-owner-id string                         ownerId for creating challenge DNSEntries
       --issuer.issuer-namespace string                     namespace to lookup issuers on default cluster
