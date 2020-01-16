@@ -5,29 +5,23 @@ go 1.13
 require (
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
-	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/emicklei/go-restful v2.11.1+incompatible // indirect
 	github.com/gardener/controller-manager-library v0.1.1-0.20191220121917-d7bc378737f9
 	github.com/gardener/external-dns-management v0.7.3
-	github.com/go-acme/lego v2.5.0+incompatible
+	github.com/go-acme/lego/v3 v3.3.0
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
-	github.com/miekg/dns v1.1.12 // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
-	github.com/prometheus/client_golang v1.0.0
+	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
 	golang.org/x/oauth2 v0.0.0-20191122200657-5d9234df094c // indirect
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/square/go-jose.v2 v2.3.1 // indirect
 	k8s.io/api v0.16.4
 	k8s.io/apiextensions-apiserver v0.0.0-20190502093314-7526e4c489ad
 	k8s.io/apimachinery v0.16.4
