@@ -29,8 +29,8 @@ import (
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"net/url"
 
-	"github.com/go-acme/lego/lego"
-	"github.com/go-acme/lego/registration"
+	"github.com/go-acme/lego/v3/lego"
+	"github.com/go-acme/lego/v3/registration"
 )
 
 const (

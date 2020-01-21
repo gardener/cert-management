@@ -24,7 +24,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/go-acme/lego/certificate"
+	"github.com/go-acme/lego/v3/certificate"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -103,6 +103,10 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	}
 	reconciler.renewalWindow = renewalWindow
 
+	precheckNameservers, _ := c.GetStringOption(core.OptPrecheckNameservers)
+	reconciler.precheckNameservers = utils.PreparePrecheckNameservers(strings.Split(precheckNameservers, ","))
+	c.Infof("Using these nameservers for DNS propagation checks: %s", strings.Join(reconciler.precheckNameservers, ","))
+
 	return reconciler, nil
 }
 
@@ -133,6 +137,7 @@ type certReconciler struct {
 	dnsNamespace        *string
 	dnsClass            *string
 	dnsOwnerID          *string
+	precheckNameservers []string
 	renewalWindow       time.Duration
 	renewalCheckPeriod  time.Duration
 	classes             *controller.Classes
@@ -272,7 +277,11 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 			subLogger.Warnf("Enqueue %s failed with %s", objectName, err.Error())
 		}
 	}
-	dnsSettings := legobridge.DNSControllerSettings{Namespace: cert.Namespace, OwnerID: r.dnsOwnerID}
+	dnsSettings := legobridge.DNSControllerSettings{
+		Namespace:           cert.Namespace,
+		OwnerID:             r.dnsOwnerID,
+		PrecheckNameservers: r.precheckNameservers,
+	}
 	if r.dnsNamespace != nil {
 		dnsSettings.Namespace = *r.dnsNamespace
 	}
@@ -280,7 +289,7 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	if r.dnsClass != nil {
 		targetDNSClass = *r.dnsClass
 	}
-	input := legobridge.ObtainInput{Logger: logger, User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
+	input := legobridge.ObtainInput{User: reguser, DNSCluster: r.dnsCluster, DNSSettings: dnsSettings,
 		CaDirURL: server, IssuerName: r.issuerName(&cert.Spec),
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		TargetClass: targetDNSClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}

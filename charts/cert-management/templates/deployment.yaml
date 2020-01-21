@@ -30,6 +30,9 @@ spec:
         args:
         - --name={{ include "cert-management.fullname" . }}
         ### start generated configuration
+        {{- if .Values.configuration.cascadeDelete }}
+        - --cascade-delete={{ .Values.configuration.cascadeDelete }}
+        {{- end }}
         {{- if .Values.configuration.certClass }}
         - --cert-class={{ .Values.configuration.certClass }}
         {{- end }}
@@ -63,8 +66,14 @@ spec:
         {{- if .Values.configuration.dnsOwnerId }}
         - --dns-owner-id={{ .Values.configuration.dnsOwnerId }}
         {{- end }}
+        {{- if .Values.configuration.dnsDisableDeployCrds }}
+        - --dns.disable-deploy-crds={{ .Values.configuration.dnsDisableDeployCrds }}
+        {{- end }}
         {{- if .Values.configuration.dnsId }}
         - --dns.id={{ .Values.configuration.dnsId }}
+        {{- end }}
+        {{- if .Values.configuration.gracePeriod }}
+        - --grace-period={{ .Values.configuration.gracePeriod }}
         {{- end }}
         {{- if .Values.configuration.ingressCertCertClass }}
         - --ingress-cert.cert-class={{ .Values.configuration.ingressCertCertClass }}
@@ -89,6 +98,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.issuerNamespace }}
         - --issuer-namespace={{ .Values.configuration.issuerNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.issuerCascadeDelete }}
+        - --issuer.cascade-delete={{ .Values.configuration.issuerCascadeDelete }}
         {{- end }}
         {{- if .Values.configuration.issuerCertClass }}
         - --issuer.cert-class={{ .Values.configuration.issuerCertClass }}
@@ -120,6 +132,9 @@ spec:
         {{- if .Values.configuration.issuerIssuersPoolSize }}
         - --issuer.issuers.pool.size={{ .Values.configuration.issuerIssuersPoolSize }}
         {{- end }}
+        {{- if .Values.configuration.issuerPrecheckNameservers }}
+        - --issuer.precheck-nameservers={{ .Values.configuration.issuerPrecheckNameservers }}
+        {{- end }}
         {{- if .Values.configuration.issuerRenewalWindow }}
         - --issuer.renewal-window={{ .Values.configuration.issuerRenewalWindow }}
         {{- end }}
@@ -128,6 +143,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.kubeconfig }}
         - --kubeconfig={{ .Values.configuration.kubeconfig }}
+        {{- end }}
+        {{- if .Values.configuration.kubeconfigDisableDeployCrds }}
+        - --kubeconfig.disable-deploy-crds={{ .Values.configuration.kubeconfigDisableDeployCrds }}
         {{- end }}
         {{- if .Values.configuration.kubeconfigId }}
         - --kubeconfig.id={{ .Values.configuration.kubeconfigId }}
@@ -152,6 +170,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.poolSize }}
         - --pool.size={{ .Values.configuration.poolSize }}
+        {{- end }}
+        {{- if .Values.configuration.precheckNameservers }}
+        - --precheck-nameservers={{ .Values.configuration.precheckNameservers }}
         {{- end }}
         {{- if .Values.configuration.renewalWindow }}
         - --renewal-window={{ .Values.configuration.renewalWindow }}
@@ -183,6 +204,9 @@ spec:
         {{- if .Values.configuration.source }}
         - --source={{ .Values.configuration.source }}
         {{- end }}
+        {{- if .Values.configuration.sourceDisableDeployCrds }}
+        - --source.disable-deploy-crds={{ .Values.configuration.sourceDisableDeployCrds }}
+        {{- end }}
         {{- if .Values.configuration.sourceId }}
         - --source.id={{ .Values.configuration.sourceId }}
         {{- end }}
@@ -194,6 +218,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.targetNamespace }}
         - --target-namespace={{ .Values.configuration.targetNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.targetDisableDeployCrds }}
+        - --target.disable-deploy-crds={{ .Values.configuration.targetDisableDeployCrds }}
         {{- end }}
         {{- if .Values.configuration.targetId }}
         - --target.id={{ .Values.configuration.targetId }}

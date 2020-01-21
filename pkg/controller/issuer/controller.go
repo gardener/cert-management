@@ -41,6 +41,8 @@ func init() {
 		BoolOption(core.OptCascadeDelete, "If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted").
 		StringOption(source.OptClass, "Identifier used to differentiate responsible controllers for entries").
 		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
+		DefaultedStringOption(core.OptPrecheckNameservers, "8.8.8.8:53,8.8.4.4:53",
+			"DNS nameservers used for checking DNS propagation, if explicity set empty it is tried to read them from /etc/resolv.conf").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).
 		CustomResourceDefinitions(crds.CertificateCRD).
