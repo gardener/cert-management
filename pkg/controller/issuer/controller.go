@@ -42,7 +42,8 @@ func init() {
 		StringOption(source.OptClass, "Identifier used to differentiate responsible controllers for entries").
 		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		DefaultedStringOption(core.OptPrecheckNameservers, "8.8.8.8:53,8.8.4.4:53",
-			"DNS nameservers used for checking DNS propagation, if explicity set empty it is tried to read them from /etc/resolv.conf").
+			"DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf").
+		DefaultedDurationOption(core.OptPrecheckAdditionalWait, 10*time.Second, "additional wait time after DNS propagation check").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).
 		CustomResourceDefinitions(crds.CertificateCRD).

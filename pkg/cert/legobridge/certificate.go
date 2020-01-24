@@ -76,6 +76,9 @@ type DNSControllerSettings struct {
 	OwnerID *string
 	// PrecheckNameservers for checking DNS propagation of DNS challenge TXT record
 	PrecheckNameservers []string
+	// AdditionalWait is the additional wait time after DNS propagation
+	// to wait for "last mile" propagation to DNS server used by the ACME server
+	AdditionalWait time.Duration
 }
 
 // ObtainOutput is the result of the certificate obtain request.

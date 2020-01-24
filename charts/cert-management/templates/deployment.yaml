@@ -132,6 +132,9 @@ spec:
         {{- if .Values.configuration.issuerIssuersPoolSize }}
         - --issuer.issuers.pool.size={{ .Values.configuration.issuerIssuersPoolSize }}
         {{- end }}
+        {{- if .Values.configuration.issuerPrecheckAdditionalWait }}
+        - --issuer.precheck-additional-wait={{ .Values.configuration.issuerPrecheckAdditionalWait }}
+        {{- end }}
         {{- if .Values.configuration.issuerPrecheckNameservers }}
         - --issuer.precheck-nameservers={{ .Values.configuration.issuerPrecheckNameservers }}
         {{- end }}
@@ -173,6 +176,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.precheckNameservers }}
         - --precheck-nameservers={{ .Values.configuration.precheckNameservers }}
+        {{- end }}
+        {{- if .Values.configuration.precheckAdditionalWait }}
+        - --precheck-additional-wait={{ .Values.configuration.precheckAdditionalWait }}
         {{- end }}
         {{- if .Values.configuration.renewalWindow }}
         - --renewal-window={{ .Values.configuration.renewalWindow }}

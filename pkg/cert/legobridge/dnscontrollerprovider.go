@@ -245,12 +245,17 @@ func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
 		prepareWaitTimeout := waitTimeout + 5*time.Second*time.Duration(len(p.presenting))
 		p.waitFor("DNS entry getting ready", p.checkDNSEntryNotPending, prepareWaitTimeout)
 
-		p.waitFor("DNS record propagation", p.isDNSTxtRecordReady, waitTimeout)
+		if p.waitFor("DNS record propagation", p.isDNSTxtRecordReady, waitTimeout) {
+			// wait some additional seconds to enlarge probability of record propagation to DNS server use by ACME server
+			additionalWaitTime := p.settings.AdditionalWait
+			p.logger.Infof("Waiting additional %d seconds...", int(additionalWaitTime.Seconds()))
+			time.Sleep(additionalWaitTime)
+		}
 	}
 	return waitTimeout / 2, dns01.DefaultPollingInterval
 }
 
-func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, values []string) bool, timeout time.Duration) {
+func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, values []string) bool, timeout time.Duration) bool {
 	waitTime := 5 * time.Second
 	endTime := time.Now().Add(timeout)
 	pendingDomain := ""
@@ -264,11 +269,12 @@ func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, 
 			}
 		}
 		if ready {
-			return
+			return true
 		}
 		p.logger.Infof("Waiting %d seconds for %s [%s]...", int(waitTime.Seconds()), msg, pendingDomain)
 		time.Sleep(waitTime)
 	}
+	return false
 }
 
 func (p *dnsControllerProvider) isDNSTxtRecordReady(domain string, values []string) bool {

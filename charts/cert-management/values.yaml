@@ -60,6 +60,7 @@ configuration:
   # issuerDnsOwnerId:
   # issuerIssuerNamespace:
   # issuerIssuersPoolSize:
+  # issuerPrecheckAdditionalWait:
   # issuerPrecheckNameservers:
   # issuerRenewalWindow:
   # issuerSecretsPoolSize:
@@ -74,6 +75,7 @@ configuration:
   # poolResyncPeriod:
   # poolSize:
   # precheckNameservers:
+  # precheckAdditionalWait:
   # renewalWindow:
   serverPortHttp: 8080
   # serviceCertCertClass:

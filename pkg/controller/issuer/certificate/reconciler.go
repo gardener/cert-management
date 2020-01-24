@@ -107,6 +107,9 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	reconciler.precheckNameservers = utils.PreparePrecheckNameservers(strings.Split(precheckNameservers, ","))
 	c.Infof("Using these nameservers for DNS propagation checks: %s", strings.Join(reconciler.precheckNameservers, ","))
 
+	reconciler.additionalWait, _ = c.GetDurationOption(core.OptPrecheckAdditionalWait)
+	c.Infof("Additional wait time: %d seconds", int(reconciler.additionalWait.Seconds()))
+
 	return reconciler, nil
 }
 
@@ -138,6 +141,7 @@ type certReconciler struct {
 	dnsClass            *string
 	dnsOwnerID          *string
 	precheckNameservers []string
+	additionalWait      time.Duration
 	renewalWindow       time.Duration
 	renewalCheckPeriod  time.Duration
 	classes             *controller.Classes
@@ -281,6 +285,7 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 		Namespace:           cert.Namespace,
 		OwnerID:             r.dnsOwnerID,
 		PrecheckNameservers: r.precheckNameservers,
+		AdditionalWait:      r.additionalWait,
 	}
 	if r.dnsNamespace != nil {
 		dnsSettings.Namespace = *r.dnsNamespace

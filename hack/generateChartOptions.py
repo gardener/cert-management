@@ -41,6 +41,7 @@ issuer.dns-namespace
 issuer.dns-owner-id
 issuer.issuer-namespace
 issuer.issuers.pool.size
+issuer.precheck-additional-wait
 issuer.precheck-nameservers
 issuer.renewal-window
 issuer.secrets.pool.size
@@ -56,6 +57,7 @@ plugin-dir
 pool.resync-period
 pool.size
 precheck-nameservers
+precheck-additional-wait
 renewal-window
 server-port-http
 service-cert.cert-class
