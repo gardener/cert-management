@@ -33,4 +33,8 @@ const (
 	OptRenewalWindow = "renewal-window"
 	// OptCascadeDelete is the cascade delete command line option.
 	OptCascadeDelete = "cascade-delete"
+	// OptPrecheckNameservers is a command line option to specify the DNS nameservers to check DNS propagation of the DNS challenge.
+	OptPrecheckNameservers = "precheck-nameservers"
+	// OptPrecheckAdditionalWait is a command line option to specify an additional wait time after DNS propagation check.
+	OptPrecheckAdditionalWait = "precheck-additional-wait"
 )

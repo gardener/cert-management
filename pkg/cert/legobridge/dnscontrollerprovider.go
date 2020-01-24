@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/source"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sync/atomic"
 	"time"
 
-	"github.com/go-acme/lego/challenge"
-	"github.com/go-acme/lego/challenge/dns01"
+	"github.com/go-acme/lego/v3/challenge"
+	"github.com/go-acme/lego/v3/challenge/dns01"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -39,17 +40,25 @@ type ProviderWithCount interface {
 	GetChallengesCount() int
 }
 
-func newDNSControllerProvider(logger logger.LogContext, cluster resources.Cluster, settings DNSControllerSettings,
+var index uint32
+
+func newDNSControllerProvider(cluster resources.Cluster, settings DNSControllerSettings,
 	certificateName resources.ObjectName, targetClass, issuerName string) (ProviderWithCount, error) {
 	itf, err := cluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DNSEntry resources: %s", err.Error())
 	}
-	return &dnsControllerProvider{logger: logger, settings: settings, entryResources: itf,
-		certificateName: certificateName, targetClass: targetClass, issuerName: issuerName,
-		ttl:         int64(0.501 * dns01.DefaultPropagationTimeout.Seconds()),
-		initialWait: true,
-		presenting:  map[string][]string{}}, nil
+	n := atomic.AddUint32(&index, 1)
+	return &dnsControllerProvider{
+		logger:          logger.NewContext("DNSChallengeProvider", fmt.Sprintf("dns-challenge-provider: %s-%d", certificateName, n)),
+		settings:        settings,
+		entryResources:  itf,
+		certificateName: certificateName,
+		targetClass:     targetClass,
+		issuerName:      issuerName,
+		ttl:             int64(0.501 * dns01.DefaultPropagationTimeout.Seconds()),
+		initialWait:     true,
+		presenting:      map[string][]string{}}, nil
 }
 
 type dnsControllerProvider struct {
@@ -213,17 +222,18 @@ func (p *dnsControllerProvider) prepareEntry(domain string) *dnsapi.DNSEntry {
 	return entry
 }
 
-func (p *dnsControllerProvider) dnsEntryPending(domain string, valuesCount int) bool {
+func (p *dnsControllerProvider) checkDNSEntryNotPending(domain string, values []string) bool {
 	entry := p.prepareEntry(domain)
 	obj, err := p.entryResources.Get_(entry)
 	if err != nil {
-		return false // no more waiting
+		return true // no more waiting
 	}
 	entry = obj.Data().(*dnsapi.DNSEntry)
-	return entry.Status.State == "Pending" || entry.Status.State == "Ready" && len(entry.Status.Targets) != valuesCount
+	return !(entry.Status.State == "Pending" || entry.Status.State == "Ready" && len(entry.Status.Targets) != len(values))
 }
 
 func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
+	waitTimeout := dns01.DefaultPropagationTimeout
 	if p.initialWait {
 		p.initialWait = false
 		// The Timeout function is called several times after all domains are "presented".
@@ -231,33 +241,44 @@ func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
 		// Depending on number of domain names and possible parallel other work,
 		// the dns-controller-manager may need several change batches
 		// until all entries are ready
-		rounds := 10
-		waitTime := dns01.DefaultPropagationTimeout / time.Duration(rounds)
-	outer:
-		for i := 0; i < rounds; i++ {
-			ready := true
-			for domain, values := range p.presenting {
-				if p.dnsEntryPending(domain, len(values)) {
-					ready = false
-					break
-				}
-			}
-			if ready {
-				break outer
-			}
-			p.logger.Infof("Waiting %d seconds for DNS entries getting ready...", int(waitTime.Seconds()))
-			time.Sleep(waitTime)
-		}
 
-		// wait some additional time for DNS record propagation
-		propagationWaitTime := 10
-		if p.multiValues {
-			// If there are multiple DNSChallenges for one domain the DNS record may be propagated with incomplete values
-			// Therefore await end of live of the first, incomplete DNS record
-			propagationWaitTime += int(p.ttl)
+		prepareWaitTimeout := waitTimeout + 5*time.Second*time.Duration(len(p.presenting))
+		p.waitFor("DNS entry getting ready", p.checkDNSEntryNotPending, prepareWaitTimeout)
+
+		if p.waitFor("DNS record propagation", p.isDNSTxtRecordReady, waitTimeout) {
+			// wait some additional seconds to enlarge probability of record propagation to DNS server use by ACME server
+			additionalWaitTime := p.settings.AdditionalWait
+			p.logger.Infof("Waiting additional %d seconds...", int(additionalWaitTime.Seconds()))
+			time.Sleep(additionalWaitTime)
 		}
-		p.logger.Infof("Waiting %d seconds for initial DNS record propagation...", int(propagationWaitTime))
-		time.Sleep(time.Duration(propagationWaitTime) * time.Second)
 	}
-	return dns01.DefaultPropagationTimeout, dns01.DefaultPollingInterval
+	return waitTimeout / 2, dns01.DefaultPollingInterval
+}
+
+func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, values []string) bool, timeout time.Duration) bool {
+	waitTime := 5 * time.Second
+	endTime := time.Now().Add(timeout)
+	pendingDomain := ""
+	for time.Now().Before(endTime) {
+		ready := true
+		for domain, values := range p.presenting {
+			if !isReady(domain, values) {
+				pendingDomain = domain
+				ready = false
+				break
+			}
+		}
+		if ready {
+			return true
+		}
+		p.logger.Infof("Waiting %d seconds for %s [%s]...", int(waitTime.Seconds()), msg, pendingDomain)
+		time.Sleep(waitTime)
+	}
+	return false
+}
+
+func (p *dnsControllerProvider) isDNSTxtRecordReady(domain string, values []string) bool {
+	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
+	found, _ := utils.CheckDNSPropagation(p.settings.PrecheckNameservers, fqdn, values...)
+	return found
 }

@@ -6,6 +6,7 @@
 import re
 
 options = """
+cascade-delete
 cert-class
 cert-target-class
 controllers
@@ -14,9 +15,12 @@ default-issuer
 default-issuer-domain-ranges
 disable-namespace-restriction
 dns
+dns-class
 dns-namespace
 dns-owner-id
+dns.disable-deploy-crds
 dns.id
+grace-period
 help
 ingress-cert.cert-class
 ingress-cert.cert-target-class
@@ -26,18 +30,23 @@ ingress-cert.target-name-prefix
 ingress-cert.target-namespace
 ingress-cert.targets.pool.size
 issuer-namespace
+issuer.cascade-delete
 issuer.cert-class
 issuer.default-issuer
 issuer.default-issuer-domain-ranges
 issuer.default.pool.resync-period
 issuer.default.pool.size
+issuer.dns-class
 issuer.dns-namespace
 issuer.dns-owner-id
 issuer.issuer-namespace
 issuer.issuers.pool.size
+issuer.precheck-additional-wait
+issuer.precheck-nameservers
 issuer.renewal-window
 issuer.secrets.pool.size
 kubeconfig
+kubeconfig.disable-deploy-crds
 kubeconfig.id
 log-level
 name
@@ -47,6 +56,8 @@ omit-lease
 plugin-dir
 pool.resync-period
 pool.size
+precheck-nameservers
+precheck-additional-wait
 renewal-window
 server-port-http
 service-cert.cert-class
@@ -57,10 +68,12 @@ service-cert.target-name-prefix
 service-cert.target-namespace
 service-cert.targets.pool.size
 source
+source.disable-deploy-crds
 source.id
 target
 target-name-prefix
 target-namespace
+target.disable-deploy-crds
 target.id
 """
 

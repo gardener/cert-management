@@ -364,6 +364,8 @@ Flags:
       --issuer.dns-owner-id string                         ownerId for creating challenge DNSEntries
       --issuer.issuer-namespace string                     namespace to lookup issuers on default cluster
       --issuer.issuers.pool.size int                       Worker pool size for pool issuers of controller issuer (default: 1)
+      --issuer.precheck-additional-wait duration           additional wait time after DNS propagation check
+      --issuer.precheck-nameservers string                 DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf
       --issuer.renewal-window duration                     certificate is renewed if its validity period is shorter
       --issuer.secrets.pool.size int                       Worker pool size for pool secrets of controller issuer (default: 1)
       --kubeconfig string                                  default cluster access
@@ -377,6 +379,8 @@ Flags:
       --plugin-dir string                                  directory containing go plugins
       --pool.resync-period duration                        default for all controller "pool.resync-period" options
       --pool.size int                                      default for all controller "pool.size" options
+      --precheck-additional-wait duration                  default for all controller "precheck-additional-wait" options
+      --precheck-nameservers string                        default for all controller "precheck-nameservers" options
       --renewal-window duration                            default for all controller "renewal-window" options
       --server-port-http int                               HTTP server port (serving /healthz, /metrics, ...)
       --service-cert.cert-class string                     Identifier used to differentiate responsible controllers for entries

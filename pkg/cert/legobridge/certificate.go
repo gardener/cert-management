@@ -21,15 +21,15 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/go-acme/lego/v3/challenge/dns01"
 	"sync"
 	"time"
 
-	"github.com/go-acme/lego/certificate"
-	"github.com/go-acme/lego/challenge/dns01"
-	"github.com/go-acme/lego/lego"
+	"github.com/go-acme/lego/v3/certificate"
+	"github.com/go-acme/lego/v3/lego"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
@@ -41,8 +41,6 @@ type ObtainerCallback func(output *ObtainOutput)
 
 // ObtainInput contains all data needed to obtain a certificate.
 type ObtainInput struct {
-	// Logger is the logger to use for logging.
-	Logger logger.LogContext
 	// User is the registration user.
 	User *RegistrationUser
 	// DNSCluster is the cluster to use for writing DNS entries for DNS challenges.
@@ -72,10 +70,15 @@ type ObtainInput struct {
 // DNSControllerSettings are the settings for the DNSController.
 type DNSControllerSettings struct {
 	// Namespace to set for challenge DNSEntry
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string
 	// OwnerID to set for challenge DNSEntry
 	// +optional
-	OwnerID *string `json:"owner,omitempty"`
+	OwnerID *string
+	// PrecheckNameservers for checking DNS propagation of DNS challenge TXT record
+	PrecheckNameservers []string
+	// AdditionalWait is the additional wait time after DNS propagation
+	// to wait for "last mile" propagation to DNS server used by the ACME server
+	AdditionalWait time.Duration
 }
 
 // ObtainOutput is the result of the certificate obtain request.
@@ -166,14 +169,15 @@ func (o *obtainer) Obtain(input ObtainInput) error {
 		return err
 	}
 
-	provider, err := newDNSControllerProvider(input.Logger, input.DNSCluster, input.DNSSettings, input.RequestName,
+	provider, err := newDNSControllerProvider(input.DNSCluster, input.DNSSettings, input.RequestName,
 		input.TargetClass, input.IssuerName)
 	if err != nil {
 		o.releasePending(input)
 		return err
 	}
-	nameservers := []string{"8.8.8.8", "8.8.4.4"}
-	err = client.Challenge.SetDNS01Provider(provider, dns01.AddRecursiveNameservers(dns01.ParseNameservers(nameservers)))
+	err = client.Challenge.SetDNS01Provider(provider,
+		dns01.AddRecursiveNameservers(input.DNSSettings.PrecheckNameservers),
+		utils.CreateWrapPreCheckOption(input.DNSSettings.PrecheckNameservers))
 	if err != nil {
 		o.releasePending(input)
 		return err

@@ -26,62 +26,73 @@ createCRDs:
   certificates: true
 
 configuration:
-# certClass:
-# certTargetClass:
-# controllers:
-# cpuprofile:
-# defaultIssuer:
-# defaultIssuerDomainRange:
-# disableNamespaceRestriction:
-# dns:
-# dnsClass:
-# dnsNamespace:
-# dnsOwnerId:
-# dnsId:
-# ingressCertCertClass:
-# ingressCertCertTargetClass:
-# ingressCertDefaultPoolResyncPeriod:
-# ingressCertDefaultPoolSize:
-# ingressCertTargetNamePrefix:
-# ingressCertTargetNamespace:
-# ingressCertTargetsPoolSize:
-# issuerNamespace:
-# issuerCertClass:
-# issuerDefaultIssuer:
-# issuerDefaultIssuerDomainRange:
-# issuerDefaultPoolResyncPeriod:
-# issuerDefaultPoolSize:
-# issuerDnsClass:
-# issuerDnsNamespace:
-# issuerDnsOwnerId:
-# issuerIssuerNamespace:
-# issuerIssuersPoolSize:
-# issuerRenewalWindow:
-# issuerSecretsPoolSize:
-# kubeconfig:
-# kubeconfigId:
-# logLevel:
-# namespace:
-# namespaceLocalAccessOnly:
-# omitLease:
-# pluginDir:
-# poolResyncPeriod:
-# poolSize:
-# renewalWindow:
+  # cascadeDelete:
+  # certClass:
+  # certTargetClass:
+  # controllers:
+  # cpuprofile:
+  # defaultIssuer:
+  # defaultIssuerDomainRanges:
+  # disableNamespaceRestriction:
+  # dns:
+  # dnsClass:
+  # dnsNamespace:
+  # dnsOwnerId:
+  # dnsDisableDeployCrds:
+  # dnsId:
+  # gracePeriod:
+  # ingressCertCertClass:
+  # ingressCertCertTargetClass:
+  # ingressCertDefaultPoolResyncPeriod:
+  # ingressCertDefaultPoolSize:
+  # ingressCertTargetNamePrefix:
+  # ingressCertTargetNamespace:
+  # ingressCertTargetsPoolSize:
+  # issuerNamespace:
+  # issuerCascadeDelete:
+  # issuerCertClass:
+  # issuerDefaultIssuer:
+  # issuerDefaultIssuerDomainRanges:
+  # issuerDefaultPoolResyncPeriod:
+  # issuerDefaultPoolSize:
+  # issuerDnsClass:
+  # issuerDnsNamespace:
+  # issuerDnsOwnerId:
+  # issuerIssuerNamespace:
+  # issuerIssuersPoolSize:
+  # issuerPrecheckAdditionalWait:
+  # issuerPrecheckNameservers:
+  # issuerRenewalWindow:
+  # issuerSecretsPoolSize:
+  # kubeconfig:
+  # kubeconfigDisableDeployCrds:
+  # kubeconfigId:
+  # logLevel:
+  # namespace:
+  # namespaceLocalAccessOnly:
+  # omitLease:
+  # pluginDir:
+  # poolResyncPeriod:
+  # poolSize:
+  # precheckNameservers:
+  # precheckAdditionalWait:
+  # renewalWindow:
   serverPortHttp: 8080
-# serviceCertCertClass:
-# serviceCertCertTargetClass:
-# serviceCertDefaultPoolResyncPeriod:
-# serviceCertDefaultPoolSize:
-# serviceCertTargetNamePrefix:
-# serviceCertTargetNamespace:
-# serviceCertTargetsPoolSize:
-# source:
-# sourceId:
-# target:
-# targetNamePrefix:
-# targetNamespace:
-# targetId:
+  # serviceCertCertClass:
+  # serviceCertCertTargetClass:
+  # serviceCertDefaultPoolResyncPeriod:
+  # serviceCertDefaultPoolSize:
+  # serviceCertTargetNamePrefix:
+  # serviceCertTargetNamespace:
+  # serviceCertTargetsPoolSize:
+  # source:
+  # sourceDisableDeployCrds:
+  # sourceId:
+  # target:
+  # targetNamePrefix:
+  # targetNamespace:
+  # targetDisableDeployCrds:
+  # targetId:
 
 
 additionalConfiguration: []

@@ -67,6 +67,18 @@ spec:
   commonName: cert2.{{.Domain}}
   issuerRef:
     name: {{.Name}}
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert3
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert3.{{.Domain}}
+  dnsNames:
+  - "*.cert3.{{.Domain}}"
+  issuerRef:
+    name: {{.Name}}
 `
 
 func init() {
@@ -130,6 +142,14 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				entryName(iss, "2"): MatchKeys(IgnoreExtras, Keys{
 					"status": MatchKeys(IgnoreExtras, Keys{
 						"commonName":     Equal(dnsName(iss, "cert2")),
+						"state":          Equal("Ready"),
+						"expirationDate": HavePrefix("20"),
+					}),
+				}),
+				entryName(iss, "3"): MatchKeys(IgnoreExtras, Keys{
+					"status": MatchKeys(IgnoreExtras, Keys{
+						"commonName":     Equal(dnsName(iss, "cert3")),
+						"dnsNames":       And(HaveLen(1), ContainElement(dnsName(iss, "*.cert3"))),
 						"state":          Equal("Ready"),
 						"expirationDate": HavePrefix("20"),
 					}),
