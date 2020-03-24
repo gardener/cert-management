@@ -67,28 +67,32 @@ func (f *EventFeedback) Failed(info *CertInfo, err error) {
 	if err == nil {
 		err = fmt.Errorf("cert request is errornous")
 	}
-	f.event(info, err.Error())
+	f.event(info, err.Error(), true)
 }
 
 // Succeeded addas a succeeded event.
 func (f *EventFeedback) Succeeded() {
 }
 
-func (f *EventFeedback) event(info *CertInfo, msg string) {
+func (f *EventFeedback) event(info *CertInfo, msg string, warning ...bool) {
 	channel := ""
 	if info != nil {
 		channel = info.SecretName
 	}
 	if msg != f.events[channel] {
 		key := f.source.ClusterKey()
+		eventType := v1.EventTypeNormal
+		if len(warning) > 0 && warning[0] {
+			eventType = v1.EventTypeWarning
+		}
 		f.events[channel] = msg
 		if channel != "" {
 			f.logger.Infof("event for %q(%s): %s", key, channel, msg)
-			f.source.Event(v1.EventTypeNormal, "cert-annotation",
+			f.source.Event(eventType, "cert-annotation",
 				fmt.Sprintf("%s: %s", channel, msg))
 		} else {
 			f.logger.Infof("event for %q: %s", key, msg)
-			f.source.Event(v1.EventTypeNormal, "cert-annotation", msg)
+			f.source.Event(eventType, "cert-annotation", msg)
 		}
 	}
 }
