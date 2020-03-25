@@ -50,7 +50,7 @@ func DisplayVersion() string {
 }
 
 // VersionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
-const VersionCore = "0.6.1"
+const VersionCore = "0.7.0"
 
 // VersionPreRelease is the pre-release portion of the kind CLI version per
 // Semantic Versioning 2.0.0
@@ -65,8 +65,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "version",
-		Short: "prints the kind CLI version",
-		Long:  "prints the kind CLI version",
+		Short: "Prints the kind CLI version",
+		Long:  "Prints the kind CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if logger.V(0).Enabled() {
 				// if not -q / --quiet, show lots of info

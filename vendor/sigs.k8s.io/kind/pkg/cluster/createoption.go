@@ -20,8 +20,9 @@ import (
 	"time"
 
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
 	internalencoding "sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
-	internalcreate "sigs.k8s.io/kind/pkg/internal/cluster/create"
 )
 
 // CreateOption is a Provider.Create option
@@ -61,6 +62,14 @@ func CreateWithV1Alpha3Config(config *v1alpha3.Cluster) CreateOption {
 	})
 }
 
+// CreateWithV1Alpha4Config configures the cluster with a v1alpha4 config
+func CreateWithV1Alpha4Config(config *v1alpha4.Cluster) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.Config = internalencoding.V1Alpha4ToInternal(config)
+		return nil
+	})
+}
+
 // CreateWithNodeImage overrides the image on all nodes in config
 // as an easy way to change the Kubernetes version
 func CreateWithNodeImage(nodeImage string) CreateOption {
@@ -81,7 +90,7 @@ func CreateWithRetain(retain bool) CreateOption {
 }
 
 // CreateWithWaitForReady configures a maximum wait time for the control plane
-// node(s) to be ready. By defeault no waiting is performed
+// node(s) to be ready. By default no waiting is performed
 func CreateWithWaitForReady(waitTime time.Duration) CreateOption {
 	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
 		o.WaitForReady = waitTime
@@ -116,7 +125,7 @@ func CreateWithDisplayUsage(displayUsage bool) CreateOption {
 	})
 }
 
-// CreateWithDisplaySalutation enables display a salutation t the end of create
+// CreateWithDisplaySalutation enables display a salutation at the end of create
 // cluster if displaySalutation is true
 func CreateWithDisplaySalutation(displaySalutation bool) CreateOption {
 	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {

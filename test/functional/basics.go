@@ -110,7 +110,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			Ω(err).Should(BeNil())
 
 			entryNames := []string{}
-			for _, name := range []string{"1", "2"} {
+			for _, name := range []string{"1", "2", "3"} {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.AwaitCertReady(entryNames...)

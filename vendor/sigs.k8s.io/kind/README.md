@@ -3,11 +3,11 @@
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
 
 kind is a tool for running local Kubernetes clusters using Docker container "nodes".  
-kind is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
+kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
-If you have [go] ([1.11+][go-supported]) and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.0 && kind create cluster` is all you need!
+If you have [go] ([1.11+][go-supported]) and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.1 && kind create cluster` is all you need!
 
-<img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/13fe81c219e64b4917575c8988e06719c072c7f1/kind-demo.gif" alt="2x speed `kind create cluster` demo" />
+![](site/static/images/kind-create-cluster.png)
 
 kind consists of:
 - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
@@ -21,7 +21,7 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 ## Installation and usage
 
-You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.0`.
+You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.1`.
 
 **NOTE**: please use the latest go to do this, ideally go 1.13 or greater.
 
@@ -40,7 +40,7 @@ into your `$PATH`:
 On Mac & Linux:
 
 ```console
-curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-$(uname)-amd64
+curl -Lo ./kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$(uname)-amd64"
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
@@ -54,7 +54,7 @@ brew install kind
 On Windows:
 
 ```powershell
-curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-windows-amd64
+curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 
 # OR via Chocolatey (https://chocolatey.org/packages/kind)
@@ -111,18 +111,8 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 - kind supports multi-node (including HA) clusters
 - kind supports building Kubernetes release builds from source
   - support for make / bash / docker or bazel, in addition to pre-published builds
-- kind supports Windows in addition to MacOS and Linux
+- kind supports Linux, macOS and Windows
 - kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
-
-## Alternatives
-
-Some other open source projects with slightly different but overlapping use cases, features etc.
-
-- https://github.com/bsycorp/kind
-- https://github.com/ubuntu/microk8s
-- https://github.com/kinvolk/kube-spawn
-- https://github.com/kubernetes/minikube
-- https://github.com/kubernetes-sigs/kubeadm-dind-cluster
 
 ### Code of conduct
 
@@ -132,7 +122,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [go]: https://golang.org/
 [go-supported]: https://golang.org/doc/devel/release.html#policy
 [docker]: https://www.docker.com/
-[community page]: http://kubernetes.io/community/
+[community page]: https://kubernetes.io/community/
 [Kubernetes Code of Conduct]: code-of-conduct.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
 [Go Report Card]: https://goreportcard.com/report/sigs.k8s.io/kind

@@ -25,17 +25,16 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/api v0.16.4
 	k8s.io/apiextensions-apiserver v0.0.0-20190502093314-7526e4c489ad
-	k8s.io/apimachinery v0.16.4
+	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v11.0.1-0.20190708175433-62e1c231c5dc+incompatible
 	k8s.io/code-generator v0.16.4
 	k8s.io/gengo v0.0.0-20191120174120-e74f70b9b27e // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
-	sigs.k8s.io/kind v0.6.1
+	sigs.k8s.io/kind v0.7.0
 )
 
 replace (
-	gopkg.in/fsnotify.v1 v1.4.7 => github.com/fsnotify/fsnotify v1.4.7
 	k8s.io/api => k8s.io/api v0.16.4 // kubernetes-1.16.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.4 // kubernetes-1.16.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.5-beta.1 // kubernetes-1.16.4
