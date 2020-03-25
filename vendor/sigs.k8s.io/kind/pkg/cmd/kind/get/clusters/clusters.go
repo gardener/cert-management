@@ -33,8 +33,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "clusters",
-		Short: "lists existing kind clusters by their name",
-		Long:  "lists existing kind clusters by their name",
+		Short: "Lists existing kind clusters by their name",
+		Long:  "Lists existing kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, streams)
 		},
@@ -49,6 +49,10 @@ func runE(logger log.Logger, streams cmd.IOStreams) error {
 	clusters, err := provider.List()
 	if err != nil {
 		return err
+	}
+	if len(clusters) == 0 {
+		logger.V(0).Info("No kind clusters found.")
+		return nil
 	}
 	for _, cluster := range clusters {
 		fmt.Fprintln(streams.Out, cluster)

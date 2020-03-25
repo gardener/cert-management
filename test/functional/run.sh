@@ -16,8 +16,10 @@
 
 set -e
 SCRIPT_BASEDIR=$(dirname "$0")
-ROOTDIR=../..
+ROOTDIR=$(readlink -f $SCRIPT_BASEDIR/../..)
 echo ROOTDIR: $ROOTDIR
+INTEGRATION_KUBECONFIG=$ROOTDIR/.kubeconfig-kind-integration
+
 
 cd $SCRIPT_BASEDIR
 
@@ -120,6 +122,10 @@ if [ "$NOBOOTSTRAP" == "" ] && [ "$LOCAL_APISERVER" == "" ]; then
   # prepare Kubernetes IN Docker - local clusters for testing Kubernetes
   go install -mod=vendor sigs.k8s.io/kind
 
+  rm $INTEGRATION_KUBECONFIG || true
+  touch $INTEGRATION_KUBECONFIG
+  export KUBECONFIG=$INTEGRATION_KUBECONFIG
+
   # delete old cluster
   kind delete cluster --name integration || true
 
@@ -180,7 +186,7 @@ users: []
 EOF
   export KUBECONFIG=/tmp/kubeconfig-local.yaml
 else
-  export KUBECONFIG=$(kind get kubeconfig-path --name="integration")
+  export KUBECONFIG=$INTEGRATION_KUBECONFIG
 fi
 
 kubectl cluster-info

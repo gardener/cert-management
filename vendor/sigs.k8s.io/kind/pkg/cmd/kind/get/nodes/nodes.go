@@ -37,8 +37,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "nodes",
-		Short: "lists existing kind nodes by their name",
-		Long:  "lists existing kind nodes by their name",
+		Short: "Lists existing kind nodes by their name",
+		Long:  "Lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, streams, flags)
 		},
@@ -60,6 +60,10 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	n, err := provider.ListNodes(flags.Name)
 	if err != nil {
 		return err
+	}
+	if len(n) == 0 {
+		logger.V(0).Infof("No kind nodes found for cluster %q.", flags.Name)
+		return nil
 	}
 	for _, node := range n {
 		fmt.Fprintln(streams.Out, node.String())

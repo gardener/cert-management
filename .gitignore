@@ -6,3 +6,4 @@ tmp/
 /cmd/cert-controller-manager/cert-controller-manager
 /cert-controller-manager
 .vscode/
+.kubeconfig-kind-integration

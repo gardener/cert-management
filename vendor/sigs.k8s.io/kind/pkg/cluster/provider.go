@@ -23,13 +23,13 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/log"
 
-	internalcontext "sigs.k8s.io/kind/pkg/internal/cluster/context"
-	internalcreate "sigs.k8s.io/kind/pkg/internal/cluster/create"
-	internaldelete "sigs.k8s.io/kind/pkg/internal/cluster/delete"
-	"sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig"
-	internallogs "sigs.k8s.io/kind/pkg/internal/cluster/logs"
-	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
-	internalprovider "sigs.k8s.io/kind/pkg/internal/cluster/providers/provider"
+	internalcontext "sigs.k8s.io/kind/pkg/cluster/internal/context"
+	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
+	internaldelete "sigs.k8s.io/kind/pkg/cluster/internal/delete"
+	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
+	internallogs "sigs.k8s.io/kind/pkg/cluster/internal/logs"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
+	internalprovider "sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 )
 
 // DefaultName is the default cluster name
@@ -112,7 +112,7 @@ func (p *Provider) List() ([]string, error) {
 
 // KubeConfig returns the KUBECONFIG for the cluster
 // If internal is true, this will contain the internal IP etc.
-// If internal is fale, this will contain the host IP etc.
+// If internal is false, this will contain the host IP etc.
 func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
 	return kubeconfig.Get(p.ic(name), !internal)
 }
