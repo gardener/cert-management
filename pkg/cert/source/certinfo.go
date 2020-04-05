@@ -25,7 +25,7 @@ import (
 
 func (r *sourceReconciler) getCertsInfo(logger logger.LogContext, obj resources.Object, s CertSource, current *CertCurrentState) (*CertsInfo, error) {
 	if !r.classes.IsResponsibleFor(logger, obj) {
-		return &CertsInfo{}, nil
+		return nil, nil
 	}
 	info, err := s.GetCertsInfo(logger, obj, current)
 	return info, err
