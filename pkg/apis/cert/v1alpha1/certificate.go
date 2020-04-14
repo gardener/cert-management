@@ -38,7 +38,7 @@ type Certificate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              CertificateSpec   `json:"spec"`
-	Status            CertificateStatus `json:"status"`
+	Status            CertificateStatus `json:"status,omitempty"`
 }
 
 // CertificateSpec is the spec of the certificate to request.
