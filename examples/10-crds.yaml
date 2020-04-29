@@ -184,6 +184,7 @@ spec:
           properties:
             commonName:
               description: CommonName is the CN for the certificate (max. 64 chars).
+              maxLength: 64
               type: string
             csr:
               description: CSR is the alternative way to provide CN,DNSNames and other
