@@ -27,6 +27,7 @@ var mainResource = resources.NewGroupKind("extensions", "Ingress")
 
 func init() {
 	source.CertSourceController(source.NewCertSourceTypeForCreator("ingress-cert", mainResource, NewIngressSource), nil).
+		RequireLease().
 		FinalizerDomain("cert.gardener.cloud").
 		MustRegister(ctrl.ControllerGroupSource)
 }

@@ -90,6 +90,9 @@ spec:
                 - email
                 - server
               type: object
+            requestsPerDayQuota:
+              description: RequestsPerDayQuota is the maximum number of certificate requests per days allowed for this issuer
+              type: integer
           type: object
         status:
           description: IssuerStatus is the status of the issuer.
@@ -103,6 +106,9 @@ spec:
             observedGeneration:
               description: ObservedGeneration is the observed generation of the spec.
               format: int64
+              type: integer
+            requestsPerDayQuota:
+              description: RequestsPerDayQuota is the actual maximum number of certificate requests per days allowed for this issuer
               type: integer
             state:
               description: State is either empty, 'Pending', 'Error', or 'Ready'.
@@ -227,6 +233,27 @@ spec:
         status:
           description: CertificateStatus is the status of the certificate request.
           properties:
+            backoff:
+              description: BackOff contains the state to back off failed certificate
+                requests
+              properties:
+                observedGeneration:
+                  description: ObservedGeneration is the observed generation the BackOffState
+                    is assigned to
+                  format: int64
+                  type: integer
+                recheckAfter:
+                  description: RetryAfter is the timestamp this cert request is not
+                    retried before.
+                  format: date-time
+                  type: string
+                recheckInterval:
+                  description: RetryInterval is interval to wait for retrying.
+                  type: string
+              required:
+                - recheckAfter
+                - recheckInterval
+              type: object
             commonName:
               description: CommonName is the current CN.
               type: string
@@ -267,7 +294,6 @@ spec:
               description: State is the certificate state.
               type: string
           required:
-            - lastPendingTimestamp
             - state
           type: object
       required:

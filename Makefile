@@ -1,6 +1,9 @@
-EXECUTABLE=cert-controller-manager
-PROJECT=github.com/gardener/cert-management
-VERSION=$(shell cat VERSION)
+REGISTRY              := eu.gcr.io/gardener-project
+EXECUTABLE            := cert-controller-manager
+PROJECT               := github.com/gardener/cert-management
+CERT_IMAGE_REPOSITORY := $(REGISTRY)/cert-controller-manager
+VERSION               := $(shell cat VERSION)
+IMAGE_TAG             := $(VERSION)
 
 
 .PHONY: revendor
@@ -42,3 +45,7 @@ test:
 .PHONY: generate
 generate:
 	@./hack/generate-code
+
+.PHONY: docker-images
+docker-images:
+	@docker build -t $(CERT_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(CERT_IMAGE_REPOSITORY):latest -f build/Dockerfile --target cert-controller-manager .

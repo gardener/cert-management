@@ -32,6 +32,7 @@ import (
 
 func init() {
 	controller.Configure("issuer").
+		RequireLease().
 		DefaultedStringOption(core.OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
 		DefaultedStringOption(core.OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
 		StringOption(core.OptDefaultIssuerDomainRanges, "domain range restrictions when using default issuer separated by comma").
@@ -44,6 +45,8 @@ func init() {
 		DefaultedStringOption(core.OptPrecheckNameservers, "8.8.8.8:53,8.8.4.4:53",
 			"DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf").
 		DefaultedDurationOption(core.OptPrecheckAdditionalWait, 10*time.Second, "additional wait time after DNS propagation check").
+		DefaultedIntOption(core.OptDefaultRequestsPerDayQuota, 10000,
+			"Default value for requestsPerDayQuota if not set explicitly in the issuer spec.").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).
 		CustomResourceDefinitions(crds.CertificateCRD).

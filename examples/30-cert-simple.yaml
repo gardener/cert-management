@@ -10,3 +10,7 @@ spec:
   # if issuer is not specified, the default issuer is used
   issuerRef:
     name: issuer-staging
+  # optionally specify secret to store certificate
+  secretRef:
+    name: cert-simple-secret
+    namespace: default

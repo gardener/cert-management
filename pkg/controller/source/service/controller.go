@@ -27,6 +27,7 @@ var mainResource = resources.NewGroupKind("core", "Service")
 
 func init() {
 	source.CertSourceController(source.NewCertSourceTypeForExtractor("service-cert", mainResource, GetSecretName), nil).
+		RequireLease().
 		FinalizerDomain("cert.gardener.cloud").
 		MustRegister(ctrl.ControllerGroupSource)
 }
