@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
@@ -275,7 +276,7 @@ func (r *certReconciler) rateLimitingEndTime(timestamp *metav1.Time) *time.Time 
 	if timestamp == nil {
 		return nil
 	}
-	endTime := timestamp.Add(r.rateLimiting)
+	endTime := timestamp.Add(r.rateLimiting).Add(r.additionalWait)
 	return &endTime
 }
 
@@ -442,6 +443,13 @@ func (r *certReconciler) validateDomainsAndCsr(spec *api.CertificateSpec) error 
 	}
 
 	domainsToValidate := append([]string{*cn}, dnsNames...)
+	names := sets.String{}
+	for _, name := range domainsToValidate {
+		if names.Has(name) {
+			return fmt.Errorf("duplicate domain: %s", name)
+		}
+		names.Insert(name)
+	}
 	err = r.checkDomainRangeRestriction(spec, domainsToValidate)
 	return err
 }
