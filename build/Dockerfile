@@ -12,11 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.10
+#############      builder       #############
+FROM golang:1.13.9 AS builder
+
+WORKDIR /build
+COPY . .
+
+RUN make release
+
+############# base
+FROM alpine:3.11.3 AS base
+
+#############      cert-controller-manager     #############
+FROM base AS cert-controller-manager
 
 RUN addgroup -S app && adduser -S -G app app
 WORKDIR /
-ADD bin/rel/cert-controller-manager /cert-controller-manager
+COPY --from=builder /build/cert-controller-manager /cert-controller-manager
 USER app
 
 ENTRYPOINT ["/cert-controller-manager"]

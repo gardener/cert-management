@@ -24,14 +24,16 @@ import (
 type state struct {
 	secrets      *ReferencedSecrets
 	certificates *AssociatedObjects
+	quotas       *Quotas
 }
 
 func newState() *state {
-	return &state{secrets: NewReferencedSecrets(), certificates: NewAssociatedObjects()}
+	return &state{secrets: NewReferencedSecrets(), certificates: NewAssociatedObjects(), quotas: NewQuotas()}
 }
 
 func (s *state) RemoveIssuer(name resources.ObjectName) bool {
 	s.certificates.RemoveBySource(name)
+	s.quotas.RemoveIssuer(name)
 	return s.secrets.RemoveIssuer(name)
 }
 
@@ -53,6 +55,16 @@ func (s *state) CertificateCountForIssuer(issuer resources.ObjectName) int {
 
 func (s *state) KnownIssuers() []resources.ObjectName {
 	return s.certificates.Sources()
+}
+
+func (s *state) RememberIssuerQuotas(issuer resources.ObjectName, requestsPerDay int) {
+	s.quotas.RememberQuotas(issuer, requestsPerDay)
+}
+
+// TryAcceptCertificateRequest tries to accept a certificate request according to the quotas.
+// Return true if accepted and the requests per days quota value
+func (s *state) TryAcceptCertificateRequest(issuer resources.ObjectName) (bool, int) {
+	return s.quotas.TryAccept(issuer)
 }
 
 func (s *state) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {

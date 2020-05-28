@@ -86,6 +86,11 @@ func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory
 		s.defaultIssuerDomainRanges = parts
 	}
 
+	s.defaultRequestsPerDayQuota, _ = c.GetIntOption(OptDefaultRequestsPerDayQuota)
+	if s.defaultRequestsPerDayQuota < 1 {
+		return nil, nil, fmt.Errorf("Invalid value for %s: %d", OptDefaultRequestsPerDayQuota, s.defaultRequestsPerDayQuota)
+	}
+
 	h := &CompoundHandler{support: s}
 	err = h.addIssuerHandlerFactories(factories)
 	if err != nil {
@@ -167,15 +172,16 @@ func (h *CompoundHandler) enqueueIssuers(logger logger.LogContext, objName resou
 
 // Support provides common issuer/credentials functionality.
 type Support struct {
-	enqueuer                  Enqueuer
-	state                     *state
-	defaultCluster            resources.Cluster
-	targetCluster             resources.Cluster
-	issuerResources           resources.Interface
-	issuerSecretResources     resources.Interface
-	defaultIssuerName         string
-	issuerNamespace           string
-	defaultIssuerDomainRanges []string
+	enqueuer                   Enqueuer
+	state                      *state
+	defaultCluster             resources.Cluster
+	targetCluster              resources.Cluster
+	issuerResources            resources.Interface
+	issuerSecretResources      resources.Interface
+	defaultIssuerName          string
+	issuerNamespace            string
+	defaultRequestsPerDayQuota int
+	defaultIssuerDomainRanges  []string
 }
 
 // EnqueueKey forwards to an enqueuer
@@ -259,14 +265,15 @@ func (s *Support) triggerCertificates(logger logger.LogContext, issuerName resou
 }
 
 func (s *Support) prepareUpdateStatus(obj resources.Object, state string, itype *string, msg *string) (*resources.ModificationState, *api.IssuerStatus) {
-	crt := obj.Data().(*api.Issuer)
-	status := &crt.Status
+	issuer := obj.Data().(*api.Issuer)
+	status := &issuer.Status
 
 	mod := resources.NewModificationState(obj)
 	mod.AssureStringPtrPtr(&status.Message, msg)
 	mod.AssureStringPtrPtr(&status.Type, itype)
 	mod.AssureStringValue(&status.State, state)
 	mod.AssureInt64Value(&status.ObservedGeneration, obj.GetGeneration())
+	mod.AssureIntValue(&status.RequestsPerDayQuota, s.RememberIssuerQuotas(obj.ObjectName(), issuer.Spec.RequestsPerDayQuota))
 
 	return mod, status
 }
@@ -383,6 +390,22 @@ func (s *Support) IssuerNamesForSecret(secretName resources.ObjectName) resource
 // RememberIssuerSecret stores issuer secret ref pair.
 func (s *Support) RememberIssuerSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference, hash string) {
 	s.state.RememberIssuerSecret(issuer, secretRef, hash)
+}
+
+// RememberIssuerQuotas stores the issuer quotas.
+func (s *Support) RememberIssuerQuotas(issuer resources.ObjectName, issuerRequestsPerDay *int) int {
+	requestsPerDay := s.defaultRequestsPerDayQuota
+	if issuerRequestsPerDay != nil && *issuerRequestsPerDay > 0 {
+		requestsPerDay = *issuerRequestsPerDay
+	}
+	s.state.RememberIssuerQuotas(issuer, requestsPerDay)
+	return requestsPerDay
+}
+
+// TryAcceptCertificateRequest tries to accept a certificate request according to the quotas.
+// Return true if accepted and the requests per days quota value
+func (s *Support) TryAcceptCertificateRequest(issuer resources.ObjectName) (bool, int) {
+	return s.state.TryAcceptCertificateRequest(issuer)
 }
 
 // GetIssuerSecretHash returns the issuer secret hash code

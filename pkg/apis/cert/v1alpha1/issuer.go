@@ -47,6 +47,9 @@ type IssuerSpec struct {
 	// ACME is the ACME protocol specific spec.
 	// +optional
 	ACME *ACMESpec `json:"acme,omitempty"`
+	// RequestsPerDayQuota is the maximum number of certificate requests per days allowed for this issuer
+	// +optional
+	RequestsPerDayQuota *int `json:"requestsPerDayQuota,omitempty"`
 }
 
 // ACMESpec is the ACME specific part of the spec.
@@ -77,4 +80,6 @@ type IssuerStatus struct {
 	Type *string `json:"type"`
 	// ACME is the ACME specific status.
 	ACME *runtime.RawExtension `json:"acme,omitempty"`
+	// RequestsPerDayQuota is the actual maximum number of certificate requests per days allowed for this issuer
+	RequestsPerDayQuota int `json:"requestsPerDayQuota,omitempty"`
 }

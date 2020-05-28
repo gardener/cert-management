@@ -1,6 +1,7 @@
 package dns01
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -25,10 +26,10 @@ var defaultNameservers = []string{
 	"google-public-dns-b.google.com:53",
 }
 
-// recursiveNameservers are used to pre-check DNS propagation
+// recursiveNameservers are used to pre-check DNS propagation.
 var recursiveNameservers = getNameservers(defaultResolvConf, defaultNameservers)
 
-// soaCacheEntry holds a cached SOA record (only selected fields)
+// soaCacheEntry holds a cached SOA record (only selected fields).
 type soaCacheEntry struct {
 	zone      string    // zone apex (a domain name)
 	primaryNs string    // primary nameserver for the zone apex
@@ -69,7 +70,7 @@ func AddRecursiveNameservers(nameservers []string) ChallengeOption {
 	}
 }
 
-// getNameservers attempts to get systems nameservers before falling back to the defaults
+// getNameservers attempts to get systems nameservers before falling back to the defaults.
 func getNameservers(path string, defaults []string) []string {
 	config, err := dns.ClientConfigFromFile(path)
 	if err != nil || len(config.Servers) == 0 {
@@ -98,7 +99,7 @@ func lookupNameservers(fqdn string) ([]string, error) {
 
 	zone, err := FindZoneByFqdn(fqdn)
 	if err != nil {
-		return nil, fmt.Errorf("could not determine the zone: %v", err)
+		return nil, fmt.Errorf("could not determine the zone: %w", err)
 	}
 
 	r, err := dnsQuery(zone, dns.TypeNS, recursiveNameservers, true)
@@ -115,7 +116,7 @@ func lookupNameservers(fqdn string) ([]string, error) {
 	if len(authoritativeNss) > 0 {
 		return authoritativeNss, nil
 	}
-	return nil, fmt.Errorf("could not determine authoritative nameservers")
+	return nil, errors.New("could not determine authoritative nameservers")
 }
 
 // FindPrimaryNsByFqdn determines the primary nameserver of the zone apex for the given fqdn
@@ -214,7 +215,7 @@ func fetchSoaByFqdn(fqdn string, nameservers []string) (*soaCacheEntry, error) {
 	return nil, fmt.Errorf("could not find the start of authority for %s%s", fqdn, formatDNSError(in, err))
 }
 
-// dnsMsgContainsCNAME checks for a CNAME answer in msg
+// dnsMsgContainsCNAME checks for a CNAME answer in msg.
 func dnsMsgContainsCNAME(msg *dns.Msg) bool {
 	for _, ans := range msg.Answer {
 		if _, ok := ans.(*dns.CNAME); ok {

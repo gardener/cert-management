@@ -1,12 +1,19 @@
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
 metadata:
+  annotations:
+    # class annotation only needed if cert-controller-manager is started with --cert-class=myclass
+    #cert.gardener.cloud/class: myclass
   name: cert-simple
   namespace: default
 spec:
   commonName: cert1.mydomain.com
   dnsNames:
-  - cert1.my-domain.com
+  - cert1.my-other-domain.com
   # if issuer is not specified, the default issuer is used
   issuerRef:
     name: issuer-staging
+  # optionally specify secret to store certificate
+  secretRef:
+    name: cert-simple-secret
+    namespace: default

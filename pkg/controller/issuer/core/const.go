@@ -37,4 +37,6 @@ const (
 	OptPrecheckNameservers = "precheck-nameservers"
 	// OptPrecheckAdditionalWait is a command line option to specify an additional wait time after DNS propagation check.
 	OptPrecheckAdditionalWait = "precheck-additional-wait"
+	// OptDefaultRequestsPerDayQuota allows to set a default value for requestsPerDayQuota if not set explicitly in the issuer spec.
+	OptDefaultRequestsPerDayQuota = "default-requests-per-day-quota"
 )

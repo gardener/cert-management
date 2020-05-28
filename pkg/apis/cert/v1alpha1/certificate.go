@@ -44,6 +44,7 @@ type Certificate struct {
 // CertificateSpec is the spec of the certificate to request.
 type CertificateSpec struct {
 	// CommonName is the CN for the certificate (max. 64 chars).
+	// +kubebuilder:validation:MaxLength=64
 	CommonName *string `json:"commonName,omitempty"`
 	// DNSNames are the optional additional domain names of the certificate.
 	// +optional
@@ -65,6 +66,16 @@ type IssuerRef struct {
 	Name string `json:"name"`
 }
 
+// BackOffState stores the status for exponential back off on repeated cert request failure
+type BackOffState struct {
+	// ObservedGeneration is the observed generation the BackOffState is assigned to
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// RetryAfter is the timestamp this cert request is not retried before.
+	RetryAfter metav1.Time `json:"recheckAfter"`
+	// RetryInterval is interval to wait for retrying.
+	RetryInterval metav1.Duration `json:"recheckInterval"`
+}
+
 // CertificateStatus is the status of the certificate request.
 type CertificateStatus struct {
 	// ObservedGeneration is the observed generation of the spec.
@@ -74,7 +85,7 @@ type CertificateStatus struct {
 	// Message is the status or error message.
 	Message *string `json:"message,omitempty"`
 	// LastPendingTimestamp contains the start timestamp of the last pending status.
-	LastPendingTimestamp *metav1.Time `json:"lastPendingTimestamp"`
+	LastPendingTimestamp *metav1.Time `json:"lastPendingTimestamp,omitempty"`
 	// CommonName is the current CN.
 	CommonName *string `json:"commonName,omitempty"`
 	// DNSNames are the current domain names.
@@ -83,6 +94,8 @@ type CertificateStatus struct {
 	IssuerRef *IssuerRefWithNamespace `json:"issuerRef,omitempty"`
 	// ExpirationDate shows the notAfter validity date.
 	ExpirationDate *string `json:"expirationDate,omitempty"`
+	// BackOff contains the state to back off failed certificate requests
+	BackOff *BackOffState `json:"backoff,omitempty"`
 }
 
 // IssuerRefWithNamespace is the full qualified issuer reference.

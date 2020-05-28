@@ -78,15 +78,18 @@ func (pr *PendingResults) Add(name resources.ObjectName, result *ObtainOutput) {
 	pr.results[name] = result
 }
 
-// Remove removes a pending result by object name.
-func (pr *PendingResults) Remove(name resources.ObjectName) *ObtainOutput {
+// Peek fetches a pending result by object name.
+func (pr *PendingResults) Peek(name resources.ObjectName) *ObtainOutput {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 
-	result, ok := pr.results[name]
-	if !ok {
-		return nil
-	}
+	return pr.results[name]
+}
+
+// Remove removes a pending result by object name.
+func (pr *PendingResults) Remove(name resources.ObjectName) {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+
 	delete(pr.results, name)
-	return result
 }

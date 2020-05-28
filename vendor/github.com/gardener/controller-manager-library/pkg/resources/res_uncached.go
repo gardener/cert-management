@@ -55,6 +55,13 @@ func (this *AbstractResource) CreateOrUpdate(obj ObjectData) (Object, error) {
 		if !k8serr.IsAlreadyExists(err) {
 			return nil, err
 		}
+		result.SetName(obj.GetName())
+		result.SetNamespace(obj.GetNamespace())
+		err = this.helper.Internal.I_get(result)
+		if err != nil {
+			return nil, err
+		}
+		obj.SetResourceVersion(result.GetResourceVersion())
 	}
 	result, err := this.helper.Internal.I_update(obj)
 	if err != nil {
@@ -187,7 +194,7 @@ func (this *AbstractResource) Get_(obj interface{}) (Object, error) {
 }
 
 func (this *AbstractResource) List(opts metav1.ListOptions) (ret []Object, err error) {
-	return this.self.I_list(metav1.NamespaceAll)
+	return this.self.I_list(metav1.NamespaceAll, opts)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -210,5 +217,5 @@ func (this *namespacedResource) List(opts metav1.ListOptions) (ret []Object, err
 	if !this.resource.Namespaced() {
 		return nil, fmt.Errorf("resourcename %s (%s) is not namespaced", this.resource.Name(), this.resource.GroupVersionKind())
 	}
-	return this.resource.self.I_list(this.namespace)
+	return this.resource.self.I_list(this.namespace, opts)
 }
