@@ -51,6 +51,9 @@ spec:
         {{- if .Values.configuration.defaultIssuerDomainRanges }}
         - --default-issuer-domain-ranges={{ .Values.configuration.defaultIssuerDomainRanges }}
         {{- end }}
+        {{- if .Values.configuration.defaultRequestsPerDayQuota }}
+        - --default-requests-per-day-quota={{ .Values.configuration.defaultRequestsPerDayQuota }}
+        {{- end }}
         {{- if .Values.configuration.disableNamespaceRestriction }}
         - --disable-namespace-restriction={{ .Values.configuration.disableNamespaceRestriction }}
         {{- end }}
@@ -111,6 +114,9 @@ spec:
         {{- if .Values.configuration.issuerDefaultIssuerDomainRanges }}
         - --issuer.default-issuer-domain-ranges={{ .Values.configuration.issuerDefaultIssuerDomainRanges }}
         {{- end }}
+        {{- if .Values.configuration.issuerDefaultRequestsPerDayQuota }}
+        - --issuer.default-requests-per-day-quota={{ .Values.configuration.issuerDefaultRequestsPerDayQuota }}
+        {{- end }}
         {{- if .Values.configuration.issuerDefaultPoolResyncPeriod }}
         - --issuer.default.pool.resync-period={{ .Values.configuration.issuerDefaultPoolResyncPeriod }}
         {{- end }}
@@ -137,6 +143,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.issuerPrecheckNameservers }}
         - --issuer.precheck-nameservers={{ .Values.configuration.issuerPrecheckNameservers }}
+        {{- end }}
+        {{- if .Values.configuration.issuerPropagationTimeout }}
+        - --issuer.propagation-timeout={{ .Values.configuration.issuerPropagationTimeout }}
         {{- end }}
         {{- if .Values.configuration.issuerRenewalWindow }}
         - --issuer.renewal-window={{ .Values.configuration.issuerRenewalWindow }}
@@ -174,11 +183,14 @@ spec:
         {{- if .Values.configuration.poolSize }}
         - --pool.size={{ .Values.configuration.poolSize }}
         {{- end }}
+        {{- if .Values.configuration.precheckAdditionalWait }}
+        - --precheck-additional-wait={{ .Values.configuration.precheckAdditionalWait }}
+        {{- end }}
         {{- if .Values.configuration.precheckNameservers }}
         - --precheck-nameservers={{ .Values.configuration.precheckNameservers }}
         {{- end }}
-        {{- if .Values.configuration.precheckAdditionalWait }}
-        - --precheck-additional-wait={{ .Values.configuration.precheckAdditionalWait }}
+        {{- if .Values.configuration.propagationTimeout }}
+        - --propagation-timeout={{ .Values.configuration.propagationTimeout }}
         {{- end }}
         {{- if .Values.configuration.renewalWindow }}
         - --renewal-window={{ .Values.configuration.renewalWindow }}

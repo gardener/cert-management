@@ -39,4 +39,6 @@ const (
 	OptPrecheckAdditionalWait = "precheck-additional-wait"
 	// OptDefaultRequestsPerDayQuota allows to set a default value for requestsPerDayQuota if not set explicitly in the issuer spec.
 	OptDefaultRequestsPerDayQuota = "default-requests-per-day-quota"
+	// OptPropagationTimeout is the propagation timeout for the DNS01 challenge.
+	OptPropagationTimeout = "propagation-timeout"
 )

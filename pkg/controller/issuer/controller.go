@@ -45,6 +45,7 @@ func init() {
 		DefaultedStringOption(core.OptPrecheckNameservers, "8.8.8.8:53,8.8.4.4:53",
 			"DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf").
 		DefaultedDurationOption(core.OptPrecheckAdditionalWait, 10*time.Second, "additional wait time after DNS propagation check").
+		DefaultedDurationOption(core.OptPropagationTimeout, 60*time.Second, "propagation timeout for DNS challenge").
 		DefaultedIntOption(core.OptDefaultRequestsPerDayQuota, 10000,
 			"Default value for requestsPerDayQuota if not set explicitly in the issuer spec.").
 		FinalizerDomain(cert.GroupName).
