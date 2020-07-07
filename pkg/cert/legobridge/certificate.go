@@ -79,6 +79,8 @@ type DNSControllerSettings struct {
 	// AdditionalWait is the additional wait time after DNS propagation
 	// to wait for "last mile" propagation to DNS server used by the ACME server
 	AdditionalWait time.Duration
+	// PropagationTimeout is the propagation timeout for the DNS challenge.
+	PropagationTimeout time.Duration
 }
 
 // ObtainOutput is the result of the certificate obtain request.

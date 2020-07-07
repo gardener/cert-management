@@ -33,6 +33,7 @@ configuration:
   # cpuprofile:
   # defaultIssuer:
   # defaultIssuerDomainRanges:
+  # defaultRequestsPerDayQuota:
   # disableNamespaceRestriction:
   # dns:
   # dnsClass:
@@ -53,6 +54,7 @@ configuration:
   # issuerCertClass:
   # issuerDefaultIssuer:
   # issuerDefaultIssuerDomainRanges:
+  # issuerDefaultRequestsPerDayQuota:
   # issuerDefaultPoolResyncPeriod:
   # issuerDefaultPoolSize:
   # issuerDnsClass:
@@ -62,6 +64,7 @@ configuration:
   # issuerIssuersPoolSize:
   # issuerPrecheckAdditionalWait:
   # issuerPrecheckNameservers:
+  # issuerPropagationTimeout:
   # issuerRenewalWindow:
   # issuerSecretsPoolSize:
   # kubeconfig:
@@ -74,8 +77,9 @@ configuration:
   # pluginDir:
   # poolResyncPeriod:
   # poolSize:
-  # precheckNameservers:
   # precheckAdditionalWait:
+  # precheckNameservers:
+  # propagationTimeout:
   # renewalWindow:
   serverPortHttp: 8080
   # serviceCertCertClass:
@@ -94,6 +98,4 @@ configuration:
   # targetDisableDeployCrds:
   # targetId:
 
-
 additionalConfiguration: []
-

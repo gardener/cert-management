@@ -118,6 +118,8 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	reconciler.precheckNameservers = utils.PreparePrecheckNameservers(strings.Split(precheckNameservers, ","))
 	c.Infof("Using these nameservers for DNS propagation checks: %s", strings.Join(reconciler.precheckNameservers, ","))
 
+	reconciler.propagationTimeout, _ = c.GetDurationOption(core.OptPropagationTimeout)
+	c.Infof("Propagation timeout: %d seconds", int(reconciler.propagationTimeout.Seconds()))
 	reconciler.additionalWait, _ = c.GetDurationOption(core.OptPrecheckAdditionalWait)
 	c.Infof("Additional wait time: %d seconds", int(reconciler.additionalWait.Seconds()))
 
@@ -149,6 +151,7 @@ type certReconciler struct {
 	dnsOwnerID                 *string
 	precheckNameservers        []string
 	additionalWait             time.Duration
+	propagationTimeout         time.Duration
 	renewalWindow              time.Duration
 	renewalCheckPeriod         time.Duration
 	defaultRequestsPerDayQuota int
@@ -277,6 +280,9 @@ func (r *certReconciler) rateLimitingEndTime(timestamp *metav1.Time) *time.Time 
 		return nil
 	}
 	endTime := timestamp.Add(r.rateLimiting).Add(r.additionalWait)
+	if r.propagationTimeout > r.rateLimiting/2 {
+		endTime = endTime.Add(r.propagationTimeout - r.rateLimiting/2)
+	}
 	return &endTime
 }
 
@@ -353,6 +359,7 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 		OwnerID:             r.dnsOwnerID,
 		PrecheckNameservers: r.precheckNameservers,
 		AdditionalWait:      r.additionalWait,
+		PropagationTimeout:  r.propagationTimeout,
 	}
 	if r.dnsNamespace != nil {
 		dnsSettings.Namespace = *r.dnsNamespace

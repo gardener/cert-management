@@ -56,7 +56,7 @@ func newDNSControllerProvider(cluster resources.Cluster, settings DNSControllerS
 		certificateName: certificateName,
 		targetClass:     targetClass,
 		issuerName:      issuerName,
-		ttl:             int64(0.501 * dns01.DefaultPropagationTimeout.Seconds()),
+		ttl:             int64(settings.PropagationTimeout.Seconds()),
 		initialWait:     true,
 		presenting:      map[string][]string{}}, nil
 }
@@ -233,7 +233,7 @@ func (p *dnsControllerProvider) checkDNSEntryNotPending(domain string, values []
 }
 
 func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
-	waitTimeout := dns01.DefaultPropagationTimeout
+	waitTimeout := p.settings.PropagationTimeout
 	if p.initialWait {
 		p.initialWait = false
 		// The Timeout function is called several times after all domains are "presented".
