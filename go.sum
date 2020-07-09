@@ -148,8 +148,8 @@ github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/gardener/controller-manager-library v0.1.1-0.20200402075246-46a23d87218c/go.mod h1:v6cbldxmpL2fYBEB2lSnq3LSEPwIHus9En6iIhwNE1k=
-github.com/gardener/controller-manager-library v0.1.1-0.20200505095016-1674d986dfac h1:T/dSauT3b6ma24Np9CW2W8bZiY08H0E1DFWXwrYkpek=
-github.com/gardener/controller-manager-library v0.1.1-0.20200505095016-1674d986dfac/go.mod h1:v6cbldxmpL2fYBEB2lSnq3LSEPwIHus9En6iIhwNE1k=
+github.com/gardener/controller-manager-library v0.1.1-0.20200709142337-f9a87426b56d h1:2LOUgXsrod6J1JDkwk+s3g8t7SFywvPkQpBL9ugjUjw=
+github.com/gardener/controller-manager-library v0.1.1-0.20200709142337-f9a87426b56d/go.mod h1:v6cbldxmpL2fYBEB2lSnq3LSEPwIHus9En6iIhwNE1k=
 github.com/gardener/external-dns-management v0.7.10 h1:d4kBs/nv+FWXEFwp1J+ncMFwNTUggeqtBm26Z5aqxuY=
 github.com/gardener/external-dns-management v0.7.10/go.mod h1:eLmZ0jnuGywTK3pHUGCiobzCpYdvwmDwjI5Mi48htvY=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
