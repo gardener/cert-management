@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.1.5
 	github.com/emicklei/go-restful v2.11.1+incompatible // indirect
-	github.com/gardener/controller-manager-library v0.1.1-0.20200505095016-1674d986dfac
+	github.com/gardener/controller-manager-library v0.1.1-0.20200709142337-f9a87426b56d
 	github.com/gardener/external-dns-management v0.7.10
 	github.com/go-acme/lego/v3 v3.7.0
 	github.com/go-openapi/spec v0.19.4 // indirect

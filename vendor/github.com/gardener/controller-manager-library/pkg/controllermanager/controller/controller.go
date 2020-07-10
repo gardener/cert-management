@@ -483,7 +483,7 @@ func (this *controller) Check() error {
 
 	// setup and check cluster handlers for all required cluster
 	for cname, watches := range this.GetDefinition().Watches() {
-		_, err := this.GetClusterHandler(cname)
+		h, err := this.GetClusterHandler(cname)
 		if err != nil {
 			return err
 		}
