@@ -32,5 +32,6 @@ replace (
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.8
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.8
 	k8s.io/client-go => k8s.io/client-go v0.16.8
+	k8s.io/code-generator => k8s.io/code-generator v0.16.8
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 )
