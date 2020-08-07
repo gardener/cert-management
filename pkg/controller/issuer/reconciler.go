@@ -53,11 +53,10 @@ type compoundReconciler struct {
 }
 
 func (r *compoundReconciler) Setup() {
-	r.certificateReconciler.Setup()
 }
 
 func (r *compoundReconciler) Start() {
-	r.certificateReconciler.Start()
+	r.certificateReconciler.(reconcile.LegacyStartInterface).Start()
 }
 
 func (r *compoundReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {

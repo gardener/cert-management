@@ -33,7 +33,9 @@ COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
 LD_FLAGS:=-X sigs.k8s.io/kind/pkg/cmd/kind/version.GitCommit=$(COMMIT)
 # the output binary name, overridden when cross compiling
 KIND_BINARY_NAME?=kind
-
+# the container cli to use e.g. docker,podman
+DOCKER?=$(shell which docker || which podman || echo "docker")
+export DOCKER
 # standard "make" target -> builds
 all: build
 
@@ -51,7 +53,7 @@ install: build
 
 # cleans the cache volume
 clean-cache:
-	docker volume rm -f kind-build-cache >/dev/null
+	$(DOCKER) volume rm -f kind-build-cache >/dev/null
 
 # cleans the output directory
 clean-output:

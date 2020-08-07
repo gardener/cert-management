@@ -17,9 +17,10 @@
 package resources
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-	"reflect"
+	"context"
 	"sync"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/gardener/controller-manager-library/pkg/informerfactories"
 
@@ -30,9 +31,9 @@ import (
 
 type Internal interface {
 	Interface
+	Resource() Interface
 
-	I_objectType() reflect.Type
-	I_listType() reflect.Type
+	I_CreateData(name ...ObjectDataName) ObjectData
 
 	I_create(data ObjectData) (ObjectData, error)
 	I_get(data ObjectData) error
@@ -64,49 +65,50 @@ type _i_resource struct {
 
 var _ Internal = &_i_resource{}
 
-func (this *_i_resource) I_objectType() reflect.Type {
-	return this.otype
+func (this *_i_resource) Resource() Interface {
+	return this._resource
 }
-func (this *_i_resource) I_listType() reflect.Type {
-	return this.ltype
+
+func (this *_i_resource) I_CreateData(name ...ObjectDataName) ObjectData {
+	return this._resource.CreateData(name...)
 }
 
 func (this *_i_resource) I_update(data ObjectData) (ObjectData, error) {
 	logger.Infof("UPDATE %s/%s/%s", this.GroupKind(), data.GetNamespace(), data.GetName())
-	result := this.helper.CreateData()
+	result := this.CreateData()
 	return result, this.objectRequest(this.client.Put(), data).
 		Body(data).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 }
 
 func (this *_i_resource) I_updateStatus(data ObjectData) (ObjectData, error) {
 	logger.Infof("UPDATE STATUS %s/%s/%s", this.GroupKind(), data.GetNamespace(), data.GetName())
-	result := this.helper.CreateData()
+	result := this.CreateData()
 	return result, this.objectRequest(this.client.Put(), data, "status").
 		Body(data).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 }
 
 func (this *_i_resource) I_create(data ObjectData) (ObjectData, error) {
-	result := this.helper.CreateData()
+	result := this.CreateData()
 	return result, this.resourceRequest(this.client.Post(), data).
 		Body(data).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 }
 
 func (this *_i_resource) I_get(data ObjectData) error {
 	return this.objectRequest(this.client.Get(), data).
-		Do().
+		Do(context.TODO()).
 		Into(data)
 }
 
 func (this *_i_resource) I_delete(data ObjectDataName) error {
 	return this.objectRequest(this.client.Delete(), data).
 		Body(&metav1.DeleteOptions{}).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -121,15 +123,15 @@ func (this *_i_resource) I_getInformer(namespace string, optionsFunc TweakListOp
 		return this.cache, nil
 	}
 
-	informers := this.context.SharedInformerFactory().Structured()
+	informers := this.ResourceContext().SharedInformerFactory().Structured()
 	if this.IsUnstructured() {
-		informers = this.context.SharedInformerFactory().Unstructured()
+		informers = this.ResourceContext().SharedInformerFactory().Unstructured()
 	}
-	informer, err := informers.FilteredInformerFor(this.gvk, namespace, optionsFunc)
+	informer, err := informers.FilteredInformerFor(this.GroupVersionKind(), namespace, optionsFunc)
 	if err != nil {
 		return nil, err
 	}
-	if err := informerfactories.Start(this.context.ctx, informers, informer.Informer().HasSynced); err != nil {
+	if err := informerfactories.Start(this.ResourceContext(), informers, informer.Informer().HasSynced); err != nil {
 		return nil, err
 	}
 
@@ -150,15 +152,15 @@ func (this *_i_resource) I_lookupInformer(namespace string) (GenericInformer, er
 		return this.cache, nil
 	}
 
-	informers := this.context.SharedInformerFactory().Structured()
+	informers := this.ResourceContext().SharedInformerFactory().Structured()
 	if this.IsUnstructured() {
-		informers = this.context.SharedInformerFactory().Unstructured()
+		informers = this.ResourceContext().SharedInformerFactory().Unstructured()
 	}
-	informer, err := informers.LookupInformerFor(this.gvk, namespace)
+	informer, err := informers.LookupInformerFor(this.GroupVersionKind(), namespace)
 	if err != nil {
 		return nil, err
 	}
-	if err := informerfactories.Start(this.context.ctx, informers, informer.Informer().HasSynced); err != nil {
+	if err := informerfactories.Start(this.ResourceContext(), informers, informer.Informer().HasSynced); err != nil {
 		return nil, err
 	}
 
@@ -166,9 +168,9 @@ func (this *_i_resource) I_lookupInformer(namespace string) (GenericInformer, er
 }
 
 func (this *_i_resource) I_list(namespace string, options metav1.ListOptions) ([]Object, error) {
-	result := this.helper.CreateListData()
+	result := this.CreateListData()
 	err := this.namespacedRequest(this.client.Get(), namespace).VersionedParams(&options, this.GetParameterCodec()).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	if err != nil {
 		return nil, err
@@ -177,7 +179,7 @@ func (this *_i_resource) I_list(namespace string, options metav1.ListOptions) ([
 }
 
 func (this *_i_resource) I_modifyByName(name ObjectDataName, status_only, create bool, modifier Modifier) (Object, bool, error) {
-	data := this.helper.CreateData()
+	data := this.CreateData()
 	data.SetName(name.GetName())
 	data.SetNamespace(name.GetNamespace())
 

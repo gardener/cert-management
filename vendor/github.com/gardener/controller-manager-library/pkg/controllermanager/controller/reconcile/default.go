@@ -18,17 +18,12 @@ package reconcile
 
 import (
 	"fmt"
+
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
 type DefaultReconciler struct {
-}
-
-func (r *DefaultReconciler) Setup() {
-}
-
-func (r *DefaultReconciler) Start() {
 }
 
 func (r *DefaultReconciler) Reconcile(logger logger.LogContext, obj resources.Object) Status {

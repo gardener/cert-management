@@ -29,6 +29,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile/reconcilers"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/gardener/controller-manager-library/pkg/resources/abstract"
 	"github.com/gardener/controller-manager-library/pkg/utils"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -89,7 +90,6 @@ type sourceReconciler struct {
 }
 
 func (r *sourceReconciler) Start() {
-	r.SlaveAccess.Start()
 	r.source.Start()
 	r.NestedReconciler.Start()
 }
@@ -361,7 +361,7 @@ func (r *sourceReconciler) deleteEntry(logger logger.LogContext, obj resources.O
 func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, obj resources.Object) (bool, error) {
 	f := func(o resources.ObjectData) (bool, error) {
 		spec := &o.(*api.Certificate).Spec
-		mod := &utils.ModificationState{}
+		mod := abstract.NewModificationState(obj)
 		changed := resources.SetAnnotation(o, AnnotForwardOwnerRefs, "true")
 		mod.Modify(changed)
 		if r.targetclass == "" {

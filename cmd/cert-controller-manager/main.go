@@ -20,9 +20,15 @@ import (
 	"fmt"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
+	"github.com/gardener/controller-manager-library/pkg/resources"
+
+	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
@@ -56,6 +62,10 @@ func init() {
 
 	mappings.ForControllerGroup(ctrl.ControllerGroupSource).
 		MustRegister()
+
+	resources.Register(extensionsv1beta1.SchemeBuilder)
+	resources.Register(corev1.SchemeBuilder)
+	resources.Register(dnsapi.SchemeBuilder)
 }
 
 func main() {

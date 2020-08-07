@@ -16,10 +16,12 @@
 
 package utils
 
-import "github.com/gardener/controller-manager-library/pkg/utils"
+import (
+	"github.com/gardener/controller-manager-library/pkg/resources/abstract"
+)
 
 // AssureStringArray handles modification of a string array.
-func AssureStringArray(mod *utils.ModificationState, dst *[]string, value []string) {
+func AssureStringArray(mod *abstract.ModificationState, dst *[]string, value []string) {
 	if value == nil {
 		value = []string{}
 	}

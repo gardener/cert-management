@@ -17,10 +17,12 @@
 package resources
 
 import (
-	"fmt"
+	"context"
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/gardener/controller-manager-library/pkg/resources/errors"
 
 	"github.com/gardener/controller-manager-library/pkg/kutil"
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -113,9 +115,9 @@ func (f *genericInformerFactory) informerFor(informerType reflect.Type, gvk sche
 		return informer, nil
 	}
 
-	l := kutil.DetermineListType(f.context.Scheme, gvk.GroupVersion(), informerType)
+	l := kutil.DetermineListType(f.context.Scheme(), gvk.GroupVersion(), informerType)
 	if l == nil {
-		return nil, fmt.Errorf("no list type found for %s", informerType)
+		return nil, errors.New(errors.ERR_NO_LIST_TYPE, "no list type found for %s", informerType)
 	}
 
 	client, err := f.getClient(gvk.GroupVersion())
@@ -151,6 +153,7 @@ func (f *genericInformerFactory) getClient(gv schema.GroupVersion) (restclient.I
 func (f *genericInformerFactory) newInformer(client restclient.Interface, res *Info, elemType reflect.Type, listType reflect.Type) GenericInformer {
 	logger.Infof("new generic informer for %s (%s) %s (%d seconds)", elemType, res.GroupVersionKind(), listType, f.defaultResync/time.Second)
 	indexers := cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}
+	ctx := context.TODO()
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -165,7 +168,7 @@ func (f *genericInformerFactory) newInformer(client restclient.Interface, res *I
 					r = r.Namespace(f.namespace)
 				}
 
-				return result, r.Do().Into(result)
+				return result, r.Do(ctx).Into(result)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				options.Watch = true
@@ -179,7 +182,7 @@ func (f *genericInformerFactory) newInformer(client restclient.Interface, res *I
 					r = r.Namespace(f.namespace)
 				}
 
-				return r.Watch()
+				return r.Watch(ctx)
 			},
 		},
 		reflect.New(elemType).Interface().(runtime.Object),
