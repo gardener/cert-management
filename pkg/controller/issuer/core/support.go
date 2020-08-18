@@ -10,21 +10,24 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"sort"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sort"
-	"strings"
+
+	"github.com/gardener/cert-management/pkg/cert/metrics"
+
+	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
+	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
+	"github.com/gardener/controller-manager-library/pkg/logger"
+	"github.com/gardener/controller-manager-library/pkg/resources"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
-	"github.com/gardener/controller-manager-library/pkg/logger"
-	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
 // Enqueuer is an interface to allow enqueue a key
@@ -290,19 +293,30 @@ func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj 
 	s.triggerCertificates(logger, obj.ObjectName())
 
 	mod, status := s.prepareUpdateStatus(obj, api.StateReady, itype, nil)
-	changedRegistration := false
-	if status.ACME == nil || status.ACME.Raw == nil {
-		changedRegistration = regRaw != nil
-	} else {
-		changedRegistration = !bytes.Equal(status.ACME.Raw, regRaw)
-	}
-	if changedRegistration {
-		status.ACME = &runtime.RawExtension{Raw: regRaw}
-		mod.Modify(true)
+	if itype != nil {
+		switch *itype {
+		case ACMEType:
+			updateTypeStatus(mod, &status.ACME, regRaw)
+		case CAType:
+			updateTypeStatus(mod, &status.CA, regRaw)
+		}
 	}
 	s.updateStatus(mod)
 
 	return reconcile.Succeeded(logger)
+}
+
+func updateTypeStatus(mod *resources.ModificationState, status **runtime.RawExtension, regRaw []byte) {
+	changedRegistration := false
+	if *status == nil || (*status).Raw == nil {
+		changedRegistration = regRaw != nil
+	} else {
+		changedRegistration = !bytes.Equal((*status).Raw, regRaw)
+	}
+	if changedRegistration {
+		*status = &runtime.RawExtension{Raw: regRaw}
+		mod.Modify(true)
+	}
 }
 
 // AddCertificate adds a certificate

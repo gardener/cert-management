@@ -7,6 +7,13 @@
 package core
 
 const (
+	// ACMEType is the type name for ACME.
+	ACMEType = "acme"
+	// CAType is the type name for CA.
+	CAType = "ca"
+)
+
+const (
 	// OptDefaultIssuer is the default-issuer command line option.
 	OptDefaultIssuer = "default-issuer"
 	// OptIssuerNamespace is the issuer namespace command line option.

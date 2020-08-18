@@ -20,10 +20,7 @@ import (
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 )
 
-// ACMEType is the type name for ACME.
-const ACMEType = "acme"
-
-var acmeType = ACMEType
+var acmeType = core.ACMEType
 
 // NewACMEIssuerHandler creates an ACME IssuerHandler.
 func NewACMEIssuerHandler(support *core.Support) (core.IssuerHandler, error) {
@@ -37,7 +34,7 @@ type acmeIssuerHandler struct {
 }
 
 func (r *acmeIssuerHandler) Type() string {
-	return ACMEType
+	return core.ACMEType
 }
 
 func (r *acmeIssuerHandler) CanReconcile(issuer *api.Issuer) bool {

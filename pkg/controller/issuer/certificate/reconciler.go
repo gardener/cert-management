@@ -297,7 +297,26 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	cert := obj.Data().(*api.Certificate)
 	logger.Infof("obtain certificate")
 
-	reguser, server, err := r.restoreRegUser(cert)
+	issuer, err := r.loadIssuer(cert)
+	if err != nil {
+		return r.failed(logger, obj, api.StateError, err)
+	}
+
+	if issuer.Spec.ACME != nil && issuer.Spec.CA != nil {
+		return r.failed(logger, obj, api.StateError, fmt.Errorf("invalid issuer spec: only ACME or CA can be set, but not both"))
+	}
+	if issuer.Spec.ACME != nil {
+		return r.obtainCertificateAndPendingACME(logger, obj, renewSecret, cert, issuer)
+	}
+	if issuer.Spec.CA != nil {
+		return r.obtainCertificateCA(logger, obj, renewSecret, cert, issuer)
+	}
+	return r.failed(logger, obj, api.StateError, fmt.Errorf("incomplete issuer spec (ACME or CA section must be provided)"))
+}
+
+func (r *certReconciler) obtainCertificateAndPendingACME(logger logger.LogContext, obj resources.Object,
+	renewSecret *corev1.Secret, cert *api.Certificate, issuer *api.Issuer) reconcile.Status {
+	reguser, server, err := r.restoreRegUser(issuer)
 	if err != nil {
 		return r.failed(logger, obj, api.StateError, err)
 	}
@@ -376,15 +395,24 @@ func (r *certReconciler) obtainCertificateAndPending(logger logger.LogContext, o
 	return r.pending(logger, obj)
 }
 
-func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.RegistrationUser, string, error) {
+func (r *certReconciler) obtainCertificateCA(logger logger.LogContext, obj resources.Object,
+	renewSecret *corev1.Secret, cert *api.Certificate, issuer *api.Issuer) reconcile.Status {
+	// TODO create certificate
+	return r.succeeded(logger, obj)
+}
+
+func (r *certReconciler) loadIssuer(crt *api.Certificate) (*api.Issuer, error) {
 	// fetch issuer
 	issuerObjectName := r.issuerObjectName(&crt.Spec)
 	issuer := &api.Issuer{}
 	_, err := r.support.GetIssuerResources().GetInto(issuerObjectName, issuer)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "fetching issuer failed")
+		return nil, errors.Wrap(err, "fetching issuer failed")
 	}
+	return issuer, nil
+}
 
+func (r *certReconciler) restoreRegUser(issuer *api.Issuer) (*legobridge.RegistrationUser, string, error) {
 	// fetch issuer secret
 	secretRef := issuer.Spec.ACME.PrivateKeySecretRef
 	if secretRef == nil {
@@ -401,7 +429,7 @@ func (r *certReconciler) restoreRegUser(crt *api.Certificate) (*legobridge.Regis
 	}
 	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
 	issuerSecret := &corev1.Secret{}
-	_, err = r.support.GetIssuerSecretResources().GetInto(issuerSecretObjectName, issuerSecret)
+	_, err := r.support.GetIssuerSecretResources().GetInto(issuerSecretObjectName, issuerSecret)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "fetching issuer secret failed")
 	}

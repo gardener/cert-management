@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: issuer-ca-secret
+  namespace: default
+type: Opaque
+data:
+  foo: Vk13YXJlMSFWTXdhcmUxIQ==
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: issuer-ca
+  namespace: default
+spec:
+  ca:
+    privateKeySecretRef:
+      name: issuer-ca-secret
+      namespace: default
