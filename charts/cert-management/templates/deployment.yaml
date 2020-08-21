@@ -30,6 +30,9 @@ spec:
         args:
         - --name={{ include "cert-management.fullname" . }}
         ### start generated configuration
+        {{- if .Values.configuration.bindAddressHttp }}
+        - --bind-address-http={{ .Values.configuration.bindAddressHttp }}
+        {{- end }}
         {{- if .Values.configuration.cascadeDelete }}
         - --cascade-delete={{ .Values.configuration.cascadeDelete }}
         {{- end }}
@@ -38,6 +41,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.certTargetClass }}
         - --cert-target-class={{ .Values.configuration.certTargetClass }}
+        {{- end }}
+        {{- if .Values.configuration.config }}
+        - --config={{ .Values.configuration.config }}
         {{- end }}
         {{- if .Values.configuration.controllers }}
         - --controllers={{ .Values.configuration.controllers }}
@@ -53,6 +59,12 @@ spec:
         {{- end }}
         {{- if .Values.configuration.defaultRequestsPerDayQuota }}
         - --default-requests-per-day-quota={{ .Values.configuration.defaultRequestsPerDayQuota }}
+        {{- end }}
+        {{- if .Values.configuration.defaultPoolResyncPeriod }}
+        - --default.pool.resync-period={{ .Values.configuration.defaultPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.defaultPoolSize }}
+        - --default.pool.size={{ .Values.configuration.defaultPoolSize }}
         {{- end }}
         {{- if .Values.configuration.disableNamespaceRestriction }}
         - --disable-namespace-restriction={{ .Values.configuration.disableNamespaceRestriction }}
@@ -89,6 +101,12 @@ spec:
         {{- end }}
         {{- if .Values.configuration.ingressCertDefaultPoolSize }}
         - --ingress-cert.default.pool.size={{ .Values.configuration.ingressCertDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertPoolResyncPeriod }}
+        - --ingress-cert.pool.resync-period={{ .Values.configuration.ingressCertPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.ingressCertPoolSize }}
+        - --ingress-cert.pool.size={{ .Values.configuration.ingressCertPoolSize }}
         {{- end }}
         {{- if .Values.configuration.ingressCertTargetNamePrefix }}
         - --ingress-cert.target-name-prefix={{ .Values.configuration.ingressCertTargetNamePrefix }}
@@ -138,6 +156,12 @@ spec:
         {{- if .Values.configuration.issuerIssuersPoolSize }}
         - --issuer.issuers.pool.size={{ .Values.configuration.issuerIssuersPoolSize }}
         {{- end }}
+        {{- if .Values.configuration.issuerPoolResyncPeriod }}
+        - --issuer.pool.resync-period={{ .Values.configuration.issuerPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.issuerPoolSize }}
+        - --issuer.pool.size={{ .Values.configuration.issuerPoolSize }}
+        {{- end }}
         {{- if .Values.configuration.issuerPrecheckAdditionalWait }}
         - --issuer.precheck-additional-wait={{ .Values.configuration.issuerPrecheckAdditionalWait }}
         {{- end }}
@@ -153,6 +177,9 @@ spec:
         {{- if .Values.configuration.issuerSecretsPoolSize }}
         - --issuer.secrets.pool.size={{ .Values.configuration.issuerSecretsPoolSize }}
         {{- end }}
+        {{- if .Values.configuration.issuersPoolSize }}
+        - --issuers.pool.size={{ .Values.configuration.issuersPoolSize }}
+        {{- end }}
         {{- if .Values.configuration.kubeconfig }}
         - --kubeconfig={{ .Values.configuration.kubeconfig }}
         {{- end }}
@@ -162,8 +189,23 @@ spec:
         {{- if .Values.configuration.kubeconfigId }}
         - --kubeconfig.id={{ .Values.configuration.kubeconfigId }}
         {{- end }}
+        {{- if .Values.configuration.leaseDuration }}
+        - --lease-duration={{ .Values.configuration.leaseDuration }}
+        {{- end }}
+        {{- if .Values.configuration.leaseName }}
+        - --lease-name={{ .Values.configuration.leaseName }}
+        {{- end }}
+        {{- if .Values.configuration.leaseRenewDeadline }}
+        - --lease-renew-deadline={{ .Values.configuration.leaseRenewDeadline }}
+        {{- end }}
+        {{- if .Values.configuration.leaseRetryPeriod }}
+        - --lease-retry-period={{ .Values.configuration.leaseRetryPeriod }}
+        {{- end }}
         {{- if .Values.configuration.logLevel }}
         - --log-level={{ .Values.configuration.logLevel }}
+        {{- end }}
+        {{- if .Values.configuration.maintainer }}
+        - --maintainer={{ .Values.configuration.maintainer }}
         {{- end }}
         {{- if .Values.configuration.namespace }}
         - --namespace={{ .Values.configuration.namespace }}
@@ -174,8 +216,8 @@ spec:
         {{- if .Values.configuration.omitLease }}
         - --omit-lease={{ .Values.configuration.omitLease }}
         {{- end }}
-        {{- if .Values.configuration.pluginDir }}
-        - --plugin-dir={{ .Values.configuration.pluginDir }}
+        {{- if .Values.configuration.pluginFile }}
+        - --plugin-file={{ .Values.configuration.pluginFile }}
         {{- end }}
         {{- if .Values.configuration.poolResyncPeriod }}
         - --pool.resync-period={{ .Values.configuration.poolResyncPeriod }}
@@ -195,6 +237,9 @@ spec:
         {{- if .Values.configuration.renewalWindow }}
         - --renewal-window={{ .Values.configuration.renewalWindow }}
         {{- end }}
+        {{- if .Values.configuration.secretsPoolSize }}
+        - --secrets.pool.size={{ .Values.configuration.secretsPoolSize }}
+        {{- end }}
         {{- if .Values.configuration.serverPortHttp }}
         - --server-port-http={{ .Values.configuration.serverPortHttp }}
         {{- end }}
@@ -209,6 +254,12 @@ spec:
         {{- end }}
         {{- if .Values.configuration.serviceCertDefaultPoolSize }}
         - --service-cert.default.pool.size={{ .Values.configuration.serviceCertDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertPoolResyncPeriod }}
+        - --service-cert.pool.resync-period={{ .Values.configuration.serviceCertPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.serviceCertPoolSize }}
+        - --service-cert.pool.size={{ .Values.configuration.serviceCertPoolSize }}
         {{- end }}
         {{- if .Values.configuration.serviceCertTargetNamePrefix }}
         - --service-cert.target-name-prefix={{ .Values.configuration.serviceCertTargetNamePrefix }}
@@ -242,6 +293,12 @@ spec:
         {{- end }}
         {{- if .Values.configuration.targetId }}
         - --target.id={{ .Values.configuration.targetId }}
+        {{- end }}
+        {{- if .Values.configuration.targetsPoolSize }}
+        - --targets.pool.size={{ .Values.configuration.targetsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.version }}
+        - --version={{ .Values.configuration.version }}
         {{- end }}
         ### end generated configuration
         {{- range $idx, $flag := .Values.additionalConfiguration }}

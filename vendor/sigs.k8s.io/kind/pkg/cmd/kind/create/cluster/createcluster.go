@@ -29,6 +29,9 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/cli"
+	"sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
 type flagpole struct {
@@ -49,6 +52,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)
 		},
 	}
@@ -64,6 +68,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
+		runtime.GetDefault(logger),
 	)
 
 	// Check if the cluster name already exists
@@ -93,12 +98,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		if errs := errors.Errors(err); errs != nil {
-			for _, problem := range errs {
-				logger.Errorf("%v", problem)
-			}
-			return errors.New("aborting due to invalid configuration")
-		}
 		return errors.Wrap(err, "failed to create cluster")
 	}
 

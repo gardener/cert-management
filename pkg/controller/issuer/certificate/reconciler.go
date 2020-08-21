@@ -753,7 +753,7 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 		cn, dnsNames, _ = legobridge.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
-	utils.AssureStringArray(&mod.ModificationState, &status.DNSNames, dnsNames)
+	utils.AssureStringArray(mod.ModificationState, &status.DNSNames, dnsNames)
 
 	var expirationDate *string
 	notAfter, ok := resources.GetAnnotation(crt, AnnotationNotAfter)

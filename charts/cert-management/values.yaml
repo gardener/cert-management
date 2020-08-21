@@ -26,14 +26,18 @@ createCRDs:
   certificates: true
 
 configuration:
+  # bindAddressHttp:
   # cascadeDelete:
   # certClass:
   # certTargetClass:
+  # config:
   # controllers:
   # cpuprofile:
   # defaultIssuer:
   # defaultIssuerDomainRanges:
   # defaultRequestsPerDayQuota:
+  # defaultPoolResyncPeriod:
+  # defaultPoolSize:
   # disableNamespaceRestriction:
   # dns:
   # dnsClass:
@@ -46,6 +50,8 @@ configuration:
   # ingressCertCertTargetClass:
   # ingressCertDefaultPoolResyncPeriod:
   # ingressCertDefaultPoolSize:
+  # ingressCertPoolResyncPeriod:
+  # ingressCertPoolSize:
   # ingressCertTargetNamePrefix:
   # ingressCertTargetNamespace:
   # ingressCertTargetsPoolSize:
@@ -62,30 +68,41 @@ configuration:
   # issuerDnsOwnerId:
   # issuerIssuerNamespace:
   # issuerIssuersPoolSize:
+  # issuerPoolResyncPeriod:
+  # issuerPoolSize:
   # issuerPrecheckAdditionalWait:
   # issuerPrecheckNameservers:
   # issuerPropagationTimeout:
   # issuerRenewalWindow:
   # issuerSecretsPoolSize:
+  # issuersPoolSize:
   # kubeconfig:
   # kubeconfigDisableDeployCrds:
   # kubeconfigId:
+  # leaseDuration:
+  # leaseName:
+  # leaseRenewDeadline:
+  # leaseRetryPeriod:
   # logLevel:
+  # maintainer:
   # namespace:
   # namespaceLocalAccessOnly:
   # omitLease:
-  # pluginDir:
+  # pluginFile:
   # poolResyncPeriod:
   # poolSize:
   # precheckAdditionalWait:
   # precheckNameservers:
   # propagationTimeout:
   # renewalWindow:
+  # secretsPoolSize:
   serverPortHttp: 8080
   # serviceCertCertClass:
   # serviceCertCertTargetClass:
   # serviceCertDefaultPoolResyncPeriod:
   # serviceCertDefaultPoolSize:
+  # serviceCertPoolResyncPeriod:
+  # serviceCertPoolSize:
   # serviceCertTargetNamePrefix:
   # serviceCertTargetNamespace:
   # serviceCertTargetsPoolSize:
@@ -97,5 +114,7 @@ configuration:
   # targetNamespace:
   # targetDisableDeployCrds:
   # targetId:
+  # targetsPoolSize:
+  # version:
 
 additionalConfiguration: []

@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -61,13 +62,13 @@ func NewFilteredIssuerInformer(client versioned.Interface, namespace string, res
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertV1alpha1().Issuers(namespace).List(options)
+				return client.CertV1alpha1().Issuers(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertV1alpha1().Issuers(namespace).Watch(options)
+				return client.CertV1alpha1().Issuers(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&certv1alpha1.Issuer{},
