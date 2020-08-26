@@ -15,7 +15,7 @@ rules:
   resources:
   - configmaps
   resourceNames:
-  - {{ include "cert-management.fullname" . }}
+  - {{ include "cert-management.fullname" . }}-controllers
   verbs:
   - get
   - update
