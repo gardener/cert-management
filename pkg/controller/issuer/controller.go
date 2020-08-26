@@ -32,7 +32,6 @@ import (
 
 func init() {
 	controller.Configure("issuer").
-		RequireLease().
 		DefaultedStringOption(core.OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
 		DefaultedStringOption(core.OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
 		StringOption(core.OptDefaultIssuerDomainRanges, "domain range restrictions when using default issuer separated by comma").
@@ -61,6 +60,7 @@ func init() {
 		WorkerPool("secrets", 1, 0).
 		SelectedWatch(selectIssuerNamespaceSelectionFunction, "core", "Secret").
 		Cluster(ctrl.DNSCluster).
+		RequireLease(ctrl.DefaultCluster).
 		MustRegister(ctrl.ControllerGroupCert)
 }
 
