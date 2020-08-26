@@ -25,7 +25,7 @@ github.com/evanphx/json-patch
 github.com/evanphx/json-patch/v5
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/gardener/controller-manager-library v0.2.1-0.20200814085853-45032cce52c3
+# github.com/gardener/controller-manager-library v0.2.1-0.20200826084112-e3fae4e04030
 github.com/gardener/controller-manager-library/pkg/certmgmt
 github.com/gardener/controller-manager-library/pkg/certs
 github.com/gardener/controller-manager-library/pkg/config
