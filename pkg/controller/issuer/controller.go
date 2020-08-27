@@ -60,7 +60,8 @@ func init() {
 		WorkerPool("secrets", 1, 0).
 		SelectedWatch(selectIssuerNamespaceSelectionFunction, "core", "Secret").
 		Cluster(ctrl.DNSCluster).
-		RequireLease(ctrl.DefaultCluster).
+		Cluster(ctrl.SourceCluster).
+		RequireLease(ctrl.SourceCluster).
 		MustRegister(ctrl.ControllerGroupCert)
 }
 

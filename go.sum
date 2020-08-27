@@ -169,8 +169,8 @@ github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWo
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/gardener/controller-manager-library v0.2.1-0.20200810091329-d980dbe10959 h1:uu2LUpjtkOdMtaYwXwU8mP4yKQvUnYxsVyHtJdQM+J8=
 github.com/gardener/controller-manager-library v0.2.1-0.20200810091329-d980dbe10959/go.mod h1:XMp1tPcX3SP/dMd+3id418f5Cqu44vydeTkBRbW8EvQ=
-github.com/gardener/controller-manager-library v0.2.1-0.20200826092304-559a0c67bfe5 h1:GoWGcENumGAEYjVWNQsp0UOOUnhMIshw43Vex90hUCA=
-github.com/gardener/controller-manager-library v0.2.1-0.20200826092304-559a0c67bfe5/go.mod h1:XMp1tPcX3SP/dMd+3id418f5Cqu44vydeTkBRbW8EvQ=
+github.com/gardener/controller-manager-library v0.2.1-0.20200826092240-cd5a6ccd6e27 h1:dElPzOp6mEW+5qZa2Tq7+6R79eIiPpiYvboSklhRaBE=
+github.com/gardener/controller-manager-library v0.2.1-0.20200826092240-cd5a6ccd6e27/go.mod h1:XMp1tPcX3SP/dMd+3id418f5Cqu44vydeTkBRbW8EvQ=
 github.com/gardener/external-dns-management v0.7.17-0.20200810112859-d9ceb5e2257d h1:oA5pjPJd/wL73A3DZZLxnanNm45bpBPG/WrSQuwyX/I=
 github.com/gardener/external-dns-management v0.7.17-0.20200810112859-d9ceb5e2257d/go.mod h1:oHhauLQ3/sop0c1urS6n304Wqv/WM4me0geLn9nTAcY=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
