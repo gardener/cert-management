@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+ * SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -10,11 +10,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/go-acme/lego/v3/challenge/dns01"
-	"sync"
-	"time"
 
 	"github.com/go-acme/lego/v3/certificate"
 	"github.com/go-acme/lego/v3/lego"
@@ -33,6 +34,8 @@ type ObtainerCallback func(output *ObtainOutput)
 type ObtainInput struct {
 	// User is the registration user.
 	User *RegistrationUser
+	// CAKeyPair are the private key and the public key cert of the CA.
+	CAKeyPair *TLSKeyPair
 	// DNSCluster is the cluster to use for writing DNS entries for DNS challenges.
 	DNSCluster resources.Cluster
 	// DNSSettings are the settings for the DNSController.
@@ -146,8 +149,19 @@ func renew(client *lego.Client, renewCert *certificate.Resource) (*certificate.R
 	return client.Certificate.Renew(*renewCert, true, false)
 }
 
-// Obtain starts the async obtain request.
 func (o *obtainer) Obtain(input ObtainInput) error {
+	switch {
+	case input.User != nil:
+		return o.ObtainACME(input)
+	case input.CAKeyPair != nil:
+		return o.ObtainFromCA(input)
+	default:
+		return fmt.Errorf("Certificate obtention not valid, neither ACME or CA values were provided")
+	}
+}
+
+// Obtain starts the async obtain request.
+func (o *obtainer) ObtainACME(input ObtainInput) error {
 	err := o.setPending(input)
 	if err != nil {
 		return err
@@ -190,6 +204,40 @@ func (o *obtainer) Obtain(input ObtainInput) error {
 		}
 		count := provider.GetChallengesCount()
 		metrics.AddACMEObtain(input.IssuerName, err == nil, count, input.RenewCert != nil)
+		output := &ObtainOutput{
+			Certificates: certificates,
+			IssuerName:   input.IssuerName,
+			CommonName:   input.CommonName,
+			DNSNames:     input.DNSNames,
+			CSR:          input.CSR,
+			Renew:        input.RenewCert != nil,
+			Err:          err,
+		}
+		input.Callback(output)
+		o.releasePending(input)
+	}()
+
+	return nil
+}
+
+// ObtainFromCA start the certificate creation from a CA
+func (o *obtainer) ObtainFromCA(input ObtainInput) error {
+	err := o.setPending(input)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		var certificates *certificate.Resource
+		var err error
+
+		if input.RenewCert != nil {
+			certificates, err = renewCASignedCert(input.RenewCert, input.CAKeyPair)
+		} else {
+			if input.CSR == nil {
+				certificates, err = newCASignedCertFromInput(input)
+			}
+		}
 		output := &ObtainOutput{
 			Certificates: certificates,
 			IssuerName:   input.IssuerName,
@@ -279,9 +327,12 @@ func DecodeCertificateFromSecretData(data map[string][]byte) (*x509.Certificate,
 
 // DecodeCertificate decodes the crt byte array.
 func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
-	block, _ := pem.Decode(tlsCrt)
+	block, rest := pem.Decode(tlsCrt)
 	if block == nil {
 		return nil, fmt.Errorf("decoding pem for %s from request secret failed", corev1.TLSCertKey)
+	}
+	if len(rest) > 0 {
+		return nil, fmt.Errorf("incomplete decoding pem block for public key certificate")
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -304,4 +355,39 @@ func ExtractCommonNameAnDNSNames(csr []byte) (cn *string, san []string, err erro
 		san = append(san, ip.String())
 	}
 	return
+}
+
+// renewCASignedCert returns a new Certificate signed by a CA.
+// An x509.CertificateRequest is created based on the info extracted from the existing PEM encoded CSR.
+func renewCASignedCert(renewCert *certificate.Resource, CAKeyPair *TLSKeyPair) (*certificate.Resource, error) {
+	crt, err := DecodeCertificate(renewCert.Certificate)
+	if err != nil {
+		return nil, err
+	}
+	csr := extractCertReqFromCert(crt)
+	return newCASignedCertFromCertReq(csr, CAKeyPair)
+}
+
+// renewCASignedCert returns a new Certificate signed by a CA.
+// An x509.CertificateRequest is created from scratch based on and ObtainInput object
+func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) {
+	csr, err := createCertReq(input)
+	if err != nil {
+		return nil, err
+	}
+	return newCASignedCertFromCertReq(csr, input.CAKeyPair)
+}
+
+// newCASignedCertFromCertReq returns a new Certificate signed by a CA based on
+// an x509.CertificateRequest and a CA key pair. A private key will be generated.
+func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyPair) (*certificate.Resource, error) {
+	pubKeySize := pubKeySize(csr.PublicKey)
+	if pubKeySize == 0 {
+		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
+	}
+	privKey, privKeyPEM, err := generateKey(csr.PublicKeyAlgorithm, pubKeySize)
+	if err != nil {
+		return nil, err
+	}
+	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair)
 }

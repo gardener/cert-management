@@ -1,17 +1,7 @@
 /*
- * Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. ur file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+ * SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use ur file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- *
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package ca
@@ -26,6 +16,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 )
 
@@ -71,16 +62,59 @@ func (r *caIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Obje
 		r.support.RememberIssuerSecret(obj.ObjectName(), ca.PrivateKeySecretRef, hash)
 	}
 	if secret != nil && issuer.Status.CA != nil && issuer.Status.CA.Raw != nil {
-		// TODO check secret?
+		_, err := validateSecretCA(secret)
+		if err != nil {
+			return r.failedCA(logger, obj, api.StateError, err)
+		}
 		return r.support.SucceededAndTriggerCertificates(logger, obj, &caType, issuer.Status.CA.Raw)
 	} else if secret != nil {
-		// TODO check secret
-		regRaw := []byte("{\"foo\":\"bar\"}")
-
-		return r.support.SucceededAndTriggerCertificates(logger, obj, &caType, regRaw)
+		CAInfoRaw, err := validateSecretCA(secret)
+		if err != nil {
+			return r.failedCA(logger, obj, api.StateError, err)
+		}
+		return r.support.SucceededAndTriggerCertificates(logger, obj, &caType, CAInfoRaw)
 	} else {
 		return r.failedCA(logger, obj, api.StateError, fmt.Errorf("`SecretRef` not provided"))
 	}
+}
+
+func validateSecretCA(secret *corev1.Secret) ([]byte, error) {
+	// Validate correct type
+	if secret.Type != corev1.SecretTypeTLS {
+		return nil, fmt.Errorf("Secret is not if type %s", corev1.SecretTypeTLS)
+	}
+
+	// Validate it can be used as a CAKeyPair
+	CAKeyPair, err := legobridge.CAKeyPairFromSecretData(secret.Data)
+	if err != nil {
+		return nil, fmt.Errorf("extracting CA Keypair from secret failed with %s", err.Error())
+	}
+
+	// Validate cert and key are valid and that they match together
+	ok, err := legobridge.ValidatePublicKeyWithPrivateKey(CAKeyPair.Cert.PublicKey, CAKeyPair.Key)
+	if err != nil {
+		return nil, fmt.Errorf("check private key failed with %s", err.Error())
+	}
+	if !ok {
+		return nil, fmt.Errorf("private key does not match certificate")
+	}
+
+	// Check if certificate is a CA
+	if !legobridge.IsCertCA(CAKeyPair.Cert) {
+		return nil, fmt.Errorf("certificate is not a CA")
+	}
+
+	// Check expiration
+	if legobridge.IsCertExpired(CAKeyPair.Cert) {
+		return nil, fmt.Errorf("certificate is expired")
+	}
+
+	CAInfoRaw, err := CAKeyPair.RawCertInfo()
+	if err != nil {
+		return nil, fmt.Errorf("cert info marshalling failed with %s", err.Error())
+	}
+
+	return CAInfoRaw, nil
 }
 
 func (r *caIssuerHandler) failedCA(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {

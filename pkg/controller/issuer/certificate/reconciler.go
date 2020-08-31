@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+ * SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -392,13 +392,96 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logger logger.LogContex
 		}
 	}
 	r.pendingRequests.Add(objectName)
-	return r.pending(logger, obj)
+	msg := "certificate requested, preparing/waiting for successful DNS01 challenge"
+	return r.pending(logger, obj, msg)
+}
+
+func (r *certReconciler) restoreCA(issuer *api.Issuer) (*legobridge.TLSKeyPair, error) {
+	// fetch issuer secret
+	secretRef := issuer.Spec.CA.PrivateKeySecretRef
+	if secretRef == nil {
+		return nil, fmt.Errorf("missing secret ref in issuer")
+	}
+	if issuer.Status.State != api.StateReady {
+		if issuer.Status.State != api.StateError {
+			return nil, &recoverableError{Msg: fmt.Sprintf("referenced issuer not ready: state=%s", issuer.Status.State)}
+		}
+		return nil, fmt.Errorf("referenced issuer not ready: state=%s", issuer.Status.State)
+	}
+	if issuer.Status.CA == nil || issuer.Status.CA.Raw == nil {
+		return nil, fmt.Errorf("CA registration? missing in status")
+	}
+	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
+	issuerSecret := &corev1.Secret{}
+	_, err := r.support.GetIssuerSecretResources().GetInto(issuerSecretObjectName, issuerSecret)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching issuer secret failed")
+	}
+
+	CAKeyPair, err := legobridge.CAKeyPairFromSecretData(issuerSecret.Data)
+	if err != nil {
+		return nil, errors.Wrap(err, "restoring CA issuer from issuer secret failed")
+	}
+
+	return CAKeyPair, nil
 }
 
 func (r *certReconciler) obtainCertificateCA(logger logger.LogContext, obj resources.Object,
 	renewSecret *corev1.Secret, cert *api.Certificate, issuer *api.Issuer) reconcile.Status {
-	// TODO create certificate
-	return r.succeeded(logger, obj)
+	CAKeyPair, err := r.restoreCA(issuer)
+	if err != nil {
+		return r.failed(logger, obj, api.StateError, err)
+	}
+
+	err = r.validateDomainsAndCsr(&cert.Spec)
+	if err != nil {
+		return r.failedStop(logger, obj, api.StateError, err)
+	}
+
+	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
+		// reuse found certificate
+		secretRef, err := r.copySecretIfNeeded(cert.ObjectMeta, secretRef, specHash, &cert.Spec)
+		if err != nil {
+			return r.failed(logger, obj, api.StateError, err)
+		}
+		return r.updateSecretRefAndSucceeded(logger, obj, secretRef, specHash, notAfter)
+	}
+
+	var renewCert *certificate.Resource
+	if renewSecret != nil {
+		renewCert = legobridge.SecretDataToCertificates(renewSecret.Data)
+	}
+
+	objectName := obj.ObjectName()
+	subLogger := logger.NewContext("callback", cert.Name)
+	callback := func(output *legobridge.ObtainOutput) {
+		r.pendingRequests.Remove(objectName)
+		r.pendingResults.Add(objectName, output)
+		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectName.Namespace(), objectName.Name())
+		err := r.support.EnqueueKey(key)
+		if err != nil {
+			subLogger.Warnf("Enqueue %s failed with %s", objectName, err.Error())
+		}
+	}
+
+	issuerObjectName := r.issuerObjectName(&cert.Spec)
+	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerName: issuerObjectName.Name(),
+		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
+		Callback: callback, RenewCert: renewCert}
+
+	err = r.obtainer.Obtain(input)
+	if err != nil {
+		switch err.(type) {
+		case *legobridge.ConcurrentObtainError:
+			return r.delay(logger, obj, api.StatePending, err)
+		default:
+			return r.failed(logger, obj, api.StateError, errors.Wrap(err, "preparing obtaining certificates failed"))
+		}
+	}
+	r.pendingRequests.Add(objectName)
+
+	msg := "certificate requested, waiting for creation by CA"
+	return r.pending(logger, obj, msg)
 }
 
 func (r *certReconciler) loadIssuer(crt *api.Certificate) (*api.Issuer, error) {
@@ -846,8 +929,7 @@ func (r *certReconciler) succeeded(logger logger.LogContext, obj resources.Objec
 	return reconcile.Succeeded(logger)
 }
 
-func (r *certReconciler) pending(logger logger.LogContext, obj resources.Object) reconcile.Status {
-	msg := "certificate requested, preparing/waiting for successful DNS01 challenge"
+func (r *certReconciler) pending(logger logger.LogContext, obj resources.Object, msg string) reconcile.Status {
 	mod, status := r.prepareUpdateStatus(obj, api.StatePending, &msg, boNone)
 	status.LastPendingTimestamp = &metav1.Time{Time: time.Now()}
 	mod.Modified = true

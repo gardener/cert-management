@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+ * SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -11,13 +11,11 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"net/url"
+
+	"github.com/gardener/cert-management/pkg/cert/metrics"
 
 	"github.com/go-acme/lego/v3/lego"
 	"github.com/go-acme/lego/v3/registration"
@@ -99,50 +97,6 @@ func NewRegistrationUserFromEmailAndPrivateKey(email string, caDirURL string, pr
 	metrics.AddACMEAccountRegistration(server, email)
 
 	return user, nil
-}
-
-func pemBlockForKey(priv interface{}) (*pem.Block, error) {
-	switch k := priv.(type) {
-	case *ecdsa.PrivateKey:
-		b, err := x509.MarshalECPrivateKey(k)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal ECDSA private key: %v", err)
-		}
-		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
-	case *rsa.PrivateKey:
-		b := x509.MarshalPKCS1PrivateKey(k)
-		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: b}, nil
-	default:
-		return nil, fmt.Errorf("unsupported private key type: %t", priv)
-	}
-}
-
-func privateKeyToBytes(key crypto.PrivateKey) ([]byte, error) {
-	block, err := pemBlockForKey(key)
-	if err != nil {
-		return nil, err
-	}
-	return pem.EncodeToMemory(block), nil
-}
-
-func bytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
-	block, rest := pem.Decode(data)
-	if block == nil {
-		return nil, fmt.Errorf("decoding pem block for private key failed")
-	}
-	if len(rest) > 0 {
-		return nil, fmt.Errorf("incomplete decoding pem block for private key")
-	}
-	key, err := x509.ParseECPrivateKey(block.Bytes)
-	if err == nil {
-		return key, nil
-	}
-
-	key2, err2 := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err2 != nil {
-		return nil, fmt.Errorf("decoding private key failed with %s (ec) and %s (rsa)", err, err2)
-	}
-	return key2, nil
 }
 
 // ToSecretData returns the registration user as a secret data map.
