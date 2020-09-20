@@ -1,5 +1,7 @@
 # cert-management
 
+[![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
+
 Manages TLS certificates in Kubernetes clusters using custom resources.
 Currently, it supports certificate authorities using the [Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) like [Let's Encrypt](https://letsencrypt.org/).
 

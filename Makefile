@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 REGISTRY              := eu.gcr.io/gardener-project
 EXECUTABLE            := cert-controller-manager
 PROJECT               := github.com/gardener/cert-management
