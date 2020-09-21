@@ -1,5 +1,9 @@
 #!/bin/python
 
+# SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # helper script to regenerate helm chart file: partial of charts/cert-management/templates/deployment.yaml
 
 
