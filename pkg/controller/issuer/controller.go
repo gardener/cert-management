@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+ * SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -7,10 +7,11 @@
 package issuer
 
 import (
+	"time"
+
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 	"github.com/gardener/controller-manager-library/pkg/resources"
-	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 

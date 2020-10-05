@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+ * SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -37,6 +37,9 @@ type IssuerSpec struct {
 	// ACME is the ACME protocol specific spec.
 	// +optional
 	ACME *ACMESpec `json:"acme,omitempty"`
+	// CA is the CA specific spec.
+	// +optional
+	CA *CASpec `json:"ca,omitempty"`
 	// RequestsPerDayQuota is the maximum number of certificate requests per days allowed for this issuer
 	// +optional
 	RequestsPerDayQuota *int `json:"requestsPerDayQuota,omitempty"`
@@ -58,6 +61,13 @@ type ACMESpec struct {
 	PrivateKeySecretRef *corev1.SecretReference `json:"privateKeySecretRef,omitempty"`
 }
 
+// CASpec is the CA specific part of the spec.
+type CASpec struct {
+	// PrivateKeySecretRef is the secret ref to the CA secret.
+	// +optional
+	PrivateKeySecretRef *corev1.SecretReference `json:"privateKeySecretRef,omitempty"`
+}
+
 // IssuerStatus is the status of the issuer.
 type IssuerStatus struct {
 	// ObservedGeneration is the observed generation of the spec.
@@ -70,6 +80,8 @@ type IssuerStatus struct {
 	Type *string `json:"type"`
 	// ACME is the ACME specific status.
 	ACME *runtime.RawExtension `json:"acme,omitempty"`
+	// CA is the CA specific status.
+	CA *runtime.RawExtension `json:"ca,omitempty"`
 	// RequestsPerDayQuota is the actual maximum number of certificate requests per days allowed for this issuer
 	RequestsPerDayQuota int `json:"requestsPerDayQuota,omitempty"`
 }

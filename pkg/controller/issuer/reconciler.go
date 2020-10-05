@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+ * SPDX-FileCopyrightText: 2020 SAP SE or an SAP affiliate company and Gardener contributors
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -8,6 +8,7 @@ package issuer
 
 import (
 	"github.com/gardener/cert-management/pkg/controller/issuer/acme"
+	"github.com/gardener/cert-management/pkg/controller/issuer/ca"
 	"github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 	corev1 "k8s.io/api/core/v1"
@@ -21,7 +22,7 @@ import (
 )
 
 func newCompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
-	handler, support, err := core.NewHandlerSupport(c, acme.NewACMEIssuerHandler)
+	handler, support, err := core.NewHandlerSupport(c, acme.NewACMEIssuerHandler, ca.NewCAIssuerHandler)
 	if err != nil {
 		return nil, err
 	}
