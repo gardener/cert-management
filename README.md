@@ -3,15 +3,20 @@
 [![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
 Manages TLS certificates in Kubernetes clusters using custom resources.
-Currently, it supports certificate authorities using the [Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) like [Let's Encrypt](https://letsencrypt.org/).
 
 In a multi-cluster environment like Gardener, using existing open source projects
 for certificate management like [cert-manager](https://github.com/jetstack/cert-manager) becomes cumbersome.
 With this project the separation of concerns between multiple clusters is realized more easily.
 The cert-controller-manager runs in a **secured cluster** where the issuer secrets are stored.
 At the same time it watches an untrusted **source cluster** and can provide certificates for it.
-The cert-controller-manager relies on DNS challenges for validating the domain names of the certificates.
-For this purpose it creates DNSEntry custom resources (in a possible separate **dns cluster**) to be handled by the compagnion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
+The cert-controller-manager relies on DNS challenges (ACME only) for validating the domain names of the certificates.
+For this purpose it creates DNSEntry custom resources (in a possible separate **dns cluster**) to be
+handled by the compagnion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
+
+Currently, the `cert-controller-manager` supports certificate authorities via:
+ 
+* [Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) protocol like [Let's Encrypt](https://letsencrypt.org/).
+* Certificate Authority (CA): an existing certificate and a private key provided as a TLS Secret.
 
 ## Setting up Issuers
 
@@ -20,15 +25,14 @@ The issuer is specified in the `default` cluster, while the certificates are spe
 
 The issuer custom resource contains the configuration and registration data for your account at the CA.
 
-Currently, the `cert-controller-manager` only supports certificate authorities via the
-[Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) protocol like [Let's Encrypt](https://letsencrypt.org/).
+### Automatic Certificate Management Environment (ACME)
 
 Two modes are supported:
 
 - auto registration
 - using an existing account
 
-### Auto registration
+#### Auto registration
 
 Auto registration is mainly used for development and test environments. You only need to provide
 the server URL and an email address. The registration process is done automatically for you
@@ -52,9 +56,9 @@ spec:
     privateKeySecretRef:
       name: issuer-staging-secret
       namespace: default
-``` 
+```
 
-### Using existing account
+#### Using existing account
 
 If you already have an existing account at the certificate authority, you need to
 specify email address and reference the private key from a secret.
@@ -93,6 +97,116 @@ NAME             SERVER                                                   EMAIL 
 issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
 ```
 
+### Certificate Authority (CA)
+
+This issuer is meant to be used where a central Certificate Authority
+is already in place. The operator must request/provide by its own means a CA
+or an intermediate CA. This is mainly used for **on-premises** and
+**airgapped** environements.
+
+It can also be used for **developement** or **testing** purproses. In this case
+a Self-signed Certificate Authority can be created by following the section below.
+
+
+_Create a Self-signed Certificate Authority (optional)_
+
+```bash
+▶ openssl genrsa -out CA-key.pem 4096
+▶ export CONFIG="
+[req]
+distinguished_name=dn
+[ dn ]
+[ ext ]
+basicConstraints=CA:TRUE,pathlen:0
+"
+▶ openssl req \
+    -new -nodes -x509 -config <(echo "$CONFIG") -key CA-key.pem \
+    -subj "/CN=Hello" -extensions ext -days 1000 -out CA-cert.pem
+```
+
+Create a TLS secret from the certificate `CA-cert.pem` and the private key `CA-key.pem`
+
+```bash
+▶ kubectl -n default create secret tls issuer-ca-secret \
+    --cert=CA-cert.pem --key=CA-key.pem -oyaml \
+    --dry-run=client > secret.yaml
+```
+
+The content of the `secret.yaml` should look like the following, for a full example see [examples/20-issuer-ca.yaml](./examples/20-issuer-ca.yaml)
+
+```yaml
+apiVersion: v1
+data:
+  tls.crt: {base64 certificate}
+  tls.key: {base64 private key}
+kind: Secret
+metadata:
+  name: issuer-ca-secret
+type: kubernetes.io/tls
+```
+
+Apply the secrets in the cluster and create the issuer,
+for example see [examples/20-issuer-ca.yaml](./examples/20-issuer-ca.yaml)
+
+```yaml
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: issuer-ca
+  namespace: default
+spec:
+  ca:
+    privateKeySecretRef:
+      name: issuer-ca-secret
+      namespace: default
+```
+
+The state of the issuer resource can be checked on the `default` cluster with
+
+```bash
+▶ kubectl get issuer
+NAME        SERVER   EMAIL   STATUS   TYPE   AGE
+issuer-ca                    Ready    ca     6s
+```
+
+Some details about the CA can be found in the status of the issuer.
+
+```bash
+▶ kubectl get issuer issuer-ca -ojsonpath='{.status}' | jq '.'
+{
+  "ca": {
+    "NotAfter": "2023-05-31T14:55:55Z",
+    "NotBefore": "2020-09-03T14:55:55Z",
+    "Subject": {
+      "CommonName": "my-domain.com",
+      "Country": [
+        "DE"
+      ],
+      "Locality": [
+        "Walldorf"
+      ],
+      "Organization": [
+        "Gardener"
+      ],
+      "OrganizationalUnit": [
+        "Gardener"
+      ],
+      "PostalCode": null,
+      "Province": [
+        "BW"
+      ],
+      "SerialNumber": "1E04A2C8F057AC890F45FEC5446AE4DDA73EA1D5",
+      "StreetAddress": null
+    }
+  },
+  "observedGeneration": 1,
+  "requestsPerDayQuota": 10000,
+  "state": "Ready",
+  "type": "ca"
+}
+```
+
 ## Requesting a Certificate
 
 To obtain a certificate for a domain, you specify a certificate custom resource on the `source` cluster.
@@ -103,7 +217,7 @@ you can also start with a certificate signing request (CSR).
 For domain validation, the `cert-controller-manager` only supports DNS challenges. For this purpose it relies
 on the `dns-controller-manager` from the [external-dns-management](https://github.com/gardener/external-dns-management)
 project.
-If any domain name (`commonName` or any item from `dnsNames`) needs to be validated, it create a custom resource
+If any domain name (`commonName` or any item from `dnsNames`) needs to be validated, it creates a custom resource
 `DNSEntry` in the `dns` cluster.
 When the certificate authority sees the temporary DNS record, the certificate is stored in a secret finally.
 The name of the secret can be specified explicitly with `secretName` and will be stored in the same namespace as the 
@@ -149,6 +263,8 @@ spec:
   issuerRef:
     name: issuer-staging
 ```
+
+:warning: Using a CSR is only available for ACME Issuer
 
 ## Requesting a Certificate for Ingress 
 
@@ -285,7 +401,7 @@ spec:
         NAME             SERVER                                                   EMAIL                    STATUS   TYPE   AGE
         issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
         ```
-  
+
 6. Request a certificate for `cert1.martin.test6227.ml`
 
     ```bash
@@ -309,20 +425,20 @@ spec:
 The cert-controller-manager communicated with up to four different clusters:
 - **default** 
   used for managing issuers and lease management.
-  The path to the kubeconfig is specified with command line option `--kubeconfig`.  
+  The path to the kubeconfig is specified with command line option `--kubeconfig`.
 - **source**
   used for watching resources ingresses, services and certificates
   The path to the kubeconfig is specified with command line option `--source`.
-  If option is omitted, the default cluster is used for source.  
+  If option is omitted, the default cluster is used for source.
 - **dns**
   used to write temporary DNSEntries for DNS challenges
-  The path to the kubeconfig is specified with command line option `--dns`.  
-  If option is omitted, the default cluster is used for dns.  
+  The path to the kubeconfig is specified with command line option `--dns`.
+  If option is omitted, the default cluster is used for dns.
 - **target**
   used for storing generated certificates
-  The path to the kubeconfig is specified with command line option `--target`.  
-  If option is omitted, the source cluster is also used for target.  
-  
+  The path to the kubeconfig is specified with command line option `--target`.
+  If option is omitted, the source cluster is also used for target.
+
 ### Usage
 The complete list of options is:
 
@@ -331,6 +447,7 @@ Usage:
   cert-controller-manager [flags]
 
 Flags:
+      --accepted-maintainers string                        accepted maintainer key(s) for crds
       --bind-address-http string                           HTTP server bind address
       --cascade-delete                                     If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted
       --cert-class string                                  Identifier used to differentiate responsible controllers for entries
@@ -350,6 +467,7 @@ Flags:
       --dns-owner-id string                                ownerId for creating challenge DNSEntries
       --dns.disable-deploy-crds                            disable deployment of required crds for cluster dns
       --dns.id string                                      id for cluster dns
+      --force-crd-update                                   enforce update of crds even they are unmanaged
       --grace-period duration                              inactivity grace period for detecting end of cleanup for shutdown
   -h, --help                                               help for cert-controller-manager
       --ingress-cert.cert-class string                     Identifier used to differentiate responsible controllers for entries of controller ingress-cert (default "gardencert")
@@ -390,8 +508,8 @@ Flags:
       --lease-renew-deadline duration                      lease renew deadline (default 10s)
       --lease-retry-period duration                        lease retry period (default 2s)
   -D, --log-level string                                   logrus log level
-      --maintainer string                                  maintainer key for crds (defaulted by manager name)
-      --name string                                        name used for controller manager
+      --maintainer string                                  maintainer key for crds (default "cert-controller-manager")
+      --name string                                        name used for controller manager (default "cert-controller-manager")
       --namespace string                                   namespace for lease (default "kube-system")
   -n, --namespace-local-access-only                        enable access restriction for namespace local access only (deprecated)
       --omit-lease                                         omit lease for development
