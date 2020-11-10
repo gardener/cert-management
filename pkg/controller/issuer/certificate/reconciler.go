@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	cmlutils "github.com/gardener/controller-manager-library/pkg/utils"
 	"github.com/go-acme/lego/v3/certificate"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -147,10 +148,19 @@ type certReconciler struct {
 	defaultRequestsPerDayQuota int
 	classes                    *controller.Classes
 	cascadeDelete              bool
+	garbageCollectorTicker     *time.Ticker
 }
 
 func (r *certReconciler) Start() {
 	r.cleanupOrphanDNSEntriesFromOldChallenges()
+
+	r.cleanupOrphanOutdatedCertificateSecrets()
+	r.garbageCollectorTicker = time.NewTicker(7 * 24 * time.Hour)
+	go func() {
+		for range r.garbageCollectorTicker.C {
+			r.cleanupOrphanOutdatedCertificateSecrets()
+		}
+	}()
 }
 
 func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
@@ -977,4 +987,63 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() {
 		}
 	}
 	logger.Infof("issuer: cleanup: %d orphan DNS entries deleted", count)
+}
+
+// cleanupOrphanOutdatedCertificateSecrets performs a garbage collection of orphan secrets.
+// A certificate secret is deleted if it is not referenced by a certificate custom resource and
+// if its TLS certificate is not valid since at least 14 days.
+func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
+	const prefix = "issuer: cleanup-secrets: "
+	logger.Infof(prefix + "starting GC for orphan outdated certificate secrets")
+	deleted := 0
+	outdated := 0
+	// only select secrets with label `cert.gardener.cloud/certificate=true`
+	requirement, err := labels.NewRequirement(LabelCertificateKey, selection.Equals, []string{"true"})
+	if err != nil {
+		logger.Warnf(prefix+"new requirement failed with %s", err)
+		return
+	}
+	secrets, err := r.certSecretResources.ListCached(labels.NewSelector().Add(*requirement))
+	if err != nil {
+		logger.Warnf(prefix+"list secrets failed with %s", err)
+		return
+	}
+	certs, err := r.certResources.List(metav1.ListOptions{})
+	if err != nil {
+		logger.Warnf(prefix+"list certificates failed with %s", err)
+		return
+	}
+	secretNamesToKeep := cmlutils.StringSet{}
+	for _, obj := range certs {
+		cert := obj.Data().(*api.Certificate)
+		ref := cert.Spec.SecretRef
+		if ref != nil {
+			secretNamesToKeep.Add(ref.Namespace + "/" + ref.Name)
+		}
+	}
+	for _, obj := range secrets {
+		secret := obj.Data().(*corev1.Secret)
+		key := secret.Namespace + "/" + secret.Name
+		if secretNamesToKeep.Contains(key) {
+			continue
+		}
+		cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data)
+		if err != nil {
+			logger.Warnf(prefix+"cannot decode certificate for secret %s: %s", key, err)
+			continue
+		}
+		if cert.NotAfter.Add(14 * 24 * time.Hour).After(time.Now()) {
+			continue
+		}
+		outdated++
+		err = r.certSecretResources.Delete(secret)
+		if err != nil {
+			logger.Warnf(prefix+"cannot delete certificate secret %s: %s", key, err)
+			continue
+		}
+		deleted++
+	}
+
+	logger.Infof("issuer: cleanup-secrets: %d/%d orphan outdated certificate secrets deleted (%d total)",
+		deleted, outdated, len(secrets))
 }
