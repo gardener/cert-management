@@ -327,12 +327,9 @@ func DecodeCertificateFromSecretData(data map[string][]byte) (*x509.Certificate,
 
 // DecodeCertificate decodes the crt byte array.
 func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
-	block, rest := pem.Decode(tlsCrt)
+	block, _ := pem.Decode(tlsCrt)
 	if block == nil {
 		return nil, fmt.Errorf("decoding pem for %s from request secret failed", corev1.TLSCertKey)
-	}
-	if len(rest) > 0 {
-		return nil, fmt.Errorf("incomplete decoding pem block for public key certificate")
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
