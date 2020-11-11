@@ -1,12 +1,12 @@
 module github.com/gardener/cert-management
 
-go 1.13
+go 1.15
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
 	github.com/emicklei/go-restful v2.11.1+incompatible // indirect
-	github.com/gardener/controller-manager-library v0.2.1-0.20200826092240-cd5a6ccd6e27
-	github.com/gardener/external-dns-management v0.7.17-0.20200810112859-d9ceb5e2257d
+	github.com/gardener/controller-manager-library v0.2.1-0.20201009144316-bfa57b871e60
+	github.com/gardener/external-dns-management v0.7.21
 	github.com/go-acme/lego/v3 v3.7.0
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/miekg/dns v1.1.27
