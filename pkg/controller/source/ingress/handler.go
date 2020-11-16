@@ -8,6 +8,7 @@ package ingress
 
 import (
 	"fmt"
+	"strings"
 
 	api "k8s.io/api/extensions/v1beta1"
 
@@ -51,6 +52,8 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 		return info, nil
 	}
 
+	cn, _ := resources.GetAnnotation(data, source.AnnotCommonName)
+	cn = strings.TrimSpace(cn)
 	var issuer *string
 	annotatedIssuer, ok := resources.GetAnnotation(data, source.AnnotIssuer)
 	if ok {
@@ -62,7 +65,35 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 			err = fmt.Errorf("tls entry for hosts %s has no secretName", source.DomainsString(tls.Hosts))
 			continue
 		}
-		info.Certs[tls.SecretName] = source.CertInfo{SecretName: tls.SecretName, Domains: tls.Hosts, IssuerName: issuer}
+		var domains []string
+		dnsnames, ok := resources.GetAnnotation(data, source.AnnotCertDNSNames)
+		if ok {
+			if cn != "" {
+				domains = []string{cn}
+			}
+			for _, e := range strings.Split(dnsnames, ",") {
+				e = strings.TrimSpace(e)
+				if e != "" && e != cn {
+					domains = append(domains, e)
+				}
+			}
+		} else {
+			domains = mergeCommonName(cn, tls.Hosts)
+		}
+		info.Certs[tls.SecretName] = source.CertInfo{SecretName: tls.SecretName, Domains: domains, IssuerName: issuer}
 	}
 	return info, err
+}
+
+func mergeCommonName(cn string, hosts []string) []string {
+	if cn == "" {
+		return hosts
+	}
+	result := []string{cn}
+	for _, host := range hosts {
+		if host != cn {
+			result = append(result, host)
+		}
+	}
+	return result
 }

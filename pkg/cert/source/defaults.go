@@ -155,15 +155,23 @@ func (s *DefaultCertSource) NewCertsInfo(logger logger.LogContext, obj resources
 func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (*CertsInfo, error) {
 	info := s.NewCertsInfo(logger, obj)
 	secretName, err := s.handler(logger, obj, current)
-	a, ok := resources.GetAnnotation(obj.Data(), AnnotDnsnames)
+	a, ok := resources.GetAnnotation(obj.Data(), AnnotCertDNSNames)
 	if err != nil || !ok {
-		return nil, nil
+		a, ok = resources.GetAnnotation(obj.Data(), AnnotDnsnames)
+		if err != nil || !ok {
+			return nil, nil
+		}
 	}
 
+	cn, _ := resources.GetAnnotation(obj.Data(), AnnotCommonName)
+	cn = strings.TrimSpace(cn)
 	annotatedDomains := []string{}
+	if cn != "" {
+		annotatedDomains = append(annotatedDomains, cn)
+	}
 	for _, e := range strings.Split(a, ",") {
 		e = strings.TrimSpace(e)
-		if e != "" {
+		if e != "" && e != cn {
 			annotatedDomains = append(annotatedDomains, e)
 		}
 	}
