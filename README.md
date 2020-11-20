@@ -318,7 +318,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
       annotations:
         # Let Gardener manage certificates for this Ingress.
         cert.gardener.cloud/purpose: managed
-        #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation
+        #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation (if not covered by `*.ingress.<GARDENER-CLUSTER>.<GARDENER-PROJECT>.shoot.example.com)
         #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from spec.tls[].hosts is used as common name
         #cert.gardener.cloud/dnsnames: "" # optional, if not specified the names from spec.tls[].hosts are used
     spec:
@@ -335,17 +335,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
                   servicePort: 80
                 path: /
     ```
-
-    If you want to share a certificate between multiple services and ingresses, using the annotations `cert.gardener.cloud/commonname` and
-    `cert.gardener.cloud/dnsnames` may be helpful. For example, to share a wildcard certificate, you should add these two annotations
-    
-    ```yaml
-        cert.gardener.cloud/commonname: "*.demo.mydomain.com"
-        cert.gardener.cloud/dnsnames: ""
-    ```
-    This will create or reuse a certificate for `*.demo.mydomain.com`. An existing certificate is automatically reused,
-    if it has exactly the same common name and DNS names.
-   
+  
     The annotation `cert.gardener.cloud/commonname` can be set to explicitly specify the common name.
     If no set, the first name of `spec.tls.hosts` is used as common name.
     The annotation `cert.gardener.cloud/dnsnames` can be used to explicitly specify the alternative DNS names.
@@ -396,6 +386,16 @@ deal with real domain names specified with `dns.gardener.cloud/dnsnames` which a
 The annotation `cert.gardener.cloud/dnsnames` can be used to explicitly specify the alternative DNS names.
 If set, it overrides the values from the annotation `dns.gardener.cloud/dnsnames` for the certificate (but not for 
 creating DNS records by the dns-controller-manager).
+
+If you want to share a certificate between multiple services and ingresses, using the annotations `cert.gardener.cloud/commonname` and
+`cert.gardener.cloud/dnsnames` may be helpful. For example, to share a wildcard certificate, you should add these two annotations
+
+```yaml
+    cert.gardener.cloud/commonname: "*.demo.mydomain.com"
+    cert.gardener.cloud/dnsnames: ""
+```
+This will create or reuse a certificate for `*.demo.mydomain.com`. An existing certificate is automatically reused,
+if it has exactly the same common name and DNS names.
 
 ## Demo quick start
 
