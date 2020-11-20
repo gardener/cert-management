@@ -273,7 +273,7 @@ The `cert-controller-manager` will then automatically request a certificate for 
 `tls` section of the Ingress spec.
 
 For compatibility with the [Gardener Cert-Broker](https://github.com/gardener/cert-broker), you can
-alternatively use the label `garden.sapcloud.io/purpose: managed-cert` for the same outcome.
+alternatively use the deprecated label `garden.sapcloud.io/purpose: managed-cert` for the same outcome.
 
 See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheaders.yaml):
 
@@ -292,7 +292,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
     spec:
       tls:
       # Gardener managed default domain.
-      # Must not exceed 64 characters.
+      # The first host is used as common name and must not exceed 64 characters
       - hosts:
         - test.ingress.<GARDENER-CLUSTER>.<GARDENER-PROJECT>.shoot.example.com
         # Certificate and private key reside in this secret.
@@ -318,8 +318,38 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
       annotations:
         # Let Gardener manage certificates for this Ingress.
         cert.gardener.cloud/purpose: managed
-    ...
+        #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation
+        #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from spec.tls[].hosts is used as common name
+        #cert.gardener.cloud/dnsnames: "" # optional, if not specified the names from spec.tls[].hosts are used
+    spec:
+      tls:
+        - hosts:
+            - echoheaders.demo.mydomain.com
+          secretName: cert-echoheaders
+      rules:
+        - host: echoheaders.demo.mydomain.com
+          http:
+            paths:
+              - backend:
+                  serviceName: echoheaders
+                  servicePort: 80
+                path: /
     ```
+
+    If you want to share a certificate between multiple services and ingresses, using the annotations `cert.gardener.cloud/commonname` and
+    `cert.gardener.cloud/dnsnames` may be helpful. For example, to share a wildcard certificate, you should add these two annotations
+    
+    ```yaml
+        cert.gardener.cloud/commonname: "*.demo.mydomain.com"
+        cert.gardener.cloud/dnsnames: ""
+    ```
+    This will create or reuse a certificate for `*.demo.mydomain.com`. An existing certificate is automatically reused,
+    if it has exactly the same common name and DNS names.
+   
+    The annotation `cert.gardener.cloud/commonname` can be set to explicitly specify the common name.
+    If no set, the first name of `spec.tls.hosts` is used as common name.
+    The annotation `cert.gardener.cloud/dnsnames` can be used to explicitly specify the alternative DNS names.
+    If no set, the names of `spec.tls.hosts` are used.
 
 3. Check status
 
@@ -332,7 +362,9 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
 ## Requesting a Certificate for Service 
 
 If you have a service of type `LoadBalancer`, you can use the annotation `cert.gardener.cloud/secretname` together
-with the annotation `dns.gardener.cloud/dnsnames` from the `dns-controller-manager` to trigger automatic creation of a certificate.
+with the annotation `dns.gardener.cloud/dnsnames` from the `dns-controller-manager` to trigger automatic creation of 
+a certificate. If you wan to share a certificate between multiple services and ingresses, using the annotations 
+`cert.gardener.cloud/commonname` and `cert.gardener.cloud/dnsnames` may be helpful.
 
 ```yaml
 apiVersion: v1
@@ -341,6 +373,9 @@ metadata:
   annotations:
     cert.gardener.cloud/secretname: test-service-secret
     dns.gardener.cloud/dnsnames: test-service.demo.mydomain.com
+    #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation
+    #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from dns.gardener.cloud/dnsnames is used as common name
+    #cert.gardener.cloud/dnsnames: "" # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
     dns.gardener.cloud/ttl: "600"
   name: test-service
   namespace: default
@@ -352,6 +387,15 @@ spec:
     targetPort: 8080
   type: LoadBalancer
 ```
+
+The annotation `cert.gardener.cloud/commonname` is optional. If not specified, the first name of the annotation
+`dns.gardener.cloud/dnsnames` is used as common name. It is useful to specify it explicitly, if no `DNSEntry`
+should be created for the common name by the dns-controller-manager.
+A typical use case is if the common name (limited to 64 characters) is set only to
+deal with real domain names specified with `dns.gardener.cloud/dnsnames` which are longer than 64 characters.
+The annotation `cert.gardener.cloud/dnsnames` can be used to explicitly specify the alternative DNS names.
+If set, it overrides the values from the annotation `dns.gardener.cloud/dnsnames` for the certificate (but not for 
+creating DNS records by the dns-controller-manager).
 
 ## Demo quick start
 

@@ -32,6 +32,10 @@ const (
 	AnnotSecretname = "cert.gardener.cloud/secretname"
 	// AnnotIssuer is the annotation for the issuer name
 	AnnotIssuer = "cert.gardener.cloud/issuer"
+	// AnnotCommonName is the annotation for explicitly specifying the common name
+	AnnotCommonName = "cert.gardener.cloud/commonname"
+	// AnnotCertDNSNames is the annotation for explicitly specifying the DNS names (if not specified, values from "dns.gardener.cloud/dnsnames" is used)
+	AnnotCertDNSNames = "cert.gardener.cloud/dnsnames"
 
 	// OptClass is the cert-class command line option
 	OptClass = "cert-class"
