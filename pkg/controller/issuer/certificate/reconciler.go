@@ -624,10 +624,11 @@ func (r *certReconciler) checkForRenewAndSucceeded(logger logger.LogContext, obj
 
 	cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data)
 	if err != nil {
-		return r.failed(logger, obj, api.StateError, err)
+		logger.Errorf("certificate secret cannot be decoded: %s", err)
+	} else {
+		logger.Infof("certificate valid from %v to %v", cert.NotBefore, cert.NotAfter)
 	}
-	logger.Infof("certificate valid from %v to %v", cert.NotBefore, cert.NotAfter)
-	if r.needsRenewal(cert) {
+	if cert == nil || r.needsRenewal(cert) {
 		if crt.Status.State == api.StatePending && r.lastPendingRateLimiting(crt.Status.LastPendingTimestamp) {
 			return reconcile.Succeeded(logger)
 		}
