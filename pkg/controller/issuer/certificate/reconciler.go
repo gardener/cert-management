@@ -20,8 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
@@ -694,11 +692,10 @@ func (r *certReconciler) determineSecretRef(namespace string, spec *api.Certific
 
 func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.CertificateSpec) (*corev1.SecretReference, string, *time.Time) {
 	specHash := r.buildSpecHash(spec)
-	requirement, err := labels.NewRequirement(LabelCertificateHashKey, selection.Equals, []string{specHash})
-	if err != nil {
-		return nil, "", nil
+	opts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateHashKey, specHash),
 	}
-	objs, err := r.certSecretResources.ListCached(labels.NewSelector().Add(*requirement))
+	objs, err := r.certSecretResources.List(opts)
 	if err != nil {
 		return nil, "", nil
 	}
@@ -999,12 +996,10 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 	deleted := 0
 	outdated := 0
 	// only select secrets with label `cert.gardener.cloud/certificate=true`
-	requirement, err := labels.NewRequirement(LabelCertificateKey, selection.Equals, []string{"true"})
-	if err != nil {
-		logger.Warnf(prefix+"new requirement failed with %s", err)
-		return
+	opts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=true", LabelCertificateKey),
 	}
-	secrets, err := r.certSecretResources.ListCached(labels.NewSelector().Add(*requirement))
+	secrets, err := r.certSecretResources.List(opts)
 	if err != nil {
 		logger.Warnf(prefix+"list secrets failed with %s", err)
 		return
