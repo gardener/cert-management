@@ -26,7 +26,7 @@ var (
 	// ACMEAccountRegistrations is the acme_account_registrations counter.
 	ACMEAccountRegistrations = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "acme_account_registrations",
+			Name: "cert_management_acme_account_registrations",
 			Help: "Number of ACME account registrations",
 		},
 		[]string{"server", "email"},
@@ -35,7 +35,7 @@ var (
 	// ACMETotalObtains is the acme_obtains counter.
 	ACMETotalObtains = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "acme_obtains",
+			Name: "cert_management_acme_obtains",
 			Help: "Total number of ACME obtains",
 		},
 		[]string{"issuer", "success", "dns_challenges", "renew"},
@@ -44,7 +44,7 @@ var (
 	// ACMEActiveDNSChallenges is the acme_active_dns_challenges gauge.
 	ACMEActiveDNSChallenges = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "acme_active_dns_challenges",
+			Name: "cert_management_acme_active_dns_challenges",
 			Help: "Currently active number of ACME DNS challenges",
 		},
 		[]string{"issuer"},
@@ -53,8 +53,8 @@ var (
 	// CertEntries is the cert_entries gauge.
 	CertEntries = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "cert_entries",
-			Help: "Total number of cert entries per issuer",
+			Name: "cert_management_cert_entries",
+			Help: "Total number of certificate objects per issuer",
 		},
 		[]string{"issuertype", "issuer"},
 	)
