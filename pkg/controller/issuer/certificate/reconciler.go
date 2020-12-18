@@ -102,6 +102,11 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 		return nil, err
 	}
 	reconciler.renewalWindow = renewalWindow
+	renewalOverdueWindow, err := c.GetDurationOption(core.OptRenewalOverdueWindow)
+	if err != nil {
+		return nil, err
+	}
+	reconciler.renewalOverdueWindow = renewalOverdueWindow
 
 	precheckNameservers, _ := c.GetStringOption(core.OptPrecheckNameservers)
 	reconciler.precheckNameservers = utils.PreparePrecheckNameservers(strings.Split(precheckNameservers, ","))
@@ -142,7 +147,7 @@ type certReconciler struct {
 	additionalWait             time.Duration
 	propagationTimeout         time.Duration
 	renewalWindow              time.Duration
-	renewalCheckPeriod         time.Duration
+	renewalOverdueWindow       time.Duration
 	defaultRequestsPerDayQuota int
 	classes                    *controller.Classes
 	cascadeDelete              bool
@@ -216,6 +221,12 @@ func (r *certReconciler) Reconcile(logger logger.LogContext, obj resources.Objec
 				return r.removeStoredHashKeyAndRepeat(logger, obj)
 			}
 			return r.checkForRenewAndSucceeded(logger, obj, secret)
+		}
+
+		// corner case: existing secret but no stored hash, check if renewal is overdue
+		x509cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data)
+		if err == nil && r.isRenewalOverdue(x509cert) {
+			r.support.SetRenewalOverdue(obj.ObjectName())
 		}
 	}
 
@@ -626,6 +637,11 @@ func (r *certReconciler) checkForRenewAndSucceeded(logger logger.LogContext, obj
 	} else {
 		logger.Infof("certificate valid from %v to %v", cert.NotBefore, cert.NotAfter)
 	}
+	if cert != nil && r.isRenewalOverdue(cert) {
+		r.support.SetRenewalOverdue(obj.ObjectName())
+	} else {
+		r.support.ClearRenewalOverdue(obj.ObjectName())
+	}
 	if cert == nil || r.needsRenewal(cert) {
 		if crt.Status.State == api.StatePending && r.lastPendingRateLimiting(crt.Status.LastPendingTimestamp) {
 			return reconcile.Succeeded(logger)
@@ -661,6 +677,10 @@ func (r *certReconciler) buildSpecHash(spec *api.CertificateSpec) string {
 
 func (r *certReconciler) needsRenewal(cert *x509.Certificate) bool {
 	return cert.NotAfter.Before(time.Now().Add(r.renewalWindow))
+}
+
+func (r *certReconciler) isRenewalOverdue(cert *x509.Certificate) bool {
+	return cert.NotAfter.Before(time.Now().Add(r.renewalOverdueWindow))
 }
 
 func (r *certReconciler) determineSecretRef(namespace string, spec *api.CertificateSpec) (*corev1.SecretReference, error) {

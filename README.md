@@ -511,6 +511,7 @@ Flags:
       --dns-owner-id string                                ownerId for creating challenge DNSEntries
       --dns.disable-deploy-crds                            disable deployment of required crds for cluster dns
       --dns.id string                                      id for cluster dns
+      --dns.migration-ids string                           migration id for cluster dns
       --force-crd-update                                   enforce update of crds even they are unmanaged
       --grace-period duration                              inactivity grace period for detecting end of cleanup for shutdown
   -h, --help                                               help for cert-controller-manager
@@ -541,12 +542,14 @@ Flags:
       --issuer.precheck-additional-wait duration           additional wait time after DNS propagation check of controller issuer (default 10s)
       --issuer.precheck-nameservers string                 DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf of controller issuer (default "8.8.8.8:53,8.8.4.4:53")
       --issuer.propagation-timeout duration                propagation timeout for DNS challenge of controller issuer (default 1m0s)
+      --issuer.renewal-overdue-window duration             certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates) of controller issuer (default 600h0m0s)
       --issuer.renewal-window duration                     certificate is renewed if its validity period is shorter of controller issuer (default 720h0m0s)
       --issuer.secrets.pool.size int                       Worker pool size for pool secrets of controller issuer (default 1)
       --issuers.pool.size int                              Worker pool size for pool issuers
       --kubeconfig string                                  default cluster access
       --kubeconfig.disable-deploy-crds                     disable deployment of required crds for cluster default
       --kubeconfig.id string                               id for cluster default
+      --kubeconfig.migration-ids string                    migration id for cluster default
       --lease-duration duration                            lease duration (default 15s)
       --lease-name string                                  name for lease object
       --lease-renew-deadline duration                      lease renew deadline (default 10s)
@@ -563,6 +566,7 @@ Flags:
       --precheck-additional-wait duration                  additional wait time after DNS propagation check
       --precheck-nameservers string                        DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf
       --propagation-timeout duration                       propagation timeout for DNS challenge
+      --renewal-overdue-window duration                    certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates)
       --renewal-window duration                            certificate is renewed if its validity period is shorter
       --secrets.pool.size int                              Worker pool size for pool secrets
       --server-port-http int                               HTTP server port (serving /healthz, /metrics, ...)
@@ -578,11 +582,13 @@ Flags:
       --source string                                      source cluster to watch for ingresses and services
       --source.disable-deploy-crds                         disable deployment of required crds for cluster source
       --source.id string                                   id for cluster source
+      --source.migration-ids string                        migration id for cluster source
       --target string                                      target cluster for certificates
       --target-name-prefix string                          name prefix in target namespace for cross cluster generation
       --target-namespace string                            target namespace for cross cluster generation
       --target.disable-deploy-crds                         disable deployment of required crds for cluster target
       --target.id string                                   id for cluster target
+      --target.migration-ids string                        migration id for cluster target
       --targets.pool.size int                              Worker pool size for pool targets
   -v, --version                                            version for cert-controller-manager
 ```

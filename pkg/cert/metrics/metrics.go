@@ -18,12 +18,13 @@ func init() {
 	prometheus.MustRegister(ACMETotalObtains)
 	prometheus.MustRegister(ACMEActiveDNSChallenges)
 	prometheus.MustRegister(CertEntries)
+	prometheus.MustRegister(OverdueCertificates)
 
 	server.RegisterHandler("/metrics", promhttp.Handler())
 }
 
 var (
-	// ACMEAccountRegistrations is the acme_account_registrations counter.
+	// ACMEAccountRegistrations is the cert_management_acme_account_registrations counter.
 	ACMEAccountRegistrations = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "cert_management_acme_account_registrations",
@@ -32,7 +33,7 @@ var (
 		[]string{"server", "email"},
 	)
 
-	// ACMETotalObtains is the acme_obtains counter.
+	// ACMETotalObtains is the cert_management_acme_obtains counter.
 	ACMETotalObtains = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "cert_management_acme_obtains",
@@ -41,7 +42,7 @@ var (
 		[]string{"issuer", "success", "dns_challenges", "renew"},
 	)
 
-	// ACMEActiveDNSChallenges is the acme_active_dns_challenges gauge.
+	// ACMEActiveDNSChallenges is the cert_management_acme_active_dns_challenges gauge.
 	ACMEActiveDNSChallenges = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_management_acme_active_dns_challenges",
@@ -50,13 +51,21 @@ var (
 		[]string{"issuer"},
 	)
 
-	// CertEntries is the cert_entries gauge.
+	// CertEntries is the cert_management_cert_entries gauge.
 	CertEntries = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_management_cert_entries",
 			Help: "Total number of certificate objects per issuer",
 		},
 		[]string{"issuertype", "issuer"},
+	)
+
+	// OverdueCertificates is the cert_management_overdue_renewal_certificates gauge.
+	OverdueCertificates = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cert_management_overdue_renewal_certificates",
+			Help: "Number of certificate objects with overdue renewal",
+		},
 	)
 )
 
@@ -90,4 +99,9 @@ func ReportCertEntries(issuertype, issuer string, count int) {
 // DeleteCertEntries deletes a CertEntries gauge entry.
 func DeleteCertEntries(issuertype, issuer string) {
 	CertEntries.DeleteLabelValues(issuertype, issuer)
+}
+
+// ReportOverdueCerts sets the OverdueCertificates gauge
+func ReportOverdueCerts(count int) {
+	OverdueCertificates.Set(float64(count))
 }

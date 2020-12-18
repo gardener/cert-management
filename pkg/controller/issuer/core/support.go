@@ -90,6 +90,8 @@ func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory
 		return nil, nil, err
 	}
 
+	metrics.ReportOverdueCerts(0)
+
 	return h, s, nil
 }
 
@@ -329,6 +331,7 @@ func (s *Support) AddCertificate(logger logger.LogContext, cert *api.Certificate
 // RemoveCertificate removes a certificate
 func (s *Support) RemoveCertificate(logger logger.LogContext, certObjName resources.ObjectName) {
 	s.state.RemoveCertAssoc(certObjName)
+	s.ClearRenewalOverdue(certObjName)
 	s.reportAllCertificateMetrics()
 }
 
@@ -456,4 +459,28 @@ func (s *Support) CalcSecretHash(secret *corev1.Secret) string {
 		h.Write(secret.Data[k])
 	}
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+// SetRenewalOverdue sets a certificate object as renewal overdue
+func (s *Support) SetRenewalOverdue(certName resources.ObjectName) {
+	if s.state.AddRenewalOverdue(certName) {
+		s.reportRenewalOverdueCount()
+	}
+}
+
+// ClearRenewalOverdue clears a certificate object as renewal overdue
+func (s *Support) ClearRenewalOverdue(certName resources.ObjectName) {
+	if s.state.RemoveRenewalOverdue(certName) {
+		s.reportRenewalOverdueCount()
+	}
+}
+
+// GetAllRenewalOverdue gets all certificate object object names which are renewal overdue
+func (s *Support) GetAllRenewalOverdue() []resources.ObjectName {
+	return s.state.GetAllRenewalOverdue()
+}
+
+func (s *Support) reportRenewalOverdueCount() {
+	count := s.state.GetRenewalOverdueCount()
+	metrics.ReportOverdueCerts(count)
 }

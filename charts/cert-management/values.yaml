@@ -30,6 +30,7 @@ createCRDs:
   certificates: true
 
 configuration:
+  # acceptedMaintainers:
   # bindAddressHttp:
   # cascadeDelete:
   # certClass:
@@ -49,6 +50,8 @@ configuration:
   # dnsOwnerId:
   # dnsDisableDeployCrds:
   # dnsId:
+  # dnsMigrationIds:
+  # forceCrdUpdate:
   # gracePeriod:
   # ingressCertCertClass:
   # ingressCertCertTargetClass:
@@ -77,12 +80,14 @@ configuration:
   # issuerPrecheckAdditionalWait:
   # issuerPrecheckNameservers:
   # issuerPropagationTimeout:
+  # issuerRenewalOverdueWindow:
   # issuerRenewalWindow:
   # issuerSecretsPoolSize:
   # issuersPoolSize:
   # kubeconfig:
   # kubeconfigDisableDeployCrds:
   # kubeconfigId:
+  # kubeconfigMigrationIds:
   # leaseDuration:
   # leaseName:
   # leaseRenewDeadline:
@@ -98,6 +103,7 @@ configuration:
   # precheckAdditionalWait:
   # precheckNameservers:
   # propagationTimeout:
+  # renewalOverdueWindow:
   # renewalWindow:
   # secretsPoolSize:
   serverPortHttp: 8080
@@ -113,11 +119,13 @@ configuration:
   # source:
   # sourceDisableDeployCrds:
   # sourceId:
+  # sourceMigrationIds:
   # target:
   # targetNamePrefix:
   # targetNamespace:
   # targetDisableDeployCrds:
   # targetId:
+  # targetMigrationIds:
   # targetsPoolSize:
   # version:
 
