@@ -28,6 +28,8 @@ const (
 	OptDefaultIssuerDomainRanges = "default-issuer-domain-ranges"
 	// OptRenewalWindow is the renewal window command line option.
 	OptRenewalWindow = "renewal-window"
+	// OptRenewalOverdueWindow is the renewal overdue window command line option.
+	OptRenewalOverdueWindow = "renewal-overdue-window"
 	// OptCascadeDelete is the cascade delete command line option.
 	OptCascadeDelete = "cascade-delete"
 	// OptPrecheckNameservers is a command line option to specify the DNS nameservers to check DNS propagation of the DNS challenge.

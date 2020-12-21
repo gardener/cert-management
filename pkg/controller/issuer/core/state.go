@@ -12,13 +12,15 @@ import (
 )
 
 type state struct {
-	secrets      *ReferencedSecrets
-	certificates *AssociatedObjects
-	quotas       *Quotas
+	secrets      ReferencedSecrets
+	certificates AssociatedObjects
+	quotas       Quotas
+	overdueCerts objectNameSet
 }
 
 func newState() *state {
-	return &state{secrets: NewReferencedSecrets(), certificates: NewAssociatedObjects(), quotas: NewQuotas()}
+	return &state{secrets: *NewReferencedSecrets(), certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
+		overdueCerts: *newObjectNameSet()}
 }
 
 func (s *state) RemoveIssuer(name resources.ObjectName) bool {
@@ -67,4 +69,20 @@ func (s *state) RememberIssuerSecret(issuer resources.ObjectName, secretRef *v1.
 
 func (s *state) GetIssuerSecretHash(issuerName resources.ObjectName) string {
 	return s.secrets.GetIssuerSecretHash(issuerName)
+}
+
+func (s *state) AddRenewalOverdue(certName resources.ObjectName) bool {
+	return s.overdueCerts.Add(certName)
+}
+
+func (s *state) RemoveRenewalOverdue(certName resources.ObjectName) bool {
+	return s.overdueCerts.Remove(certName)
+}
+
+func (s *state) GetAllRenewalOverdue() []resources.ObjectName {
+	return s.overdueCerts.AsArray()
+}
+
+func (s *state) GetRenewalOverdueCount() int {
+	return s.overdueCerts.Size()
 }
