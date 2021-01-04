@@ -17,16 +17,21 @@ import (
 type CertV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	CertificatesGetter
+	CertificateRevocationsGetter
 	IssuersGetter
 }
 
-// CertV1alpha1Client is used to interact with features provided by the cert group.
+// CertV1alpha1Client is used to interact with features provided by the cert.gardener.cloud group.
 type CertV1alpha1Client struct {
 	restClient rest.Interface
 }
 
 func (c *CertV1alpha1Client) Certificates(namespace string) CertificateInterface {
 	return newCertificates(c, namespace)
+}
+
+func (c *CertV1alpha1Client) CertificateRevocations(namespace string) CertificateRevocationInterface {
+	return newCertificateRevocations(c, namespace)
 }
 
 func (c *CertV1alpha1Client) Issuers(namespace string) IssuerInterface {

@@ -8,15 +8,17 @@ package legobridge
 
 import (
 	"fmt"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
-	"github.com/gardener/cert-management/pkg/cert/source"
-	"github.com/gardener/cert-management/pkg/cert/utils"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sync/atomic"
 	"time"
 
-	"github.com/go-acme/lego/v3/challenge"
-	"github.com/go-acme/lego/v3/challenge/dns01"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"github.com/gardener/cert-management/pkg/cert/source"
+	"github.com/gardener/cert-management/pkg/cert/utils"
+
+	"github.com/go-acme/lego/v4/challenge"
+	"github.com/go-acme/lego/v4/challenge/dns01"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"

@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	crds "github.com/gardener/cert-management/pkg/cert"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
@@ -67,7 +66,6 @@ func CertSourceController(source CertSourceType, reconcilerType controller.Recon
 		MainResource(gk.Group, gk.Kind).
 		Reconciler(reconcilers.SlaveReconcilerType(source.Name(), slaveResources, SlaveReconcilerType, MasterResourcesType(source.GroupKind())), "certificates").
 		Cluster(ctrl.TargetCluster).
-		CustomResourceDefinitions(crds.CertificateCRD).
 		WorkerPool("targets", 2, 0).
 		ReconcilerWatch("certificates", api.GroupName, api.CertificateKind)
 }

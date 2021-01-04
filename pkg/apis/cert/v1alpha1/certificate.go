@@ -22,13 +22,24 @@ type CertificateList struct {
 }
 
 // Certificate is the certificate CR.
+// +kubebuilder:storageversion
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced,path=certificates,shortName=cert,singular=certificate
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=COMMON NAME,description="Subject domain name of certificate",JSONPath=".status.commonName",type=string
+// +kubebuilder:printcolumn:name=ISSUER,description="Issuer name",JSONPath=".status.issuerRef.name",type=string
+// +kubebuilder:printcolumn:name=STATUS,JSONPath=".status.state",type=string,description="Status of registration"
+// +kubebuilder:printcolumn:name=EXPIRATION_DATE,JSONPath=".status.expirationDate",priority=500,type=string,description="Expiration date (not valid anymore after this date)"
+// +kubebuilder:printcolumn:name=DNS_NAMES,JSONPath=".status.dnsNames",priority=2000,type=string,description="Domains names in subject alternative names"
+// +kubebuilder:printcolumn:name=AGE,JSONPath=".metadata.creationTimestamp",type=date,description="object creation timestamp"
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Certificate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              CertificateSpec   `json:"spec"`
-	Status            CertificateStatus `json:"status,omitempty"`
+	Spec              CertificateSpec `json:"spec"`
+	// +optional
+	Status CertificateStatus `json:"status,omitempty"`
 }
 
 // CertificateSpec is the spec of the certificate to request.
@@ -48,11 +59,17 @@ type CertificateSpec struct {
 	SecretName *string `json:"secretName,omitempty"`
 	// SecretRef is the reference of the secret object to use for storing the certificate.
 	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// Renew triggers a renewal if set to true
+	// +optional
+	Renew *bool `json:"renew,omitempty"`
+	// EnsureRenewedAfter specifies a time stamp in the past. Renewing is only triggered if certificate notBefore date is before this date.
+	// +optional
+	EnsureRenewedAfter *metav1.Time `json:"ensureRenewedAfter,omitempty"`
 }
 
 // IssuerRef is the reference of the issuer by name.
 type IssuerRef struct {
-	// Name is the name of the issuer CR in the same namespace.
+	// Name is the name of the issuer CR (in the configured issuer namespace).
 	Name string `json:"name"`
 }
 
@@ -73,18 +90,25 @@ type CertificateStatus struct {
 	// State is the certificate state.
 	State string `json:"state"`
 	// Message is the status or error message.
+	// +optional
 	Message *string `json:"message,omitempty"`
 	// LastPendingTimestamp contains the start timestamp of the last pending status.
+	// +optional
 	LastPendingTimestamp *metav1.Time `json:"lastPendingTimestamp,omitempty"`
 	// CommonName is the current CN.
+	// +optional
 	CommonName *string `json:"commonName,omitempty"`
 	// DNSNames are the current domain names.
+	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
 	// IssuerRef is the used issuer.
+	// +optional
 	IssuerRef *IssuerRefWithNamespace `json:"issuerRef,omitempty"`
 	// ExpirationDate shows the notAfter validity date.
+	// +optional
 	ExpirationDate *string `json:"expirationDate,omitempty"`
 	// BackOff contains the state to back off failed certificate requests
+	// +optional
 	BackOff *BackOffState `json:"backoff,omitempty"`
 }
 

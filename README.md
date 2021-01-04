@@ -592,7 +592,139 @@ Flags:
       --targets.pool.size int                              Worker pool size for pool targets
   -v, --version                                            version for cert-controller-manager
 ```
- 
+
+## Renewal of Certificates
+
+Certificates created with an `ACME` issuer are automatically renewed. With the standard configuration,
+the certificate is renewed 30 days before it validity expires.
+For example, if [Let's Encrypt](https://letsencrypt.org/) is used as certificate authority, a certificate
+is always valid for 90 days and will be rolled 30 days before it expires by updating the referenced `Secret`
+in the `Certificate` object.  
+The configuration can be changed with the command line parameter `--issuer.renewal-window`.
+
+## Revoking Certificates
+
+Certificates created with an `ACME` issuer can also be revoked if private key of the certificate
+is not longer safe. This page about [Revoking certificates on Let's Encrypt](https://letsencrypt.org/docs/revoking/)
+list various reasons:
+> For instance, you might accidentally share the private key on a public website; hackers might copy the private key off 
+> of your servers; or hackers might take temporary control over your servers or your DNS configuration, and use that to
+> validate and issue a certificate for which they hold the private key.
+
+Revoking a certificate is quite simple. You create a `CertificateRevocation` object on the source cluster with a reference
+to the `Certificate` object to be revoked.
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: CertificateRevocation
+metadata:
+  name: revoke-sample
+  namespace: default
+spec:
+  certificateRef:
+    name: mycert
+    namespace: default
+    
+  # Uncomment the following line if certificate should be renewed before revoking the old one(s)
+  #renew: true
+  
+  # Optionally specify a qualifying date. All certificates requested before this date will be revoked.
+  # If not specified, the current time is used by default.
+  #qualifyingDate: "2020-12-22T17:00:35Z"
+```
+
+The `cert-controller-manager` will then perform several steps.
+
+1. Using the certificate secret it looks for other `Certificate` objects using the same certificate. The "same" 
+   certificate means same issuer, *Common Name*, and *DNS Names*. All found objects will be reconciled too.
+2. It will look for other valid certificate secrets older than the qualifying date. Concretely this will
+   deal with unused certificates, which are still valid. As a certificate is renewed 30 days before the end of validity,
+   the old certificate is still valid, but not used anymore.
+3. All found certificate secrets are revoked and marked with an annotation `cert.gardener.cloud/revoked: "true"`
+4. The state of all found `Certificate` objects is set to `Revoked`
+5. The state of the `CertificateRevocation` object is set to `Applied`.
+   Additionally, the status of the `CertificateRevocation` object contains more details about revoked
+   objects and secrets:
+   
+   ```yaml
+   apiVersion: cert.gardener.cloud/v1alpha1
+   kind: CertificateRevocation
+   metadata:
+     name: revoke-sample
+     namespace: default
+   spec:
+     certificateRef:
+       name: mycert
+       namespace: default
+     qualifyingDate: "2020-12-22T17:00:35Z"
+   status:
+     message: certificate(s) revoked
+     objects:
+       revoked:
+       - name: mycert
+         namespace: default
+     revocationApplied: "2020-12-22T17:09:32Z"
+     secrets:
+       revoked:
+       - name: cert-backup-default-issuer-8a7e93f7-sks7p
+         namespace: kube-system
+         serialNumber: fa:3f:9a:5e:ac:47:ee:d1:91:a6:31:a7:43:6f:8a:7e:93:f7
+     state: Applied
+   ```
+   
+   The secrets listed in the status are only the internal backups maintained by the `cert-controller-manager`.
+   The actual secrets used by the `Certificate` objects are not listed, but nonetheless marked as revoked.
+
+### Revoking certificates with renewal
+
+With this variant the certificate is renewed, before the old one(s) are revoked. This means the 
+certificate secrets of the `Certificate` objects will contain newly requested certificates and
+the old certificate(s) will be revoked afterwards.
+
+For this purpose, set `renew: true` in the spec of the `CertificateRevocation` object:
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: CertificateRevocation
+metadata:
+  name: revoke-sample
+  namespace: default
+spec:
+  certificateRef:
+    name: mycert
+    namespace: default
+  renew: true
+```
+
+In this case, the status will list the **renewed** `Certificate` objects:
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: CertificateRevocation
+metadata:
+  name: revoke-sample
+  namespace: default
+spec:
+  certificateRef:
+    name: mycert
+    namespace: default
+  renew: true
+  qualifyingDate: "2020-12-22T17:00:35Z"
+status:
+  message: certificate renewed and old certificate(s) revoked
+  objects:
+    renewed:
+    - name: mycert
+      namespace: default
+  revocationApplied: "2020-12-22T17:09:32Z"
+  secrets:
+    revoked:
+    - name: cert-backup-default-issuer-8a7e93f7-sks7p
+      namespace: kube-system
+      serialNumber: fa:3f:9a:5e:ac:47:ee:d1:91:a6:31:a7:43:6f:8a:7e:93:f7
+  state: Applied
+```
+
 ## Development
 
 For development it is recommended to use the issuer-staging

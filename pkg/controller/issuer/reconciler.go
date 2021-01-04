@@ -11,6 +11,8 @@ import (
 	"github.com/gardener/cert-management/pkg/controller/issuer/ca"
 	"github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
+	"github.com/gardener/cert-management/pkg/controller/issuer/revocation"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
@@ -30,17 +32,23 @@ func newCompoundReconciler(c controller.Interface) (reconcile.Interface, error) 
 	if err != nil {
 		return nil, err
 	}
+	revokeReconciler, err := revocation.RevokeReconciler(c, support)
+	if err != nil {
+		return nil, err
+	}
 
 	return &compoundReconciler{
-		handler:               handler,
-		certificateReconciler: certReconciler,
+		handler:                         handler,
+		certificateReconciler:           certReconciler,
+		certificateRevocationReconciler: revokeReconciler,
 	}, nil
 }
 
 type compoundReconciler struct {
 	reconcile.DefaultReconciler
-	handler               *core.CompoundHandler
-	certificateReconciler reconcile.Interface
+	handler                         *core.CompoundHandler
+	certificateReconciler           reconcile.Interface
+	certificateRevocationReconciler reconcile.Interface
 }
 
 func (r *compoundReconciler) Setup() {
@@ -59,6 +67,8 @@ func (r *compoundReconciler) Reconcile(logger logger.LogContext, obj resources.O
 		return r.handler.ReconcileSecret(logger, obj)
 	case obj.IsA(&api.Certificate{}):
 		return r.certificateReconciler.Reconcile(logger, obj)
+	case obj.IsA(&api.CertificateRevocation{}):
+		return r.certificateRevocationReconciler.Reconcile(logger, obj)
 	}
 	return reconcile.Succeeded(logger)
 }

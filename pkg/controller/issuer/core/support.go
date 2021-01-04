@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/gardener/cert-management/pkg/cert/metrics"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
@@ -26,9 +26,20 @@ import (
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
+
+// RecoverableError is a recoverable error, i.e. reconcile after same backoff may help
+type RecoverableError struct {
+	Msg      string
+	Interval time.Duration
+}
+
+func (err *RecoverableError) Error() string {
+	return err.Msg
+}
 
 // Enqueuer is an interface to allow enqueue a key
 type Enqueuer interface {
@@ -331,7 +342,8 @@ func (s *Support) AddCertificate(logger logger.LogContext, cert *api.Certificate
 // RemoveCertificate removes a certificate
 func (s *Support) RemoveCertificate(logger logger.LogContext, certObjName resources.ObjectName) {
 	s.state.RemoveCertAssoc(certObjName)
-	s.ClearRenewalOverdue(certObjName)
+	s.ClearCertRenewalOverdue(certObjName)
+	s.ClearCertRevoked(certObjName)
 	s.reportAllCertificateMetrics()
 }
 
@@ -353,7 +365,7 @@ func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectN
 	if cert.Spec.IssuerRef != nil {
 		issuerName = cert.Spec.IssuerRef.Name
 	}
-	return certObjName, newObjectName(cert.Namespace, issuerName)
+	return certObjName, newObjectName(s.issuerNamespace, issuerName)
 }
 
 // NormalizeNamespace returns the namespace or "default" for an empty input.
@@ -377,6 +389,20 @@ func (s *Support) DefaultIssuerName() string {
 // IssuerNamespace returns the issuer namespace
 func (s *Support) IssuerNamespace() string {
 	return s.issuerNamespace
+}
+
+// IssuerName builds the name of the certificate's issuer
+func (s *Support) IssuerName(spec *api.CertificateSpec) string {
+	issuerName := s.DefaultIssuerName()
+	if spec.IssuerRef != nil {
+		issuerName = spec.IssuerRef.Name
+	}
+	return issuerName
+}
+
+// IssuerObjectName builds the object name of the certificate's issuer
+func (s *Support) IssuerObjectName(spec *api.CertificateSpec) resources.ObjectName {
+	return resources.NewObjectName(s.IssuerNamespace(), s.IssuerName(spec))
 }
 
 // DefaultIssuerDomainRanges returns the default issuer domain ranges.
@@ -461,15 +487,15 @@ func (s *Support) CalcSecretHash(secret *corev1.Secret) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// SetRenewalOverdue sets a certificate object as renewal overdue
-func (s *Support) SetRenewalOverdue(certName resources.ObjectName) {
+// SetCertRenewalOverdue sets a certificate object as renewal overdue
+func (s *Support) SetCertRenewalOverdue(certName resources.ObjectName) {
 	if s.state.AddRenewalOverdue(certName) {
 		s.reportRenewalOverdueCount()
 	}
 }
 
-// ClearRenewalOverdue clears a certificate object as renewal overdue
-func (s *Support) ClearRenewalOverdue(certName resources.ObjectName) {
+// ClearCertRenewalOverdue clears a certificate object as renewal overdue
+func (s *Support) ClearCertRenewalOverdue(certName resources.ObjectName) {
 	if s.state.RemoveRenewalOverdue(certName) {
 		s.reportRenewalOverdueCount()
 	}
@@ -483,4 +509,74 @@ func (s *Support) GetAllRenewalOverdue() []resources.ObjectName {
 func (s *Support) reportRenewalOverdueCount() {
 	count := s.state.GetRenewalOverdueCount()
 	metrics.ReportOverdueCerts(count)
+}
+
+// SetCertRevoked sets a certificate object as revoked
+func (s *Support) SetCertRevoked(certName resources.ObjectName) {
+	if s.state.AddRevoked(certName) {
+		s.reportRevokedCount()
+	}
+}
+
+// ClearCertRevoked clears a certificate object as revoked
+func (s *Support) ClearCertRevoked(certName resources.ObjectName) {
+	if s.state.RemoveRevoked(certName) {
+		s.reportRevokedCount()
+	}
+}
+
+// GetAllRevoked gets all certificate object object names which are revoked
+func (s *Support) GetAllRevoked() []resources.ObjectName {
+	return s.state.GetAllRevoked()
+}
+
+func (s *Support) reportRevokedCount() {
+	count := s.state.GetRevokedCount()
+	metrics.ReportRevokedCerts(count)
+}
+
+// LoadIssuer loads the issuer for the given Certificate
+func (s *Support) LoadIssuer(crt *api.Certificate) (*api.Issuer, error) {
+	issuerObjectName := s.IssuerObjectName(&crt.Spec)
+	issuer := &api.Issuer{}
+	_, err := s.GetIssuerResources().GetInto(issuerObjectName, issuer)
+	if err != nil {
+		return nil, errors.Wrap(err, "fetching issuer failed")
+	}
+	return issuer, nil
+}
+
+// RestoreRegUser restores a legobridge user from an issuer
+func (s *Support) RestoreRegUser(issuer *api.Issuer) (*legobridge.RegistrationUser, string, error) {
+	if issuer.Spec.ACME == nil {
+		return nil, "", fmt.Errorf("not an ACME issuer")
+	}
+
+	// fetch issuer secret
+	secretRef := issuer.Spec.ACME.PrivateKeySecretRef
+	if secretRef == nil {
+		return nil, "", fmt.Errorf("missing secret ref in issuer")
+	}
+	if issuer.Status.State != api.StateReady {
+		if issuer.Status.State != api.StateError {
+			return nil, "", &RecoverableError{Msg: fmt.Sprintf("referenced issuer not ready: state=%s", issuer.Status.State)}
+		}
+		return nil, "", fmt.Errorf("referenced issuer not ready: state=%s", issuer.Status.State)
+	}
+	if issuer.Status.ACME == nil || issuer.Status.ACME.Raw == nil {
+		return nil, "", fmt.Errorf("ACME registration missing in status")
+	}
+	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
+	issuerSecret := &corev1.Secret{}
+	_, err := s.GetIssuerSecretResources().GetInto(issuerSecretObjectName, issuerSecret)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "fetching issuer secret failed")
+	}
+
+	reguser, err := legobridge.RegistrationUserFromSecretData(issuer.Spec.ACME.Email, issuer.Status.ACME.Raw, issuerSecret.Data)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "restoring registration issuer from issuer secret failed")
+	}
+
+	return reguser, issuer.Spec.ACME.Server, nil
 }

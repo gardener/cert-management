@@ -9,19 +9,25 @@ package issuer
 import (
 	"time"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
-	"github.com/gardener/cert-management/pkg/controller/issuer/core"
-	"github.com/gardener/controller-manager-library/pkg/resources"
-
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
+	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/gardener/controller-manager-library/pkg/resources/apiextensions"
 
 	"github.com/gardener/cert-management/pkg/apis/cert"
+	"github.com/gardener/cert-management/pkg/apis/cert/crds"
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	crds "github.com/gardener/cert-management/pkg/cert"
+	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
+	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 )
 
+var certificateGroupKind = resources.NewGroupKind(api.GroupName, api.CertificateKind)
+var issuerGroupKind = resources.NewGroupKind(api.GroupName, api.IssuerKind)
+var certificateRevocationGroupKind = resources.NewGroupKind(api.GroupName, api.CertificateRevocationKind)
+
 func init() {
+	crds.AddToRegistry(apiextensions.DefaultRegistry())
+
 	controller.Configure("issuer").
 		DefaultedStringOption(core.OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
 		DefaultedStringOption(core.OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
@@ -41,12 +47,12 @@ func init() {
 			"Default value for requestsPerDayQuota if not set explicitly in the issuer spec.").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).
-		CustomResourceDefinitions(crds.CertificateCRD).
 		DefaultWorkerPool(2, 24*time.Hour).
 		MainResource(api.GroupName, api.CertificateKind).
+		WorkerPool("revocations", 1, 0).
+		Watch(api.GroupName, api.CertificateRevocationKind).
 		Reconciler(newCompoundReconciler).
 		Cluster(ctrl.DefaultCluster).
-		CustomResourceDefinitions(crds.IssuerCRD).
 		WorkerPool("issuers", 1, 0).
 		SelectedWatch(selectIssuerNamespaceSelectionFunction, api.GroupName, api.IssuerKind).
 		WorkerPool("secrets", 1, 0).

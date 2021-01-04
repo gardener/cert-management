@@ -26,9 +26,9 @@ type FakeIssuers struct {
 	ns   string
 }
 
-var issuersResource = schema.GroupVersionResource{Group: "cert", Version: "v1alpha1", Resource: "issuers"}
+var issuersResource = schema.GroupVersionResource{Group: "cert.gardener.cloud", Version: "v1alpha1", Resource: "issuers"}
 
-var issuersKind = schema.GroupVersionKind{Group: "cert", Version: "v1alpha1", Kind: "Issuer"}
+var issuersKind = schema.GroupVersionKind{Group: "cert.gardener.cloud", Version: "v1alpha1", Kind: "Issuer"}
 
 // Get takes name of the issuer, and returns the corresponding issuer object, and an error if there is any.
 func (c *FakeIssuers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Issuer, err error) {

@@ -13,12 +13,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
-	"github.com/go-acme/lego/v3/challenge/dns01"
 
-	"github.com/go-acme/lego/v3/certificate"
-	"github.com/go-acme/lego/v3/lego"
+	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/challenge/dns01"
+	"github.com/go-acme/lego/v4/lego"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -80,8 +82,8 @@ type DNSControllerSettings struct {
 type ObtainOutput struct {
 	// Certificates contains the certificates.
 	Certificates *certificate.Resource
-	// IssuerName is the name of the issuer.
-	IssuerName string
+	// IssuerInfo is the name and type of the issuer.
+	IssuerInfo utils.IssuerInfo
 	// CommonName is the copy from the input.
 	CommonName *string
 	// DNSNames are the copies from the input.
@@ -134,7 +136,11 @@ func obtainForCSR(client *lego.Client, csr []byte) (*certificate.Resource, error
 	if err != nil {
 		return nil, err
 	}
-	return client.Certificate.ObtainForCSR(*cert, true)
+	return client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
+		CSR:            cert,
+		Bundle:         true,
+		PreferredChain: "",
+	})
 }
 
 func extractCertificateRequest(csr []byte) (*x509.CertificateRequest, error) {
@@ -146,7 +152,7 @@ func extractCertificateRequest(csr []byte) (*x509.CertificateRequest, error) {
 }
 
 func renew(client *lego.Client, renewCert *certificate.Resource) (*certificate.Resource, error) {
-	return client.Certificate.Renew(*renewCert, true, false)
+	return client.Certificate.Renew(*renewCert, true, false, "")
 }
 
 func (o *obtainer) Obtain(input ObtainInput) error {
@@ -206,7 +212,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 		metrics.AddACMEObtain(input.IssuerName, err == nil, count, input.RenewCert != nil)
 		output := &ObtainOutput{
 			Certificates: certificates,
-			IssuerName:   input.IssuerName,
+			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerName),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
@@ -240,7 +246,7 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 		}
 		output := &ObtainOutput{
 			Certificates: certificates,
-			IssuerName:   input.IssuerName,
+			IssuerInfo:   utils.NewCAIssuerInfo(input.IssuerName),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
@@ -387,4 +393,17 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyP
 		return nil, err
 	}
 	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair)
+}
+
+// RevokeCertificate revokes a certificate
+func RevokeCertificate(user *RegistrationUser, caDirURL string, cert []byte) error {
+	config := user.NewConfig(caDirURL)
+
+	// A client facilitates communication with the CA server.
+	client, err := lego.NewClient(config)
+	if err != nil {
+		return errors.Wrap(err, "client creation failed")
+	}
+
+	return client.Certificate.Revoke(cert)
 }

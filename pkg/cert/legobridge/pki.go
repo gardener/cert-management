@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/go-acme/lego/v3/certificate"
+	"github.com/go-acme/lego/v4/certificate"
 	"github.com/pkg/errors"
 )
 

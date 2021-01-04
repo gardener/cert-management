@@ -16,11 +16,12 @@ type state struct {
 	certificates AssociatedObjects
 	quotas       Quotas
 	overdueCerts objectNameSet
+	revokedCerts objectNameSet
 }
 
 func newState() *state {
 	return &state{secrets: *NewReferencedSecrets(), certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
-		overdueCerts: *newObjectNameSet()}
+		overdueCerts: *newObjectNameSet(), revokedCerts: *newObjectNameSet()}
 }
 
 func (s *state) RemoveIssuer(name resources.ObjectName) bool {
@@ -85,4 +86,20 @@ func (s *state) GetAllRenewalOverdue() []resources.ObjectName {
 
 func (s *state) GetRenewalOverdueCount() int {
 	return s.overdueCerts.Size()
+}
+
+func (s *state) AddRevoked(certName resources.ObjectName) bool {
+	return s.revokedCerts.Add(certName)
+}
+
+func (s *state) RemoveRevoked(certName resources.ObjectName) bool {
+	return s.revokedCerts.Remove(certName)
+}
+
+func (s *state) GetAllRevoked() []resources.ObjectName {
+	return s.revokedCerts.AsArray()
+}
+
+func (s *state) GetRevokedCount() int {
+	return s.revokedCerts.Size()
 }

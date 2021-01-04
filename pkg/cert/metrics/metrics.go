@@ -19,6 +19,7 @@ func init() {
 	prometheus.MustRegister(ACMEActiveDNSChallenges)
 	prometheus.MustRegister(CertEntries)
 	prometheus.MustRegister(OverdueCertificates)
+	prometheus.MustRegister(RevokedCertificates)
 
 	server.RegisterHandler("/metrics", promhttp.Handler())
 }
@@ -64,7 +65,15 @@ var (
 	OverdueCertificates = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "cert_management_overdue_renewal_certificates",
-			Help: "Number of certificate objects with overdue renewal",
+			Help: "Number of certificate objects with certificate's renewal overdue",
+		},
+	)
+
+	// RevokedCertificates is the cert_management_revoked_certificates gauge.
+	RevokedCertificates = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cert_management_revoked_certificates",
+			Help: "Number of certificate objects with revoked certificate",
 		},
 	)
 )
@@ -104,4 +113,9 @@ func DeleteCertEntries(issuertype, issuer string) {
 // ReportOverdueCerts sets the OverdueCertificates gauge
 func ReportOverdueCerts(count int) {
 	OverdueCertificates.Set(float64(count))
+}
+
+// ReportRevokedCerts sets the RevokedCertificates gauge
+func ReportRevokedCerts(count int) {
+	RevokedCertificates.Set(float64(count))
 }

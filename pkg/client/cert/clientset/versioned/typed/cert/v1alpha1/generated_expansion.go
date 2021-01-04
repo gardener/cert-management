@@ -10,4 +10,6 @@ package v1alpha1
 
 type CertificateExpansion interface{}
 
+type CertificateRevocationExpansion interface{}
+
 type IssuerExpansion interface{}
