@@ -14,9 +14,30 @@ For this purpose it creates DNSEntry custom resources (in a possible separate **
 handled by the compagnion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
 
 Currently, the `cert-controller-manager` supports certificate authorities via:
- 
+
 * [Automatic Certificate Management Environment (ACME)](https://en.wikipedia.org/wiki/Automated_Certificate_Management_Environment) protocol like [Let's Encrypt](https://letsencrypt.org/).
 * Certificate Authority (CA): an existing certificate and a private key provided as a TLS Secret.
+
+**Index**
+  - [Setting up Issuers](#setting-up-issuers)
+    - [Automatic Certificate Management Environment (ACME)](#automatic-certificate-management-environment-acme)
+      - [Auto registration](#auto-registration)
+      - [Using existing account](#using-existing-account)
+    - [Certificate Authority (CA)](#certificate-authority-ca)
+  - [Requesting a Certificate](#requesting-a-certificate)
+    - [Using `commonName` and optional `dnsNames`](#using-commonname-and-optional-dnsnames)
+    - [Using a certificate signing request (CSR)](#using-a-certificate-signing-request-csr)
+  - [Requesting a Certificate for Ingress](#requesting-a-certificate-for-ingress)
+    - [Process](#process)
+  - [Requesting a Certificate for Service](#requesting-a-certificate-for-service)
+  - [Demo quick start](#demo-quick-start)
+  - [Using the cert-controller-manager](#using-the-cert-controller-manager)
+    - [Usage](#usage)
+  - [Renewal of Certificates](#renewal-of-certificates)
+  - [Revoking Certificates](#revoking-certificates)
+    - [Revoking certificates with renewal](#revoking-certificates-with-renewal)
+    - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
+  - [Development](#development)
 
 ## Setting up Issuers
 
@@ -106,7 +127,6 @@ or an intermediate CA. This is mainly used for **on-premises** and
 
 It can also be used for **developement** or **testing** purproses. In this case
 a Self-signed Certificate Authority can be created by following the section below.
-
 
 _Create a Self-signed Certificate Authority (optional)_
 
@@ -724,6 +744,18 @@ status:
       serialNumber: fa:3f:9a:5e:ac:47:ee:d1:91:a6:31:a7:43:6f:8a:7e:93:f7
   state: Applied
 ```
+
+### Checking OCSP revocation using OpenSSL
+
+To verify the OCSP revocation of the X509 certificate of a `Certificate` object,
+you can use the tool `hack/check-cert-secret.sh` in this repository.
+
+Usage:
+
+```bash
+hack/check-cert-secret.sh check-revoke mynamespace mycertname
+```
+Here *mynamespace* and *mycertname* are the namespace and the name of the certificate object.
 
 ## Development
 
