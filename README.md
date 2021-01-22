@@ -37,6 +37,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Revoking Certificates](#revoking-certificates)
     - [Revoking certificates with renewal](#revoking-certificates-with-renewal)
     - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
+  - [Metrics](#metrics)
   - [Development](#development)
 
 ## Setting up Issuers
@@ -756,6 +757,22 @@ Usage:
 hack/check-cert-secret.sh check-revoke mynamespace mycertname
 ```
 Here *mynamespace* and *mycertname* are the namespace and the name of the certificate object.
+
+## Metrics
+
+Metrics are exposed for Prometheus if the command line option `--server-port-http <port>` is specified.
+The endpoint URL is `http://<pod-ip>:<port>/metrics`.
+Besides the default Go metrics, the following cert-management specific metrics are provided:
+
+| Name                                         | Labels               | Description                                    |
+| -------------------------------------------- | -------------------- | ---------------------------------------------- |
+| cert_management_acme_account_registrations   | uri, email           | ACME account registrations                     |
+| cert_management_acme_orders                  | issuer, success, dns_challenges, renew | Number of ACME orders        |
+| cert_management_cert_entries                 | issuer, issuertype   | Total number of certificate objects per issuer |
+| cert_management_acme_active_dns_challenges   | issuer               | Currently active number of ACME DNS challenges |
+| cert_management_overdue_renewal_certificates | -                    | Number of certificate objects with certificate's renewal overdue |
+| cert_management_revoked_certificates         | -                    | Number of certificate objects with revoked certificate |
+| cert_management_secrets                      | classification       | Number of certificate secrets per classification (only updated on startup and every 24h on GC of secrets). Currently there are three classifications: `total` = total number of certificate secrets on the source cluster, `revoked` = number of revoked certificate secrets, `backup`= number of backups of certificate secrets (every certificate has a backup secret in the `kube-system` namespace to allow revocation even if it is not used anymore) |
 
 ## Development
 

@@ -32,6 +32,7 @@ import (
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
@@ -43,6 +44,8 @@ const (
 	LabelCertificateHashKey = api.GroupName + "/certificate-hash"
 	// LabelCertificateKey is the label for marking secrets created for a certificate
 	LabelCertificateKey = api.GroupName + "/certificate"
+	// LabelCertificateBackup is the label for marking backup secrets
+	LabelCertificateBackup = api.GroupName + "/backup"
 	// LabelCertificateSerialNumber is the label for the certificate serial number
 	LabelCertificateSerialNumber = api.GroupName + "/certificate-serialnumber"
 	// AnnotationNotAfter is the annotation for storing the not-after timestamp
@@ -1027,6 +1030,8 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 	logger.Infof(prefix + "starting GC for orphan outdated certificate secrets")
 	deleted := 0
 	outdated := 0
+	backup := 0
+	revoked := 0
 	// only select secrets with label `cert.gardener.cloud/certificate=true`
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=true", LabelCertificateKey),
@@ -1052,6 +1057,12 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 	for _, obj := range secrets {
 		secret := obj.Data().(*corev1.Secret)
 		key := secret.Namespace + "/" + secret.Name
+		if value, ok := resources.GetLabel(secret, LabelCertificateBackup); ok && value == "true" {
+			backup++
+		}
+		if value, ok := resources.GetAnnotation(secret, AnnotationRevoked); ok && value == "true" {
+			revoked++
+		}
 		if secretNamesToKeep.Contains(key) {
 			continue
 		}
@@ -1072,6 +1083,10 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 		deleted++
 	}
 
-	logger.Infof("issuer: cleanup-secrets: %d/%d orphan outdated certificate secrets deleted (%d total)",
-		deleted, outdated, len(secrets))
+	metrics.ReportCertificateSecrets("total", len(secrets))
+	metrics.ReportCertificateSecrets("backup", backup)
+	metrics.ReportCertificateSecrets("revoked", revoked)
+
+	logger.Infof("issuer: cleanup-secrets: %d/%d orphan outdated certificate secrets deleted (%d total, %d backups, %d revoked)",
+		deleted, outdated, len(secrets), backup, revoked)
 }

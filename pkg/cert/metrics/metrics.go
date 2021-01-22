@@ -15,30 +15,31 @@ import (
 
 func init() {
 	prometheus.MustRegister(ACMEAccountRegistrations)
-	prometheus.MustRegister(ACMETotalObtains)
+	prometheus.MustRegister(ACMETotalOrders)
 	prometheus.MustRegister(ACMEActiveDNSChallenges)
 	prometheus.MustRegister(CertEntries)
 	prometheus.MustRegister(OverdueCertificates)
 	prometheus.MustRegister(RevokedCertificates)
+	prometheus.MustRegister(CertificateSecrets)
 
 	server.RegisterHandler("/metrics", promhttp.Handler())
 }
 
 var (
-	// ACMEAccountRegistrations is the cert_management_acme_account_registrations counter.
-	ACMEAccountRegistrations = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	// ACMEAccountRegistrations is the cert_management_acme_account_registrations gauge.
+	ACMEAccountRegistrations = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
 			Name: "cert_management_acme_account_registrations",
-			Help: "Number of ACME account registrations",
+			Help: "ACME account registrations",
 		},
-		[]string{"server", "email"},
+		[]string{"uri", "email"},
 	)
 
-	// ACMETotalObtains is the cert_management_acme_obtains counter.
-	ACMETotalObtains = prometheus.NewCounterVec(
+	// ACMETotalOrders is the cert_management_acme_orders counter.
+	ACMETotalOrders = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "cert_management_acme_obtains",
-			Help: "Total number of ACME obtains",
+			Name: "cert_management_acme_orders",
+			Help: "Number of ACME orders",
 		},
 		[]string{"issuer", "success", "dns_challenges", "renew"},
 	)
@@ -76,17 +77,26 @@ var (
 			Help: "Number of certificate objects with revoked certificate",
 		},
 	)
+
+	// CertificateSecrets is the cert_management_secrets gauge.
+	CertificateSecrets = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cert_management_secrets",
+			Help: "Number of certificate secrets per classification",
+		},
+		[]string{"classification"},
+	)
 )
 
 // AddACMEAccountRegistration increments the ACMEAccountRegistrations counter.
-func AddACMEAccountRegistration(server, email string) {
-	ACMEAccountRegistrations.WithLabelValues(server, email).Inc()
+func AddACMEAccountRegistration(uri, email string) {
+	ACMEAccountRegistrations.WithLabelValues(uri, email).Set(1)
 }
 
-// AddACMEObtain increments the ACMETotalObtains counter.
-func AddACMEObtain(issuer string, success bool, count int, renew bool) {
+// AddACMEOrder increments the ACMETotalOrders counter.
+func AddACMEOrder(issuer string, success bool, count int, renew bool) {
 	if count > 0 {
-		ACMETotalObtains.WithLabelValues(issuer, strconv.FormatBool(success), strconv.FormatInt(int64(count), 10), strconv.FormatBool(renew)).Inc()
+		ACMETotalOrders.WithLabelValues(issuer, strconv.FormatBool(success), strconv.FormatInt(int64(count), 10), strconv.FormatBool(renew)).Inc()
 	}
 }
 
@@ -118,4 +128,9 @@ func ReportOverdueCerts(count int) {
 // ReportRevokedCerts sets the RevokedCertificates gauge
 func ReportRevokedCerts(count int) {
 	RevokedCertificates.Set(float64(count))
+}
+
+// ReportCertificateSecrets sets the CertificateSecrets gauge
+func ReportCertificateSecrets(classification string, count int) {
+	CertificateSecrets.WithLabelValues(classification).Set(float64(count))
 }

@@ -209,7 +209,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			}
 		}
 		count := provider.GetChallengesCount()
-		metrics.AddACMEObtain(input.IssuerName, err == nil, count, input.RenewCert != nil)
+		metrics.AddACMEOrder(input.IssuerName, err == nil, count, input.RenewCert != nil)
 		output := &ObtainOutput{
 			Certificates: certificates,
 			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerName),
