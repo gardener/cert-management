@@ -23,13 +23,23 @@ type IssuerList struct {
 }
 
 // Issuer is the issuer CR.
+// +kubebuilder:storageversion
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:scope=Namespaced,path=issuers,shortName=issuer,singular=issuer
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name=SERVER,description="ACME Server",JSONPath=".spec.acme.server",type=string
+// +kubebuilder:printcolumn:name=EMAIL,description="ACME Registration email",JSONPath=".spec.acme.email",type=string
+// +kubebuilder:printcolumn:name=STATUS,JSONPath=".status.state",type=string,description="Status of registration"
+// +kubebuilder:printcolumn:name=TYPE,JSONPath=".status.type",type=string,description="Issuer type"
+// +kubebuilder:printcolumn:name=AGE,JSONPath=".metadata.creationTimestamp",type=date,description="object creation timestamp"
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Issuer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              IssuerSpec   `json:"spec"`
-	Status            IssuerStatus `json:"status"`
+	Spec              IssuerSpec `json:"spec"`
+	// +optional
+	Status IssuerStatus `json:"status"`
 }
 
 // IssuerSpec is the spec of the issuer.
@@ -75,13 +85,22 @@ type IssuerStatus struct {
 	// State is either empty, 'Pending', 'Error', or 'Ready'.
 	State string `json:"state"`
 	// Message is the status or error message.
+	// +optional
 	Message *string `json:"message,omitempty"`
-	// Type is the issuer type. Currently only 'acme' is supported.
+	// Type is the issuer type. Currently only 'acme' and 'ca' are supported.
+	// +optional
 	Type *string `json:"type"`
 	// ACME is the ACME specific status.
+	// +kubebuilder:validation:XPreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +optional
 	ACME *runtime.RawExtension `json:"acme,omitempty"`
 	// CA is the CA specific status.
+	// +kubebuilder:validation:XPreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +optional
 	CA *runtime.RawExtension `json:"ca,omitempty"`
 	// RequestsPerDayQuota is the actual maximum number of certificate requests per days allowed for this issuer
+	// +optional
 	RequestsPerDayQuota int `json:"requestsPerDayQuota,omitempty"`
 }

@@ -7,8 +7,7 @@
 package functional
 
 import (
-	"os"
-	"text/template"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -61,6 +60,16 @@ spec:
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
 metadata:
+  name: cert2b
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert2.{{.Domain}}
+  issuerRef:
+    name: {{.Name}}
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
   name: cert3
   namespace: {{.Namespace}}
 spec:
@@ -71,6 +80,31 @@ spec:
     name: {{.Name}}
 `
 
+var revoke2Template = `
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: CertificateRevocation
+metadata:
+  name: revoke-cert2
+  namespace: {{.Namespace}}
+spec:
+  certificateRef:
+    name: cert2
+    namespace: {{.Namespace}}
+`
+
+var revoke3Template = `
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: CertificateRevocation
+metadata:
+  name: revoke-cert3
+  namespace: {{.Namespace}}
+spec:
+  certificateRef:
+    name: cert3
+    namespace: {{.Namespace}}
+  renew: true
+`
+
 func init() {
 	addIssuerTests(functestbasics)
 }
@@ -78,14 +112,8 @@ func init() {
 func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 	_ = Describe("basics-"+iss.Name, func() {
 		It("should work with "+iss.Name, func() {
-			tmpl, err := template.New("Manifest").Parse(basicTemplate)
-			Ω(err).Should(BeNil())
-
-			basePath, err := os.Getwd()
-			Ω(err).Should(BeNil())
-
-			err = iss.CreateTempManifest(basePath, tmpl)
-			defer iss.DeleteTempManifest()
+			manifestFilename, err := iss.CreateTempManifest("Manifest", basicTemplate)
+			defer iss.DeleteTempManifest(manifestFilename)
 			Ω(err).Should(BeNil())
 
 			u := cfg.Utils
@@ -93,14 +121,14 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			err = u.AwaitKubectlGetCRDs("issuers.cert.gardener.cloud", "certificates.cert.gardener.cloud")
 			Ω(err).Should(BeNil())
 
-			err = u.KubectlApply(iss.TmpManifestFilename)
+			err = u.KubectlApply(manifestFilename)
 			Ω(err).Should(BeNil())
 
 			err = u.AwaitIssuerReady(iss.Name)
 			Ω(err).Should(BeNil())
 
 			entryNames := []string{}
-			for _, name := range []string{"1", "2", "3"} {
+			for _, name := range []string{"1", "2", "2b", "3"} {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.AwaitCertReady(entryNames...)
@@ -136,6 +164,13 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 						"expirationDate": HavePrefix("20"),
 					}),
 				}),
+				entryName(iss, "2b"): MatchKeys(IgnoreExtras, Keys{
+					"status": MatchKeys(IgnoreExtras, Keys{
+						"commonName":     Equal(dnsName(iss, "cert2")),
+						"state":          Equal("Ready"),
+						"expirationDate": HavePrefix("20"),
+					}),
+				}),
 				entryName(iss, "3"): MatchKeys(IgnoreExtras, Keys{
 					"status": MatchKeys(IgnoreExtras, Keys{
 						"commonName":     Equal(dnsName(iss, "cert3")),
@@ -146,7 +181,46 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				}),
 			}))
 
-			err = u.KubectlDelete(iss.TmpManifestFilename)
+			By("revoking without renewal", func() {
+				// need to wait 30 seconds after certificate creation because of time drift (see func WasRequestedBefore() for details)
+				time.Sleep(30 * time.Second)
+
+				filename, err := iss.CreateTempManifest("revoke2", revoke2Template)
+				defer iss.DeleteTempManifest(filename)
+				Ω(err).Should(BeNil())
+
+				err = u.KubectlApply(filename)
+				Ω(err).Should(BeNil())
+
+				err = u.AwaitCertRevocationApplied("revoke-cert2")
+				Ω(err).Should(BeNil())
+
+				err = u.AwaitCertRevoked(entryName(iss, "2"), entryName(iss, "2b"))
+				Ω(err).Should(BeNil())
+
+				err = u.KubectlDelete(filename)
+				Ω(err).Should(BeNil())
+			})
+
+			By("revoking with renewal", func() {
+				filename, err := iss.CreateTempManifest("revoke3", revoke3Template)
+				defer iss.DeleteTempManifest(filename)
+				Ω(err).Should(BeNil())
+
+				err = u.KubectlApply(filename)
+				Ω(err).Should(BeNil())
+
+				err = u.AwaitCertRevocationApplied("revoke-cert3")
+				Ω(err).Should(BeNil())
+
+				err = u.AwaitCertReady(entryName(iss, "3"))
+				Ω(err).Should(BeNil())
+
+				err = u.KubectlDelete(filename)
+				Ω(err).Should(BeNil())
+			})
+
+			err = u.KubectlDelete(manifestFilename)
 			Ω(err).Should(BeNil())
 
 			err = u.AwaitCertDeleted(entryNames...)

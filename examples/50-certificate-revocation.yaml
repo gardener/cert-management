@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: CertificateRevocation
+metadata:
+  name: revoke-sample
+  namespace: default
+spec:
+  certificateRef:
+    name: mycert
+    namespace: default
+
+  # Uncomment the following line if the certificate should be renewed before revoking the old one(s)
+  #renew: true
+
+  # Optionally specify a qualifying date. All certificates requested before this date will be revoked.
+  # If not specified, the current time is used by default.
+  #qualifyingDate: "2020-12-22T17:00:35Z"

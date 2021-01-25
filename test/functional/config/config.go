@@ -8,6 +8,7 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"text/template"
 
@@ -64,9 +65,8 @@ type IssuerConfig struct {
 	Server           string `json:"server,omitempty"`
 	Email            string `json:"email,omitempty"`
 
-	Namespace           string
-	TmpManifestFilename string
-	Domain              string
+	Namespace string
+	Domain    string
 }
 
 type Config struct {
@@ -143,21 +143,20 @@ func (c *Config) postProcess() error {
 	return nil
 }
 
-func (p *IssuerConfig) CreateTempManifest(basePath string, manifestTemplate *template.Template) error {
-	p.TmpManifestFilename = ""
-	filename := fmt.Sprintf("%s/tmp-%s.yaml", basePath, p.Name)
-	f, err := os.Create(filename)
+func (p *IssuerConfig) CreateTempManifest(name, templateContent string) (string, error) {
+	tmpl, err := template.New(name).Parse(templateContent)
+
+	f, err := ioutil.TempFile("", fmt.Sprintf("%s-*.yaml", p.Name))
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer f.Close()
-	p.TmpManifestFilename = filename
 
-	return manifestTemplate.Execute(f, p)
+	return f.Name(), tmpl.Execute(f, p)
 }
 
-func (p *IssuerConfig) DeleteTempManifest() {
-	if p.TmpManifestFilename != "" {
-		_ = os.Remove(p.TmpManifestFilename)
+func (p *IssuerConfig) DeleteTempManifest(filename string) {
+	if filename != "" {
+		_ = os.Remove(filename)
 	}
 }

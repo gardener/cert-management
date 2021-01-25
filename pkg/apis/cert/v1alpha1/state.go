@@ -13,4 +13,10 @@ const (
 	StateError = "Error"
 	// StateReady is the ready state.
 	StateReady = "Ready"
+	// StateRevoked is the revoked state.
+	StateRevoked = "Revoked"
+	// StateRevocationApplied is the applied state.
+	StateRevocationApplied = "Applied"
+	// StateRevocationPartialApplied is the partial applied state (partial success).
+	StateRevocationPartialApplied = "PartialApplied"
 )

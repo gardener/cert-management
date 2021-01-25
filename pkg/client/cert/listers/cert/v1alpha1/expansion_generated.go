@@ -16,6 +16,14 @@ type CertificateListerExpansion interface{}
 // CertificateNamespaceLister.
 type CertificateNamespaceListerExpansion interface{}
 
+// CertificateRevocationListerExpansion allows custom methods to be added to
+// CertificateRevocationLister.
+type CertificateRevocationListerExpansion interface{}
+
+// CertificateRevocationNamespaceListerExpansion allows custom methods to be added to
+// CertificateRevocationNamespaceLister.
+type CertificateRevocationNamespaceListerExpansion interface{}
+
 // IssuerListerExpansion allows custom methods to be added to
 // IssuerLister.
 type IssuerListerExpansion interface{}

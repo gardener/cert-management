@@ -24,17 +24,12 @@ const (
 
 	// IssuerKind is the issuer kind.
 	IssuerKind = "Issuer"
-	// IssuerPlural is its plural form.
-	IssuerPlural = "issuers"
-	// IssuerShort is the short name.
-	IssuerShort = "issuer"
 
 	// CertificateKind is the certificate kind.
 	CertificateKind = "Certificate"
-	// CertificatePlural is its plural form.
-	CertificatePlural = "certificates"
-	// CertificateShort is the short name.
-	CertificateShort = "cert"
+
+	// CertificateRevocationKind is the certificate revocation kind.
+	CertificateRevocationKind = "CertificateRevocation"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -64,6 +59,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&IssuerList{},
 		&Certificate{},
 		&CertificateList{},
+		&CertificateRevocation{},
+		&CertificateRevocationList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

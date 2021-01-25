@@ -22,6 +22,10 @@ func (c *FakeCertV1alpha1) Certificates(namespace string) v1alpha1.CertificateIn
 	return &FakeCertificates{c, namespace}
 }
 
+func (c *FakeCertV1alpha1) CertificateRevocations(namespace string) v1alpha1.CertificateRevocationInterface {
+	return &FakeCertificateRevocations{c, namespace}
+}
+
 func (c *FakeCertV1alpha1) Issuers(namespace string) v1alpha1.IssuerInterface {
 	return &FakeIssuers{c, namespace}
 }

@@ -114,6 +114,14 @@ func (u *TestUtils) AwaitCertDeleted(names ...string) error {
 	return u.AwaitState("cert", STATE_DELETED, names...)
 }
 
+func (u *TestUtils) AwaitCertRevoked(names ...string) error {
+	return u.AwaitState("cert", "Revoked", names...)
+}
+
+func (u *TestUtils) AwaitCertRevocationApplied(name string) error {
+	return u.AwaitState("certrevoke", "Applied", name)
+}
+
 func (u *TestUtils) AwaitState(resourceName, expectedState string, names ...string) error {
 	msg := fmt.Sprintf("%s not %s: %v", resourceName, expectedState, names)
 	return u.Await(msg, func() (bool, error) {

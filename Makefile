@@ -49,6 +49,7 @@ test:
 .PHONY: generate
 generate:
 	@./hack/generate-code
+	@GO111MODULE=on go generate ./pkg/apis/cert/...
 
 .PHONY: docker-images
 docker-images:
