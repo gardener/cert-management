@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: issuer-with-external-account
+  namespace: default
+spec:
+  acme:
+    server: https://some.acme.provider.com/directory
+    email: some.user@mydomain.com
+    autoRegistration: true
+    externalAccountBinding:
+      keyID: mykey
+      keySecretRef:
+        # the secret must contain the data key 'hmacKey'
+        name: issuer-external-account-secret
+        namespace: default
+    # For some special setups, the DNS challenges are only performed pro forma. In this case the
+    # DNS Entry creation and DNS propagation check can be disabled with 'skipDNSChallengeValidation: true'
+#   skipDNSChallengeValidation: true
+
+    # optionally restrict domain ranges for which certificates can be requested
+#   domains:
+#     include:
+#     - sub1.mydomain.com
+#     - sub2.mydomain.com
+#     exclude:
+#     - private.sub1.mydomain.com

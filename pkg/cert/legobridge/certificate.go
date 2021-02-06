@@ -38,12 +38,8 @@ type ObtainInput struct {
 	User *RegistrationUser
 	// CAKeyPair are the private key and the public key cert of the CA.
 	CAKeyPair *TLSKeyPair
-	// DNSCluster is the cluster to use for writing DNS entries for DNS challenges.
-	DNSCluster resources.Cluster
 	// DNSSettings are the settings for the DNSController.
-	DNSSettings DNSControllerSettings
-	// CaDirURL is the URL of the ACME CA directory.
-	CaDirURL string
+	DNSSettings *DNSControllerSettings
 	// IssuerName is the name of the issuer to use.
 	IssuerName string
 	// CommonName is the CN.
@@ -64,6 +60,8 @@ type ObtainInput struct {
 
 // DNSControllerSettings are the settings for the DNSController.
 type DNSControllerSettings struct {
+	// Cluster is the cluster where the DNSEntries will be created
+	Cluster resources.Cluster
 	// Namespace to set for challenge DNSEntry
 	Namespace string
 	// OwnerID to set for challenge DNSEntry
@@ -155,6 +153,25 @@ func renew(client *lego.Client, renewCert *certificate.Resource) (*certificate.R
 	return client.Certificate.Renew(*renewCert, true, false, "")
 }
 
+type dummyProvider struct {
+	count int
+}
+
+var _ ProviderWithCount = &dummyProvider{}
+
+func (p *dummyProvider) Present(domain, token, keyAuth string) error {
+	p.count++
+	return nil
+}
+
+func (p *dummyProvider) CleanUp(domain, token, keyAuth string) error {
+	return nil
+}
+
+func (p *dummyProvider) GetChallengesCount() int {
+	return p.count
+}
+
 func (o *obtainer) Obtain(input ObtainInput) error {
 	switch {
 	case input.User != nil:
@@ -172,7 +189,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 	if err != nil {
 		return err
 	}
-	config := input.User.NewConfig(input.CaDirURL)
+	config := input.User.NewConfig(input.User.CADirURL())
 
 	// A client facilitates communication with the CA server.
 	client, err := lego.NewClient(config)
@@ -181,18 +198,29 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 		return err
 	}
 
-	provider, err := newDNSControllerProvider(input.DNSCluster, input.DNSSettings, input.RequestName,
-		input.TargetClass, input.IssuerName)
-	if err != nil {
-		o.releasePending(input)
-		return err
-	}
-	err = client.Challenge.SetDNS01Provider(provider,
-		dns01.AddRecursiveNameservers(input.DNSSettings.PrecheckNameservers),
-		utils.CreateWrapPreCheckOption(input.DNSSettings.PrecheckNameservers))
-	if err != nil {
-		o.releasePending(input)
-		return err
+	var provider ProviderWithCount
+	if input.DNSSettings != nil {
+		provider, err = newDNSControllerProvider(*input.DNSSettings, input.RequestName,
+			input.TargetClass, input.IssuerName)
+		if err != nil {
+			o.releasePending(input)
+			return err
+		}
+		err = client.Challenge.SetDNS01Provider(provider,
+			dns01.AddRecursiveNameservers(input.DNSSettings.PrecheckNameservers),
+			utils.CreateWrapPreCheckOption(input.DNSSettings.PrecheckNameservers))
+		if err != nil {
+			o.releasePending(input)
+			return err
+		}
+	} else {
+		// skipDNSChallengeValidation
+		provider = &dummyProvider{}
+		err = client.Challenge.SetDNS01Provider(provider, utils.NoPropagationCheckOption())
+		if err != nil {
+			o.releasePending(input)
+			return err
+		}
 	}
 
 	go func() {
@@ -396,8 +424,8 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyP
 }
 
 // RevokeCertificate revokes a certificate
-func RevokeCertificate(user *RegistrationUser, caDirURL string, cert []byte) error {
-	config := user.NewConfig(caDirURL)
+func RevokeCertificate(user *RegistrationUser, cert []byte) error {
+	config := user.NewConfig(user.CADirURL())
 
 	// A client facilitates communication with the CA server.
 	client, err := lego.NewClient(config)

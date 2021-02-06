@@ -34,9 +34,9 @@ type ProviderWithCount interface {
 
 var index uint32
 
-func newDNSControllerProvider(cluster resources.Cluster, settings DNSControllerSettings,
+func newDNSControllerProvider(settings DNSControllerSettings,
 	certificateName resources.ObjectName, targetClass, issuerName string) (ProviderWithCount, error) {
-	itf, err := cluster.Resources().GetByExample(&dnsapi.DNSEntry{})
+	itf, err := settings.Cluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DNSEntry resources: %s", err.Error())
 	}

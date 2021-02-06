@@ -245,7 +245,8 @@ func (r *revokeReconciler) collectCertificateRefsAndRepeat(logctx logger.LogCont
 		if err != nil {
 			return r.failedStop(logctx, obj, api.StateError, errors.Wrapf(err, "certificate %s/%s", cert.Namespace, cert.Name))
 		}
-		if !certificate.WasRequestedBefore(x509cert, qualifyingDate.Time) {
+		requestedAt := certificate.ExtractRequestedAtFromAnnotation(secret)
+		if !certificate.WasRequestedBefore(x509cert, requestedAt, qualifyingDate.Time) {
 			continue
 		}
 
@@ -364,10 +365,17 @@ func (r *revokeReconciler) checkRevokedAndRepeat(logctx logger.LogContext, obj r
 		case api.StateError:
 			failed = append(failed, ref)
 		default:
-			stillPending = append(stillPending, ref)
+			if r.hasCertSecretRevocationFailed(revocation.Status.Secrets, cert.Spec.SecretRef) {
+				failed = append(failed, ref)
+			} else {
+				stillPending = append(stillPending, ref)
+			}
 		}
 	}
 	delay := 5 * time.Second
+	if revocation.CreationTimestamp.Add(1 * time.Hour).Before(time.Now()) {
+		delay = 5 * time.Minute
+	}
 	if len(stillPending) == 0 {
 		delay = 500 * time.Millisecond
 	}
@@ -383,6 +391,25 @@ func (r *revokeReconciler) checkRevokedAndRepeat(logctx logger.LogContext, obj r
 	})
 }
 
+func (r *revokeReconciler) hasCertSecretRevocationFailed(secretsStatuses *api.SecretStatuses, secretRef *corev1.SecretReference) bool {
+	if secretsStatuses != nil && secretRef != nil && len(secretsStatuses.Failed) > 0 {
+		if len(secretsStatuses.Processing) == 0 && len(secretsStatuses.Revoked) == 0 {
+			return true
+		}
+
+		sn, err := certificate.LookupSerialNumber(r.certSecretResources, secretRef)
+		if err != nil {
+			return false // unclear
+		}
+		for _, failed := range secretsStatuses.Failed {
+			if failed.SerialNumber == sn {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext, obj resources.Object, issuer *api.Issuer,
 	hashKey string, shouldRenewBeforeRevoke bool) reconcile.Status {
 	revocation := obj.Data().(*api.CertificateRevocation)
@@ -391,7 +418,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("missing certificate secret references"))
 	}
 
-	user, caDirURL, err := r.support.RestoreRegUser(issuer)
+	user, err := r.support.RestoreRegUser(issuer)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("cannot restore registration user from issuer"))
 	}
@@ -419,7 +446,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		tlscrt := secret.Data[corev1.TLSCertKey]
 
 		if _, ok := resources.GetAnnotation(secret, certificate.AnnotationRevoked); !ok {
-			err = legobridge.RevokeCertificate(user, caDirURL, tlscrt)
+			err = legobridge.RevokeCertificate(user, tlscrt)
 			if err != nil {
 				errs = append(errs, errors.Wrapf(err, "certificate revocation failed for backup certificate secret %s", secret.Name))
 				failedSecrets = append(failedSecrets, ref)

@@ -25,7 +25,7 @@ Helper for extracting information about the X509 certificate from the secret of 
 ./check-cert-secret.sh check-revoke <namespace> <certificate name>
    check OCSP revocation using OpenSSL
 
-Prerequisites: `kubectl` and `openssl` must be on PATH. kubectl will use the current context.
+Prerequisites: 'kubectl' and 'openssl' must be on PATH. kubectl will use the current context.
 
 EOM
 }
@@ -76,6 +76,10 @@ getOCSP()
 {
   OSCP_URI=$(openssl x509 -noout -ocsp_uri -in $certfile)
   HOST=$(echo $OSCP_URI | awk '-F[/:]' '{print $4}')
+
+  if [[ ! -f "$immediatefile" ]]; then
+    immediatefile="$certfile"
+  fi
 
   # Checking OCSP revocation using OpenSSL
   openssl ocsp -header HOST $HOST -no_nonce -issuer "$immediatefile" -cert "$certfile" -text -url $OSCP_URI > "$ocspresponsefile"

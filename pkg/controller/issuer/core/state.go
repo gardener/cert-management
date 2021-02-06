@@ -13,6 +13,7 @@ import (
 
 type state struct {
 	secrets      ReferencedSecrets
+	eabSecrets   ReferencedSecrets
 	certificates AssociatedObjects
 	quotas       Quotas
 	overdueCerts objectNameSet
@@ -20,13 +21,15 @@ type state struct {
 }
 
 func newState() *state {
-	return &state{secrets: *NewReferencedSecrets(), certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
+	return &state{secrets: *NewReferencedSecrets(), eabSecrets: *NewReferencedSecrets(),
+		certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
 		overdueCerts: *newObjectNameSet(), revokedCerts: *newObjectNameSet()}
 }
 
 func (s *state) RemoveIssuer(name resources.ObjectName) bool {
 	s.certificates.RemoveBySource(name)
 	s.quotas.RemoveIssuer(name)
+	s.eabSecrets.RemoveIssuer(name)
 	return s.secrets.RemoveIssuer(name)
 }
 
@@ -70,6 +73,14 @@ func (s *state) RememberIssuerSecret(issuer resources.ObjectName, secretRef *v1.
 
 func (s *state) GetIssuerSecretHash(issuerName resources.ObjectName) string {
 	return s.secrets.GetIssuerSecretHash(issuerName)
+}
+
+func (s *state) IssuerNamesForEABSecret(secretName resources.ObjectName) resources.ObjectNameSet {
+	return s.eabSecrets.IssuerNamesFor(secretName)
+}
+
+func (s *state) RememberIssuerEABSecret(issuer resources.ObjectName, secretRef *v1.SecretReference, hash string) {
+	s.eabSecrets.RememberIssuerSecret(issuer, secretRef, hash)
 }
 
 func (s *state) AddRenewalOverdue(certName resources.ObjectName) bool {

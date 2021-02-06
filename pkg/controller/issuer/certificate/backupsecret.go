@@ -7,10 +7,7 @@
 package certificate
 
 import (
-	"crypto/x509"
 	"fmt"
-	"math/big"
-	"strings"
 	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -69,6 +66,9 @@ func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string
 	if _, ok := resources.GetAnnotation(secret, AnnotationRevoked); ok {
 		resources.SetAnnotation(backupSecret, AnnotationRevoked, "true")
 	}
+	if value, ok := resources.GetAnnotation(secret, AnnotationRequestedAt); ok {
+		resources.SetAnnotation(backupSecret, AnnotationRequestedAt, value)
+	}
 	obj, err := res.Create(backupSecret)
 	if err != nil {
 		return
@@ -114,7 +114,8 @@ func FindAllOldBackupSecrets(res resources.Interface, hashKey string, timestamp 
 		if !IsValidNow(cert) {
 			continue
 		}
-		if WasRequestedBefore(cert, timestamp) {
+		requestedAt := ExtractRequestedAtFromAnnotation(secret)
+		if WasRequestedBefore(cert, requestedAt, timestamp) {
 			refs = append(refs, api.CertificateSecretRef{
 				SecretReference: corev1.SecretReference{
 					Name:      item.GetName(),
@@ -128,32 +129,4 @@ func FindAllOldBackupSecrets(res resources.Interface, hashKey string, timestamp 
 		return nil, fmt.Errorf("no valid secrets found older than %s", timestamp)
 	}
 	return refs, nil
-}
-
-// SerialNumberToString get string representation of certificate serial number
-func SerialNumberToString(sn *big.Int, compact bool) string {
-	if sn == nil {
-		return "nil"
-	}
-	builder := strings.Builder{}
-	for i, r := range sn.Text(16) {
-		if !compact && i%2 == 0 && i != 0 {
-			builder.WriteRune(':')
-		}
-		builder.WriteRune(r)
-	}
-	return builder.String()
-}
-
-// WasRequestedBefore returns true if the certificate was not requested after the given timestamp.
-// This method uses the `notBefore` time of the certificate. Let's Encrypt sets the `notBefore`
-// time one hour in the past of request, here it is checked if the `notBefore` time is
-// more than 61 minutes in the past of the given timestamp (30 seconds are added for robustness, e.g. possible time drift)
-func WasRequestedBefore(cert *x509.Certificate, timestamp time.Time) bool {
-	return timestamp.After(cert.NotBefore.Add(1*time.Hour + 30*time.Second))
-}
-
-// IsValidNow returns true if the certificate is still valid
-func IsValidNow(cert *x509.Certificate) bool {
-	return !time.Now().After(cert.NotAfter)
 }

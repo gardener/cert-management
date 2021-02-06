@@ -41,16 +41,25 @@ spec:
           jsonPath: .metadata.creationTimestamp
           name: AGE
           type: date
+        - description: included domains
+          jsonPath: .spec.acme.domains.include
+          name: INCLUDED_DOMAINS
+          priority: 2000
+          type: string
       name: v1alpha1
       schema:
         openAPIV3Schema:
           description: Issuer is the issuer CR.
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
               type: string
             metadata:
               type: object
@@ -61,24 +70,77 @@ spec:
                   description: ACME is the ACME protocol specific spec.
                   properties:
                     autoRegistration:
-                      description: AutoRegistration is the flag if automatic registration should be applied if needed.
+                      description: AutoRegistration is the flag if automatic registration
+                        should be applied if needed.
                       type: boolean
+                    domains:
+                      description: Domains optionally specifies domains allowed or forbidden
+                        for certificate requests
+                      properties:
+                        exclude:
+                          description: Exclude are domain names for which certificate
+                            requests are forbidden (including any subdomains)
+                          items:
+                            type: string
+                          type: array
+                        include:
+                          description: Include are domain names for which certificate
+                            requests are allowed (including any subdomains)
+                          items:
+                            type: string
+                          type: array
+                      type: object
                     email:
                       description: Email is the email address to use for user registration.
                       type: string
+                    externalAccountBinding:
+                      description: ACMEExternalAccountBinding is a reference to a CA
+                        external account of the ACME server.
+                      properties:
+                        keyID:
+                          description: keyID is the ID of the CA key that the External
+                            Account is bound to.
+                          type: string
+                        keySecretRef:
+                          description: keySecretRef is the secret ref to the Secret
+                            which holds the symmetric MAC key of the External Account
+                            Binding with data key 'hmacKey'. The secret key stored in
+                            the Secret **must** be un-padded, base64 URL encoded data.
+                          properties:
+                            name:
+                              description: Name is unique within a namespace to reference
+                                a secret resource.
+                              type: string
+                            namespace:
+                              description: Namespace defines the space within which
+                                the secret name must be unique.
+                              type: string
+                          type: object
+                      required:
+                        - keyID
+                        - keySecretRef
+                      type: object
                     privateKeySecretRef:
-                      description: PrivateKeySecretRef is the secret ref to the ACME private key.
+                      description: PrivateKeySecretRef is the secret ref to the ACME
+                        private key.
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                       type: object
                     server:
                       description: Server is the URL of the ACME server.
                       type: string
+                    skipDNSChallengeValidation:
+                      description: SkipDNSChallengeValidation marks that this issuer
+                        does not validate DNS challenges. In this case no DNS entries/records
+                        are created for a DNS Challenge and DNS propagation is not checked.
+                      type: boolean
                   required:
                     - email
                     - server
@@ -90,15 +152,18 @@ spec:
                       description: PrivateKeySecretRef is the secret ref to the CA secret.
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                       type: object
                   type: object
                 requestsPerDayQuota:
-                  description: RequestsPerDayQuota is the maximum number of certificate requests per days allowed for this issuer
+                  description: RequestsPerDayQuota is the maximum number of certificate
+                    requests per days allowed for this issuer
                   type: integer
               type: object
             status:
@@ -116,17 +181,20 @@ spec:
                   description: Message is the status or error message.
                   type: string
                 observedGeneration:
-                  description: ObservedGeneration is the observed generation of the spec.
+                  description: ObservedGeneration is the observed generation of the
+                    spec.
                   format: int64
                   type: integer
                 requestsPerDayQuota:
-                  description: RequestsPerDayQuota is the actual maximum number of certificate requests per days allowed for this issuer
+                  description: RequestsPerDayQuota is the actual maximum number of certificate
+                    requests per days allowed for this issuer
                   type: integer
                 state:
                   description: State is either empty, 'Pending', 'Error', or 'Ready'.
                   type: string
                 type:
-                  description: Type is the issuer type. Currently only 'acme' and 'ca' are supported.
+                  description: Type is the issuer type. Currently only 'acme' and 'ca'
+                    are supported.
                   type: string
               required:
                 - state

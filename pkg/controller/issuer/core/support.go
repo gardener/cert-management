@@ -164,7 +164,7 @@ func (h *CompoundHandler) addIssuerHandlerFactories(factories []IssuerHandlerFac
 }
 
 func (h *CompoundHandler) enqueueIssuers(logger logger.LogContext, objName resources.ObjectName) reconcile.Status {
-	issuers := h.support.IssuerNamesForSecret(objName)
+	issuers := h.support.IssuerNamesForSecretOrEABSecret(objName)
 	if issuers != nil {
 		groupKind := api.Kind(api.IssuerKind)
 		clusterID := h.support.GetDefaultClusterID()
@@ -415,13 +415,26 @@ func (s *Support) CertificateNamesForIssuer(issuer resources.ObjectName) []resou
 	return s.state.CertificateNamesForIssuer(issuer)
 }
 
-// IssuerNamesForSecret returns issuer names for a secret name
-func (s *Support) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {
-	return s.state.IssuerNamesForSecret(secretName)
+// IssuerNamesForSecretOrEABSecret returns issuer names for a secret name
+func (s *Support) IssuerNamesForSecretOrEABSecret(secretName resources.ObjectName) resources.ObjectNameSet {
+	list1 := s.state.IssuerNamesForSecret(secretName)
+	list2 := s.state.IssuerNamesForEABSecret(secretName)
+	if list1 != nil {
+		if list2 != nil {
+			return list1.AddSet(list2)
+		}
+		return list1
+	}
+	return list2
 }
 
 // RememberIssuerSecret stores issuer secret ref pair.
 func (s *Support) RememberIssuerSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference, hash string) {
+	s.state.RememberIssuerSecret(issuer, secretRef, hash)
+}
+
+// RememberIssuerEABSecret stores issuer EAB secret ref pair.
+func (s *Support) RememberIssuerEABSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference, hash string) {
 	s.state.RememberIssuerSecret(issuer, secretRef, hash)
 }
 
@@ -547,36 +560,67 @@ func (s *Support) LoadIssuer(crt *api.Certificate) (*api.Issuer, error) {
 }
 
 // RestoreRegUser restores a legobridge user from an issuer
-func (s *Support) RestoreRegUser(issuer *api.Issuer) (*legobridge.RegistrationUser, string, error) {
-	if issuer.Spec.ACME == nil {
-		return nil, "", fmt.Errorf("not an ACME issuer")
+func (s *Support) RestoreRegUser(issuer *api.Issuer) (*legobridge.RegistrationUser, error) {
+	acme := issuer.Spec.ACME
+
+	if acme == nil {
+		return nil, fmt.Errorf("not an ACME issuer")
 	}
 
 	// fetch issuer secret
-	secretRef := issuer.Spec.ACME.PrivateKeySecretRef
+	secretRef := acme.PrivateKeySecretRef
 	if secretRef == nil {
-		return nil, "", fmt.Errorf("missing secret ref in issuer")
+		return nil, fmt.Errorf("missing secret ref in issuer")
 	}
 	if issuer.Status.State != api.StateReady {
 		if issuer.Status.State != api.StateError {
-			return nil, "", &RecoverableError{Msg: fmt.Sprintf("referenced issuer not ready: state=%s", issuer.Status.State)}
+			return nil, &RecoverableError{Msg: fmt.Sprintf("referenced issuer not ready: state=%s", issuer.Status.State)}
 		}
-		return nil, "", fmt.Errorf("referenced issuer not ready: state=%s", issuer.Status.State)
+		return nil, fmt.Errorf("referenced issuer not ready: state=%s", issuer.Status.State)
 	}
 	if issuer.Status.ACME == nil || issuer.Status.ACME.Raw == nil {
-		return nil, "", fmt.Errorf("ACME registration missing in status")
+		return nil, fmt.Errorf("ACME registration missing in status")
 	}
-	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
-	issuerSecret := &corev1.Secret{}
-	_, err := s.GetIssuerSecretResources().GetInto(issuerSecretObjectName, issuerSecret)
+	issuerSecret, err := s.ReadIssuerSecret(secretRef)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "fetching issuer secret failed")
+		return nil, errors.Wrap(err, "fetching issuer secret failed")
 	}
 
-	reguser, err := legobridge.RegistrationUserFromSecretData(issuer.Spec.ACME.Email, issuer.Status.ACME.Raw, issuerSecret.Data)
+	eabKeyID, eabHmacKey, err := s.LoadEABHmacKey(acme)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "restoring registration issuer from issuer secret failed")
+		return nil, err
 	}
 
-	return reguser, issuer.Spec.ACME.Server, nil
+	reguser, err := legobridge.RegistrationUserFromSecretData(issuer.Spec.ACME.Email, issuer.Spec.ACME.Server,
+		issuer.Status.ACME.Raw, issuerSecret.Data, eabKeyID, eabHmacKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "restoring registration issuer from issuer secret failed")
+	}
+
+	return reguser, nil
+}
+
+// LoadEABHmacKey reads the external account binding MAC key from the referenced secret
+func (s *Support) LoadEABHmacKey(acme *api.ACMESpec) (string, string, error) {
+	eab := acme.ExternalAccountBinding
+	if eab == nil {
+		return "", "", nil
+	}
+
+	if eab.KeySecretRef == nil {
+		return "", "", fmt.Errorf("missing secret ref in issuer for external account binding")
+	}
+
+	secret, err := s.ReadIssuerSecret(eab.KeySecretRef)
+	if err != nil {
+		return "", "", errors.Wrap(err, "fetching issuer EAB secret failed")
+	}
+
+	hmacEncoded, ok := secret.Data[legobridge.KeyHmacKey]
+	if !ok {
+		return "", "", fmt.Errorf("Key %s not found in EAB secret %s/%s", legobridge.KeyHmacKey,
+			eab.KeySecretRef.Namespace, eab.KeySecretRef.Name)
+	}
+
+	return eab.KeyID, string(hmacEncoded), nil
 }
