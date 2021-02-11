@@ -13,7 +13,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"net/url"
 
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 
@@ -89,12 +88,7 @@ func NewRegistrationUserFromEmailAndPrivateKey(email string, caDirURL string, pr
 	}
 	user.Registration = reg
 
-	server := "unknown"
-	urlObj, err := url.Parse(caDirURL)
-	if urlObj != nil {
-		server = urlObj.Host
-	}
-	metrics.AddACMEAccountRegistration(server, email)
+	metrics.AddACMEAccountRegistration(reg.URI, email)
 
 	return user, nil
 }
@@ -133,5 +127,6 @@ func RegistrationUserFromSecretData(email string, registrationRaw []byte, data m
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling registration json failed with %s", err.Error())
 	}
+	metrics.AddACMEAccountRegistration(reg.URI, email)
 	return &RegistrationUser{Email: email, Registration: reg, key: privateKey}, nil
 }

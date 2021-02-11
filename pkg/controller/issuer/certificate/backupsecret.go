@@ -65,6 +65,7 @@ func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string
 	resources.SetLabel(backupSecret, LabelCertificateHashKey, hashKey)
 	resources.SetLabel(backupSecret, LabelCertificateKey, "true")
 	resources.SetLabel(backupSecret, LabelCertificateSerialNumber, sn)
+	resources.SetLabel(backupSecret, LabelCertificateBackup, "true")
 	if _, ok := resources.GetAnnotation(secret, AnnotationRevoked); ok {
 		resources.SetAnnotation(backupSecret, AnnotationRevoked, "true")
 	}
