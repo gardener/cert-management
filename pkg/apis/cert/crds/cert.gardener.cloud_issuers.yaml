@@ -39,6 +39,11 @@ spec:
       jsonPath: .metadata.creationTimestamp
       name: AGE
       type: date
+    - description: included domains
+      jsonPath: .spec.acme.domains.include
+      name: INCLUDED_DOMAINS
+      priority: 2000
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -61,9 +66,43 @@ spec:
                   autoRegistration:
                     description: AutoRegistration is the flag if automatic registration should be applied if needed.
                     type: boolean
+                  domains:
+                    description: Domains optionally specifies domains allowed or forbidden for certificate requests
+                    properties:
+                      exclude:
+                        description: Exclude are domain names for which certificate requests are forbidden (including any subdomains)
+                        items:
+                          type: string
+                        type: array
+                      include:
+                        description: Include are domain names for which certificate requests are allowed (including any subdomains)
+                        items:
+                          type: string
+                        type: array
+                    type: object
                   email:
                     description: Email is the email address to use for user registration.
                     type: string
+                  externalAccountBinding:
+                    description: ACMEExternalAccountBinding is a reference to a CA external account of the ACME server.
+                    properties:
+                      keyID:
+                        description: keyID is the ID of the CA key that the External Account is bound to.
+                        type: string
+                      keySecretRef:
+                        description: keySecretRef is the secret ref to the Secret which holds the symmetric MAC key of the External Account Binding with data key 'hmacKey'. The secret key stored in the Secret **must** be un-padded, base64 URL encoded data.
+                        properties:
+                          name:
+                            description: Name is unique within a namespace to reference a secret resource.
+                            type: string
+                          namespace:
+                            description: Namespace defines the space within which the secret name must be unique.
+                            type: string
+                        type: object
+                    required:
+                    - keyID
+                    - keySecretRef
+                    type: object
                   privateKeySecretRef:
                     description: PrivateKeySecretRef is the secret ref to the ACME private key.
                     properties:
@@ -77,6 +116,9 @@ spec:
                   server:
                     description: Server is the URL of the ACME server.
                     type: string
+                  skipDNSChallengeValidation:
+                    description: SkipDNSChallengeValidation marks that this issuer does not validate DNS challenges. In this case no DNS entries/records are created for a DNS Challenge and DNS propagation is not checked.
+                    type: boolean
                 required:
                 - email
                 - server

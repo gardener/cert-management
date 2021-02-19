@@ -73,20 +73,29 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		r.support.RememberIssuerSecret(obj.ObjectName(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
 	}
 	if secret != nil && issuer.Status.ACME != nil && issuer.Status.ACME.Raw != nil {
-		user, err := legobridge.RegistrationUserFromSecretData(acme.Email, issuer.Status.ACME.Raw, secret.Data)
+		eabKeyID, eabHmacKey, err := r.support.LoadEABHmacKey(acme)
+		if err != nil {
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("loading EAB secret failed: %s", err))
+		}
+		user, err := legobridge.RegistrationUserFromSecretData(acme.Email, acme.Server, issuer.Status.ACME.Raw,
+			secret.Data, eabKeyID, eabHmacKey)
 		if err != nil {
 			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
 		}
-		if user.Email != acme.Email {
-			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.Email, acme.Email))
+		if user.GetEmail() != acme.Email {
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.GetEmail(), acme.Email))
 		}
 		return r.support.SucceededAndTriggerCertificates(logger, obj, &acmeType, issuer.Status.ACME.Raw)
 	} else if secret != nil || acme.AutoRegistration {
+		eabKid, eabHmacKey, err := r.prepareEAB(obj, issuer)
+		if err != nil {
+			return r.failedAcme(logger, obj, api.StateError, err)
+		}
 		var secretData map[string][]byte
 		if secret != nil {
 			secretData = secret.Data
 		}
-		user, err := legobridge.NewRegistrationUserFromEmail(acme.Email, acme.Server, secretData)
+		user, err := legobridge.NewRegistrationUserFromEmail(acme.Email, acme.Server, secretData, eabKid, eabHmacKey)
 		if err != nil {
 			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("creating registration user failed with %s", err.Error()))
 		}
@@ -119,6 +128,45 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 	} else {
 		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
 	}
+}
+
+func (r *acmeIssuerHandler) prepareEAB(obj resources.Object, issuer *api.Issuer) (eabKid, eabHmacKey string, err error) {
+	acme := issuer.Spec.ACME
+	eab := acme.ExternalAccountBinding
+
+	if eab == nil {
+		return
+	}
+
+	r.support.RememberIssuerEABSecret(obj.ObjectName(), eab.KeySecretRef, "")
+
+	if eab.KeyID == "" {
+		err = fmt.Errorf("missing keyID for external account binding in ACME spec")
+		return
+	}
+
+	if eab.KeySecretRef == nil {
+		err = fmt.Errorf("missing keySecretRef for external account binding in ACME spec")
+		return
+	}
+
+	secret, err := r.support.ReadIssuerSecret(eab.KeySecretRef)
+	if err != nil {
+		err = fmt.Errorf("loading issuer secret for external account binding failed with %s", err.Error())
+		return
+	}
+	hash := r.support.CalcSecretHash(secret)
+	r.support.RememberIssuerEABSecret(obj.ObjectName(), eab.KeySecretRef, hash)
+
+	hmacEncoded, ok := secret.Data[legobridge.KeyHmacKey]
+	if !ok {
+		err = fmt.Errorf("key %s not found in secret data", legobridge.KeyHmacKey)
+		return
+	}
+
+	eabKid = eab.KeyID
+	eabHmacKey = string(hmacEncoded)
+	return
 }
 
 func (r *acmeIssuerHandler) failedAcme(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {

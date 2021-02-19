@@ -50,6 +50,14 @@ func CreateWrapPreCheckOption(nameservers []string) dns01.ChallengeOption {
 	})
 }
 
+// NoPropagationCheckOption creates lego DNS ChallengeOption for custom Precheck function,
+// performing no DNS propagation check of the DNS challenge TXT record at all.
+func NoPropagationCheckOption() dns01.ChallengeOption {
+	return dns01.WrapPreCheck(func(domain, fqdn, value string, check dns01.PreCheckFunc) (b bool, err error) {
+		return true, nil
+	})
+}
+
 // CheckDNSPropagation checks if the expected TXT record has been propagated to all authoritative nameservers.
 func CheckDNSPropagation(nameservers []string, fqdn string, values ...string) (bool, error) {
 	// Initial attempt to resolve at the recursive NS

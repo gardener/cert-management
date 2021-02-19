@@ -32,6 +32,7 @@ type IssuerList struct {
 // +kubebuilder:printcolumn:name=STATUS,JSONPath=".status.state",type=string,description="Status of registration"
 // +kubebuilder:printcolumn:name=TYPE,JSONPath=".status.type",type=string,description="Issuer type"
 // +kubebuilder:printcolumn:name=AGE,JSONPath=".metadata.creationTimestamp",type=date,description="object creation timestamp"
+// +kubebuilder:printcolumn:name=INCLUDED_DOMAINS,JSONPath=".spec.acme.domains.include",priority=2000,type=string,description="included domains"
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Issuer struct {
@@ -69,6 +70,42 @@ type ACMESpec struct {
 	// PrivateKeySecretRef is the secret ref to the ACME private key.
 	// +optional
 	PrivateKeySecretRef *corev1.SecretReference `json:"privateKeySecretRef,omitempty"`
+
+	// ACMEExternalAccountBinding is a reference to a CA external account of the ACME server.
+	// +optional
+	ExternalAccountBinding *ACMEExternalAccountBinding `json:"externalAccountBinding,omitempty"`
+
+	// SkipDNSChallengeValidation marks that this issuer does not validate DNS challenges.
+	// In this case no DNS entries/records are created for a DNS Challenge and DNS propagation
+	// is not checked.
+	// +optional
+	SkipDNSChallengeValidation *bool `json:"skipDNSChallengeValidation,omitempty"`
+
+	// Domains optionally specifies domains allowed or forbidden for certificate requests
+	// +optional
+	Domains *DNSSelection `json:"domains,omitempty"`
+}
+
+// DNSSelection is a restriction on the domains to be allowed or forbidden for certificate requests
+type DNSSelection struct {
+	// Include are domain names for which certificate requests are allowed (including any subdomains)
+	//+ optional
+	Include []string `json:"include,omitempty"`
+	// Exclude are domain names for which certificate requests are forbidden (including any subdomains)
+	// + optional
+	Exclude []string `json:"exclude,omitempty"`
+}
+
+// ACMEExternalAccountBinding is a reference to a CA external account of the ACME server.
+type ACMEExternalAccountBinding struct {
+	// keyID is the ID of the CA key that the External Account is bound to.
+	KeyID string `json:"keyID"`
+
+	// keySecretRef is the secret ref to the
+	// Secret which holds the symmetric MAC key of the External Account Binding with data key 'hmacKey'.
+	// The secret key stored in the Secret **must** be un-padded, base64 URL
+	// encoded data.
+	KeySecretRef *corev1.SecretReference `json:"keySecretRef"`
 }
 
 // CASpec is the CA specific part of the spec.
