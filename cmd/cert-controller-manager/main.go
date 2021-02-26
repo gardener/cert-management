@@ -20,6 +20,7 @@ import (
 
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
 	_ "github.com/gardener/cert-management/pkg/controller/source/ingress"
@@ -56,6 +57,7 @@ func init() {
 	resources.Register(extensionsv1beta1.SchemeBuilder)
 	resources.Register(corev1.SchemeBuilder)
 	resources.Register(dnsapi.SchemeBuilder)
+	resources.Register(v1alpha1.SchemeBuilder)
 }
 
 func main() {
