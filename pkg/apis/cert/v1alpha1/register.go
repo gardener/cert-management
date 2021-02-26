@@ -11,8 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
-
 	"github.com/gardener/cert-management/pkg/apis/cert"
 )
 
@@ -64,8 +62,4 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
-}
-
-func init() {
-	resources.Register(SchemeBuilder)
 }

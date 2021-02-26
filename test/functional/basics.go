@@ -13,6 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/cert-management/test/functional/config"
 )
 
@@ -106,6 +108,7 @@ spec:
 `
 
 func init() {
+	resources.Register(v1alpha1.SchemeBuilder)
 	addIssuerTests(functestbasics)
 }
 
