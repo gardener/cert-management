@@ -189,6 +189,17 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		return reconcile.Recheck(logctx, fmt.Errorf("backoff"), interval)
 	}
 
+	oldMsg := cert.Status.Message
+	status := r.reconcileCert(logctx, obj, cert)
+	newMsg := cert.Status.Message
+	changedMsg := !reflect.DeepEqual(newMsg, oldMsg)
+	if changedMsg {
+		r.addEvent(obj, status, newMsg)
+	}
+	return status
+}
+
+func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) reconcile.Status {
 	r.support.AddCertificate(logctx, cert)
 
 	if r.challengePending(cert) {
@@ -245,6 +256,16 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		return reconcile.Delay(logctx, fmt.Errorf("waiting for end of pending rate limiting in %d seconds", remainingSeconds))
 	}
 	return r.obtainCertificateAndPending(logctx, obj, nil)
+}
+
+func (r *certReconciler) addEvent(obj resources.Object, status reconcile.Status, msg *string) {
+	eventType := corev1.EventTypeNormal
+	if status.IsFailed() {
+		eventType = corev1.EventTypeWarning
+	}
+	if msg != nil {
+		obj.Event(eventType, "reconcile", *msg)
+	}
 }
 
 func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resources.Object, result *legobridge.ObtainOutput) (reconcile.Status, bool) {
@@ -642,8 +663,9 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		return r.revoked(logctx, obj)
 	}
 
-	logctx.Infof("certificate (SN %s) valid from %v to %v", SerialNumberToString(cert.SerialNumber, false), cert.NotBefore, cert.NotAfter)
-	return r.succeeded(logctx, obj)
+	msg := fmt.Sprintf("certificate (SN %s) valid from %v to %v", SerialNumberToString(cert.SerialNumber, false), cert.NotBefore, cert.NotAfter)
+	logctx.Infof(msg)
+	return r.succeeded(logctx, obj, &msg)
 }
 
 func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj resources.Object) *reconcile.Status {
@@ -862,7 +884,7 @@ func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, o
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, errors.Wrap(err, "updating certificate resource failed"))
 	}
-	return r.succeeded(logctx, obj2)
+	return r.succeeded(logctx, obj2, nil)
 }
 
 func (r *certReconciler) removeStoredHashKeyAndRepeat(logctx logger.LogContext, obj resources.Object) reconcile.Status {
@@ -986,15 +1008,16 @@ func (r *certReconciler) recheck(logctx logger.LogContext, obj resources.Object,
 	return r.status(logctx, obj, state, &core.RecoverableError{Msg: err.Error(), Interval: interval}, false)
 }
 
-func (r *certReconciler) succeeded(logctx logger.LogContext, obj resources.Object) reconcile.Status {
-	mod, _ := r.prepareUpdateStatus(obj, api.StateReady, nil, boNone)
+func (r *certReconciler) succeeded(logctx logger.LogContext, obj resources.Object, msg *string) reconcile.Status {
+	mod, _ := r.prepareUpdateStatus(obj, api.StateReady, msg, boNone)
 	r.updateStatus(logctx, mod)
 
 	return reconcile.Succeeded(logctx)
 }
 
 func (r *certReconciler) revoked(logctx logger.LogContext, obj resources.Object) reconcile.Status {
-	mod, _ := r.prepareUpdateStatus(obj, api.StateRevoked, nil, boNone)
+	msg := "certificate has been revoked"
+	mod, _ := r.prepareUpdateStatus(obj, api.StateRevoked, &msg, boNone)
 	r.updateStatus(logctx, mod)
 
 	return reconcile.Succeeded(logctx)
