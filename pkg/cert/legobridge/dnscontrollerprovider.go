@@ -214,35 +214,39 @@ func (p *dnsControllerProvider) prepareEntry(domain string) *dnsapi.DNSEntry {
 	return entry
 }
 
-func (p *dnsControllerProvider) checkDNSEntryNotPending(domain string, values []string) bool {
+func (p *dnsControllerProvider) checkDNSEntryReady(domain string, values []string) bool {
 	entry := p.prepareEntry(domain)
 	obj, err := p.entryResources.Get_(entry)
 	if err != nil {
 		return true // no more waiting
 	}
 	entry = obj.Data().(*dnsapi.DNSEntry)
-	return !(entry.Status.State == "Pending" || entry.Status.State == "Ready" && len(entry.Status.Targets) != len(values))
+	return entry.Status.State == "Ready" && len(entry.Status.Targets) == len(values)
 }
 
 func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
 	waitTimeout := p.settings.PropagationTimeout
-	if p.initialWait {
-		p.initialWait = false
-		// The Timeout function is called several times after all domains are "presented".
-		// On the first call it is checked that no DNS entries are pending anymore.
-		// Depending on number of domain names and possible parallel other work,
-		// the dns-controller-manager may need several change batches
-		// until all entries are ready
+	if !p.initialWait {
+		return 10 * time.Second, dns01.DefaultPollingInterval
+	}
 
-		prepareWaitTimeout := waitTimeout + 5*time.Second*time.Duration(len(p.presenting))
-		p.waitFor("DNS entry getting ready", p.checkDNSEntryNotPending, prepareWaitTimeout)
+	p.initialWait = false
+	// The Timeout function is called several times after all domains are "presented".
+	// On the first call it is checked that no DNS entries are pending anymore.
+	// Depending on number of domain names and possible parallel other work,
+	// the dns-controller-manager may need several change batches
+	// until all entries are ready
 
-		if p.waitFor("DNS record propagation", p.isDNSTxtRecordReady, waitTimeout) {
-			// wait some additional seconds to enlarge probability of record propagation to DNS server use by ACME server
-			additionalWaitTime := p.settings.AdditionalWait
-			p.logger.Infof("Waiting additional %d seconds...", int(additionalWaitTime.Seconds()))
-			time.Sleep(additionalWaitTime)
-		}
+	prepareWaitTimeout := 30*time.Second + 5*time.Second*time.Duration(len(p.presenting))
+	ok := p.waitFor("DNS entry getting ready", p.checkDNSEntryReady, prepareWaitTimeout)
+	if ok {
+		ok = p.waitFor("DNS record propagation", p.isDNSTxtRecordReady, waitTimeout)
+	}
+	if ok {
+		// wait some additional seconds to enlarge probability of record propagation to DNS server use by ACME server
+		additionalWaitTime := p.settings.AdditionalWait
+		p.logger.Infof("Waiting additional %d seconds...", int(additionalWaitTime.Seconds()))
+		time.Sleep(additionalWaitTime)
 	}
 	return waitTimeout / 2, dns01.DefaultPollingInterval
 }
