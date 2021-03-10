@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -245,7 +246,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
 			Renew:        input.RenewCert != nil,
-			Err:          err,
+			Err:          niceError(err),
 		}
 		input.Callback(output)
 		o.releasePending(input)
@@ -434,4 +435,13 @@ func RevokeCertificate(user *RegistrationUser, cert []byte) error {
 	}
 
 	return client.Certificate.Revoke(cert)
+}
+
+func niceError(err error) error {
+	part := "time limit exceeded: last error: %!w(<nil>)"
+	if err == nil || !strings.Contains(err.Error(), part) {
+		return err
+	}
+
+	return fmt.Errorf("%s", strings.ReplaceAll(err.Error(), part, "timeout of DNS propagation check"))
 }
