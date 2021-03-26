@@ -19,6 +19,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
 * Certificate Authority (CA): an existing certificate and a private key provided as a TLS Secret.
 
 **Index**
+  - [Quick start using certificates in a Gardener shoot cluster](#quick-start-using-certificates-in-a-gardener-shoot-cluster)
   - [Setting up Issuers](#setting-up-issuers)
     - [Automatic Certificate Management Environment (ACME)](#automatic-certificate-management-environment-acme)
       - [Auto registration](#auto-registration)
@@ -39,6 +40,13 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
   - [Metrics](#metrics)
   - [Development](#development)
+
+## Quick start using certificates in a Gardener shoot cluster
+
+This component is typically deployed by the [Gardener Extension for certificate services](https://github.com/gardener/gardener-extension-shoot-cert-service/blob/master/docs/installation/setup.md)
+to simplify requesting certificates for Gardener shoot clusters.
+
+For a quick start please see [Request X.509 Certificates](https://gardener.cloud/documentation/guides/administer_shoots/request_cert/)
 
 ## Setting up Issuers
 
