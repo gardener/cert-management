@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 #############      builder       #############
-FROM eu.gcr.io/gardener-project/3rd/golang:1.15.5 AS builder
+FROM eu.gcr.io/gardener-project/3rd/golang:1.16.2 AS builder
 
 WORKDIR /build
 COPY . .
@@ -11,7 +11,7 @@ COPY . .
 RUN make release
 
 ############# base
-FROM eu.gcr.io/gardener-project/3rd/alpine:3.12.1 AS base
+FROM eu.gcr.io/gardener-project/3rd/alpine:3.13.4 AS base
 
 #############      cert-controller-manager     #############
 FROM base AS cert-controller-manager

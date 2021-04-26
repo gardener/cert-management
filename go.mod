@@ -1,6 +1,6 @@
 module github.com/gardener/cert-management
 
-go 1.15
+go 1.16
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
