@@ -11,7 +11,7 @@ COPY . .
 RUN make release
 
 ############# base
-FROM eu.gcr.io/gardener-project/3rd/alpine:3.13.4 AS base
+FROM eu.gcr.io/gardener-project/3rd/alpine:3.13.5 AS base
 
 #############      cert-controller-manager     #############
 FROM base AS cert-controller-manager
