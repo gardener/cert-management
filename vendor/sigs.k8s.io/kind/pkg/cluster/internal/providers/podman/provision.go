@@ -27,15 +27,15 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []func() error, err error) {
+func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
 	// these apply to all container creation
-	nodeNamer := common.MakeNodeNamer(cluster)
-	genericArgs, err := commonArgs(cluster, cfg)
+	nodeNamer := common.MakeNodeNamer(cfg.Name)
+	genericArgs, err := commonArgs(cfg, networkName)
 	if err != nil {
 		return nil, err
 	}
@@ -135,13 +135,14 @@ func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
 }
 
 // commonArgs computes static arguments that apply to all containers
-func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
+func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
 	args := []string{
-		"--detach", // run the container detached
-		"--tty",    // allocate a tty for entrypoint logs
+		"--detach",           // run the container detached
+		"--tty",              // allocate a tty for entrypoint logs
+		"--net", networkName, // attach to its own network
 		// label the node with the cluster ID
-		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cluster),
+		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cfg.Name),
 	}
 
 	// enable IPv6 if necessary
@@ -162,6 +163,13 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 }
 
 func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
+	// Pre-create anonymous volumes to enable specifying mount options
+	// during container run time
+	varVolume, err := createAnonymousVolume(name)
+	if err != nil {
+		return nil, err
+	}
+
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -174,8 +182,6 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// including some ones podman would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
-		"--security-opt", "seccomp=unconfined", // also ignore seccomp
-		"--security-opt", "apparmor=unconfined", // also ignore apparmor
 		// runtime temporary storage
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
@@ -184,7 +190,11 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// filesystem, which is not only better for performance, but allows
 		// running kind in kind for "party tricks"
 		// (please don't depend on doing this though!)
-		"--volume", "/var",
+		// also enable default docker volume options
+		// suid: SUID applications on the volume will be able to change their privilege
+		// exec: executables on the volume will be able to executed within the container
+		// dev: devices on the volume will be able to be used by processes within the container
+		"--volume", fmt.Sprintf("%s:/var:suid,exec,dev", varVolume),
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
 	},
@@ -242,9 +252,16 @@ func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		noProxyList := strings.Join(append(subnets, envs[common.NOProxy]), ",")
-		envs[common.NOProxy] = noProxyList
-		envs[strings.ToLower(common.NOProxy)] = noProxyList
+		noProxyList := append(subnets, envs[common.NOProxy])
+		// Add pod and service dns names to no_proxy to allow in cluster
+		// Note: this is best effort based on the default CoreDNS spec
+		// https://github.com/kubernetes/dns/blob/master/docs/specification.md
+		// Any user created pod/service hostnames, namespaces, custom DNS services
+		// are expected to be no-proxied by the user explicitly.
+		noProxyList = append(noProxyList, ".svc", ".svc.cluster", ".svc.cluster.local")
+		noProxyJoined := strings.Join(noProxyList, ",")
+		envs[common.NOProxy] = noProxyJoined
+		envs[strings.ToLower(common.NOProxy)] = noProxyJoined
 	}
 	return envs, nil
 }
@@ -252,7 +269,7 @@ func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
 func getSubnets(networkName string) ([]string, error) {
 	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
 	cmd := exec.Command("podman", "network", "inspect", "-f", format, networkName)
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}
@@ -339,7 +356,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		if strings.HasSuffix(hostPortBinding, ":0") {
 			hostPortBinding = strings.TrimSuffix(hostPortBinding, "0")
 		}
-		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
+		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, strings.ToLower(protocol)))
 	}
 	return args, nil
 }

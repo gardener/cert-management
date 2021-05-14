@@ -13,7 +13,7 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
-var mainResource = resources.NewGroupKind("extensions", "Ingress")
+var mainResource = resources.NewGroupKind("networking.k8s.io", "Ingress")
 
 func init() {
 	source.CertSourceController(source.NewCertSourceTypeForCreator("ingress-cert", mainResource, NewIngressSource), nil).

@@ -16,8 +16,10 @@ import (
 )
 
 // CertificateRevocationLister helps list CertificateRevocations.
+// All objects returned here must be treated as read-only.
 type CertificateRevocationLister interface {
 	// List lists all CertificateRevocations in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.CertificateRevocation, err error)
 	// CertificateRevocations returns an object that can list and get CertificateRevocations.
 	CertificateRevocations(namespace string) CertificateRevocationNamespaceLister
@@ -48,10 +50,13 @@ func (s *certificateRevocationLister) CertificateRevocations(namespace string) C
 }
 
 // CertificateRevocationNamespaceLister helps list and get CertificateRevocations.
+// All objects returned here must be treated as read-only.
 type CertificateRevocationNamespaceLister interface {
 	// List lists all CertificateRevocations in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.CertificateRevocation, err error)
 	// Get retrieves the CertificateRevocation from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.CertificateRevocation, error)
 	CertificateRevocationNamespaceListerExpansion
 }

@@ -17,12 +17,11 @@ limitations under the License.
 package nodeimage
 
 import (
-	"fmt"
 	"path"
+	"regexp"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/version"
-
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -43,42 +42,10 @@ func createFile(containerCmder exec.Cmder, filePath, contents string) error {
 	).Run()
 }
 
-func repositoryCorrectorForVersion(kubeVersion *version.Version, arch string) func(string) string {
-	archSuffix := "-" + arch
-
-	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
-	// drop the arch suffix from images to get the expected image
-	// for < v1.12 we need to do the opposite.
-	// We can accomplish this by just handling < 1.12 & >= 1.12 as we won't
-	// touch images that match the expectation in either case ...
-	if kubeVersion.LessThan(version.MustParseSemantic("v1.12.0")) {
-		return func(repository string) string {
-			if !strings.HasSuffix(repository, archSuffix) {
-				fixed := repository + archSuffix
-				fmt.Println("fixed: " + repository + " -> " + fixed)
-				repository = fixed
-			}
-			return repository
-		}
+func findSandboxImage(config string) (string, error) {
+	match := regexp.MustCompile(`sandbox_image\s+=\s+"([^\n]+)"`).FindStringSubmatch(config)
+	if len(match) < 2 {
+		return "", errors.New("failed to parse sandbox_image from config")
 	}
-
-	return func(repository string) string {
-		if strings.HasSuffix(repository, archSuffix) {
-			fixed := strings.TrimSuffix(repository, archSuffix)
-			fmt.Println("fixed: " + repository + " -> " + fixed)
-			repository = fixed
-		}
-		return repository
-	}
-}
-
-func findSandboxImage(images []string) string {
-	for _, image := range images {
-		// yep this seems legit
-		// https://github.com/kubernetes-sigs/kind/issues/1471#issuecomment-617579803
-		if strings.Contains(image, "pause") {
-			return image
-		}
-	}
-	return ""
+	return match[1], nil
 }
