@@ -813,7 +813,9 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 
 func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo utils.IssuerInfo, objectMeta metav1.ObjectMeta,
 	certificates *certificate.Resource, specHash string, specSecretRef *corev1.SecretReference, requestedAt *time.Time) (*corev1.SecretReference, error) {
-	secret := &corev1.Secret{}
+	secret := &corev1.Secret{
+		Type: corev1.SecretTypeTLS,
+	}
 	secret.SetNamespace(core.NormalizeNamespace(objectMeta.GetNamespace()))
 	if specSecretRef != nil {
 		secret.SetName(specSecretRef.Name)
@@ -841,18 +843,6 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 	}
 
 	obj, err := r.certSecretResources.CreateOrUpdate(secret)
-	if err != nil && specSecretRef != nil {
-		// for migration from cert-manager: check if secret exists with type SecretTypeTLS and retry update with this type
-		// (on updating a secret changing the type is not allowed)
-		oldSecret := &corev1.Secret{}
-		_, err2 := r.certSecretResources.GetInto(resources.NewObjectName(secret.Namespace, secret.Name), oldSecret)
-		if err2 == nil {
-			if oldSecret.Type == corev1.SecretTypeTLS {
-				secret.Type = corev1.SecretTypeTLS
-				obj, err = r.certSecretResources.CreateOrUpdate(secret)
-			}
-		}
-	}
 	if err != nil {
 		return nil, errors.Wrap(err, "creating/updating certificate secret failed")
 	}

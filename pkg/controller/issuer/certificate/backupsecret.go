@@ -55,7 +55,9 @@ func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string
 		}, false, nil
 	}
 
-	backupSecret := &corev1.Secret{}
+	backupSecret := &corev1.Secret{
+		Type: secret.Type,
+	}
 	backupSecret.GenerateName = fmt.Sprintf("cert-backup-%s-%s-", issuerInfo.Name(), sn[len(sn)-8:])
 	backupSecret.Namespace = metav1.NamespaceSystem
 	backupSecret.Data = secret.Data
