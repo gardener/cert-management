@@ -1,5 +1,5 @@
 /*
-SPDX-FileCopyrightText: YEAR SAP SE or an SAP affiliate company and Gardener contributors
+Copyright (c) YEAR SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 
 SPDX-License-Identifier: Apache-2.0
 */
@@ -22,7 +22,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.9
+    controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
   name: certificaterevocations.cert.gardener.cloud
 spec:
@@ -267,7 +267,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.9
+    controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
   name: certificates.cert.gardener.cloud
 spec:
@@ -451,7 +451,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.9
+    controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
   name: issuers.cert.gardener.cloud
 spec:

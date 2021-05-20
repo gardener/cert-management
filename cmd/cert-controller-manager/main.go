@@ -11,7 +11,7 @@ import (
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
@@ -54,10 +54,15 @@ func init() {
 	mappings.ForControllerGroup(ctrl.ControllerGroupSource).
 		MustRegister()
 
-	resources.Register(extensionsv1beta1.SchemeBuilder)
+	resources.Register(networkingv1beta1.SchemeBuilder)
 	resources.Register(corev1.SchemeBuilder)
 	resources.Register(dnsapi.SchemeBuilder)
 	resources.Register(v1alpha1.SchemeBuilder)
+}
+
+func migrateExtensionsIngress(c controllermanager.Configuration) controllermanager.Configuration {
+	return c.GlobalGroupKindMigrations(resources.NewGroupKind("extensions", "Ingress"),
+		resources.NewGroupKind("networking.k8s.io", "Ingress"))
 }
 
 func main() {
@@ -65,5 +70,5 @@ func main() {
 		fmt.Println(version)
 		os.Exit(0)
 	}
-	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing")
+	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing", migrateExtensionsIngress)
 }

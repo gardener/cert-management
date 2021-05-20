@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	api "k8s.io/api/extensions/v1beta1"
+	api "k8s.io/api/networking/v1beta1"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/logger"
