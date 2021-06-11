@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
+	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/watches"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/resources/apiextensions"
 
@@ -45,15 +46,23 @@ func init() {
 		DefaultedDurationOption(core.OptPropagationTimeout, 120*time.Second, "propagation timeout for DNS challenge").
 		DefaultedIntOption(core.OptDefaultRequestsPerDayQuota, 10000,
 			"Default value for requestsPerDayQuota if not set explicitly in the issuer spec.").
+		DefaultedBoolOption(core.OptAllowTargetIssuers, false, "If true, issuers are also watched on the target cluster").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).
 		DefaultWorkerPool(2, 24*time.Hour).
 		MainResource(api.GroupName, api.CertificateKind).
+		Reconciler(newCompoundReconciler).
 		WorkerPool("revocations", 1, 0).
 		Watch(api.GroupName, api.CertificateRevocationKind).
-		Reconciler(newCompoundReconciler).
-		Cluster(ctrl.DefaultCluster).
 		WorkerPool("issuers", 1, 0).
+		Cluster(ctrl.TargetCluster).
+		FlavoredWatch(
+			watches.Conditional(
+				watches.FlagOption(core.OptAllowTargetIssuers),
+				watches.ResourceFlavorByGK(issuerGroupKind),
+			),
+		).
+		Cluster(ctrl.DefaultCluster).
 		SelectedWatch(selectIssuerNamespaceSelectionFunction, api.GroupName, api.IssuerKind).
 		WorkerPool("secrets", 1, 0).
 		SelectedWatch(selectIssuerNamespaceSelectionFunction, "core", "Secret").
@@ -67,4 +76,8 @@ func selectIssuerNamespaceSelectionFunction(c controller.Interface) (string, res
 	var options resources.TweakListOptionsFunc
 	issuerNamespace, _ := c.GetStringOption(core.OptIssuerNamespace)
 	return issuerNamespace, options
+}
+
+func targetNotSameAsDefaultCluster(wctx watches.WatchContext) bool {
+	return wctx.GetCluster(ctrl.DefaultCluster) != wctx.GetCluster(ctrl.TargetCluster)
 }

@@ -9,26 +9,27 @@ package core
 import (
 	"sync"
 
+	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
 // NewAssociatedObjects creates an AssociatedObjects
 func NewAssociatedObjects() *AssociatedObjects {
 	return &AssociatedObjects{
-		srcToDest: map[resources.ObjectName]resources.ObjectNameSet{},
-		destToSrc: map[resources.ObjectName]resources.ObjectName{},
+		srcToDest: map[utils.IssuerKey]resources.ObjectNameSet{},
+		destToSrc: map[resources.ObjectName]utils.IssuerKey{},
 	}
 }
 
 // AssociatedObjects stores bidi-associations between source and dest.
 type AssociatedObjects struct {
 	lock      sync.Mutex
-	srcToDest map[resources.ObjectName]resources.ObjectNameSet
-	destToSrc map[resources.ObjectName]resources.ObjectName
+	srcToDest map[utils.IssuerKey]resources.ObjectNameSet
+	destToSrc map[resources.ObjectName]utils.IssuerKey
 }
 
 // AddAssoc adds an association.
-func (ao *AssociatedObjects) AddAssoc(src, dst resources.ObjectName) {
+func (ao *AssociatedObjects) AddAssoc(src utils.IssuerKey, dst resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
@@ -46,9 +47,8 @@ func (ao *AssociatedObjects) RemoveByDest(dst resources.ObjectName) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
-	if src := ao.destToSrc[dst]; src != nil {
-		set := ao.srcToDest[src]
-		if set != nil {
+	if src, ok := ao.destToSrc[dst]; ok {
+		if set := ao.srcToDest[src]; set != nil {
 			set.Remove(dst)
 			if len(set) == 0 {
 				delete(ao.srcToDest, src)
@@ -59,18 +59,20 @@ func (ao *AssociatedObjects) RemoveByDest(dst resources.ObjectName) {
 }
 
 // RemoveBySource removes an association by src.
-func (ao *AssociatedObjects) RemoveBySource(src resources.ObjectName) {
+func (ao *AssociatedObjects) RemoveBySource(src utils.IssuerKey) {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
-	for dst := range ao.srcToDest[src] {
-		delete(ao.destToSrc, dst)
+	if set := ao.srcToDest[src]; set != nil {
+		for dst := range set {
+			delete(ao.destToSrc, dst)
+		}
 	}
 	delete(ao.srcToDest, src)
 }
 
 // DestinationsAsArray returns all destinations for the given source.
-func (ao *AssociatedObjects) DestinationsAsArray(src resources.ObjectName) []resources.ObjectName {
+func (ao *AssociatedObjects) DestinationsAsArray(src utils.IssuerKey) []resources.ObjectName {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
@@ -82,7 +84,7 @@ func (ao *AssociatedObjects) DestinationsAsArray(src resources.ObjectName) []res
 }
 
 // DestinationsCount counts the destinations for the given source.
-func (ao *AssociatedObjects) DestinationsCount(src resources.ObjectName) int {
+func (ao *AssociatedObjects) DestinationsCount(src utils.IssuerKey) int {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
@@ -94,11 +96,11 @@ func (ao *AssociatedObjects) DestinationsCount(src resources.ObjectName) int {
 }
 
 // Sources returns all sources.
-func (ao *AssociatedObjects) Sources() []resources.ObjectName {
+func (ao *AssociatedObjects) Sources() []utils.IssuerKey {
 	ao.lock.Lock()
 	defer ao.lock.Unlock()
 
-	sources := []resources.ObjectName{}
+	sources := []utils.IssuerKey{}
 	for src := range ao.srcToDest {
 		sources = append(sources, src)
 	}

@@ -7,58 +7,58 @@
 package core
 
 import (
-	v1 "k8s.io/api/core/v1"
 	"sync"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/gardener/cert-management/pkg/cert/utils"
+	v1 "k8s.io/api/core/v1"
 )
 
 // NewReferencedSecrets create a ReferencedSecrets
 func NewReferencedSecrets() *ReferencedSecrets {
 	return &ReferencedSecrets{
-		secretToIssuers: map[resources.ObjectName]resources.ObjectNameSet{},
-		issuerToSecret:  map[resources.ObjectName]secretAndHash{},
+		secretToIssuers: map[utils.IssuerSecretKey]utils.IssuerKeySet{},
+		issuerToSecret:  map[utils.IssuerKey]secretAndHash{},
 	}
 }
 
 type secretAndHash struct {
-	secretName resources.ObjectName
+	secretName utils.IssuerSecretKey
 	hash       string
 }
 
 // ReferencedSecrets stores references between issuers and their secrets.
 type ReferencedSecrets struct {
 	lock            sync.Mutex
-	secretToIssuers map[resources.ObjectName]resources.ObjectNameSet
-	issuerToSecret  map[resources.ObjectName]secretAndHash
+	secretToIssuers map[utils.IssuerSecretKey]utils.IssuerKeySet
+	issuerToSecret  map[utils.IssuerKey]secretAndHash
 }
 
 // RememberIssuerSecret stores a secretRef for an issuer.
-func (rs *ReferencedSecrets) RememberIssuerSecret(issuerName resources.ObjectName, secretRef *v1.SecretReference, hash string) bool {
+func (rs *ReferencedSecrets) RememberIssuerSecret(issuerKey utils.IssuerKey, secretRef *v1.SecretReference, hash string) bool {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
 	if secretRef == nil {
-		return rs.removeIssuer(issuerName)
+		return rs.removeIssuer(issuerKey)
 	}
-	secretName := newObjectName(secretRef.Namespace, secretRef.Name)
-	return rs.updateIssuerSecret(issuerName, secretName, hash)
+	secretKey := utils.NewIssuerSecretKey(issuerKey.Cluster(), secretRef.Namespace, secretRef.Name)
+	return rs.updateIssuerSecret(issuerKey, secretKey, hash)
 }
 
 // RemoveIssuer removes all secretRefs for an issuer.
-func (rs *ReferencedSecrets) RemoveIssuer(issuerName resources.ObjectName) bool {
+func (rs *ReferencedSecrets) RemoveIssuer(issuerKey utils.IssuerKey) bool {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
-	return rs.removeIssuer(issuerName)
+	return rs.removeIssuer(issuerKey)
 }
 
 // GetIssuerSecretHash gets the for an issuer secret
-func (rs *ReferencedSecrets) GetIssuerSecretHash(issuerName resources.ObjectName) string {
+func (rs *ReferencedSecrets) GetIssuerSecretHash(issuerKey utils.IssuerKey) string {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
-	obj, ok := rs.issuerToSecret[issuerName]
+	obj, ok := rs.issuerToSecret[issuerKey]
 	if !ok {
 		return ""
 	}
@@ -66,22 +66,22 @@ func (rs *ReferencedSecrets) GetIssuerSecretHash(issuerName resources.ObjectName
 }
 
 // IssuerNamesFor finds issuers for given secret name.
-func (rs *ReferencedSecrets) IssuerNamesFor(secretName resources.ObjectName) resources.ObjectNameSet {
+func (rs *ReferencedSecrets) IssuerNamesFor(secretKey utils.IssuerSecretKey) utils.IssuerKeySet {
 	rs.lock.Lock()
 	defer rs.lock.Unlock()
 
-	set, ok := rs.secretToIssuers[secretName]
+	set, ok := rs.secretToIssuers[secretKey]
 	if !ok {
 		return nil
 	}
 	return set.Copy()
 }
 
-func (rs *ReferencedSecrets) removeIssuer(issuerName resources.ObjectName) bool {
-	obj, ok := rs.issuerToSecret[issuerName]
+func (rs *ReferencedSecrets) removeIssuer(issuerKey utils.IssuerKey) bool {
+	obj, ok := rs.issuerToSecret[issuerKey]
 	if ok {
-		delete(rs.issuerToSecret, issuerName)
-		rs.secretToIssuers[obj.secretName].Remove(issuerName)
+		delete(rs.issuerToSecret, issuerKey)
+		rs.secretToIssuers[obj.secretName].Remove(issuerKey)
 		if len(rs.secretToIssuers[obj.secretName]) == 0 {
 			delete(rs.secretToIssuers, obj.secretName)
 		}
@@ -89,21 +89,21 @@ func (rs *ReferencedSecrets) removeIssuer(issuerName resources.ObjectName) bool 
 	return ok
 }
 
-func (rs *ReferencedSecrets) updateIssuerSecret(issuerName, secretName resources.ObjectName, hash string) bool {
-	old, ok := rs.issuerToSecret[issuerName]
-	if ok && old.secretName == secretName && old.hash == hash {
+func (rs *ReferencedSecrets) updateIssuerSecret(issuerKey utils.IssuerKey, secretKey utils.IssuerSecretKey, hash string) bool {
+	old, ok := rs.issuerToSecret[issuerKey]
+	if ok && old.secretName == secretKey && old.hash == hash {
 		return false
 	}
 
-	rs.removeIssuer(issuerName)
+	rs.removeIssuer(issuerKey)
 
-	rs.issuerToSecret[issuerName] = secretAndHash{secretName, hash}
-	set := rs.secretToIssuers[secretName]
+	rs.issuerToSecret[issuerKey] = secretAndHash{secretKey, hash}
+	set := rs.secretToIssuers[secretKey]
 	if set == nil {
-		set = resources.ObjectNameSet{}
-		rs.secretToIssuers[secretName] = set
+		set = utils.IssuerKeySet{}
+		rs.secretToIssuers[secretKey] = set
 	}
-	set.Add(issuerName)
+	set.Add(issuerKey)
 
 	return true
 }

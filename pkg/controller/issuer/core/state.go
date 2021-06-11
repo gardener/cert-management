@@ -7,6 +7,8 @@
 package core
 
 import (
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	v1 "k8s.io/api/core/v1"
 )
@@ -16,6 +18,7 @@ type state struct {
 	eabSecrets   ReferencedSecrets
 	certificates AssociatedObjects
 	quotas       Quotas
+	selections   IssuerDNSSelections
 	overdueCerts objectNameSet
 	revokedCerts objectNameSet
 }
@@ -23,17 +26,27 @@ type state struct {
 func newState() *state {
 	return &state{secrets: *NewReferencedSecrets(), eabSecrets: *NewReferencedSecrets(),
 		certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
+		selections:   *NewIssuerDNSSelections(),
 		overdueCerts: *newObjectNameSet(), revokedCerts: *newObjectNameSet()}
 }
 
-func (s *state) RemoveIssuer(name resources.ObjectName) bool {
-	s.certificates.RemoveBySource(name)
-	s.quotas.RemoveIssuer(name)
-	s.eabSecrets.RemoveIssuer(name)
-	return s.secrets.RemoveIssuer(name)
+func (s *state) AddIssuerDomains(key utils.IssuerKey, sel *v1alpha1.DNSSelection) {
+	s.selections.Add(key, sel)
 }
 
-func (s *state) AddCertAssoc(issuer resources.ObjectName, cert resources.ObjectName) {
+func (s *state) GetAllIssuerDomains() map[utils.IssuerKey]*v1alpha1.DNSSelection {
+	return s.selections.GetAll()
+}
+
+func (s *state) RemoveIssuer(key utils.IssuerKey) bool {
+	s.certificates.RemoveBySource(key)
+	s.quotas.RemoveIssuer(key)
+	s.eabSecrets.RemoveIssuer(key)
+	s.selections.Remove(key)
+	return s.secrets.RemoveIssuer(key)
+}
+
+func (s *state) AddCertAssoc(issuer utils.IssuerKey, cert resources.ObjectName) {
 	s.certificates.AddAssoc(issuer, cert)
 }
 
@@ -41,45 +54,45 @@ func (s *state) RemoveCertAssoc(cert resources.ObjectName) {
 	s.certificates.RemoveByDest(cert)
 }
 
-func (s *state) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {
+func (s *state) CertificateNamesForIssuer(issuer utils.IssuerKey) []resources.ObjectName {
 	return s.certificates.DestinationsAsArray(issuer)
 }
 
-func (s *state) CertificateCountForIssuer(issuer resources.ObjectName) int {
+func (s *state) CertificateCountForIssuer(issuer utils.IssuerKey) int {
 	return s.certificates.DestinationsCount(issuer)
 }
 
-func (s *state) KnownIssuers() []resources.ObjectName {
-	return s.certificates.Sources()
+func (s *state) KnownIssuers() []utils.IssuerKey {
+	return s.selections.Issuers()
 }
 
-func (s *state) RememberIssuerQuotas(issuer resources.ObjectName, requestsPerDay int) {
+func (s *state) RememberIssuerQuotas(issuer utils.IssuerKey, requestsPerDay int) {
 	s.quotas.RememberQuotas(issuer, requestsPerDay)
 }
 
 // TryAcceptCertificateRequest tries to accept a certificate request according to the quotas.
 // Return true if accepted and the requests per days quota value
-func (s *state) TryAcceptCertificateRequest(issuer resources.ObjectName) (bool, int) {
+func (s *state) TryAcceptCertificateRequest(issuer utils.IssuerKey) (bool, int) {
 	return s.quotas.TryAccept(issuer)
 }
 
-func (s *state) IssuerNamesForSecret(secretName resources.ObjectName) resources.ObjectNameSet {
-	return s.secrets.IssuerNamesFor(secretName)
+func (s *state) IssuerNamesForSecret(secretKey utils.IssuerSecretKey) utils.IssuerKeySet {
+	return s.secrets.IssuerNamesFor(secretKey)
 }
 
-func (s *state) RememberIssuerSecret(issuer resources.ObjectName, secretRef *v1.SecretReference, hash string) {
+func (s *state) RememberIssuerSecret(issuer utils.IssuerKey, secretRef *v1.SecretReference, hash string) {
 	s.secrets.RememberIssuerSecret(issuer, secretRef, hash)
 }
 
-func (s *state) GetIssuerSecretHash(issuerName resources.ObjectName) string {
-	return s.secrets.GetIssuerSecretHash(issuerName)
+func (s *state) GetIssuerSecretHash(issuerKey utils.IssuerKey) string {
+	return s.secrets.GetIssuerSecretHash(issuerKey)
 }
 
-func (s *state) IssuerNamesForEABSecret(secretName resources.ObjectName) resources.ObjectNameSet {
-	return s.eabSecrets.IssuerNamesFor(secretName)
+func (s *state) IssuerNamesForEABSecret(secretKey utils.IssuerSecretKey) utils.IssuerKeySet {
+	return s.eabSecrets.IssuerNamesFor(secretKey)
 }
 
-func (s *state) RememberIssuerEABSecret(issuer resources.ObjectName, secretRef *v1.SecretReference, hash string) {
+func (s *state) RememberIssuerEABSecret(issuer utils.IssuerKey, secretRef *v1.SecretReference, hash string) {
 	s.eabSecrets.RememberIssuerSecret(issuer, secretRef, hash)
 }
 

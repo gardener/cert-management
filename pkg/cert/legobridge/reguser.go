@@ -15,6 +15,7 @@ import (
 	"fmt"
 
 	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/registration"
@@ -76,14 +77,14 @@ func (u *RegistrationUser) NewConfig(caDirURL string) *lego.Config {
 }
 
 // NewRegistrationUserFromEmail generates a private key and requests a new registration for the user.
-func NewRegistrationUserFromEmail(email string, caDirURL string, secretData map[string][]byte,
-	eabKeyID, eabHmacKey string) (*RegistrationUser, error) {
+func NewRegistrationUserFromEmail(issuerKey utils.IssuerKey,
+	email string, caDirURL string, secretData map[string][]byte, eabKeyID, eabHmacKey string) (*RegistrationUser, error) {
 	privateKey, err := ExtractOrGeneratePrivateKey(secretData)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewRegistrationUserFromEmailAndPrivateKey(email, caDirURL, privateKey, eabKeyID, eabHmacKey)
+	return NewRegistrationUserFromEmailAndPrivateKey(issuerKey, email, caDirURL, privateKey, eabKeyID, eabHmacKey)
 }
 
 // ExtractOrGeneratePrivateKey extracts the private key from the secret or generates a new one.
@@ -104,8 +105,8 @@ func ExtractOrGeneratePrivateKey(secretData map[string][]byte) (crypto.PrivateKe
 }
 
 // NewRegistrationUserFromEmailAndPrivateKey requests a user registration.
-func NewRegistrationUserFromEmailAndPrivateKey(email string, caDirURL string, privateKey crypto.PrivateKey,
-	eabKid, eabHmacKey string) (*RegistrationUser, error) {
+func NewRegistrationUserFromEmailAndPrivateKey(issuerKey utils.IssuerKey,
+	email string, caDirURL string, privateKey crypto.PrivateKey, eabKid, eabHmacKey string) (*RegistrationUser, error) {
 	user := &RegistrationUser{email: email, key: privateKey, caDirURL: caDirURL, eabKeyID: eabKid, eabHmacKey: eabHmacKey}
 	config := user.NewConfig(caDirURL)
 
@@ -130,7 +131,7 @@ func NewRegistrationUserFromEmailAndPrivateKey(email string, caDirURL string, pr
 	}
 	user.registration = reg
 
-	metrics.AddACMEAccountRegistration(reg.URI, email)
+	metrics.AddACMEAccountRegistration(issuerKey, reg.URI, email)
 
 	return user, nil
 }
@@ -154,8 +155,8 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 }
 
 // RegistrationUserFromSecretData restores a RegistrationUser from a secret data map.
-func RegistrationUserFromSecretData(email, caDirURL string, registrationRaw []byte, data map[string][]byte,
-	eabKeyID, eabHmacKey string) (*RegistrationUser, error) {
+func RegistrationUserFromSecretData(issuerKey utils.IssuerKey,
+	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string) (*RegistrationUser, error) {
 	privkeyBytes, ok := data[KeyPrivateKey]
 	if !ok {
 		return nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
@@ -170,7 +171,7 @@ func RegistrationUserFromSecretData(email, caDirURL string, registrationRaw []by
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling registration json failed with %s", err.Error())
 	}
-	metrics.AddACMEAccountRegistration(reg.URI, email)
+	metrics.AddACMEAccountRegistration(issuerKey, reg.URI, email)
 	return &RegistrationUser{email: email, registration: reg, caDirURL: caDirURL, key: privateKey,
 		eabKeyID: eabKeyID, eabHmacKey: eabHmacKey}, nil
 }

@@ -33,6 +33,22 @@ func IsInDomainRanges(domain string, domainRanges []string) bool {
 	return false
 }
 
+// BestDomainRange returns best fitting domain range value or "".
+func BestDomainRange(domain string, domainRanges []string) string {
+	if domainRanges == nil {
+		return "*"
+	}
+	best := ""
+	for _, domainRange := range domainRanges {
+		if IsInDomainRange(domain, domainRange) {
+			if len(best) < len(domainRange) {
+				best = domainRange
+			}
+		}
+	}
+	return best
+}
+
 // IsInDomainRange returns true if domain is in domain range.
 func IsInDomainRange(domain, domainRange string) bool {
 	if domainRange == "" {

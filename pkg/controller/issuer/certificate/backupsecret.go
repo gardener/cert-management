@@ -58,7 +58,7 @@ func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string
 	backupSecret := &corev1.Secret{
 		Type: secret.Type,
 	}
-	backupSecret.GenerateName = fmt.Sprintf("cert-backup-%s-%s-", issuerInfo.Name(), sn[len(sn)-8:])
+	backupSecret.GenerateName = fmt.Sprintf("cert-backup-%s-%s-", issuerInfo.Key().Name(), sn[len(sn)-8:])
 	backupSecret.Namespace = metav1.NamespaceSystem
 	backupSecret.Data = secret.Data
 	resources.SetLabel(backupSecret, LabelCertificateHashKey, hashKey)

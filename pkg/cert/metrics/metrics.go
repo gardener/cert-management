@@ -7,10 +7,12 @@
 package metrics
 
 import (
+	"strconv"
+
+	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/server"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"strconv"
 )
 
 func init() {
@@ -32,7 +34,7 @@ var (
 			Name: "cert_management_acme_account_registrations",
 			Help: "ACME account registrations",
 		},
-		[]string{"uri", "email"},
+		[]string{"uri", "email", "issuer"},
 	)
 
 	// ACMETotalOrders is the cert_management_acme_orders counter.
@@ -89,35 +91,37 @@ var (
 )
 
 // AddACMEAccountRegistration increments the ACMEAccountRegistrations counter.
-func AddACMEAccountRegistration(uri, email string) {
-	ACMEAccountRegistrations.WithLabelValues(uri, email).Set(1)
+func AddACMEAccountRegistration(issuerKey utils.IssuerKey, uri, email string) {
+	ACMEAccountRegistrations.WithLabelValues(uri, email, issuerKey.String()).Set(1)
 }
 
 // AddACMEOrder increments the ACMETotalOrders counter.
-func AddACMEOrder(issuer string, success bool, count int, renew bool) {
+func AddACMEOrder(issuerKey utils.IssuerKey, success bool, count int, renew bool) {
 	if count > 0 {
-		ACMETotalOrders.WithLabelValues(issuer, strconv.FormatBool(success), strconv.FormatInt(int64(count), 10), strconv.FormatBool(renew)).Inc()
+		name := issuerKey.String()
+		ACMETotalOrders.WithLabelValues(name, strconv.FormatBool(success), strconv.FormatInt(int64(count), 10), strconv.FormatBool(renew)).Inc()
 	}
 }
 
 // AddActiveACMEDNSChallenge increments the ACMEActiveDNSChallenges gauge.
-func AddActiveACMEDNSChallenge(issuer string) {
-	ACMEActiveDNSChallenges.WithLabelValues(issuer).Inc()
+func AddActiveACMEDNSChallenge(issuerKey utils.IssuerKey) {
+	name := issuerKey.String()
+	ACMEActiveDNSChallenges.WithLabelValues(name).Inc()
 }
 
 // RemoveActiveACMEDNSChallenge decrements the ACMEActiveDNSChallenges gauge.
-func RemoveActiveACMEDNSChallenge(issuer string) {
-	ACMEActiveDNSChallenges.WithLabelValues(issuer).Dec()
+func RemoveActiveACMEDNSChallenge(issuerKey utils.IssuerKey) {
+	ACMEActiveDNSChallenges.WithLabelValues(issuerKey.String()).Dec()
 }
 
 // ReportCertEntries sets the CertEntries gauge
-func ReportCertEntries(issuertype, issuer string, count int) {
-	CertEntries.WithLabelValues(issuertype, issuer).Set(float64(count))
+func ReportCertEntries(issuertype string, issuerKey utils.IssuerKey, count int) {
+	CertEntries.WithLabelValues(issuertype, issuerKey.String()).Set(float64(count))
 }
 
 // DeleteCertEntries deletes a CertEntries gauge entry.
-func DeleteCertEntries(issuertype, issuer string) {
-	CertEntries.DeleteLabelValues(issuertype, issuer)
+func DeleteCertEntries(issuertype string, issuerKey utils.IssuerKey) {
+	CertEntries.DeleteLabelValues(issuertype, issuerKey.String())
 }
 
 // ReportOverdueCerts sets the OverdueCertificates gauge

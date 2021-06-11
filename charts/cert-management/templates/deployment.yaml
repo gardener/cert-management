@@ -37,6 +37,9 @@ spec:
         {{- if .Values.configuration.acceptedMaintainers }}
         - --accepted-maintainers={{ .Values.configuration.acceptedMaintainers }}
         {{- end }}
+        {{- if .Values.configuration.allowTargetIssuers }}
+        - --allow-target-issuers={{ .Values.configuration.allowTargetIssuers }}
+        {{- end }}
         {{- if .Values.configuration.bindAddressHttp }}
         - --bind-address-http={{ .Values.configuration.bindAddressHttp }}
         {{- end }}
@@ -133,6 +136,9 @@ spec:
         {{- if .Values.configuration.issuerNamespace }}
         - --issuer-namespace={{ .Values.configuration.issuerNamespace }}
         {{- end }}
+        {{- if .Values.configuration.issuerAllowTargetIssuers }}
+        - --issuer.allow-target-issuers={{ .Values.configuration.issuerAllowTargetIssuers }}
+        {{- end }}
         {{- if .Values.configuration.issuerCascadeDelete }}
         - --issuer.cascade-delete={{ .Values.configuration.issuerCascadeDelete }}
         {{- end }}
@@ -190,8 +196,14 @@ spec:
         {{- if .Values.configuration.issuerRenewalWindow }}
         - --issuer.renewal-window={{ .Values.configuration.issuerRenewalWindow }}
         {{- end }}
+        {{- if .Values.configuration.issuerRevocationsPoolSize }}
+        - --issuer.revocations.pool.size={{ .Values.configuration.issuerRevocationsPoolSize }}
+        {{- end }}
         {{- if .Values.configuration.issuerSecretsPoolSize }}
         - --issuer.secrets.pool.size={{ .Values.configuration.issuerSecretsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.issuerTargetIssuersPoolSize }}
+        - --issuer.target-issuers.pool.size={{ .Values.configuration.issuerTargetIssuersPoolSize }}
         {{- end }}
         {{- if .Values.configuration.issuersPoolSize }}
         - --issuers.pool.size={{ .Values.configuration.issuersPoolSize }}
@@ -259,6 +271,9 @@ spec:
         {{- if .Values.configuration.renewalWindow }}
         - --renewal-window={{ .Values.configuration.renewalWindow }}
         {{- end }}
+        {{- if .Values.configuration.revocationsPoolSize }}
+        - --revocations.pool.size={{ .Values.configuration.revocationsPoolSize }}
+        {{- end }}
         {{- if .Values.configuration.secretsPoolSize }}
         - --secrets.pool.size={{ .Values.configuration.secretsPoolSize }}
         {{- end }}
@@ -306,6 +321,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.target }}
         - --target={{ .Values.configuration.target }}
+        {{- end }}
+        {{- if .Values.configuration.targetIssuersPoolSize }}
+        - --target-issuers.pool.size={{ .Values.configuration.targetIssuersPoolSize }}
         {{- end }}
         {{- if .Values.configuration.targetNamePrefix }}
         - --target-name-prefix={{ .Values.configuration.targetNamePrefix }}

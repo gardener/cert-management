@@ -8,10 +8,11 @@ package core
 
 import (
 	"fmt"
-	"github.com/gardener/controller-manager-library/pkg/resources"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/gardener/cert-management/pkg/cert/utils"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,7 +50,7 @@ func TestRobustRemember(t *testing.T) {
 			issuer := &api.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      entry.issuerName,
-					Namespace: "",
+					Namespace: "default",
 				},
 				Spec: api.IssuerSpec{ACME: &api.ACMESpec{}},
 			}
@@ -59,12 +60,12 @@ func TestRobustRemember(t *testing.T) {
 					Name:      entry.secretName,
 				}
 			}
-			changed = data.RememberIssuerSecret(resources.NewObjectName("default", entry.issuerName),
+			changed = data.RememberIssuerSecret(utils.NewDefaultClusterIssuerKey(entry.issuerName),
 				issuer.Spec.ACME.PrivateKeySecretRef, entry.secretHash)
 		case "remove":
-			changed = data.RemoveIssuer(resources.NewObjectName("default", entry.issuerName))
+			changed = data.RemoveIssuer(utils.NewDefaultClusterIssuerKey(entry.issuerName))
 		case "removeSecret":
-			issuers := data.IssuerNamesFor(resources.NewObjectName("default", entry.secretName))
+			issuers := data.IssuerNamesFor(utils.NewIssuerSecretKey(utils.ClusterDefault, "", entry.secretName))
 			for issuer := range issuers {
 				b := data.RemoveIssuer(issuer)
 				changed = changed || b
@@ -90,7 +91,7 @@ func testContent(data *ReferencedSecrets) string {
 	parts := []string{}
 	for _, s := range secrets {
 		issuers := []string{}
-		for issuer := range data.secretToIssuers[resources.NewObjectName("default", s)] {
+		for issuer := range data.secretToIssuers[utils.NewIssuerSecretKey(utils.ClusterDefault, "", s)] {
 			issuers = append(issuers, issuer.Name())
 		}
 		sort.Strings(issuers)

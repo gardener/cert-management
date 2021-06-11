@@ -188,13 +188,23 @@ func newSharedFilteredInformerFactory(rctx *resourceContext, defaultResync time.
 
 // Start initializes all requested informers.
 func (f *sharedFilteredInformerFactory) Start(stopCh <-chan struct{}) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
 	for _, i := range f.filters {
 		i.Start(stopCh)
 	}
 }
 
 func (f *sharedFilteredInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) {
+	f.lock.Lock()
+	copy := []*genericInformerFactory{}
 	for _, i := range f.filters {
+		copy = append(copy, i)
+	}
+	f.lock.Unlock()
+
+	for _, i := range copy {
 		i.WaitForCacheSync(stopCh)
 	}
 }
@@ -260,7 +270,7 @@ func (f *sharedFilteredInformerFactory) lookupInformerFor(gvk schema.GroupVersio
 	if err != nil {
 		return nil, err
 	}
-	return f.getFactory("", nil).informerFor(lwFactory)
+	return f.getFactory(namespace, nil).informerFor(lwFactory)
 }
 
 func (f *sharedFilteredInformerFactory) InformerFor(gvk schema.GroupVersionKind) (GenericInformer, error) {

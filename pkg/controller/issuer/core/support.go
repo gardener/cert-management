@@ -18,6 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
@@ -56,27 +57,42 @@ type IssuerHandler interface {
 	Reconcile(logger logger.LogContext, obj resources.Object, issuer *api.Issuer) reconcile.Status
 }
 
-// NewHandlerSupport creates CompoundHandler and Support
-func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory) (*CompoundHandler, *Support, error) {
+// NewHandlerSupport creates the shared Support object
+func NewHandlerSupport(c controller.Interface) (*Support, error) {
 	defaultCluster := c.GetCluster(ctrl.DefaultCluster)
 	targetCluster := c.GetCluster(ctrl.TargetCluster)
-	issuerResources, err := defaultCluster.Resources().GetByExample(&api.Issuer{})
+	defaultIssuerResources, err := defaultCluster.Resources().GetByExample(&api.Issuer{})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	issuerSecretResources, err := defaultCluster.Resources().GetByExample(&corev1.Secret{})
+	defaultSecretResources, err := defaultCluster.Resources().GetByExample(&corev1.Secret{})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+
+	allowTargetIssuers, _ := c.GetBoolOption(OptAllowTargetIssuers)
+	var targetIssuerResources, targetSecretResources resources.Interface
+	if allowTargetIssuers {
+		targetIssuerResources, err = targetCluster.Resources().GetByExample(&api.Issuer{})
+		if err != nil {
+			return nil, err
+		}
+		targetSecretResources, err = targetCluster.Resources().GetByExample(&corev1.Secret{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	state := newState()
 	s := &Support{
-		enqueuer:              c,
-		state:                 state,
-		issuerResources:       issuerResources,
-		issuerSecretResources: issuerSecretResources,
-		defaultCluster:        defaultCluster,
-		targetCluster:         targetCluster,
+		enqueuer:               c,
+		state:                  state,
+		defaultIssuerResources: defaultIssuerResources,
+		defaultSecretResources: defaultSecretResources,
+		targetIssuerResources:  targetIssuerResources,
+		targetSecretResources:  targetSecretResources,
+		defaultCluster:         defaultCluster,
+		targetCluster:          targetCluster,
 	}
 
 	s.defaultIssuerName, _ = c.GetStringOption(OptDefaultIssuer)
@@ -92,24 +108,45 @@ func NewHandlerSupport(c controller.Interface, factories ...IssuerHandlerFactory
 
 	s.defaultRequestsPerDayQuota, _ = c.GetIntOption(OptDefaultRequestsPerDayQuota)
 	if s.defaultRequestsPerDayQuota < 1 {
-		return nil, nil, fmt.Errorf("Invalid value for %s: %d", OptDefaultRequestsPerDayQuota, s.defaultRequestsPerDayQuota)
+		return nil, fmt.Errorf("Invalid value for %s: %d", OptDefaultRequestsPerDayQuota, s.defaultRequestsPerDayQuota)
 	}
+	return s, err
+}
 
-	h := &CompoundHandler{support: s}
-	err = h.addIssuerHandlerFactories(factories)
+// NewCompoundHandler creates a cluster specific CompoundHandler
+func NewCompoundHandler(c controller.Interface, factories ...IssuerHandlerFactory) (*CompoundHandler, error) {
+	result := c.GetEnvironment().GetOrCreateSharedValue(c.GetName()+"-support", func() interface{} {
+		support, err := NewHandlerSupport(c)
+		if err != nil {
+			return err
+		}
+		return support
+	})
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	support := result.(*Support)
+
+	h := &CompoundHandler{support: support}
+	err := h.addIssuerHandlerFactories(factories)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	metrics.ReportOverdueCerts(0)
 
-	return h, s, nil
+	return h, nil
 }
 
 // CompoundHandler is an array of IssuerHandler
 type CompoundHandler struct {
 	support  *Support
 	handlers []IssuerHandler
+}
+
+// Support returns the support object
+func (h *CompoundHandler) Support() *Support {
+	return h.support
 }
 
 // ReconcileIssuer reconciles an issuer and forward it to the correct IssuerHandler
@@ -119,8 +156,9 @@ func (h *CompoundHandler) ReconcileIssuer(logger logger.LogContext, obj resource
 	if !ok {
 		return h.failedNoType(logger, obj, api.StateError, fmt.Errorf("casting to issuer failed"))
 	}
-	if issuer.Namespace != h.support.IssuerNamespace() {
-		reconcile.Succeeded(logger)
+	if h.support.Cluster(obj.ClusterKey()) == utils.ClusterDefault && issuer.Namespace != h.support.IssuerNamespace() {
+		logger.Infof("issuer on default cluster ignored as not in issuer namespace %s", h.support.IssuerNamespace())
+		return reconcile.Succeeded(logger)
 	}
 	for _, handler := range h.handlers {
 		if handler.CanReconcile(issuer) {
@@ -132,19 +170,19 @@ func (h *CompoundHandler) ReconcileIssuer(logger logger.LogContext, obj resource
 
 // DeletedIssuer deletes an issuer
 func (h *CompoundHandler) DeletedIssuer(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
-	h.support.RemoveIssuer(key.ObjectName())
+	h.support.RemoveIssuer(key)
 	logger.Infof("deleted")
 	return reconcile.Succeeded(logger)
 }
 
 // ReconcileSecret reconciles secrets (for issuers)
 func (h *CompoundHandler) ReconcileSecret(logger logger.LogContext, obj resources.Object) reconcile.Status {
-	return h.enqueueIssuers(logger, obj.ObjectName())
+	return h.enqueueIssuers(logger, obj.ClusterKey())
 }
 
 // DeletedSecret updates issuers on deleted secret
 func (h *CompoundHandler) DeletedSecret(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
-	return h.enqueueIssuers(logger, key.ObjectName())
+	return h.enqueueIssuers(logger, key)
 }
 
 func (h *CompoundHandler) failedNoType(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
@@ -163,11 +201,11 @@ func (h *CompoundHandler) addIssuerHandlerFactories(factories []IssuerHandlerFac
 	return nil
 }
 
-func (h *CompoundHandler) enqueueIssuers(logger logger.LogContext, objName resources.ObjectName) reconcile.Status {
-	issuers := h.support.IssuerNamesForSecretOrEABSecret(objName)
+func (h *CompoundHandler) enqueueIssuers(logger logger.LogContext, secretKey resources.ClusterObjectKey) reconcile.Status {
+	issuers := h.support.IssuerNamesForSecretOrEABSecret(secretKey)
 	if issuers != nil {
 		groupKind := api.Kind(api.IssuerKind)
-		clusterID := h.support.GetDefaultClusterID()
+		clusterID := secretKey.Cluster()
 		for issuerName := range issuers {
 			key := resources.NewClusterKey(clusterID, groupKind, issuerName.Namespace(), issuerName.Name())
 			_ = h.support.EnqueueKey(key)
@@ -182,12 +220,25 @@ type Support struct {
 	state                      *state
 	defaultCluster             resources.Cluster
 	targetCluster              resources.Cluster
-	issuerResources            resources.Interface
-	issuerSecretResources      resources.Interface
+	defaultIssuerResources     resources.Interface
+	defaultSecretResources     resources.Interface
+	targetIssuerResources      resources.Interface
+	targetSecretResources      resources.Interface
 	defaultIssuerName          string
 	issuerNamespace            string
 	defaultRequestsPerDayQuota int
 	defaultIssuerDomainRanges  []string
+}
+
+// Cluster returns the cluster enum for the given `ClusterObjectKey`
+func (s *Support) Cluster(key resources.ClusterObjectKey) utils.Cluster {
+	switch key.Cluster() {
+	case s.defaultCluster.GetId():
+		return utils.ClusterDefault
+	case s.targetCluster.GetId():
+		return utils.ClusterTarget
+	}
+	panic(fmt.Sprintf("unexpected cluster: %s", key.Cluster()))
 }
 
 // EnqueueKey forwards to an enqueuer
@@ -196,7 +247,7 @@ func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
 }
 
 // WriteIssuerSecretFromRegistrationUser writes an issuer secret
-func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
+func (s *Support) WriteIssuerSecretFromRegistrationUser(issuerKey utils.IssuerKey, issuerUID types.UID, reguser *legobridge.RegistrationUser,
 	secretRef *corev1.SecretReference) (*corev1.SecretReference, *corev1.Secret, error) {
 	var err error
 
@@ -205,16 +256,16 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta
 		secret.SetName(secretRef.Name)
 		secret.SetNamespace(NormalizeNamespace(secretRef.Namespace))
 	} else {
-		secret.SetGenerateName(issuer.GetName() + "-")
-		secret.SetNamespace(NormalizeNamespace(issuer.GetNamespace()))
+		secret.SetGenerateName(issuerKey.Name() + "-")
+		secret.SetNamespace(NormalizeNamespace(issuerKey.Namespace()))
 	}
-	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.IssuerKind, Name: issuer.Name, UID: issuer.GetUID()}})
+	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: api.Version, Kind: api.IssuerKind, Name: issuerKey.Name(), UID: issuerUID}})
 	secret.Data, err = reguser.ToSecretData()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	obj, err := s.defaultCluster.Resources().CreateOrUpdateObject(secret)
+	obj, err := s.GetIssuerSecretResources(issuerKey).CreateOrUpdate(secret)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating/updating issuer secret failed with %s", err.Error())
 	}
@@ -223,14 +274,14 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuer metav1.ObjectMeta
 }
 
 // UpdateIssuerSecret updates an issuer secret
-func (s *Support) UpdateIssuerSecret(issuer metav1.ObjectMeta, reguser *legobridge.RegistrationUser,
+func (s *Support) UpdateIssuerSecret(issuerKey utils.IssuerKey, reguser *legobridge.RegistrationUser,
 	secret *corev1.Secret) error {
 	var err error
 	secret.Data, err = reguser.ToSecretData()
 	if err != nil {
 		return err
 	}
-	obj, err := s.defaultCluster.Resources().Wrap(secret)
+	obj, err := s.GetIssuerSecretResources(issuerKey).Wrap(secret)
 	if err != nil {
 		return fmt.Errorf("wrapping issuer secret failed with %s", err.Error())
 	}
@@ -243,26 +294,23 @@ func (s *Support) UpdateIssuerSecret(issuer metav1.ObjectMeta, reguser *legobrid
 }
 
 // ReadIssuerSecret reads a issuer secret
-func (s *Support) ReadIssuerSecret(ref *corev1.SecretReference) (*corev1.Secret, error) {
-	secret := &corev1.Secret{}
-	itf, err := s.defaultCluster.Resources().GetByExample(secret)
-	if err != nil {
-		return nil, err
-	}
+func (s *Support) ReadIssuerSecret(issuerKey utils.IssuerKey, ref *corev1.SecretReference) (*corev1.Secret, error) {
+	res := s.GetIssuerSecretResources(issuerKey)
 
+	secret := &corev1.Secret{}
 	objName := resources.NewObjectName(ref.Namespace, ref.Name)
-	_, err = itf.GetInto(objName, secret)
+	_, err := res.GetInto(objName, secret)
 	if err != nil {
 		return nil, err
 	}
 	return secret, nil
 }
 
-func (s *Support) triggerCertificates(logger logger.LogContext, issuerName resources.ObjectName) {
-	array := s.state.CertificateNamesForIssuer(issuerName)
+func (s *Support) triggerCertificates(logger logger.LogContext, issuerKey utils.IssuerKey) {
+	array := s.state.CertificateNamesForIssuer(issuerKey)
 	clusterID := s.targetCluster.GetId()
 	if len(array) > 0 {
-		logger.Infof("Trigger reconcile for %d certificates of issuer %s", len(array), issuerName)
+		logger.Infof("Trigger reconcile for %d certificates of issuer %s", len(array), issuerKey)
 		for _, objName := range array {
 			key := resources.NewClusterKey(clusterID, api.Kind(api.CertificateKind), objName.Namespace(), objName.Name())
 			_ = s.enqueuer.EnqueueKey(key)
@@ -279,7 +327,7 @@ func (s *Support) prepareUpdateStatus(obj resources.Object, state string, itype 
 	mod.AssureStringPtrPtr(&status.Type, itype)
 	mod.AssureStringValue(&status.State, state)
 	mod.AssureInt64Value(&status.ObservedGeneration, obj.GetGeneration())
-	mod.AssureIntValue(&status.RequestsPerDayQuota, s.RememberIssuerQuotas(obj.ObjectName(), issuer.Spec.RequestsPerDayQuota))
+	mod.AssureIntValue(&status.RequestsPerDayQuota, s.RememberIssuerQuotas(obj.ClusterKey(), issuer.Spec.RequestsPerDayQuota))
 
 	return mod, status
 }
@@ -303,7 +351,8 @@ func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state s
 
 // SucceededAndTriggerCertificates handles succeeded and trigger certificates.
 func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj resources.Object, itype *string, regRaw []byte) reconcile.Status {
-	s.triggerCertificates(logger, obj.ObjectName())
+	s.reportAllCertificateMetrics()
+	s.triggerCertificates(logger, s.ToIssuerKey(obj.ClusterKey()))
 
 	mod, status := s.prepareUpdateStatus(obj, api.StateReady, itype, nil)
 	if itype != nil {
@@ -333,39 +382,36 @@ func updateTypeStatus(mod *resources.ModificationState, status **runtime.RawExte
 }
 
 // AddCertificate adds a certificate
-func (s *Support) AddCertificate(logger logger.LogContext, cert *api.Certificate) {
-	certObjName, issuerObjName := s.calcAssocObjectNames(cert)
-	s.state.AddCertAssoc(issuerObjName, certObjName)
-	s.reportCertificateMetrics(issuerObjName)
+func (s *Support) AddCertificate(cert *api.Certificate) {
+	certObjName, issuerKey := s.calcAssocObjectNames(cert)
+	s.state.AddCertAssoc(issuerKey, certObjName)
+	s.reportCertificateMetrics(issuerKey)
 }
 
 // RemoveCertificate removes a certificate
-func (s *Support) RemoveCertificate(logger logger.LogContext, certObjName resources.ObjectName) {
+func (s *Support) RemoveCertificate(certObjName resources.ObjectName) {
 	s.state.RemoveCertAssoc(certObjName)
 	s.ClearCertRenewalOverdue(certObjName)
 	s.ClearCertRevoked(certObjName)
 	s.reportAllCertificateMetrics()
 }
 
-func (s *Support) reportCertificateMetrics(issuerObjName resources.ObjectName) {
-	count := s.state.CertificateCountForIssuer(issuerObjName)
-	metrics.ReportCertEntries("acme", issuerObjName.Name(), count)
+func (s *Support) reportCertificateMetrics(issuerKey utils.IssuerKey) {
+	count := s.state.CertificateCountForIssuer(issuerKey)
+	metrics.ReportCertEntries("acme", issuerKey, count)
 }
 
 func (s *Support) reportAllCertificateMetrics() {
-	for _, issuerObjName := range s.state.KnownIssuers() {
-		s.reportCertificateMetrics(issuerObjName)
+	for _, key := range s.state.KnownIssuers() {
+		s.reportCertificateMetrics(key)
 	}
 }
 
-func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectName, resources.ObjectName) {
+func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectName, utils.IssuerKey) {
 	certObjName := newObjectName(cert.Namespace, cert.Name)
 
-	issuerName := s.defaultIssuerName
-	if cert.Spec.IssuerRef != nil {
-		issuerName = cert.Spec.IssuerRef.Name
-	}
-	return certObjName, newObjectName(s.issuerNamespace, issuerName)
+	issuerKey := s.IssuerClusterObjectKey(cert.Namespace, &cert.Spec)
+	return certObjName, issuerKey
 }
 
 // NormalizeNamespace returns the namespace or "default" for an empty input.
@@ -391,18 +437,95 @@ func (s *Support) IssuerNamespace() string {
 	return s.issuerNamespace
 }
 
-// IssuerName builds the name of the certificate's issuer
-func (s *Support) IssuerName(spec *api.CertificateSpec) string {
-	issuerName := s.DefaultIssuerName()
+// IssuerClusterObjectKey returns either the specified issuer or it tries to find a matching issuer by
+// matching domains.
+// It tries to find the issuer first on the target cluster, then on the default cluster
+func (s *Support) IssuerClusterObjectKey(certNamespace string, spec *api.CertificateSpec) utils.IssuerKey {
 	if spec.IssuerRef != nil {
-		issuerName = spec.IssuerRef.Name
+		if spec.IssuerRef.Namespace == "" {
+			// it on the default cluster
+			return utils.NewDefaultClusterIssuerKey(spec.IssuerRef.Name)
+		}
+		key := s.FindIssuerKeyByName(spec.IssuerRef.Namespace, spec.IssuerRef.Name)
+		if key != nil {
+			return *key
+		}
+		// unknown issue, make reasonable guess
+		if spec.IssuerRef.Namespace == s.issuerNamespace {
+			return utils.NewDefaultClusterIssuerKey(spec.IssuerRef.Name)
+		}
+		return utils.NewIssuerKey(utils.ClusterTarget, spec.IssuerRef.Namespace, spec.IssuerRef.Name)
 	}
-	return issuerName
+
+	domains, err := utils.ExtractDomains(spec)
+	if err == nil {
+		key := s.FindIssuerKeyByBestMatch(domains)
+		if key != nil {
+			return *key
+		}
+	}
+	return utils.NewDefaultClusterIssuerKey(s.defaultIssuerName)
 }
 
-// IssuerObjectName builds the object name of the certificate's issuer
-func (s *Support) IssuerObjectName(spec *api.CertificateSpec) resources.ObjectName {
-	return resources.NewObjectName(s.IssuerNamespace(), s.IssuerName(spec))
+// FindIssuerKeyByName tries to find a issuer key on target or default cluster
+func (s *Support) FindIssuerKeyByName(namespace, issuerName string) *utils.IssuerKey {
+	var bestKey *utils.IssuerKey
+	var bestFit int
+	for _, key := range s.state.KnownIssuers() {
+		if key.Name() == issuerName {
+			fit := 1
+			if key.Cluster() == utils.ClusterTarget {
+				fit++
+				if key.Namespace() == namespace {
+					fit++
+				}
+			}
+			if fit > bestFit {
+				bestKey = &key
+				bestFit = fit
+			}
+		}
+	}
+	return bestKey
+}
+
+// FindIssuerKeyByBestMatch tries to find the best matching issuer with respect to the DNS selection
+func (s *Support) FindIssuerKeyByBestMatch(domains []string) *utils.IssuerKey {
+	var bestKey *utils.IssuerKey
+	var bestFit int
+	for key, sel := range s.state.GetAllIssuerDomains() {
+		fit := 0
+		if sel != nil {
+			for _, domain := range domains {
+				if len(sel.Exclude) > 0 && utils.IsInDomainRanges(domain, sel.Exclude) {
+					continue
+				}
+				best := utils.BestDomainRange(domain, sel.Include)
+				if len(best) > 0 {
+					fit += 1000
+					fit += len(best)
+				}
+			}
+		} else if s.IsDefaultIssuer(key) {
+			fit = 1
+			if s.DefaultIssuerDomainRanges() != nil {
+				ranges := s.DefaultIssuerDomainRanges()
+				for _, domain := range domains {
+					best := utils.BestDomainRange(domain, ranges)
+					if len(best) > 0 {
+						fit += 900
+						fit += len(best)
+					}
+				}
+			}
+		}
+		if fit > bestFit {
+			k := key
+			bestKey = &k
+			bestFit = fit
+		}
+	}
+	return bestKey
 }
 
 // DefaultIssuerDomainRanges returns the default issuer domain ranges.
@@ -411,14 +534,20 @@ func (s *Support) DefaultIssuerDomainRanges() []string {
 }
 
 // CertificateNamesForIssuer returns the certificate names for an issuer
-func (s *Support) CertificateNamesForIssuer(issuer resources.ObjectName) []resources.ObjectName {
-	return s.state.CertificateNamesForIssuer(issuer)
+func (s *Support) CertificateNamesForIssuer(issuer resources.ClusterObjectKey) []resources.ObjectName {
+	issuerKey := s.ToIssuerKey(issuer)
+	return s.state.CertificateNamesForIssuer(issuerKey)
 }
 
 // IssuerNamesForSecretOrEABSecret returns issuer names for a secret name
-func (s *Support) IssuerNamesForSecretOrEABSecret(secretName resources.ObjectName) resources.ObjectNameSet {
-	list1 := s.state.IssuerNamesForSecret(secretName)
-	list2 := s.state.IssuerNamesForEABSecret(secretName)
+func (s *Support) IssuerNamesForSecretOrEABSecret(secretKey resources.ClusterObjectKey) resources.ObjectNameSet {
+	cluster := utils.ClusterDefault
+	if secretKey.Cluster() == s.targetCluster.GetId() {
+		cluster = utils.ClusterTarget
+	}
+	key := utils.NewIssuerSecretKey(cluster, secretKey.Namespace(), secretKey.Name())
+	list1 := s.toObjectNameSet(s.state.IssuerNamesForSecret(key))
+	list2 := s.toObjectNameSet(s.state.IssuerNamesForEABSecret(key))
 	if list1 != nil {
 		if list2 != nil {
 			return list1.AddSet(list2)
@@ -429,56 +558,72 @@ func (s *Support) IssuerNamesForSecretOrEABSecret(secretName resources.ObjectNam
 }
 
 // RememberIssuerSecret stores issuer secret ref pair.
-func (s *Support) RememberIssuerSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference, hash string) {
-	s.state.RememberIssuerSecret(issuer, secretRef, hash)
+func (s *Support) RememberIssuerSecret(issuer resources.ClusterObjectKey, secretRef *corev1.SecretReference, hash string) {
+	issuerKey := s.ToIssuerKey(issuer)
+	s.state.RememberIssuerSecret(issuerKey, secretRef, hash)
 }
 
 // RememberIssuerEABSecret stores issuer EAB secret ref pair.
-func (s *Support) RememberIssuerEABSecret(issuer resources.ObjectName, secretRef *corev1.SecretReference, hash string) {
-	s.state.RememberIssuerSecret(issuer, secretRef, hash)
+func (s *Support) RememberIssuerEABSecret(issuer resources.ClusterObjectKey, secretRef *corev1.SecretReference, hash string) {
+	issuerKey := s.ToIssuerKey(issuer)
+	s.state.RememberIssuerSecret(issuerKey, secretRef, hash)
 }
 
 // RememberIssuerQuotas stores the issuer quotas.
-func (s *Support) RememberIssuerQuotas(issuer resources.ObjectName, issuerRequestsPerDay *int) int {
+func (s *Support) RememberIssuerQuotas(issuer resources.ClusterObjectKey, issuerRequestsPerDay *int) int {
+	issuerKey := s.ToIssuerKey(issuer)
 	requestsPerDay := s.defaultRequestsPerDayQuota
 	if issuerRequestsPerDay != nil && *issuerRequestsPerDay > 0 {
 		requestsPerDay = *issuerRequestsPerDay
 	}
-	s.state.RememberIssuerQuotas(issuer, requestsPerDay)
+	s.state.RememberIssuerQuotas(issuerKey, requestsPerDay)
 	return requestsPerDay
 }
 
 // TryAcceptCertificateRequest tries to accept a certificate request according to the quotas.
 // Return true if accepted and the requests per days quota value
-func (s *Support) TryAcceptCertificateRequest(issuer resources.ObjectName) (bool, int) {
+func (s *Support) TryAcceptCertificateRequest(issuer utils.IssuerKey) (bool, int) {
 	return s.state.TryAcceptCertificateRequest(issuer)
 }
 
 // GetIssuerSecretHash returns the issuer secret hash code
-func (s *Support) GetIssuerSecretHash(issuer resources.ObjectName) string {
+func (s *Support) GetIssuerSecretHash(issuer utils.IssuerKey) string {
 	return s.state.GetIssuerSecretHash(issuer)
 }
 
 // RemoveIssuer removes an issuer
-func (s *Support) RemoveIssuer(name resources.ObjectName) bool {
-	b := s.state.RemoveIssuer(name)
-	metrics.DeleteCertEntries("acme", name.Name())
+func (s *Support) RemoveIssuer(issuer resources.ClusterObjectKey) bool {
+	issuerKey := s.ToIssuerKey(issuer)
+	b := s.state.RemoveIssuer(issuerKey)
+	metrics.DeleteCertEntries("acme", issuerKey)
 	return b
 }
 
-// GetDefaultClusterID returns the cluster id of the default cluster
-func (s *Support) GetDefaultClusterID() string {
-	return s.defaultCluster.GetId()
+// IsDefaultIssuer returns true if the issuer key is the default issuer
+func (s *Support) IsDefaultIssuer(issuerKey utils.IssuerKey) bool {
+	return issuerKey.Name() == s.defaultIssuerName && issuerKey.Cluster() == utils.ClusterDefault
 }
 
 // GetIssuerResources returns the resources for issuer.
-func (s *Support) GetIssuerResources() resources.Interface {
-	return s.issuerResources
+func (s *Support) GetIssuerResources(issuerKey utils.IssuerKey) resources.Interface {
+	switch issuerKey.Cluster() {
+	case utils.ClusterDefault:
+		return s.defaultIssuerResources
+	case utils.ClusterTarget:
+		return s.targetIssuerResources
+	}
+	return nil
 }
 
 // GetIssuerSecretResources returns the resources for issuer secrets.
-func (s *Support) GetIssuerSecretResources() resources.Interface {
-	return s.issuerSecretResources
+func (s *Support) GetIssuerSecretResources(issuerKey utils.IssuerKey) resources.Interface {
+	switch issuerKey.Cluster() {
+	case utils.ClusterDefault:
+		return s.defaultSecretResources
+	case utils.ClusterTarget:
+		return s.targetSecretResources
+	}
+	return nil
 }
 
 // CalcSecretHash calculates the secret hash
@@ -549,10 +694,10 @@ func (s *Support) reportRevokedCount() {
 }
 
 // LoadIssuer loads the issuer for the given Certificate
-func (s *Support) LoadIssuer(crt *api.Certificate) (*api.Issuer, error) {
-	issuerObjectName := s.IssuerObjectName(&crt.Spec)
+func (s *Support) LoadIssuer(issuerKey utils.IssuerKey) (*api.Issuer, error) {
+	res := s.GetIssuerResources(issuerKey)
 	issuer := &api.Issuer{}
-	_, err := s.GetIssuerResources().GetInto(issuerObjectName, issuer)
+	_, err := res.GetInto(issuerKey.ObjectName(s.IssuerNamespace()), issuer)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching issuer failed")
 	}
@@ -560,7 +705,7 @@ func (s *Support) LoadIssuer(crt *api.Certificate) (*api.Issuer, error) {
 }
 
 // RestoreRegUser restores a legobridge user from an issuer
-func (s *Support) RestoreRegUser(issuer *api.Issuer) (*legobridge.RegistrationUser, error) {
+func (s *Support) RestoreRegUser(issuerKey utils.IssuerKey, issuer *api.Issuer) (*legobridge.RegistrationUser, error) {
 	acme := issuer.Spec.ACME
 
 	if acme == nil {
@@ -581,17 +726,17 @@ func (s *Support) RestoreRegUser(issuer *api.Issuer) (*legobridge.RegistrationUs
 	if issuer.Status.ACME == nil || issuer.Status.ACME.Raw == nil {
 		return nil, fmt.Errorf("ACME registration missing in status")
 	}
-	issuerSecret, err := s.ReadIssuerSecret(secretRef)
+	issuerSecret, err := s.ReadIssuerSecret(issuerKey, secretRef)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching issuer secret failed")
 	}
 
-	eabKeyID, eabHmacKey, err := s.LoadEABHmacKey(acme)
+	eabKeyID, eabHmacKey, err := s.LoadEABHmacKey(issuerKey, acme)
 	if err != nil {
 		return nil, err
 	}
 
-	reguser, err := legobridge.RegistrationUserFromSecretData(issuer.Spec.ACME.Email, issuer.Spec.ACME.Server,
+	reguser, err := legobridge.RegistrationUserFromSecretData(issuerKey, issuer.Spec.ACME.Email, issuer.Spec.ACME.Server,
 		issuer.Status.ACME.Raw, issuerSecret.Data, eabKeyID, eabHmacKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "restoring registration issuer from issuer secret failed")
@@ -601,7 +746,7 @@ func (s *Support) RestoreRegUser(issuer *api.Issuer) (*legobridge.RegistrationUs
 }
 
 // LoadEABHmacKey reads the external account binding MAC key from the referenced secret
-func (s *Support) LoadEABHmacKey(acme *api.ACMESpec) (string, string, error) {
+func (s *Support) LoadEABHmacKey(issuerKey utils.IssuerKey, acme *api.ACMESpec) (string, string, error) {
 	eab := acme.ExternalAccountBinding
 	if eab == nil {
 		return "", "", nil
@@ -611,7 +756,7 @@ func (s *Support) LoadEABHmacKey(acme *api.ACMESpec) (string, string, error) {
 		return "", "", fmt.Errorf("missing secret ref in issuer for external account binding")
 	}
 
-	secret, err := s.ReadIssuerSecret(eab.KeySecretRef)
+	secret, err := s.ReadIssuerSecret(issuerKey, eab.KeySecretRef)
 	if err != nil {
 		return "", "", errors.Wrap(err, "fetching issuer EAB secret failed")
 	}
@@ -623,4 +768,32 @@ func (s *Support) LoadEABHmacKey(acme *api.ACMESpec) (string, string, error) {
 	}
 
 	return eab.KeyID, string(hmacEncoded), nil
+}
+
+// ToIssuerKey creates issuer key from issuer name
+func (s *Support) ToIssuerKey(issuer resources.ClusterObjectKey) utils.IssuerKey {
+	if issuer.Cluster() == s.defaultCluster.GetId() {
+		return utils.NewDefaultClusterIssuerKey(issuer.Name())
+	}
+	return utils.NewIssuerKey(utils.ClusterTarget, issuer.Namespace(), issuer.Name())
+}
+
+// AddIssuerDomains remembers the DNS selection for an ACME issuer
+func (s *Support) AddIssuerDomains(issuer resources.ClusterObjectKey, sel *api.DNSSelection) {
+	s.state.AddIssuerDomains(s.ToIssuerKey(issuer), sel)
+}
+
+func (s *Support) toObjectNameSet(keyset utils.IssuerKeySet) resources.ObjectNameSet {
+	if keyset == nil {
+		return nil
+	}
+	nameset := resources.NewObjectNameSet()
+	for key := range keyset {
+		namespace := key.Namespace()
+		if key.Cluster() == utils.ClusterDefault {
+			namespace = s.IssuerNamespace()
+		}
+		nameset.Add(resources.NewObjectName(namespace, key.Name()))
+	}
+	return nameset
 }

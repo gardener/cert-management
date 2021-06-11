@@ -132,7 +132,8 @@ func (r *revokeReconciler) Reconcile(logctx logger.LogContext, obj resources.Obj
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificate has no %s label", certificate.LabelCertificateHashKey))
 	}
 
-	issuer, err := r.support.LoadIssuer(cert)
+	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, &cert.Spec)
+	issuer, err := r.support.LoadIssuer(issuerKey)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
 	}
@@ -142,7 +143,7 @@ func (r *revokeReconciler) Reconcile(logctx logger.LogContext, obj resources.Obj
 
 	if revocation.Status.Secrets == nil {
 		// find all valid certificate secrets to be revoked and store them in the status
-		return r.collectSecretsRefsAndRepeat(logctx, obj, cert.Spec.SecretRef, issuer)
+		return r.collectSecretsRefsAndRepeat(logctx, obj, cert.Spec.SecretRef, issuerKey)
 	}
 
 	shouldRenewBeforeRevoke := revocation.Spec.Renew != nil && *revocation.Spec.Renew
@@ -158,7 +159,7 @@ func (r *revokeReconciler) Reconcile(logctx logger.LogContext, obj resources.Obj
 	}
 
 	if len(revocation.Status.Secrets.Processing) > 0 {
-		return r.revokeOldCertificateSecrets(logctx, obj, issuer, hashKey, shouldRenewBeforeRevoke)
+		return r.revokeOldCertificateSecrets(logctx, obj, issuerKey, issuer, hashKey, shouldRenewBeforeRevoke)
 	}
 
 	if !shouldRenewBeforeRevoke && len(revocation.Status.Objects.Processing) > 0 {
@@ -176,7 +177,7 @@ func (r *revokeReconciler) Deleted(logctx logger.LogContext, key resources.Clust
 }
 
 func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext, obj resources.Object,
-	certSecretRef *corev1.SecretReference, issuer *api.Issuer) reconcile.Status {
+	certSecretRef *corev1.SecretReference, issuerKey utils.IssuerKey) reconcile.Status {
 	revocation := obj.Data().(*api.CertificateRevocation)
 	if certSecretRef == nil {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("missing secret refernce of certificate"))
@@ -193,7 +194,7 @@ func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext,
 	}
 
 	// secret is already backed up on certificate creation, only needed for backwards compatibility
-	issuerInfo := utils.NewIssuerInfoFromIssuer(issuer)
+	issuerInfo := utils.NewACMEIssuerInfo(issuerKey)
 	_, _, err = certificate.BackupSecret(r.certSecretResources, secret, hashKey, issuerInfo)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "secret backup failed"))
@@ -410,7 +411,8 @@ func (r *revokeReconciler) hasCertSecretRevocationFailed(secretsStatuses *api.Se
 	return false
 }
 
-func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext, obj resources.Object, issuer *api.Issuer,
+func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext, obj resources.Object,
+	issuerKey utils.IssuerKey, issuer *api.Issuer,
 	hashKey string, shouldRenewBeforeRevoke bool) reconcile.Status {
 	revocation := obj.Data().(*api.CertificateRevocation)
 
@@ -418,7 +420,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("missing certificate secret references"))
 	}
 
-	user, err := r.support.RestoreRegUser(issuer)
+	user, err := r.support.RestoreRegUser(issuerKey, issuer)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("cannot restore registration user from issuer"))
 	}
