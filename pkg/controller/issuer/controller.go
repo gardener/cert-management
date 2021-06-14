@@ -22,9 +22,7 @@ import (
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 )
 
-var certificateGroupKind = resources.NewGroupKind(api.GroupName, api.CertificateKind)
 var issuerGroupKind = resources.NewGroupKind(api.GroupName, api.IssuerKind)
-var certificateRevocationGroupKind = resources.NewGroupKind(api.GroupName, api.CertificateRevocationKind)
 
 func init() {
 	crds.AddToRegistry(apiextensions.DefaultRegistry())
@@ -76,8 +74,4 @@ func selectIssuerNamespaceSelectionFunction(c controller.Interface) (string, res
 	var options resources.TweakListOptionsFunc
 	issuerNamespace, _ := c.GetStringOption(core.OptIssuerNamespace)
 	return issuerNamespace, options
-}
-
-func targetNotSameAsDefaultCluster(wctx watches.WatchContext) bool {
-	return wctx.GetCluster(ctrl.DefaultCluster) != wctx.GetCluster(ctrl.TargetCluster)
 }
