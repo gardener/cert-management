@@ -186,7 +186,7 @@ func (h *CompoundHandler) DeletedSecret(logger logger.LogContext, key resources.
 }
 
 func (h *CompoundHandler) failedNoType(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
-	return h.support.Failed(logger, obj, state, nil, err)
+	return h.support.Failed(logger, obj, state, nil, err, false)
 
 }
 
@@ -340,12 +340,15 @@ func (s *Support) updateStatus(mod *resources.ModificationState) {
 }
 
 // Failed handles failed.
-func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state string, itype *string, err error) reconcile.Status {
+func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state string, itype *string, err error, retry bool) reconcile.Status {
 	msg := err.Error()
 
 	mod, _ := s.prepareUpdateStatus(obj, state, itype, &msg)
 	s.updateStatus(mod)
 
+	if retry {
+		return reconcile.Delay(logger, err)
+	}
 	return reconcile.Failed(logger, err)
 }
 

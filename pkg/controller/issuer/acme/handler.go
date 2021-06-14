@@ -69,7 +69,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 			if acme.AutoRegistration {
 				logger.Info("spec.acme.privateKeySecretRef not existing, creating new account")
 			} else {
-				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
+				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
 			}
 		}
 		hash := r.support.CalcSecretHash(secret)
@@ -78,12 +78,12 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 	if secret != nil && issuer.Status.ACME != nil && issuer.Status.ACME.Raw != nil {
 		eabKeyID, eabHmacKey, err := r.support.LoadEABHmacKey(issuerKey, acme)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("loading EAB secret failed: %s", err))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading EAB secret failed: %s", err))
 		}
 		user, err := legobridge.RegistrationUserFromSecretData(issuerKey, acme.Email, acme.Server, issuer.Status.ACME.Raw,
 			secret.Data, eabKeyID, eabHmacKey)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
 		}
 		if user.GetEmail() != acme.Email {
 			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.GetEmail(), acme.Email))
@@ -92,7 +92,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 	} else if secret != nil || acme.AutoRegistration {
 		eabKid, eabHmacKey, err := r.prepareEAB(obj, issuer)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.StateError, err)
+			return r.failedAcmeRetry(logger, obj, api.StateError, err)
 		}
 		var secretData map[string][]byte
 		if secret != nil {
@@ -100,18 +100,18 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		}
 		user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, secretData, eabKid, eabHmacKey)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("creating registration user failed with %s", err.Error()))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("creating registration user failed with %s", err.Error()))
 		}
 
 		if secret != nil {
 			err = r.support.UpdateIssuerSecret(issuerKey, user, secret)
 			if err != nil {
-				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
+				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
 			}
 		} else {
 			secretRef, secret, err := r.support.WriteIssuerSecretFromRegistrationUser(issuerKey, issuer.UID, user, acme.PrivateKeySecretRef)
 			if err != nil {
-				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
+				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
 			}
 			issuer.Spec.ACME.PrivateKeySecretRef = secretRef
 			hash := r.support.CalcSecretHash(secret)
@@ -124,7 +124,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		}
 		newObj, err := r.support.GetIssuerResources(issuerKey).Update(issuer)
 		if err != nil {
-			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("updating resource failed with %s", err.Error()))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("updating resource failed with %s", err.Error()))
 		}
 
 		return r.support.SucceededAndTriggerCertificates(logger, newObj, &acmeType, regRaw)
@@ -174,5 +174,9 @@ func (r *acmeIssuerHandler) prepareEAB(obj resources.Object, issuer *api.Issuer)
 }
 
 func (r *acmeIssuerHandler) failedAcme(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
-	return r.support.Failed(logger, obj, state, &acmeType, err)
+	return r.support.Failed(logger, obj, state, &acmeType, err, false)
+}
+
+func (r *acmeIssuerHandler) failedAcmeRetry(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
+	return r.support.Failed(logger, obj, state, &acmeType, err, true)
 }
