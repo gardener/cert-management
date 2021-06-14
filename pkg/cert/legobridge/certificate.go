@@ -41,8 +41,8 @@ type ObtainInput struct {
 	CAKeyPair *TLSKeyPair
 	// DNSSettings are the settings for the DNSController.
 	DNSSettings *DNSControllerSettings
-	// IssuerName is the name of the issuer to use.
-	IssuerName string
+	// IssuerKey is a cluster-aware key of the issuer to use.
+	IssuerKey utils.IssuerKey
 	// CommonName is the CN.
 	CommonName *string
 	// DNSNames are optional domain names.
@@ -202,7 +202,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 	var provider ProviderWithCount
 	if input.DNSSettings != nil {
 		provider, err = newDNSControllerProvider(*input.DNSSettings, input.RequestName,
-			input.TargetClass, input.IssuerName)
+			input.TargetClass, input.IssuerKey)
 		if err != nil {
 			o.releasePending(input)
 			return err
@@ -238,10 +238,10 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			}
 		}
 		count := provider.GetChallengesCount()
-		metrics.AddACMEOrder(input.IssuerName, err == nil, count, input.RenewCert != nil)
+		metrics.AddACMEOrder(input.IssuerKey, err == nil, count, input.RenewCert != nil)
 		output := &ObtainOutput{
 			Certificates: certificates,
-			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerName),
+			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
@@ -275,7 +275,7 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 		}
 		output := &ObtainOutput{
 			Certificates: certificates,
-			IssuerInfo:   utils.NewCAIssuerInfo(input.IssuerName),
+			IssuerInfo:   utils.NewCAIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
@@ -324,7 +324,7 @@ func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
 	if input.CSR == nil {
 		return append([]string{*input.CommonName}, input.DNSNames...), nil
 	}
-	cn, san, err := ExtractCommonNameAnDNSNames(input.CSR)
+	cn, san, err := utils.ExtractCommonNameAnDNSNames(input.CSR)
 	if err != nil {
 		return nil, err
 	}
@@ -371,22 +371,6 @@ func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 		return nil, fmt.Errorf("parsing certificate failed with %s", err.Error())
 	}
 	return cert, nil
-}
-
-// ExtractCommonNameAnDNSNames extracts values from a CSR (Certificate Signing Request).
-func ExtractCommonNameAnDNSNames(csr []byte) (cn *string, san []string, err error) {
-	certificateRequest, err := extractCertificateRequest(csr)
-	if err != nil {
-		err = fmt.Errorf("parsing CSR failed with: %s", err)
-		return
-	}
-	cnvalue := certificateRequest.Subject.CommonName
-	cn = &cnvalue
-	san = certificateRequest.DNSNames[:]
-	for _, ip := range certificateRequest.IPAddresses {
-		san = append(san, ip.String())
-	}
-	return
 }
 
 // renewCASignedCert returns a new Certificate signed by a CA.

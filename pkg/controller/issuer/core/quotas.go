@@ -9,14 +9,14 @@ package core
 import (
 	"sync"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 	"k8s.io/client-go/util/flowcontrol"
 )
 
 // NewQuotas create a Quotas
 func NewQuotas() *Quotas {
 	return &Quotas{
-		issuerToQuotas: map[resources.ObjectName]quotas{},
+		issuerToQuotas: map[utils.IssuerKey]quotas{},
 	}
 }
 
@@ -28,15 +28,15 @@ type quotas struct {
 // Quotas stores references issuer quotas.
 type Quotas struct {
 	lock           sync.Mutex
-	issuerToQuotas map[resources.ObjectName]quotas
+	issuerToQuotas map[utils.IssuerKey]quotas
 }
 
 // RememberQuotas stores the requests per days quota and creates a new ratelimiter if the quota changed.
-func (q *Quotas) RememberQuotas(issuerName resources.ObjectName, requestsPerDay int) {
+func (q *Quotas) RememberQuotas(issuerKey utils.IssuerKey, requestsPerDay int) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	if quotas, ok := q.issuerToQuotas[issuerName]; ok {
+	if quotas, ok := q.issuerToQuotas[issuerKey]; ok {
 		if quotas.requestsPerDay == requestsPerDay {
 			return
 		}
@@ -48,7 +48,7 @@ func (q *Quotas) RememberQuotas(issuerName resources.ObjectName, requestsPerDay 
 		burst = 1
 	}
 
-	q.issuerToQuotas[issuerName] = quotas{
+	q.issuerToQuotas[issuerKey] = quotas{
 		rateLimiter:    flowcontrol.NewTokenBucketRateLimiter(qps, burst),
 		requestsPerDay: requestsPerDay,
 	}
@@ -56,26 +56,26 @@ func (q *Quotas) RememberQuotas(issuerName resources.ObjectName, requestsPerDay 
 
 // TryAccept tries to accept a certificate request according to the quotas.
 // Returns true if accepted and the requests per days quota value
-func (q *Quotas) TryAccept(issuerName resources.ObjectName) (bool, int) {
+func (q *Quotas) TryAccept(issuerKey utils.IssuerKey) (bool, int) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	if quotas, ok := q.issuerToQuotas[issuerName]; ok {
+	if quotas, ok := q.issuerToQuotas[issuerKey]; ok {
 		return quotas.rateLimiter.TryAccept(), quotas.requestsPerDay
 	}
 	return false, 0
 }
 
 // RemoveIssuer removes all secretRefs for an issuer.
-func (q *Quotas) RemoveIssuer(issuerName resources.ObjectName) {
+func (q *Quotas) RemoveIssuer(issuerKey utils.IssuerKey) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
-	delete(q.issuerToQuotas, issuerName)
+	delete(q.issuerToQuotas, issuerKey)
 }
 
 // RequestsPerDay gets the request per day quota
-func (q *Quotas) RequestsPerDay(issuerName resources.ObjectName) int {
+func (q *Quotas) RequestsPerDay(issuerName utils.IssuerKey) int {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 

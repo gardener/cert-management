@@ -7,40 +7,49 @@
 package issuer
 
 import (
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/utils"
+	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/issuer/acme"
 	"github.com/gardener/cert-management/pkg/controller/issuer/ca"
 	"github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 	"github.com/gardener/cert-management/pkg/controller/issuer/revocation"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
-
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 func newCompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
-	handler, support, err := core.NewHandlerSupport(c, acme.NewACMEIssuerHandler, ca.NewCAIssuerHandler)
+	handler, err := core.NewCompoundHandler(c, acme.NewACMEIssuerHandler, ca.NewCAIssuerHandler)
 	if err != nil {
 		return nil, err
 	}
-	certReconciler, err := certificate.CertReconciler(c, support)
+	certReconciler, err := certificate.CertReconciler(c, handler.Support())
 	if err != nil {
 		return nil, err
 	}
-	revokeReconciler, err := revocation.RevokeReconciler(c, support)
+	revokeReconciler, err := revocation.RevokeReconciler(c, handler.Support())
 	if err != nil {
 		return nil, err
+	}
+	allowTargetIssuers, _ := c.GetBoolOption(core.OptAllowTargetIssuers)
+	if allowTargetIssuers && c.GetCluster(ctrl.DefaultCluster) == c.GetCluster(ctrl.TargetCluster) {
+		return nil, fmt.Errorf("command line option '--%s' is only supported if default cluster != target cluster", core.OptAllowTargetIssuers)
 	}
 
 	return &compoundReconciler{
 		handler:                         handler,
 		certificateReconciler:           certReconciler,
 		certificateRevocationReconciler: revokeReconciler,
+		watchTargetIssuers:              allowTargetIssuers,
 	}, nil
 }
 
@@ -49,9 +58,37 @@ type compoundReconciler struct {
 	handler                         *core.CompoundHandler
 	certificateReconciler           reconcile.Interface
 	certificateRevocationReconciler reconcile.Interface
+	watchTargetIssuers              bool
 }
 
-func (r *compoundReconciler) Setup() {
+func (r *compoundReconciler) Setup() error {
+	err := r.setupIssuers(utils.ClusterDefault)
+	if err != nil {
+		return err
+	}
+	if r.watchTargetIssuers {
+		err = r.setupIssuers(utils.ClusterTarget)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *compoundReconciler) setupIssuers(cluster utils.Cluster) error {
+	dummyKey := utils.NewIssuerKey(cluster, "dummy", "dummy")
+	res := r.handler.Support().GetIssuerResources(dummyKey)
+	list, err := res.Namespace(r.handler.Support().IssuerNamespace()).List(v1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, obj := range list {
+		issuer := obj.Data().(*api.Issuer)
+		if issuer.Spec.ACME != nil {
+			r.handler.Support().AddIssuerDomains(obj.ClusterKey(), issuer.Spec.ACME.Domains)
+		}
+	}
+	return nil
 }
 
 func (r *compoundReconciler) Start() {

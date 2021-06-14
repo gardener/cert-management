@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/pkg/errors"
@@ -200,7 +199,7 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 }
 
 func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) reconcile.Status {
-	r.support.AddCertificate(logctx, cert)
+	r.support.AddCertificate(cert)
 
 	if r.challengePending(cert) {
 		return reconcile.Recheck(logctx, fmt.Errorf("challenge pending for at least one domain of certificate"), 30*time.Second)
@@ -219,11 +218,11 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
-	issuer := r.support.IssuerObjectName(&cert.Spec)
-	if r.support.GetIssuerSecretHash(issuer) == "" {
+	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, &cert.Spec)
+	if r.support.GetIssuerSecretHash(issuerKey) == "" {
 		// issuer not reconciled yet
-		logctx.Info("waiting for issuer reconciliation")
-		return reconcile.RescheduleAfter(logctx, 5*time.Second)
+		logctx.Infof("waiting for reconciliation of issuer %s", issuerKey)
+		return reconcile.Delay(logctx, nil)
 	}
 	var secret *corev1.Secret
 	if secretRef != nil {
@@ -236,7 +235,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 			// will later be used to store the secret
 		} else {
 			if storedHash := cert.Labels[LabelCertificateHashKey]; storedHash != "" {
-				specHash := r.buildSpecHash(&cert.Spec)
+				specHash := r.buildSpecHash(&cert.Spec, issuerKey)
 				if specHash != storedHash {
 					return r.removeStoredHashKeyAndRepeat(logctx, obj)
 				}
@@ -274,7 +273,7 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 	}
 
 	cert, _ := obj.Data().(*api.Certificate)
-	specSecretRef, err := r.determineSecretRef(obj.GetNamespace(), &cert.Spec)
+	specSecretRef, err := r.determineSecretRef(cert.Namespace, &cert.Spec)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err), false
 	}
@@ -283,9 +282,10 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		CommonName: result.CommonName,
 		DNSNames:   result.DNSNames,
 		CSR:        result.CSR,
-		IssuerRef:  &api.IssuerRef{Name: result.IssuerInfo.Name()},
+		IssuerRef:  &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
 	}
-	specHash := r.buildSpecHash(spec)
+	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
+	specHash := r.buildSpecHash(spec, issuerKey)
 
 	now := time.Now()
 	secretRef, err := r.writeCertificateSecret(logctx, result.IssuerInfo, cert.ObjectMeta, result.Certificates, specHash,
@@ -306,7 +306,7 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 }
 
 func (r *certReconciler) Deleted(logctx logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
-	r.support.RemoveCertificate(logctx, key.ObjectName())
+	r.support.RemoveCertificate(key.ObjectName())
 	logctx.Infof("deleted")
 
 	return reconcile.Succeeded(logctx)
@@ -349,7 +349,8 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 	cert := obj.Data().(*api.Certificate)
 	logctx.Infof("obtain certificate")
 
-	issuer, err := r.support.LoadIssuer(cert)
+	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, &cert.Spec)
+	issuer, err := r.support.LoadIssuer(issuerKey)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
 	}
@@ -358,29 +359,29 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid issuer spec: only ACME or CA can be set, but not both"))
 	}
 	if issuer.Spec.ACME != nil {
-		return r.obtainCertificateAndPendingACME(logctx, obj, renewSecret, cert, issuer)
+		return r.obtainCertificateAndPendingACME(logctx, obj, renewSecret, cert, issuerKey, issuer)
 	}
 	if issuer.Spec.CA != nil {
-		return r.obtainCertificateCA(logctx, obj, renewSecret, cert, issuer)
+		return r.obtainCertificateCA(logctx, obj, renewSecret, cert, issuerKey, issuer)
 	}
 	return r.failed(logctx, obj, api.StateError, fmt.Errorf("incomplete issuer spec (ACME or CA section must be provided)"))
 }
 
 func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContext, obj resources.Object,
-	renewSecret *corev1.Secret, cert *api.Certificate, issuer *api.Issuer) reconcile.Status {
-	reguser, err := r.support.RestoreRegUser(issuer)
+	renewSecret *corev1.Secret, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
+	reguser, err := r.support.RestoreRegUser(issuerKey, issuer)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
 	}
 
-	err = r.validateDomainsAndCsr(&cert.Spec, issuer.Spec.ACME.Domains)
+	err = r.validateDomainsAndCsr(&cert.Spec, issuer.Spec.ACME.Domains, issuerKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewIssuerInfoFromIssuer(issuer)
+		issuerInfo := utils.NewACMEIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -388,15 +389,14 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
 	}
 
-	issuerObjectName := r.support.IssuerObjectName(&cert.Spec)
-	if accepted, requestsPerDayQuota := r.support.TryAcceptCertificateRequest(issuerObjectName); !accepted {
+	if accepted, requestsPerDayQuota := r.support.TryAcceptCertificateRequest(issuerKey); !accepted {
 		waitMinutes := 1440 / requestsPerDayQuota / 2
 		if waitMinutes < 5 {
 			waitMinutes = 5
 		}
 		err := fmt.Errorf("request quota exhausted. Retrying in %d min. "+
 			"Up to %d requests per day are allowed. To change the quota, set `spec.requestsPerDayQuota` for issuer %s",
-			waitMinutes, requestsPerDayQuota, issuerObjectName)
+			waitMinutes, requestsPerDayQuota, issuerKey)
 		return r.recheck(logctx, obj, api.StatePending, err, time.Duration(waitMinutes)*time.Minute)
 	}
 
@@ -434,7 +434,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	if r.dnsClass != nil {
 		targetDNSClass = *r.dnsClass
 	}
-	input := legobridge.ObtainInput{User: reguser, DNSSettings: dnsSettings, IssuerName: issuerObjectName.Name(),
+	input := legobridge.ObtainInput{User: reguser, DNSSettings: dnsSettings, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		TargetClass: targetDNSClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
 
@@ -452,7 +452,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	return r.pending(logctx, obj, msg)
 }
 
-func (r *certReconciler) restoreCA(issuer *api.Issuer) (*legobridge.TLSKeyPair, error) {
+func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer) (*legobridge.TLSKeyPair, error) {
 	// fetch issuer secret
 	secretRef := issuer.Spec.CA.PrivateKeySecretRef
 	if secretRef == nil {
@@ -469,7 +469,7 @@ func (r *certReconciler) restoreCA(issuer *api.Issuer) (*legobridge.TLSKeyPair, 
 	}
 	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
 	issuerSecret := &corev1.Secret{}
-	_, err := r.support.GetIssuerSecretResources().GetInto(issuerSecretObjectName, issuerSecret)
+	_, err := r.support.GetIssuerSecretResources(issuerKey).GetInto(issuerSecretObjectName, issuerSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching issuer secret failed")
 	}
@@ -483,20 +483,20 @@ func (r *certReconciler) restoreCA(issuer *api.Issuer) (*legobridge.TLSKeyPair, 
 }
 
 func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resources.Object,
-	renewSecret *corev1.Secret, cert *api.Certificate, issuer *api.Issuer) reconcile.Status {
-	CAKeyPair, err := r.restoreCA(issuer)
+	renewSecret *corev1.Secret, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
+	CAKeyPair, err := r.restoreCA(issuerKey, issuer)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
 	}
 
-	err = r.validateDomainsAndCsr(&cert.Spec, nil)
+	err = r.validateDomainsAndCsr(&cert.Spec, nil, issuerKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewIssuerInfoFromIssuer(issuer)
+		issuerInfo := utils.NewCAIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -521,8 +521,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		}
 	}
 
-	issuerObjectName := r.support.IssuerObjectName(&cert.Spec)
-	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerName: issuerObjectName.Name(),
+	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		Callback: callback, RenewCert: renewCert}
 
@@ -541,32 +540,12 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 	return r.pending(logctx, obj, msg)
 }
 
-func (r *certReconciler) validateDomainsAndCsr(spec *api.CertificateSpec, issuerDomains *api.DNSSelection) error {
-	var err error
-	cn := spec.CommonName
-	dnsNames := spec.DNSNames
-	if spec.CommonName != nil {
-		if spec.CSR != nil {
-			return fmt.Errorf("cannot specify both commonName and csr")
-		}
-		if len(spec.DNSNames) >= 100 {
-			return fmt.Errorf("invalid number of DNS names: %d (max 99)", len(spec.DNSNames))
-		}
-		count := utf8.RuneCount([]byte(*spec.CommonName))
-		if count > 64 {
-			return fmt.Errorf("the Common Name is limited to 64 characters (X.509 ASN.1 specification), but first given domain %s has %d characters", *spec.CommonName, count)
-		}
-	} else {
-		if spec.CSR == nil {
-			return fmt.Errorf("either domains or csr must be specified")
-		}
-		cn, dnsNames, err = legobridge.ExtractCommonNameAnDNSNames(spec.CSR)
-		if err != nil {
-			return err
-		}
+func (r *certReconciler) validateDomainsAndCsr(spec *api.CertificateSpec, issuerDomains *api.DNSSelection, issuerKey utils.IssuerKey) error {
+	domainsToValidate, err := utils.ExtractDomains(spec)
+	if err != nil {
+		return err
 	}
 
-	domainsToValidate := append([]string{*cn}, dnsNames...)
 	names := sets.String{}
 	for _, name := range domainsToValidate {
 		if names.Has(name) {
@@ -574,13 +553,12 @@ func (r *certReconciler) validateDomainsAndCsr(spec *api.CertificateSpec, issuer
 		}
 		names.Insert(name)
 	}
-	err = r.checkDomainRangeRestriction(issuerDomains, spec, domainsToValidate)
+	err = r.checkDomainRangeRestriction(issuerDomains, spec, domainsToValidate, issuerKey)
 	return err
 }
 
-func (r *certReconciler) checkDomainRangeRestriction(issuerDomains *api.DNSSelection, spec *api.CertificateSpec, domains []string) error {
-	issuerName := r.support.IssuerName(spec)
-	if issuerName == r.support.DefaultIssuerName() && r.support.DefaultIssuerDomainRanges() != nil {
+func (r *certReconciler) checkDomainRangeRestriction(issuerDomains *api.DNSSelection, spec *api.CertificateSpec, domains []string, issuerKey utils.IssuerKey) error {
+	if r.support.IsDefaultIssuer(issuerKey) && r.support.DefaultIssuerDomainRanges() != nil {
 		ranges := r.support.DefaultIssuerDomainRanges()
 		for _, domain := range domains {
 			if !utils.IsInDomainRanges(domain, ranges) {
@@ -590,11 +568,13 @@ func (r *certReconciler) checkDomainRangeRestriction(issuerDomains *api.DNSSelec
 	}
 	if issuerDomains != nil {
 		for _, domain := range domains {
-			if utils.IsInDomainRanges(domain, issuerDomains.Exclude) {
-				return fmt.Errorf("domain %s is an excluded domain of issuer %s (excluded: %s)", domain, issuerName, strings.Join(issuerDomains.Exclude, ","))
+			if len(issuerDomains.Exclude) > 0 && utils.IsInDomainRanges(domain, issuerDomains.Exclude) {
+				return fmt.Errorf("domain %s is an excluded domain of issuer %s (excluded: %s)",
+					domain, issuerKey, strings.Join(issuerDomains.Exclude, ","))
 			}
 			if !utils.IsInDomainRanges(domain, issuerDomains.Include) {
-				return fmt.Errorf("domain %s is not an included domain of issuer %s (included: %s)", domain, issuerName, strings.Join(issuerDomains.Include, ","))
+				return fmt.Errorf("domain %s is not an included domain of issuer %s (included: %s)",
+					domain, issuerKey, strings.Join(issuerDomains.Include, ","))
 			}
 		}
 	}
@@ -693,7 +673,7 @@ func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj
 	return nil
 }
 
-func (r *certReconciler) buildSpecHash(spec *api.CertificateSpec) string {
+func (r *certReconciler) buildSpecHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
 	h := sha256.New224()
 	if spec.CommonName != nil {
 		h.Write([]byte(*spec.CommonName))
@@ -708,8 +688,7 @@ func (r *certReconciler) buildSpecHash(spec *api.CertificateSpec) string {
 		h.Write(spec.CSR)
 		h.Write([]byte{0})
 	}
-	issuer := r.support.IssuerObjectName(spec)
-	hash := r.support.GetIssuerSecretHash(issuer)
+	hash := r.support.GetIssuerSecretHash(issuerKey)
 	h.Write([]byte(hash))
 	h.Write([]byte{0})
 	return fmt.Sprintf("%x", h.Sum(nil))
@@ -755,7 +734,8 @@ func (r *certReconciler) determineSecretRef(namespace string, spec *api.Certific
 }
 
 func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.CertificateSpec) (*corev1.SecretReference, string, *time.Time) {
-	specHash := r.buildSpecHash(spec)
+	issuerKey := r.support.IssuerClusterObjectKey(namespace, spec)
+	specHash := r.buildSpecHash(spec, issuerKey)
 	objs, err := FindAllCertificateSecretsByHashLabel(r.certSecretResources, specHash)
 	if err != nil {
 		return nil, "", nil
@@ -927,7 +907,7 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	cn := crt.Spec.CommonName
 	dnsNames := crt.Spec.DNSNames
 	if crt.Spec.CSR != nil {
-		cn, dnsNames, _ = legobridge.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
+		cn, dnsNames, _ = utils.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
 	utils.AssureStringArray(mod.ModificationState, &status.DNSNames, dnsNames)
@@ -939,12 +919,10 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	}
 	mod.AssureStringPtrPtr(&status.ExpirationDate, expirationDate)
 
-	issuerRef := crt.Spec.IssuerRef
-	if issuerRef == nil {
-		issuerRef = &api.IssuerRef{Name: r.support.DefaultIssuerName()}
-	}
-	if status.IssuerRef == nil || status.IssuerRef.Name != issuerRef.Name || status.IssuerRef.Namespace != r.support.IssuerNamespace() {
-		status.IssuerRef = &api.IssuerRefWithNamespace{Name: issuerRef.Name, Namespace: r.support.IssuerNamespace()}
+	issuerKey := r.support.IssuerClusterObjectKey(crt.Namespace, &crt.Spec)
+	newRef := api.QualifiedIssuerRef{Cluster: issuerKey.ClusterName(), Name: issuerKey.Name(), Namespace: issuerKey.NamespaceOrDefault(r.support.IssuerNamespace())}
+	if status.IssuerRef == nil || !reflect.DeepEqual(*status.IssuerRef, newRef) {
+		status.IssuerRef = &newRef
 		mod.Modify(true)
 	}
 
@@ -1049,9 +1027,14 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() {
 		return
 	}
 	count := 0
+	expectedClass := ""
+	if r.dnsClass != nil {
+		expectedClass = *r.dnsClass
+	}
 	for _, obj := range objects {
-		class, ok := resources.GetAnnotation(obj.Data(), source.AnnotClass)
-		if ok && r.classes.Contains(class) {
+		class, _ := resources.GetAnnotation(obj.Data(), source.AnnotDNSClass)
+		challenge, _ := resources.GetAnnotation(obj.Data(), source.AnnotACMEDNSChallenge)
+		if challenge != "" && class == expectedClass {
 			err = entriesResource.Delete(obj.Data())
 			if err != nil {
 				logger.Warnf("issuer: deleting DNS entry %s/%s failed with: %s", obj.GetNamespace(), obj.GetName(), err)

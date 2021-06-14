@@ -40,4 +40,6 @@ const (
 	OptDefaultRequestsPerDayQuota = "default-requests-per-day-quota"
 	// OptPropagationTimeout is the propagation timeout for the DNS01 challenge.
 	OptPropagationTimeout = "propagation-timeout"
+	// OptAllowTargetIssuers if true reconciles not only issuers on the default cluster, but also on the target cluster
+	OptAllowTargetIssuers = "allow-target-issuers"
 )

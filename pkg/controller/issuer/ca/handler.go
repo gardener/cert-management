@@ -49,17 +49,18 @@ func (r *caIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Obje
 		return r.failedCA(logger, obj, api.StateError, fmt.Errorf("missing CA spec"))
 	}
 
-	r.support.RememberIssuerSecret(obj.ObjectName(), ca.PrivateKeySecretRef, "")
+	r.support.RememberIssuerSecret(obj.ClusterKey(), ca.PrivateKeySecretRef, "")
 
 	var secret *corev1.Secret
 	var err error
 	if ca.PrivateKeySecretRef != nil {
-		secret, err = r.support.ReadIssuerSecret(ca.PrivateKeySecretRef)
+		issuerKey := r.support.ToIssuerKey(obj.ClusterKey())
+		secret, err = r.support.ReadIssuerSecret(issuerKey, ca.PrivateKeySecretRef)
 		if err != nil {
-			return r.failedCA(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
+			return r.failedCARetry(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
 		}
 		hash := r.support.CalcSecretHash(secret)
-		r.support.RememberIssuerSecret(obj.ObjectName(), ca.PrivateKeySecretRef, hash)
+		r.support.RememberIssuerSecret(obj.ClusterKey(), ca.PrivateKeySecretRef, hash)
 	}
 	if secret != nil && issuer.Status.CA != nil && issuer.Status.CA.Raw != nil {
 		_, err := validateSecretCA(secret)
@@ -118,5 +119,9 @@ func validateSecretCA(secret *corev1.Secret) ([]byte, error) {
 }
 
 func (r *caIssuerHandler) failedCA(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
-	return r.support.Failed(logger, obj, state, &caType, err)
+	return r.support.Failed(logger, obj, state, &caType, err, false)
+}
+
+func (r *caIssuerHandler) failedCARetry(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
+	return r.support.Failed(logger, obj, state, &caType, err, true)
 }

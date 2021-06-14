@@ -82,7 +82,10 @@ spec:
                 description: IssuerRef is the reference of the issuer to use.
                 properties:
                   name:
-                    description: Name is the name of the issuer CR (in the configured issuer namespace).
+                    description: Name is the name of the issuer (in the configured issuer namespace on default cluster or namespace on target cluster as given).
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the issuer, only needed if issuer is defined on target cluster
                     type: string
                 required:
                 - name
@@ -139,11 +142,14 @@ spec:
               issuerRef:
                 description: IssuerRef is the used issuer.
                 properties:
+                  cluster:
+                    description: Cluster is the cluster name of the issuer ('default' or 'target'). optional because of backwards compatibility
+                    type: string
                   name:
-                    description: Name is the name of the issuer CR.
+                    description: Name is the name of the issuer.
                     type: string
                   namespace:
-                    description: Namespace is the namespace of the issuer CR.
+                    description: Namespace is the namespace of the issuer.
                     type: string
                 required:
                 - name

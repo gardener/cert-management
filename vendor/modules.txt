@@ -31,7 +31,7 @@ github.com/evanphx/json-patch/v5
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/gardener/controller-manager-library v0.2.1-0.20210519160602-fb05e73bad23
+# github.com/gardener/controller-manager-library v0.2.1-0.20210611114456-1669e5305832
 ## explicit
 github.com/gardener/controller-manager-library/hack
 github.com/gardener/controller-manager-library/pkg/certmgmt

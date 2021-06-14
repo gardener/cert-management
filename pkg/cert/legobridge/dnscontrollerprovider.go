@@ -35,7 +35,7 @@ type ProviderWithCount interface {
 var index uint32
 
 func newDNSControllerProvider(settings DNSControllerSettings,
-	certificateName resources.ObjectName, targetClass, issuerName string) (ProviderWithCount, error) {
+	certificateName resources.ObjectName, targetClass string, issuerKey utils.IssuerKey) (ProviderWithCount, error) {
 	itf, err := settings.Cluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DNSEntry resources: %s", err.Error())
@@ -47,7 +47,7 @@ func newDNSControllerProvider(settings DNSControllerSettings,
 		entryResources:  itf,
 		certificateName: certificateName,
 		targetClass:     targetClass,
-		issuerName:      issuerName,
+		issuerKey:       issuerKey,
 		ttl:             int64(settings.PropagationTimeout.Seconds()),
 		initialWait:     true,
 		presenting:      map[string][]string{}}, nil
@@ -59,7 +59,7 @@ type dnsControllerProvider struct {
 	entryResources  resources.Interface
 	certificateName resources.ObjectName
 	targetClass     string
-	issuerName      string
+	issuerKey       utils.IssuerKey
 	count           int32
 	ttl             int64
 	presenting      map[string][]string
@@ -108,7 +108,7 @@ func retryOnUpdateError(fn func() error) error {
 }
 
 func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
-	metrics.AddActiveACMEDNSChallenge(p.issuerName)
+	metrics.AddActiveACMEDNSChallenge(p.issuerKey)
 	atomic.AddInt32(&p.count, 1)
 	fqdn, value := dns01.GetRecord(domain, keyAuth)
 
@@ -122,6 +122,7 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 		if p.targetClass != "" {
 			resources.SetAnnotation(e, source.AnnotDNSClass, p.targetClass)
 		}
+		resources.SetAnnotation(e, source.AnnotACMEDNSChallenge, "true")
 	}
 
 	entry := p.prepareEntry(domain)
@@ -188,7 +189,7 @@ func (p *dnsControllerProvider) removePresentingDomain(domain string) bool {
 }
 
 func (p *dnsControllerProvider) CleanUp(domain, token, keyAuth string) error {
-	metrics.RemoveActiveACMEDNSChallenge(p.issuerName)
+	metrics.RemoveActiveACMEDNSChallenge(p.issuerKey)
 
 	if !p.removePresentingDomain(domain) {
 		return nil
