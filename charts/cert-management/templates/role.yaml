@@ -30,6 +30,22 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  resourceNames:
+  - {{ include "cert-management.fullname" . }}-controllers
+  verbs:
+  - get
+  - watch
+  - update
+- apiGroups:
     - dns.gardener.cloud
   resources:
     - dnsentries

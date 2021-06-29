@@ -578,7 +578,6 @@ Flags:
       --issuer.renewal-window duration                     certificate is renewed if its validity period is shorter of controller issuer
       --issuer.revocations.pool.size int                   Worker pool size for pool revocations of controller issuer
       --issuer.secrets.pool.size int                       Worker pool size for pool secrets of controller issuer
-      --issuer.target-issuers.pool.size int                Worker pool size for pool target-issuers of controller issuer
       --issuers.pool.size int                              Worker pool size for pool issuers
       --kubeconfig string                                  default cluster access
       --kubeconfig.disable-deploy-crds                     disable deployment of required crds for cluster default
@@ -587,6 +586,7 @@ Flags:
       --lease-duration duration                            lease duration
       --lease-name string                                  name for lease object
       --lease-renew-deadline duration                      lease renew deadline
+      --lease-resource-lock string                         determines which resource lock to use for leader election, defaults to 'configmapsleases'
       --lease-retry-period duration                        lease retry period
   -D, --log-level string                                   logrus log level
       --maintainer string                                  maintainer key for crds (default "cert-controller-manager")
@@ -619,7 +619,6 @@ Flags:
       --source.id string                                   id for cluster source
       --source.migration-ids string                        migration id for cluster source
       --target string                                      target cluster for certificates
-      --target-issuers.pool.size int                       Worker pool size for pool target-issuers
       --target-name-prefix string                          name prefix in target namespace for cross cluster generation
       --target-namespace string                            target namespace for cross cluster generation
       --target.disable-deploy-crds                         disable deployment of required crds for cluster target
