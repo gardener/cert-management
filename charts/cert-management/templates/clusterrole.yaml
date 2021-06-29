@@ -15,9 +15,16 @@ metadata:
 rules:
 - apiGroups:
   - ""
-  - extensions
   resources:
   - services
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
   - ingresses
   verbs:
   - get

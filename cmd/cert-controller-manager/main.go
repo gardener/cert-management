@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 
+	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 
@@ -58,6 +59,7 @@ func init() {
 	resources.Register(corev1.SchemeBuilder)
 	resources.Register(dnsapi.SchemeBuilder)
 	resources.Register(v1alpha1.SchemeBuilder)
+	resources.Register(coordinationv1.SchemeBuilder)
 }
 
 func migrateExtensionsIngress(c controllermanager.Configuration) controllermanager.Configuration {

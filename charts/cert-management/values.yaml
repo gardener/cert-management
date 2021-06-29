@@ -86,7 +86,6 @@ configuration:
   # issuerRenewalWindow:
   # issuerRevocationsPoolSize:
   # issuerSecretsPoolSize:
-  # issuerTargetIssuersPoolSize:
   # issuersPoolSize:
   # kubeconfig:
   # kubeconfigDisableDeployCrds:
@@ -95,6 +94,7 @@ configuration:
   # leaseDuration:
   # leaseName:
   # leaseRenewDeadline:
+  # leaseResourceLock:
   # leaseRetryPeriod:
   # logLevel:
   # maintainer:
@@ -126,7 +126,6 @@ configuration:
   # sourceId:
   # sourceMigrationIds:
   # target:
-  # targetIssuersPoolSize:
   # targetNamePrefix:
   # targetNamespace:
   # targetDisableDeployCrds:
