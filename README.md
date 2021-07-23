@@ -1,8 +1,8 @@
-# cert-management
+# Certificate Management
 
 [![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
-Manages TLS certificates in Kubernetes clusters using custom resources.
+The cert-manager manages TLS certificates in Kubernetes clusters using custom resources.
 
 In a multi-cluster environment like Gardener, using existing open source projects
 for certificate management like [cert-manager](https://github.com/jetstack/cert-manager) becomes cumbersome.
