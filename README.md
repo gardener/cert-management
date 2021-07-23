@@ -1,4 +1,4 @@
-# Certificates Management
+# Certificate Management
 
 [![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
