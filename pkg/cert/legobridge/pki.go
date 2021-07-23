@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/go-acme/lego/v4/certificate"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -107,15 +106,15 @@ func generateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte,
 	switch algo {
 	case x509.RSA:
 		if size < RSAMinSize {
-			return nil, nil, errors.New("RSA key is too weak")
+			return nil, nil, fmt.Errorf("RSA key is too weak")
 		}
 		if size > RSAMaxSize {
-			return nil, nil, errors.New("RSA key size too large")
+			return nil, nil, fmt.Errorf("RSA key size too large")
 		}
 
 		key, err = rsa.GenerateKey(rand.Reader, size)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "unable to generate RSA private key")
+			return nil, nil, fmt.Errorf("unable to generate RSA private key: %w", err)
 		}
 	case x509.ECDSA:
 		var curve elliptic.Curve
@@ -127,20 +126,20 @@ func generateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte,
 		case ECCurve256:
 			curve = elliptic.P256()
 		default:
-			return nil, nil, errors.New("invalid elliptic curve")
+			return nil, nil, fmt.Errorf("invalid elliptic curve")
 		}
 
 		key, err = ecdsa.GenerateKey(curve, rand.Reader)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "unable to generate RSA private key")
+			return nil, nil, fmt.Errorf("unable to generate RSA private key: %w", err)
 		}
 	default:
-		return nil, nil, errors.New("algorithm not supported")
+		return nil, nil, fmt.Errorf("algorithm not supported")
 	}
 
 	pem, err := privateKeyToBytes(key)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "encoding private key failed")
+		return nil, nil, fmt.Errorf("encoding private key failed: %w", err)
 	}
 	return key, pem, nil
 }
@@ -185,7 +184,7 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 func generateCSRPEM(csr *x509.CertificateRequest, privateKey crypto.Signer) ([]byte, error) {
 	derBytes, err := x509.CreateCertificateRequest(rand.Reader, csr, privateKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create certificate request")
+		return nil, fmt.Errorf("failed to create certificate request: %w", err)
 	}
 
 	pemBytes := bytes.NewBuffer([]byte{})
@@ -220,7 +219,7 @@ func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x50
 
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate serial number")
+		return nil, fmt.Errorf("failed to generate serial number: %w", err)
 	}
 
 	return &x509.Certificate{
@@ -244,7 +243,7 @@ func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x50
 func signCert(cert, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey crypto.PrivateKey) ([]byte, error) {
 	derBytes, err := x509.CreateCertificate(rand.Reader, cert, issuerCert, publicKey, signerKey)
 	if err != nil {
-		return nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
+		return nil, fmt.Errorf("error creating x509 certificate: %w", err)
 	}
 
 	pemBytes := bytes.NewBuffer([]byte{})
@@ -365,7 +364,7 @@ func encodeCertPEM(out io.Writer, derBytes []byte) error {
 func encodePEM(out io.Writer, b *pem.Block) error {
 	err := pem.Encode(out, b)
 	if err != nil {
-		return errors.Wrap(err, "error encoding certificate PEM")
+		return fmt.Errorf("error encoding certificate PEM: %w", err)
 	}
 	return nil
 }

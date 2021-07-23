@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +21,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
+	"github.com/gardener/controller-manager-library/pkg/errors"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 
@@ -110,7 +110,7 @@ func (r *revokeReconciler) Reconcile(logctx logger.LogContext, obj resources.Obj
 		revocation.Spec.QualifyingDate = &metav1.Time{Time: time.Now()}
 		_, err := r.certRevocationResources.Update(revocation)
 		if err != nil && !apierrrors.IsConflict(err) {
-			return r.failed(logctx, obj, api.StateError, errors.Wrap(err, "updating certificate revocation resource failed"))
+			return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating certificate revocation resource failed: %w", err))
 		}
 		return reconcile.Recheck(logctx, nil, 500*time.Millisecond)
 	}
@@ -127,9 +127,9 @@ func (r *revokeReconciler) Reconcile(logctx logger.LogContext, obj resources.Obj
 	if cert.Status.State == api.StateRevoked && !isInvolved(revocation, cert) {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certficate already revoked"))
 	}
-	hashKey, ok := cert.Labels[certificate.LabelCertificateHashKey]
+	hashKey, ok := cert.Labels[certificate.LabelCertificateNewHashKey]
 	if !ok {
-		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificate has no %s label", certificate.LabelCertificateHashKey))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificate has no %s label", certificate.LabelCertificateNewHashKey))
 	}
 
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, &cert.Spec)
@@ -185,24 +185,24 @@ func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext,
 
 	secret, err := r.loadSecret(certSecretRef)
 	if err != nil {
-		return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "certificate secret"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificate secret: %w", err))
 	}
 
-	hashKey, ok := secret.Labels[certificate.LabelCertificateHashKey]
+	hashKey, ok := secret.Labels[certificate.LabelCertificateNewHashKey]
 	if !ok {
-		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("secret has no %s label", certificate.LabelCertificateHashKey))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("secret has no %s label", certificate.LabelCertificateNewHashKey))
 	}
 
 	// secret is already backed up on certificate creation, only needed for backwards compatibility
 	issuerInfo := utils.NewACMEIssuerInfo(issuerKey)
 	_, _, err = certificate.BackupSecret(r.certSecretResources, secret, hashKey, issuerInfo)
 	if err != nil {
-		return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "secret backup failed"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("secret backup failed: %w", err))
 	}
 
 	secretRefs, err := certificate.FindAllOldBackupSecrets(r.certSecretResources, hashKey, revocation.Spec.QualifyingDate.Time)
 	if err != nil {
-		return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "find all old secrets failed"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("find all old secrets failed: %w", err))
 	}
 
 	return r.updateStatusAndDelay(logctx, obj, 1*time.Second, func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
@@ -218,11 +218,11 @@ func (r *revokeReconciler) collectCertificateRefsAndRepeat(logctx logger.LogCont
 	revocation := obj.Data().(*api.CertificateRevocation)
 	selector, err := createLabelCertificateHashKeySelector(hashKey)
 	if err != nil {
-		return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "collectCertificateRefsAndRepeat"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("collectCertificateRefsAndRepeat: %w", err))
 	}
 	list, err := r.certResources.ListCached(selector)
 	if err != nil {
-		return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "list certificates with same hash"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("list certificates with same hash: %w", err))
 	}
 
 	qualifyingDate := *revocation.Spec.QualifyingDate
@@ -240,11 +240,11 @@ func (r *revokeReconciler) collectCertificateRefsAndRepeat(logctx logger.LogCont
 			if apierrrors.IsNotFound(errors.Cause(err)) {
 				continue
 			}
-			return r.failedStop(logctx, obj, api.StateError, errors.Wrapf(err, "certificate %s/%s", cert.Namespace, cert.Name))
+			return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificate %s/%s: %w", cert.Namespace, cert.Name, err))
 		}
 		x509cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data)
 		if err != nil {
-			return r.failedStop(logctx, obj, api.StateError, errors.Wrapf(err, "certificate %s/%s", cert.Namespace, cert.Name))
+			return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificate %s/%s: %w", cert.Namespace, cert.Name, err))
 		}
 		requestedAt := certificate.ExtractRequestedAtFromAnnotation(secret)
 		if !certificate.WasRequestedBefore(x509cert, requestedAt, qualifyingDate.Time) {
@@ -257,7 +257,7 @@ func (r *revokeReconciler) collectCertificateRefsAndRepeat(logctx logger.LogCont
 				if apierrrors.IsGone(err) {
 					continue
 				}
-				return r.failedStop(logctx, obj, api.StateError, errors.Wrapf(err, "certificate %s/%s cannot be updated", cert.Namespace, cert.Name))
+				return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificate %s/%s cannot be updated: %w", cert.Namespace, cert.Name, err))
 			}
 		}
 
@@ -435,13 +435,13 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 			if apierrrors.IsGone(err) {
 				continue
 			}
-			errs = append(errs, errors.Wrapf(err, "cannot load backup certificate secret: %s", secret.Name))
+			errs = append(errs, fmt.Errorf("cannot load backup certificate secret: %s: %w", secret.Name, err))
 			failedSecrets = append(failedSecrets, ref)
 			continue
 		}
 		cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data)
 		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "cannot decode backup certificate secret %s", secret.Name))
+			errs = append(errs, fmt.Errorf("cannot decode backup certificate secret %s: %w", secret.Name, err))
 			failedSecrets = append(failedSecrets, ref)
 			continue
 		}
@@ -450,7 +450,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		if _, ok := resources.GetAnnotation(secret, certificate.AnnotationRevoked); !ok {
 			err = legobridge.RevokeCertificate(user, tlscrt)
 			if err != nil {
-				errs = append(errs, errors.Wrapf(err, "certificate revocation failed for backup certificate secret %s", secret.Name))
+				errs = append(errs, fmt.Errorf("certificate revocation failed for backup certificate secret %s: %w", secret.Name, err))
 				failedSecrets = append(failedSecrets, ref)
 				continue
 			}
@@ -461,7 +461,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		revokedSecrets = append(revokedSecrets, ref)
 		err = r.setCertificateSecretRevoked(secret)
 		if err != nil {
-			err = errors.Wrapf(err, "updating backup certificate secret %s failed", secret.Name)
+			err = fmt.Errorf("updating backup certificate secret %s failed: %w", secret.Name, err)
 			logctx.Warn(err.Error())
 			errs = append(errs, err)
 		}
@@ -469,7 +469,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 
 	err = r.setCertificateSecretsRevokedBySerialNumbers(hashKey, revokedSerialNumbers)
 	if err != nil {
-		err = errors.Wrap(err, "marking certificate secret as revoked failed")
+		err = fmt.Errorf("marking certificate secret as revoked failed: %w", err)
 		logctx.Warn(err.Error())
 		errs = append(errs, err)
 	}
@@ -487,7 +487,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		// trigger all certificate objects
 		for _, ref := range revocation.Status.Objects.Processing {
 			key := resources.NewClusterKey(r.certResources.GetCluster().GetId(), api.Kind(api.CertificateKind), ref.Namespace, ref.Name)
-			r.support.EnqueueKey(key)
+			_ = r.support.EnqueueKey(key)
 		}
 	}
 
@@ -535,7 +535,7 @@ func (r *revokeReconciler) setCertificateSecretRevoked(secret *corev1.Secret) er
 }
 
 func (r *revokeReconciler) setCertificateSecretsRevokedBySerialNumbers(hashKey string, serialNumbers []*big.Int) error {
-	list, err := certificate.FindAllCertificateSecretsByHashLabel(r.certSecretResources, hashKey)
+	list, err := certificate.FindAllCertificateSecretsByNewHashLabel(r.certSecretResources, hashKey)
 	if err != nil {
 		return err
 	}
@@ -570,7 +570,7 @@ func (r *revokeReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev
 	secret := &corev1.Secret{}
 	_, err := r.certSecretResources.GetInto(secretObjectName, secret)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching secret failed")
+		return nil, fmt.Errorf("fetching secret failed: %w", err)
 	}
 
 	return secret, nil
@@ -580,12 +580,12 @@ func (r *revokeReconciler) updateStatusAndDelay(logctx logger.LogContext, obj re
 	statusUpdater func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error)) reconcile.Status {
 	mod, err := statusUpdater(logctx, obj)
 	if err != nil {
-		return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "statusUpdater"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("statusUpdater: %w", err))
 	}
 	if mod.Modified {
 		err := mod.UpdateStatus()
 		if err != nil {
-			return r.failedStop(logctx, obj, api.StateError, errors.Wrap(err, "UpdateStatus failed"))
+			return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("UpdateStatus failed: %w", err))
 		}
 	}
 
@@ -635,7 +635,7 @@ func (r *revokeReconciler) recheck(logger logger.LogContext, obj resources.Objec
 }
 
 func createLabelCertificateHashKeySelector(hash string) (labels.Selector, error) {
-	requirement, err := labels.NewRequirement(certificate.LabelCertificateHashKey, selection.Equals, []string{hash})
+	requirement, err := labels.NewRequirement(certificate.LabelCertificateNewHashKey, selection.Equals, []string{hash})
 	if err != nil {
 		return nil, err
 	}

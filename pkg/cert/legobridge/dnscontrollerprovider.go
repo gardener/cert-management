@@ -38,7 +38,7 @@ func newDNSControllerProvider(settings DNSControllerSettings,
 	certificateName resources.ObjectName, targetClass string, issuerKey utils.IssuerKey) (ProviderWithCount, error) {
 	itf, err := settings.Cluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
-		return nil, fmt.Errorf("cannot get DNSEntry resources: %s", err.Error())
+		return nil, fmt.Errorf("cannot get DNSEntry resources: %w", err)
 	}
 	n := atomic.AddUint32(&index, 1)
 	return &dnsControllerProvider{
@@ -136,7 +136,7 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 		}
 		_, err := p.entryResources.Create(entry)
 		if err != nil {
-			return fmt.Errorf("creating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
+			return fmt.Errorf("creating DNSEntry %s/%s failed: %w", entry.Namespace, entry.Name, err)
 		}
 		return nil
 	}
@@ -145,14 +145,14 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 	err := retryOnUpdateError(func() error {
 		obj, err := p.entryResources.Get_(entry)
 		if err != nil {
-			return fmt.Errorf("getting DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
+			return fmt.Errorf("getting DNSEntry %s/%s failed: %w", entry.Namespace, entry.Name, err)
 		}
 		entry = obj.Data().(*dnsapi.DNSEntry)
 		setSpec(entry)
 		p.logger.Infof("presenting DNSEntry %s/%s for certificate resource %s with %d values", entry.Namespace, entry.Name, p.certificateName, len(values))
 		_, err = p.entryResources.Update(entry)
 		if err != nil {
-			return &updateError{msg: fmt.Sprintf("updating DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())}
+			return &updateError{msg: fmt.Sprintf("updating DNSEntry %s/%s failed: %s", entry.Namespace, entry.Name, err)}
 		}
 		return nil
 	})
@@ -199,7 +199,7 @@ func (p *dnsControllerProvider) CleanUp(domain, token, keyAuth string) error {
 	p.logger.Infof("cleanup DNSEntry %s/%s for request %s", entry.Namespace, entry.Name, p.certificateName)
 	err := p.entryResources.Delete(entry)
 	if err != nil {
-		return fmt.Errorf("deleting DNSEntry %s/%s failed with %s", entry.Namespace, entry.Name, err.Error())
+		return fmt.Errorf("deleting DNSEntry %s/%s failed: %w", entry.Namespace, entry.Name, err)
 	}
 	return nil
 }

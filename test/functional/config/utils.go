@@ -9,10 +9,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/onsi/gomega"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/onsi/gomega"
 )
 
 const STATE_DELETED = "~DELETED~"
@@ -89,7 +90,7 @@ func (u *TestUtils) runCmd(cmdline string) (string, error) {
 	out, err := cmd.Output()
 	if err != nil {
 		println(string(err.(*exec.ExitError).Stderr))
-		return string(out), fmt.Errorf("command `%s` failed with %s", cmdline, err)
+		return string(out), fmt.Errorf("command `%s` failed: %w", cmdline, err)
 	}
 	return string(out), nil
 }
@@ -170,7 +171,7 @@ func (u *TestUtils) AwaitWithTimeout(msg string, check CheckFunc, timeout time.D
 		time.Sleep(u.PollingPeriod)
 	}
 	if err != nil {
-		return fmt.Errorf("Timeout during check %s with error %s", msg, err.Error())
+		return fmt.Errorf("Timeout during check %s with error: %w", msg, err)
 	}
 	return fmt.Errorf("Timeout during check  %s", msg)
 }

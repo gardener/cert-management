@@ -14,8 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 
@@ -368,7 +366,7 @@ func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("parsing certificate failed with %s", err.Error())
+		return nil, fmt.Errorf("parsing certificate failed: %w", err)
 	}
 	return cert, nil
 }
@@ -415,7 +413,7 @@ func RevokeCertificate(user *RegistrationUser, cert []byte) error {
 	// A client facilitates communication with the CA server.
 	client, err := lego.NewClient(config)
 	if err != nil {
-		return errors.Wrap(err, "client creation failed")
+		return fmt.Errorf("client creation failed: %w", err)
 	}
 
 	return client.Certificate.Revoke(cert)

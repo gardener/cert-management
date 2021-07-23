@@ -98,12 +98,12 @@ func LoadConfig(filename string) (*Config, error) {
 	config := &Config{}
 	err = decoder.Decode(config)
 	if err != nil {
-		return nil, fmt.Errorf("Parsing config file %s failed with %s", filename, err)
+		return nil, fmt.Errorf("Parsing config file %s failed: %w", filename, err)
 	}
 
 	err = config.postProcess()
 	if err != nil {
-		return nil, fmt.Errorf("Post processing config file %s failed with %s", filename, err)
+		return nil, fmt.Errorf("Post processing config file %s failed: %w", filename, err)
 	}
 
 	config.Utils = CreateDefaultTestUtils()

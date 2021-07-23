@@ -12,7 +12,6 @@ require (
 	github.com/miekg/dns v1.1.31
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
 	k8s.io/api v0.20.6

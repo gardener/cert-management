@@ -140,7 +140,7 @@ func NewRegistrationUserFromEmailAndPrivateKey(issuerKey utils.IssuerKey,
 func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
 	privkey, err := privateKeyToBytes(u.key)
 	if err != nil {
-		return nil, fmt.Errorf("encoding private key failed: %s", err.Error())
+		return nil, fmt.Errorf("encoding private key failed: %w", err)
 	}
 	return map[string][]byte{KeyPrivateKey: privkey}, nil
 }
@@ -149,7 +149,7 @@ func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
 func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 	reg, err := json.Marshal(u.registration)
 	if err != nil {
-		return nil, fmt.Errorf("encoding registration failed: %s", err.Error())
+		return nil, fmt.Errorf("encoding registration failed: %w", err)
 	}
 	return reg, nil
 }
@@ -169,7 +169,10 @@ func RegistrationUserFromSecretData(issuerKey utils.IssuerKey,
 	reg := &registration.Resource{}
 	err = json.Unmarshal(registrationRaw, reg)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling registration json failed with %s", err.Error())
+		return nil, fmt.Errorf("unmarshalling registration json failed: %w", err)
+	}
+	if reg.URI == "" {
+		return nil, fmt.Errorf("unmarshalling registration with unexpected empty URI")
 	}
 	metrics.AddACMEAccountRegistration(issuerKey, reg.URI, email)
 	return &RegistrationUser{email: email, registration: reg, caDirURL: caDirURL, key: privateKey,
