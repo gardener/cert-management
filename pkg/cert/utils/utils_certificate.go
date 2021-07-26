@@ -99,7 +99,7 @@ func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
 func ExtractCommonNameAnDNSNames(csr []byte) (cn *string, san []string, err error) {
 	certificateRequest, err := extractCertificateRequest(csr)
 	if err != nil {
-		err = fmt.Errorf("parsing CSR failed with: %s", err)
+		err = fmt.Errorf("parsing CSR failed: %w", err)
 		return
 	}
 	cnvalue := certificateRequest.Subject.CommonName

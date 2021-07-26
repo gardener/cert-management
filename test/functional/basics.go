@@ -14,8 +14,8 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/cert-management/test/functional/config"
+	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
 var basicTemplate = `
@@ -144,7 +144,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				entryName(iss, "1"): MatchKeys(IgnoreExtras, Keys{
 					"metadata": MatchKeys(IgnoreExtras, Keys{
 						"labels": MatchKeys(IgnoreExtras, Keys{
-							"cert.gardener.cloud/certificate-hash": HavePrefix(""),
+							"cert.gardener.cloud/hash": HavePrefix(""),
 						}),
 					}),
 					"spec": MatchKeys(IgnoreExtras, Keys{

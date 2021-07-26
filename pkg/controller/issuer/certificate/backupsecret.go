@@ -40,7 +40,7 @@ func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string
 	}
 	sn := SerialNumberToString(cert.SerialNumber, true)
 	list, err := res.Namespace(metav1.NamespaceSystem).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", LabelCertificateSerialNumber, sn, LabelCertificateHashKey, hashKey),
+		LabelSelector: fmt.Sprintf("%s=%s,%s=%s", LabelCertificateSerialNumber, sn, LabelCertificateNewHashKey, hashKey),
 	})
 	if err != nil {
 		return
@@ -61,7 +61,7 @@ func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string
 	backupSecret.GenerateName = fmt.Sprintf("cert-backup-%s-%s-", issuerInfo.Key().Name(), sn[len(sn)-8:])
 	backupSecret.Namespace = metav1.NamespaceSystem
 	backupSecret.Data = secret.Data
-	resources.SetLabel(backupSecret, LabelCertificateHashKey, hashKey)
+	resources.SetLabel(backupSecret, LabelCertificateNewHashKey, hashKey)
 	resources.SetLabel(backupSecret, LabelCertificateKey, "true")
 	resources.SetLabel(backupSecret, LabelCertificateSerialNumber, sn)
 	resources.SetLabel(backupSecret, LabelCertificateBackup, "true")
@@ -85,10 +85,18 @@ func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string
 	}, true, nil
 }
 
-// FindAllCertificateSecretsByHashLabel get all certificate secrets by the certificate hash
-func FindAllCertificateSecretsByHashLabel(res resources.Interface, hashKey string) ([]resources.Object, error) {
+// FindAllCertificateSecretsByOldHashLabel get all certificate secrets by the old certificate hash
+func FindAllCertificateSecretsByOldHashLabel(res resources.Interface, hashKey string) ([]resources.Object, error) {
 	opts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateHashKey, hashKey),
+		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateOldHashKey, hashKey),
+	}
+	return res.List(opts)
+}
+
+// FindAllCertificateSecretsByNewHashLabel get all certificate secrets by the certificate hash
+func FindAllCertificateSecretsByNewHashLabel(res resources.Interface, hashKey string) ([]resources.Object, error) {
+	opts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateNewHashKey, hashKey),
 	}
 	return res.List(opts)
 }
@@ -96,7 +104,7 @@ func FindAllCertificateSecretsByHashLabel(res resources.Interface, hashKey strin
 // FindAllOldBackupSecrets finds all certificate secret backups which have not been requested after the given timestamp.
 func FindAllOldBackupSecrets(res resources.Interface, hashKey string, timestamp time.Time) ([]api.CertificateSecretRef, error) {
 	list, err := res.Namespace(metav1.NamespaceSystem).List(metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateHashKey, hashKey),
+		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateNewHashKey, hashKey),
 	})
 	if err != nil {
 		return nil, err

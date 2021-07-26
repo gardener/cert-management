@@ -57,7 +57,7 @@ func (r *caIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Obje
 		issuerKey := r.support.ToIssuerKey(obj.ClusterKey())
 		secret, err = r.support.ReadIssuerSecret(issuerKey, ca.PrivateKeySecretRef)
 		if err != nil {
-			return r.failedCARetry(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
+			return r.failedCARetry(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
 		}
 		hash := r.support.CalcSecretHash(secret)
 		r.support.RememberIssuerSecret(obj.ClusterKey(), ca.PrivateKeySecretRef, hash)
@@ -88,13 +88,13 @@ func validateSecretCA(secret *corev1.Secret) ([]byte, error) {
 	// Validate it can be used as a CAKeyPair
 	CAKeyPair, err := legobridge.CAKeyPairFromSecretData(secret.Data)
 	if err != nil {
-		return nil, fmt.Errorf("extracting CA Keypair from secret failed with %s", err.Error())
+		return nil, fmt.Errorf("extracting CA Keypair from secret failed: %w", err)
 	}
 
 	// Validate cert and key are valid and that they match together
 	ok, err := legobridge.ValidatePublicKeyWithPrivateKey(CAKeyPair.Cert.PublicKey, CAKeyPair.Key)
 	if err != nil {
-		return nil, fmt.Errorf("check private key failed with %s", err.Error())
+		return nil, fmt.Errorf("check private key failed: %w", err)
 	}
 	if !ok {
 		return nil, fmt.Errorf("private key does not match certificate")
@@ -112,7 +112,7 @@ func validateSecretCA(secret *corev1.Secret) ([]byte, error) {
 
 	CAInfoRaw, err := CAKeyPair.RawCertInfo()
 	if err != nil {
-		return nil, fmt.Errorf("cert info marshalling failed with %s", err.Error())
+		return nil, fmt.Errorf("cert info marshalling failed: %w", err)
 	}
 
 	return CAInfoRaw, nil

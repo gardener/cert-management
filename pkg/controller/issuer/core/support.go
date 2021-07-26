@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -267,7 +266,7 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuerKey utils.IssuerKe
 
 	obj, err := s.GetIssuerSecretResources(issuerKey).CreateOrUpdate(secret)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating/updating issuer secret failed with %s", err.Error())
+		return nil, nil, fmt.Errorf("creating/updating issuer secret failed: %w", err)
 	}
 
 	return &corev1.SecretReference{Name: obj.GetName(), Namespace: secret.GetNamespace()}, secret, nil
@@ -283,11 +282,11 @@ func (s *Support) UpdateIssuerSecret(issuerKey utils.IssuerKey, reguser *legobri
 	}
 	obj, err := s.GetIssuerSecretResources(issuerKey).Wrap(secret)
 	if err != nil {
-		return fmt.Errorf("wrapping issuer secret failed with %s", err.Error())
+		return fmt.Errorf("wrapping issuer secret failed: %w", err)
 	}
 	err = obj.Update()
 	if err != nil {
-		return fmt.Errorf("updating issuer secret failed with %s", err.Error())
+		return fmt.Errorf("updating issuer secret failed: %w", err)
 	}
 
 	return nil
@@ -544,9 +543,9 @@ func (s *Support) CertificateNamesForIssuer(issuer resources.ClusterObjectKey) [
 
 // IssuerNamesForSecretOrEABSecret returns issuer names for a secret name
 func (s *Support) IssuerNamesForSecretOrEABSecret(secretKey resources.ClusterObjectKey) resources.ObjectNameSet {
-	cluster := utils.ClusterDefault
-	if secretKey.Cluster() == s.targetCluster.GetId() {
-		cluster = utils.ClusterTarget
+	cluster := utils.ClusterTarget
+	if secretKey.Cluster() == s.defaultCluster.GetId() {
+		cluster = utils.ClusterDefault
 	}
 	key := utils.NewIssuerSecretKey(cluster, secretKey.Namespace(), secretKey.Name())
 	list1 := s.toObjectNameSet(s.state.IssuerNamesForSecret(key))
@@ -569,7 +568,7 @@ func (s *Support) RememberIssuerSecret(issuer resources.ClusterObjectKey, secret
 // RememberIssuerEABSecret stores issuer EAB secret ref pair.
 func (s *Support) RememberIssuerEABSecret(issuer resources.ClusterObjectKey, secretRef *corev1.SecretReference, hash string) {
 	issuerKey := s.ToIssuerKey(issuer)
-	s.state.RememberIssuerSecret(issuerKey, secretRef, hash)
+	s.state.RememberIssuerEABSecret(issuerKey, secretRef, hash)
 }
 
 // RememberIssuerQuotas stores the issuer quotas.
@@ -630,6 +629,7 @@ func (s *Support) GetIssuerSecretResources(issuerKey utils.IssuerKey) resources.
 }
 
 // CalcSecretHash calculates the secret hash
+// If real is true, precalculated hash value of `IssuerSecretHashKey` is ignored
 func (s *Support) CalcSecretHash(secret *corev1.Secret) string {
 	if secret == nil {
 		return ""
@@ -702,7 +702,7 @@ func (s *Support) LoadIssuer(issuerKey utils.IssuerKey) (*api.Issuer, error) {
 	issuer := &api.Issuer{}
 	_, err := res.GetInto(issuerKey.ObjectName(s.IssuerNamespace()), issuer)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching issuer failed")
+		return nil, fmt.Errorf("fetching issuer failed: %w", err)
 	}
 	return issuer, nil
 }
@@ -731,10 +731,10 @@ func (s *Support) RestoreRegUser(issuerKey utils.IssuerKey, issuer *api.Issuer) 
 	}
 	issuerSecret, err := s.ReadIssuerSecret(issuerKey, secretRef)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching issuer secret failed")
+		return nil, fmt.Errorf("fetching issuer secret failed: %w", err)
 	}
 
-	eabKeyID, eabHmacKey, err := s.LoadEABHmacKey(issuerKey, acme)
+	eabKeyID, eabHmacKey, err := s.LoadEABHmacKey(nil, issuerKey, acme)
 	if err != nil {
 		return nil, err
 	}
@@ -742,17 +742,21 @@ func (s *Support) RestoreRegUser(issuerKey utils.IssuerKey, issuer *api.Issuer) 
 	reguser, err := legobridge.RegistrationUserFromSecretData(issuerKey, issuer.Spec.ACME.Email, issuer.Spec.ACME.Server,
 		issuer.Status.ACME.Raw, issuerSecret.Data, eabKeyID, eabHmacKey)
 	if err != nil {
-		return nil, errors.Wrap(err, "restoring registration issuer from issuer secret failed")
+		return nil, fmt.Errorf("restoring registration issuer from issuer secret failed: %w", err)
 	}
 
 	return reguser, nil
 }
 
 // LoadEABHmacKey reads the external account binding MAC key from the referenced secret
-func (s *Support) LoadEABHmacKey(issuerKey utils.IssuerKey, acme *api.ACMESpec) (string, string, error) {
+func (s *Support) LoadEABHmacKey(objKey *resources.ClusterObjectKey, issuerKey utils.IssuerKey, acme *api.ACMESpec) (string, string, error) {
 	eab := acme.ExternalAccountBinding
 	if eab == nil {
 		return "", "", nil
+	}
+
+	if eab.KeyID == "" {
+		return "", "", fmt.Errorf("missing keyID for external account binding in ACME spec")
 	}
 
 	if eab.KeySecretRef == nil {
@@ -761,7 +765,11 @@ func (s *Support) LoadEABHmacKey(issuerKey utils.IssuerKey, acme *api.ACMESpec) 
 
 	secret, err := s.ReadIssuerSecret(issuerKey, eab.KeySecretRef)
 	if err != nil {
-		return "", "", errors.Wrap(err, "fetching issuer EAB secret failed")
+		return "", "", fmt.Errorf("fetching issuer EAB secret failed: %w", err)
+	}
+	if objKey != nil {
+		hash := s.CalcSecretHash(secret)
+		s.RememberIssuerEABSecret(*objKey, eab.KeySecretRef, hash)
 	}
 
 	hmacEncoded, ok := secret.Data[legobridge.KeyHmacKey]

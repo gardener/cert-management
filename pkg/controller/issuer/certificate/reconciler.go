@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/go-acme/lego/v4/certificate"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,6 +23,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
+	"github.com/gardener/controller-manager-library/pkg/errors"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	cmlutils "github.com/gardener/controller-manager-library/pkg/utils"
@@ -39,8 +39,10 @@ import (
 )
 
 const (
-	// LabelCertificateHashKey is the label for the certificate hash
-	LabelCertificateHashKey = api.GroupName + "/certificate-hash"
+	// LabelCertificateOldHashKey is the old label for the certificate hash
+	LabelCertificateOldHashKey = api.GroupName + "/certificate-hash"
+	// LabelCertificateNewHashKey is the new label for the certificate hash
+	LabelCertificateNewHashKey = api.GroupName + "/hash"
 	// LabelCertificateKey is the label for marking secrets created for a certificate
 	LabelCertificateKey = api.GroupName + "/certificate"
 	// LabelCertificateBackup is the label for marking backup secrets
@@ -234,12 +236,19 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 			// ignore if SecretRef is specified but not existing
 			// will later be used to store the secret
 		} else {
-			if storedHash := cert.Labels[LabelCertificateHashKey]; storedHash != "" {
-				specHash := r.buildSpecHash(&cert.Spec, issuerKey)
+			if storedHash := cert.Labels[LabelCertificateNewHashKey]; storedHash != "" {
+				specHash := r.buildSpecNewHash(&cert.Spec, issuerKey)
 				if specHash != storedHash {
 					return r.removeStoredHashKeyAndRepeat(logctx, obj)
 				}
 				return r.checkForRenewAndSucceeded(logctx, obj, secret)
+			} else if storedOldHash := cert.Labels[LabelCertificateOldHashKey]; storedOldHash != "" {
+				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey)
+				if specOldHash != storedOldHash {
+					return r.removeStoredHashKeyAndRepeat(logctx, obj)
+				}
+				specNewHash := r.buildSpecNewHash(&cert.Spec, issuerKey)
+				return r.migrateSpecHash(logctx, obj, specOldHash, specNewHash)
 			}
 
 			// corner case: existing secret but no stored hash, check if renewal is overdue
@@ -269,7 +278,7 @@ func (r *certReconciler) addEvent(obj resources.Object, status reconcile.Status,
 
 func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resources.Object, result *legobridge.ObtainOutput) (reconcile.Status, bool) {
 	if result.Err != nil {
-		return r.failed(logctx, obj, api.StateError, errors.Wrapf(result.Err, "obtaining certificate failed")), true
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("obtaining certificate failed: %w", result.Err)), true
 	}
 
 	cert, _ := obj.Data().(*api.Certificate)
@@ -285,13 +294,13 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		IssuerRef:  &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
 	}
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
-	specHash := r.buildSpecHash(spec, issuerKey)
+	specHash := r.buildSpecNewHash(spec, issuerKey)
 
 	now := time.Now()
 	secretRef, err := r.writeCertificateSecret(logctx, result.IssuerInfo, cert.ObjectMeta, result.Certificates, specHash,
 		specSecretRef, &now)
 	if err != nil {
-		return r.failed(logctx, obj, api.StateError, errors.Wrapf(err, "writing certificate secret failed")), false
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("writing certificate secret failed: %w", err)), false
 	}
 	logctx.Infof("certificate written in secret %s/%s", secretRef.Namespace, secretRef.Name)
 
@@ -444,7 +453,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		case *legobridge.ConcurrentObtainError:
 			return r.delay(logctx, obj, api.StatePending, err)
 		default:
-			return r.failed(logctx, obj, api.StateError, errors.Wrapf(err, "preparing obtaining certificates failed"))
+			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
 		}
 	}
 	r.pendingRequests.Add(objectName)
@@ -471,12 +480,12 @@ func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer
 	issuerSecret := &corev1.Secret{}
 	_, err := r.support.GetIssuerSecretResources(issuerKey).GetInto(issuerSecretObjectName, issuerSecret)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching issuer secret failed")
+		return nil, fmt.Errorf("fetching issuer secret failed: %w", err)
 	}
 
 	CAKeyPair, err := legobridge.CAKeyPairFromSecretData(issuerSecret.Data)
 	if err != nil {
-		return nil, errors.Wrap(err, "restoring CA issuer from issuer secret failed")
+		return nil, fmt.Errorf("restoring CA issuer from issuer secret failed: %w", err)
 	}
 
 	return CAKeyPair, nil
@@ -531,7 +540,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		case *legobridge.ConcurrentObtainError:
 			return r.delay(logctx, obj, api.StatePending, err)
 		default:
-			return r.failed(logctx, obj, api.StateError, errors.Wrap(err, "preparing obtaining certificates failed"))
+			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
 		}
 	}
 	r.pendingRequests.Add(objectName)
@@ -586,7 +595,7 @@ func (r *certReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev1.
 	secret := &corev1.Secret{}
 	_, err := r.certSecretResources.GetInto(secretObjectName, secret)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching certificate secret failed")
+		return nil, fmt.Errorf("fetching certificate secret failed: %w", err)
 	}
 
 	return secret, nil
@@ -664,7 +673,7 @@ func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj
 		crt.Spec.EnsureRenewedAfter = renewalTime
 		err := obj.Update()
 		if err != nil {
-			status := r.failed(logctx, obj, crt.Status.State, errors.Wrap(err, "requesting renewal"))
+			status := r.failed(logctx, obj, crt.Status.State, fmt.Errorf("requesting renewal: %w", err))
 			return &status
 		}
 		status := reconcile.RescheduleAfter(logctx, 1*time.Second)
@@ -673,7 +682,7 @@ func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj
 	return nil
 }
 
-func (r *certReconciler) buildSpecHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
+func (r *certReconciler) buildSpecOldHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
 	h := sha256.New224()
 	if spec.CommonName != nil {
 		h.Write([]byte(*spec.CommonName))
@@ -690,6 +699,26 @@ func (r *certReconciler) buildSpecHash(spec *api.CertificateSpec, issuerKey util
 	}
 	hash := r.support.GetIssuerSecretHash(issuerKey)
 	h.Write([]byte(hash))
+	h.Write([]byte{0})
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
+	h := sha256.New224()
+	if spec.CommonName != nil {
+		h.Write([]byte(*spec.CommonName))
+		h.Write([]byte{0})
+		for _, domain := range spec.DNSNames {
+			h.Write([]byte(domain))
+			h.Write([]byte{0})
+		}
+	}
+	if spec.CSR != nil {
+		h.Write([]byte{0})
+		h.Write(spec.CSR)
+		h.Write([]byte{0})
+	}
+	h.Write([]byte(issuerKey.String()))
 	h.Write([]byte{0})
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
@@ -735,8 +764,8 @@ func (r *certReconciler) determineSecretRef(namespace string, spec *api.Certific
 
 func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.CertificateSpec) (*corev1.SecretReference, string, *time.Time) {
 	issuerKey := r.support.IssuerClusterObjectKey(namespace, spec)
-	specHash := r.buildSpecHash(spec, issuerKey)
-	objs, err := FindAllCertificateSecretsByHashLabel(r.certSecretResources, specHash)
+	specHash := r.buildSpecNewHash(spec, issuerKey)
+	objs, err := FindAllCertificateSecretsByNewHashLabel(r.certSecretResources, specHash)
 	if err != nil {
 		return nil, "", nil
 	}
@@ -807,7 +836,7 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 	} else {
 		secret.SetGenerateName(objectMeta.GetName() + "-")
 	}
-	resources.SetLabel(secret, LabelCertificateHashKey, specHash)
+	resources.SetLabel(secret, LabelCertificateNewHashKey, specHash)
 	resources.SetLabel(secret, LabelCertificateKey, "true")
 	resources.RemoveAnnotation(secret, AnnotationRevoked)
 	setRequestedAtAnnotation(secret, requestedAt)
@@ -824,7 +853,7 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 
 	obj, err := r.certSecretResources.CreateOrUpdate(secret)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating/updating certificate secret failed")
+		return nil, fmt.Errorf("creating/updating certificate secret failed: %w", err)
 	}
 
 	ref, created, err := BackupSecret(r.certSecretResources, secret, specHash, issuerInfo)
@@ -844,7 +873,7 @@ func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, o
 	if crt.Labels == nil {
 		crt.Labels = map[string]string{}
 	}
-	crt.Labels[LabelCertificateHashKey] = specHash
+	crt.Labels[LabelCertificateNewHashKey] = specHash
 	if notAfter != nil {
 		resources.SetAnnotation(crt, AnnotationNotAfter, notAfter.Format(time.RFC3339))
 	} else {
@@ -852,19 +881,54 @@ func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, o
 	}
 	obj2, err := r.certResources.Update(crt)
 	if err != nil {
-		return r.failed(logctx, obj, api.StateError, errors.Wrap(err, "updating certificate resource failed"))
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating certificate resource failed: %w", err))
 	}
 	return r.succeeded(logctx, obj2, nil)
 }
 
 func (r *certReconciler) removeStoredHashKeyAndRepeat(logctx logger.LogContext, obj resources.Object) reconcile.Status {
 	c := obj.Data().(*api.Certificate)
-	delete(c.Labels, LabelCertificateHashKey)
+	delete(c.Labels, LabelCertificateOldHashKey)
+	delete(c.Labels, LabelCertificateNewHashKey)
 	obj2, err := r.certResources.Update(c)
 	if err != nil {
-		return r.failed(logctx, obj, api.StateError, errors.Wrap(err, "updating certificate resource failed"))
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating certificate resource failed: %w", err))
 	}
 	return r.repeat(logctx, obj2)
+}
+
+func (r *certReconciler) migrateSpecHash(logctx logger.LogContext, obj resources.Object, specOldHash, specNewHash string) reconcile.Status {
+	logctx.Infof("migrating spec hash")
+
+	crt := obj.Data().(*api.Certificate)
+
+	objs, err := FindAllCertificateSecretsByOldHashLabel(r.certSecretResources, specOldHash)
+	if err != nil {
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("find all certificates by old hash failed: %w", err))
+	}
+
+	for _, obj := range objs {
+		if _, ok := resources.GetLabel(obj.Data(), LabelCertificateNewHashKey); !ok {
+			obj.SetLabels(resources.AddLabel(obj.GetLabels(), LabelCertificateNewHashKey, specNewHash))
+			err = obj.Update()
+			if err != nil {
+				return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating label for certificate secret %s failed: %w", obj.ObjectName(), err))
+			}
+		}
+	}
+
+	if crt.Labels == nil {
+		crt.Labels = map[string]string{}
+	}
+	crt.Labels[LabelCertificateNewHashKey] = specNewHash
+	_, err = r.certResources.Update(crt)
+	if err != nil {
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating certificate resource failed: %w", err))
+	}
+
+	time.Sleep(500 * time.Millisecond)
+
+	return reconcile.Succeeded(logctx)
 }
 
 func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string, msg *string, mode backoffMode) (*resources.ModificationState, *api.CertificateStatus) {

@@ -56,12 +56,13 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("missing server in ACME spec"))
 	}
 
-	r.support.AddIssuerDomains(obj.ClusterKey(), issuer.Spec.ACME.Domains)
+	r.support.AddIssuerDomains(obj.ClusterKey(), acme.Domains)
 
-	r.support.RememberIssuerSecret(obj.ClusterKey(), issuer.Spec.ACME.PrivateKeySecretRef, "")
+	r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, "")
 
 	issuerKey := r.support.ToIssuerKey(obj.ClusterKey())
 	var secret *corev1.Secret
+	var secretHash string
 	var err error
 	if acme.PrivateKeySecretRef != nil {
 		secret, err = r.support.ReadIssuerSecret(issuerKey, acme.PrivateKeySecretRef)
@@ -69,108 +70,75 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 			if acme.AutoRegistration {
 				logger.Info("spec.acme.privateKeySecretRef not existing, creating new account")
 			} else {
-				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed with %s", err.Error()))
+				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
 			}
 		}
-		hash := r.support.CalcSecretHash(secret)
-		r.support.RememberIssuerSecret(obj.ClusterKey(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
+		secretHash = r.support.CalcSecretHash(secret)
+		r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secretHash)
 	}
-	if secret != nil && issuer.Status.ACME != nil && issuer.Status.ACME.Raw != nil {
-		eabKeyID, eabHmacKey, err := r.support.LoadEABHmacKey(issuerKey, acme)
+	if secret != nil {
+		objKey := obj.ClusterKey()
+		eabKeyID, eabHmacKey, err := r.support.LoadEABHmacKey(&objKey, issuerKey, acme)
 		if err != nil {
-			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading EAB secret failed: %s", err))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading EAB secret failed: %w", err))
 		}
-		user, err := legobridge.RegistrationUserFromSecretData(issuerKey, acme.Email, acme.Server, issuer.Status.ACME.Raw,
+		var raw []byte
+		if core.IsSameExistingRegistration(issuer.Status.ACME, secretHash) {
+			raw = issuer.Status.ACME.Raw
+		} else {
+			user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, secret.Data, eabKeyID, eabHmacKey)
+			if err != nil {
+				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("creating registration user failed: %w", err))
+			}
+			raw, err = user.RawRegistration()
+			if err != nil {
+				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("registration marshalling failed: %w", err))
+			}
+		}
+		user, err := legobridge.RegistrationUserFromSecretData(issuerKey, acme.Email, acme.Server, raw,
 			secret.Data, eabKeyID, eabHmacKey)
 		if err != nil {
-			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("extracting registration user from secret failed with %s", err.Error()))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("extracting registration user from secret failed: %w", err))
 		}
 		if user.GetEmail() != acme.Email {
 			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.GetEmail(), acme.Email))
 		}
-		return r.support.SucceededAndTriggerCertificates(logger, obj, &acmeType, issuer.Status.ACME.Raw)
-	} else if secret != nil || acme.AutoRegistration {
-		eabKid, eabHmacKey, err := r.prepareEAB(obj, issuer)
+		wrapped, err := core.WrapRegistration(raw, secretHash)
 		if err != nil {
-			return r.failedAcmeRetry(logger, obj, api.StateError, err)
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("wrapped registration marshalling failed: %w", err))
 		}
-		var secretData map[string][]byte
-		if secret != nil {
-			secretData = secret.Data
-		}
-		user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, secretData, eabKid, eabHmacKey)
+		return r.support.SucceededAndTriggerCertificates(logger, obj, &acmeType, wrapped)
+	} else if acme.AutoRegistration {
+		user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, nil, "", "")
 		if err != nil {
-			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("creating registration user failed with %s", err.Error()))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("creating registration user failed: %w", err))
 		}
 
-		if secret != nil {
-			err = r.support.UpdateIssuerSecret(issuerKey, user, secret)
-			if err != nil {
-				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("updating issuer secret failed with %s", err.Error()))
-			}
-		} else {
-			secretRef, secret, err := r.support.WriteIssuerSecretFromRegistrationUser(issuerKey, issuer.UID, user, acme.PrivateKeySecretRef)
-			if err != nil {
-				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("writing issuer secret failed with %s", err.Error()))
-			}
-			issuer.Spec.ACME.PrivateKeySecretRef = secretRef
-			hash := r.support.CalcSecretHash(secret)
-			r.support.RememberIssuerSecret(obj.ClusterKey(), issuer.Spec.ACME.PrivateKeySecretRef, hash)
+		secretRef, secret, err := r.support.WriteIssuerSecretFromRegistrationUser(issuerKey, issuer.UID, user, acme.PrivateKeySecretRef)
+		if err != nil {
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("writing issuer secret failed: %w", err))
 		}
+		acme.PrivateKeySecretRef = secretRef
+		secretHash = r.support.CalcSecretHash(secret)
+		r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secretHash)
 
 		regRaw, err := user.RawRegistration()
 		if err != nil {
-			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("registration marshalling failed with %s", err.Error()))
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("registration marshalling failed: %w", err))
 		}
 		newObj, err := r.support.GetIssuerResources(issuerKey).Update(issuer)
 		if err != nil {
-			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("updating resource failed with %s", err.Error()))
+			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("updating resource failed: %w", err))
 		}
 
-		return r.support.SucceededAndTriggerCertificates(logger, newObj, &acmeType, regRaw)
+		raw, err := core.WrapRegistration(regRaw, secretHash)
+		if err != nil {
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("wrapped registration marshalling failed: %w", err))
+		}
+		return r.support.SucceededAndTriggerCertificates(logger, newObj, &acmeType, raw)
 	} else {
 		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
 	}
-}
-
-func (r *acmeIssuerHandler) prepareEAB(obj resources.Object, issuer *api.Issuer) (eabKid, eabHmacKey string, err error) {
-	acme := issuer.Spec.ACME
-	eab := acme.ExternalAccountBinding
-
-	if eab == nil {
-		return
-	}
-
-	r.support.RememberIssuerEABSecret(obj.ClusterKey(), eab.KeySecretRef, "")
-
-	if eab.KeyID == "" {
-		err = fmt.Errorf("missing keyID for external account binding in ACME spec")
-		return
-	}
-
-	if eab.KeySecretRef == nil {
-		err = fmt.Errorf("missing keySecretRef for external account binding in ACME spec")
-		return
-	}
-
-	issuerKey := r.support.ToIssuerKey(obj.ClusterKey())
-	secret, err := r.support.ReadIssuerSecret(issuerKey, eab.KeySecretRef)
-	if err != nil {
-		err = fmt.Errorf("loading issuer secret for external account binding failed with %s", err.Error())
-		return
-	}
-	hash := r.support.CalcSecretHash(secret)
-	r.support.RememberIssuerEABSecret(obj.ClusterKey(), eab.KeySecretRef, hash)
-
-	hmacEncoded, ok := secret.Data[legobridge.KeyHmacKey]
-	if !ok {
-		err = fmt.Errorf("key %s not found in secret data", legobridge.KeyHmacKey)
-		return
-	}
-
-	eabKid = eab.KeyID
-	eabHmacKey = string(hmacEncoded)
-	return
 }
 
 func (r *acmeIssuerHandler) failedAcme(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
