@@ -565,6 +565,29 @@ func (s *Support) RememberIssuerSecret(issuer resources.ClusterObjectKey, secret
 	s.state.RememberIssuerSecret(issuerKey, secretRef, hash)
 }
 
+// RememberAltIssuerSecret stores issuer secret ref pair for migration from v0.7.x
+// This method is only needed for a bugfix for migrating v0.7.x to v0.8.x an can be deleted after v0.9.0
+func (s *Support) RememberAltIssuerSecret(issuer resources.ClusterObjectKey, secretRef *corev1.SecretReference, secret *corev1.Secret, email string) {
+	if _, ok := secret.Data[legobridge.KeyPrivateKey]; !ok {
+		return
+	}
+
+	issuerKey := s.ToIssuerKey(issuer)
+	s2 := &corev1.Secret{
+		Data: map[string][]byte{},
+	}
+	if _, ok := secret.Data["email"]; ok {
+		// drop email
+		s2.Data[legobridge.KeyPrivateKey] = []byte(strings.TrimSpace(string(secret.Data[legobridge.KeyPrivateKey])) + "\n")
+	} else {
+		// add email
+		s2.Data[legobridge.KeyPrivateKey] = []byte(strings.TrimSpace(string(secret.Data[legobridge.KeyPrivateKey])))
+		s2.Data["email"] = []byte(email)
+	}
+	altHash := s.CalcSecretHash(s2)
+	s.state.RememberAltIssuerSecret(issuerKey, secretRef, altHash)
+}
+
 // RememberIssuerEABSecret stores issuer EAB secret ref pair.
 func (s *Support) RememberIssuerEABSecret(issuer resources.ClusterObjectKey, secretRef *corev1.SecretReference, hash string) {
 	issuerKey := s.ToIssuerKey(issuer)
@@ -591,6 +614,12 @@ func (s *Support) TryAcceptCertificateRequest(issuer utils.IssuerKey) (bool, int
 // GetIssuerSecretHash returns the issuer secret hash code
 func (s *Support) GetIssuerSecretHash(issuer utils.IssuerKey) string {
 	return s.state.GetIssuerSecretHash(issuer)
+}
+
+// GetAltIssuerSecretHash returns the issuer alternative secret hash code
+// This method is only needed for a bugfix for migrating v0.7.x to v0.8.x an can be deleted after v0.9.0
+func (s *Support) GetAltIssuerSecretHash(issuer utils.IssuerKey) string {
+	return s.state.GetAltIssuerSecretHash(issuer)
 }
 
 // RemoveIssuer removes an issuer

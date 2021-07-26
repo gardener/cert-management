@@ -75,6 +75,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		}
 		secretHash = r.support.CalcSecretHash(secret)
 		r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secretHash)
+		r.support.RememberAltIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secret, acme.Email)
 	}
 	if secret != nil {
 		objKey := obj.ClusterKey()
@@ -121,6 +122,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		acme.PrivateKeySecretRef = secretRef
 		secretHash = r.support.CalcSecretHash(secret)
 		r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secretHash)
+		r.support.RememberAltIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secret, acme.Email)
 
 		regRaw, err := user.RawRegistration()
 		if err != nil {
