@@ -243,12 +243,20 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 				}
 				return r.checkForRenewAndSucceeded(logctx, obj, secret)
 			} else if storedOldHash := cert.Labels[LabelCertificateOldHashKey]; storedOldHash != "" {
-				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey)
-				if specOldHash != storedOldHash {
+				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey, false)
+				specAltHash := r.buildSpecOldHash(&cert.Spec, issuerKey, true)
+				if specOldHash != storedOldHash && specAltHash != storedOldHash {
 					return r.removeStoredHashKeyAndRepeat(logctx, obj)
 				}
 				specNewHash := r.buildSpecNewHash(&cert.Spec, issuerKey)
-				return r.migrateSpecHash(logctx, obj, specOldHash, specNewHash)
+				return r.migrateSpecHash(logctx, obj, specOldHash, specAltHash, specNewHash)
+			} else if storedOldHash := secret.Labels[LabelCertificateOldHashKey]; storedOldHash != "" {
+				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey, false)
+				specAltHash := r.buildSpecOldHash(&cert.Spec, issuerKey, true)
+				if specOldHash == storedOldHash || specAltHash == storedOldHash {
+					specNewHash := r.buildSpecNewHash(&cert.Spec, issuerKey)
+					return r.migrateSpecHash(logctx, obj, specOldHash, specAltHash, specNewHash)
+				}
 			}
 
 			// corner case: existing secret but no stored hash, check if renewal is overdue
@@ -682,7 +690,7 @@ func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj
 	return nil
 }
 
-func (r *certReconciler) buildSpecOldHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
+func (r *certReconciler) buildSpecOldHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey, useAltHash bool) string {
 	h := sha256.New224()
 	if spec.CommonName != nil {
 		h.Write([]byte(*spec.CommonName))
@@ -697,7 +705,12 @@ func (r *certReconciler) buildSpecOldHash(spec *api.CertificateSpec, issuerKey u
 		h.Write(spec.CSR)
 		h.Write([]byte{0})
 	}
-	hash := r.support.GetIssuerSecretHash(issuerKey)
+	var hash string
+	if !useAltHash {
+		hash = r.support.GetIssuerSecretHash(issuerKey)
+	} else {
+		hash = r.support.GetAltIssuerSecretHash(issuerKey)
+	}
 	h.Write([]byte(hash))
 	h.Write([]byte{0})
 	return fmt.Sprintf("%x", h.Sum(nil))
@@ -769,6 +782,17 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 	if err != nil {
 		return nil, "", nil
 	}
+	updateLabels := false
+	if len(objs) == 0 {
+		// for migration v0.7.x to v0.8.x only
+		updateLabels = true
+		oldHash := r.buildSpecOldHash(spec, issuerKey, false)
+		altHash := r.buildSpecOldHash(spec, issuerKey, true)
+		objs, err = FindAllCertificateSecretsByOldHashLabel(r.certSecretResources, oldHash, altHash)
+		if err != nil {
+			return nil, "", nil
+		}
+	}
 
 	secretRef, _ := r.determineSecretRef(namespace, spec)
 	var best resources.Object
@@ -791,6 +815,12 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 
 				best = obj
 				bestNotAfter = cert.NotAfter
+
+				// for migration v0.7.x to v0.8.x only
+				if updateLabels {
+					obj.SetLabels(resources.AddLabel(obj.GetLabels(), LabelCertificateNewHashKey, specHash))
+					_ = obj.Update()
+				}
 			}
 		}
 	}
@@ -897,12 +927,12 @@ func (r *certReconciler) removeStoredHashKeyAndRepeat(logctx logger.LogContext, 
 	return r.repeat(logctx, obj2)
 }
 
-func (r *certReconciler) migrateSpecHash(logctx logger.LogContext, obj resources.Object, specOldHash, specNewHash string) reconcile.Status {
+func (r *certReconciler) migrateSpecHash(logctx logger.LogContext, obj resources.Object, specOldHash, specAltHash, specNewHash string) reconcile.Status {
 	logctx.Infof("migrating spec hash")
 
 	crt := obj.Data().(*api.Certificate)
 
-	objs, err := FindAllCertificateSecretsByOldHashLabel(r.certSecretResources, specOldHash)
+	objs, err := FindAllCertificateSecretsByOldHashLabel(r.certSecretResources, specOldHash, specAltHash)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("find all certificates by old hash failed: %w", err))
 	}
