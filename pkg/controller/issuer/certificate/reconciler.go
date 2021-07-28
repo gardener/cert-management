@@ -937,12 +937,12 @@ func (r *certReconciler) migrateSpecHash(logctx logger.LogContext, obj resources
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("find all certificates by old hash failed: %w", err))
 	}
 
-	for _, obj := range objs {
-		if _, ok := resources.GetLabel(obj.Data(), LabelCertificateNewHashKey); !ok {
-			obj.SetLabels(resources.AddLabel(obj.GetLabels(), LabelCertificateNewHashKey, specNewHash))
-			err = obj.Update()
+	for _, secret := range objs {
+		if _, ok := resources.GetLabel(secret.Data(), LabelCertificateNewHashKey); !ok {
+			secret.SetLabels(resources.AddLabel(secret.GetLabels(), LabelCertificateNewHashKey, specNewHash))
+			err = secret.Update()
 			if err != nil {
-				return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating label for certificate secret %s failed: %w", obj.ObjectName(), err))
+				logctx.Warnf("updating label for certificate secret %s failed: %w", secret.ObjectName(), err)
 			}
 		}
 	}
