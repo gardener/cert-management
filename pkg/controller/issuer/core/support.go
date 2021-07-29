@@ -568,6 +568,9 @@ func (s *Support) RememberIssuerSecret(issuer resources.ClusterObjectKey, secret
 // RememberAltIssuerSecret stores issuer secret ref pair for migration from v0.7.x
 // This method is only needed for a bugfix for migrating v0.7.x to v0.8.x an can be deleted after v0.9.0
 func (s *Support) RememberAltIssuerSecret(issuer resources.ClusterObjectKey, secretRef *corev1.SecretReference, secret *corev1.Secret, email string) {
+	if secret == nil || secret.Data == nil {
+		return
+	}
 	if _, ok := secret.Data[legobridge.KeyPrivateKey]; !ok {
 		return
 	}
