@@ -30,3 +30,11 @@ Create chart name and version as used by the chart label.
 {{- define "cert-management.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{- define "image" -}}
+{{- if hasPrefix "sha256:" (required "$.tag is required" $.tag) -}}
+{{ required "$.repository is required" $.repository }}@{{ required "$.tag is required" $.tag }}
+{{- else -}}
+{{ required "$.repository is required" $.repository }}:{{ required "$.tag is required" $.tag }}
+{{- end -}}
+{{- end -}}

@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ include "image" .Values.image }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args:
         - --name={{ include "cert-management.fullname" . }}
