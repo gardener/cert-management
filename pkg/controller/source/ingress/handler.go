@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	api "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
+	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -44,29 +45,31 @@ func NewIngressSource(_ controller.Interface) (source.CertSource, error) {
 func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *source.CertCurrentState) (*source.CertsInfo, error) {
 	info := s.NewCertsInfo(logger, obj)
 
-	data := obj.Data().(*api.Ingress)
-	annotValue, _ := resources.GetAnnotation(data, AnnotationPurposeKey)
-	labelValue, _ := resources.GetLabel(data, DeprecatedLabelNamePurpose)
+	annotValue, _ := resources.GetAnnotation(obj.Data(), AnnotationPurposeKey)
+	labelValue, _ := resources.GetLabel(obj.Data(), DeprecatedLabelNamePurpose)
 	managed := annotValue == AnnotationPurposeValueManaged || labelValue == DeprecatedLabelValueManaged
-	if !managed || data.Spec.TLS == nil {
+	tlsDataArray, err := extractTLSData(obj)
+	if err != nil {
+		return info, err
+	}
+	if !managed || tlsDataArray == nil {
 		return info, nil
 	}
 
-	cn, _ := resources.GetAnnotation(data, source.AnnotCommonName)
+	cn, _ := resources.GetAnnotation(obj.Data(), source.AnnotCommonName)
 	cn = strings.TrimSpace(cn)
 	var issuer *string
-	annotatedIssuer, ok := resources.GetAnnotation(data, source.AnnotIssuer)
+	annotatedIssuer, ok := resources.GetAnnotation(obj.Data(), source.AnnotIssuer)
 	if ok {
 		issuer = &annotatedIssuer
 	}
-	var err error
-	for _, tls := range data.Spec.TLS {
+	for _, tls := range tlsDataArray {
 		if tls.SecretName == "" {
 			err = fmt.Errorf("tls entry for hosts %s has no secretName", source.DomainsString(tls.Hosts))
 			continue
 		}
 		var domains []string
-		dnsnames, ok := resources.GetAnnotation(data, source.AnnotCertDNSNames)
+		dnsnames, ok := resources.GetAnnotation(obj.Data(), source.AnnotCertDNSNames)
 		if ok {
 			if cn != "" {
 				domains = []string{cn}
@@ -83,6 +86,41 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 		info.Certs[tls.SecretName] = source.CertInfo{SecretName: tls.SecretName, Domains: domains, IssuerName: issuer}
 	}
 	return info, err
+}
+
+type tlsData struct {
+	SecretName string
+	Hosts      []string
+}
+
+func extractTLSData(obj resources.Object) ([]*tlsData, error) {
+	array := []*tlsData{}
+	switch data := obj.Data().(type) {
+	case *networkingv1beta1.Ingress:
+		if data.Spec.TLS == nil {
+			return nil, nil
+		}
+		for _, item := range data.Spec.TLS {
+			array = append(array, &tlsData{
+				SecretName: item.SecretName,
+				Hosts:      item.Hosts,
+			})
+		}
+		return array, nil
+	case *networkingv1.Ingress:
+		if data.Spec.TLS == nil {
+			return nil, nil
+		}
+		for _, item := range data.Spec.TLS {
+			array = append(array, &tlsData{
+				SecretName: item.SecretName,
+				Hosts:      item.Hosts,
+			})
+		}
+		return array, nil
+	default:
+		return nil, fmt.Errorf("unexpected ingress type: %#v", obj.Data())
+	}
 }
 
 func mergeCommonName(cn string, hosts []string) []string {

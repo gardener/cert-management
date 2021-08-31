@@ -12,6 +12,7 @@ import (
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
@@ -56,6 +57,7 @@ func init() {
 		MustRegister()
 
 	resources.Register(networkingv1beta1.SchemeBuilder)
+	resources.Register(networkingv1.SchemeBuilder)
 	resources.Register(corev1.SchemeBuilder)
 	resources.Register(dnsapi.SchemeBuilder)
 	resources.Register(v1alpha1.SchemeBuilder)
