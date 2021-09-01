@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: echoheaders
@@ -22,6 +22,9 @@ spec:
       http:
         paths:
           - backend:
-              serviceName: echoheaders
-              servicePort: 80
+              service:
+                name: echoheaders
+                port:
+                  number: 80
             path: /
+            pathType: Prefix
