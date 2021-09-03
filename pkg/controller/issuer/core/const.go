@@ -42,4 +42,6 @@ const (
 	OptPropagationTimeout = "propagation-timeout"
 	// OptAllowTargetIssuers if true reconciles not only issuers on the default cluster, but also on the target cluster
 	OptAllowTargetIssuers = "allow-target-issuers"
+	// OptACMEDeactivateAuthorizations if true authorizations are always deactivated after each certificate request
+	OptACMEDeactivateAuthorizations = "acme-deactivate-authorizations"
 )

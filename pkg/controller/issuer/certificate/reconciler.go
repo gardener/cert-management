@@ -80,18 +80,21 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	copt, _ := c.GetStringOption(source.OptClass)
 	classes := controller.NewClasses(c, copt, source.AnnotClass, source.DefaultClass)
 
+	deactivateAuthorizations, _ := c.GetBoolOption(core.OptACMEDeactivateAuthorizations)
+
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &certReconciler{
-		support:             support,
-		obtainer:            legobridge.NewObtainer(),
-		classes:             classes,
-		targetCluster:       targetCluster,
-		dnsCluster:          dnsCluster,
-		certResources:       certResources,
-		certSecretResources: certSecretResources,
-		rateLimiting:        120 * time.Second,
-		pendingRequests:     legobridge.NewPendingRequests(),
-		pendingResults:      legobridge.NewPendingResults(),
+		support:                        support,
+		obtainer:                       legobridge.NewObtainer(),
+		classes:                        classes,
+		targetCluster:                  targetCluster,
+		dnsCluster:                     dnsCluster,
+		certResources:                  certResources,
+		certSecretResources:            certSecretResources,
+		rateLimiting:                   120 * time.Second,
+		pendingRequests:                legobridge.NewPendingRequests(),
+		pendingResults:                 legobridge.NewPendingResults(),
+		alwaysDeactivateAuthorizations: deactivateAuthorizations,
 	}
 
 	dnsNamespace, _ := c.GetStringOption(core.OptDNSNamespace)
@@ -154,6 +157,8 @@ type certReconciler struct {
 	classes                    *controller.Classes
 	cascadeDelete              bool
 	garbageCollectorTicker     *time.Ticker
+
+	alwaysDeactivateAuthorizations bool
 }
 
 func (r *certReconciler) Start() {
@@ -453,7 +458,9 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	}
 	input := legobridge.ObtainInput{User: reguser, DNSSettings: dnsSettings, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		TargetClass: targetDNSClass, Callback: callback, RequestName: objectName, RenewCert: renewCert}
+		TargetClass: targetDNSClass, Callback: callback, RequestName: objectName, RenewCert: renewCert,
+		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
+	}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {

@@ -522,6 +522,7 @@ Usage:
 
 Flags:
       --accepted-maintainers string                        accepted maintainer key(s) for crds
+      --acme-deactivate-authorizations                     if true authorizations are always deactivated after each ACME certificate request
       --allow-target-issuers                               If true, issuers are also watched on the target cluster
       --bind-address-http string                           HTTP server bind address
       --cascade-delete                                     If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted
@@ -556,6 +557,7 @@ Flags:
       --ingress-cert.target-namespace string               target namespace for cross cluster generation of controller ingress-cert
       --ingress-cert.targets.pool.size int                 Worker pool size for pool targets of controller ingress-cert
       --issuer-namespace string                            namespace to lookup issuers on default cluster
+      --issuer.acme-deactivate-authorizations              if true authorizations are always deactivated after each ACME certificate request of controller issuer
       --issuer.allow-target-issuers                        If true, issuers are also watched on the target cluster of controller issuer
       --issuer.cascade-delete                              If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted of controller issuer
       --issuer.cert-class string                           Identifier used to differentiate responsible controllers for entries of controller issuer

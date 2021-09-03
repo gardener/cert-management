@@ -37,6 +37,9 @@ spec:
         {{- if .Values.configuration.acceptedMaintainers }}
         - --accepted-maintainers={{ .Values.configuration.acceptedMaintainers }}
         {{- end }}
+        {{- if .Values.configuration.acmeDeactivateAuthorizations }}
+        - --acme-deactivate-authorizations={{ .Values.configuration.acmeDeactivateAuthorizations }}
+        {{- end }}
         {{- if .Values.configuration.allowTargetIssuers }}
         - --allow-target-issuers={{ .Values.configuration.allowTargetIssuers }}
         {{- end }}
@@ -135,6 +138,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.issuerNamespace }}
         - --issuer-namespace={{ .Values.configuration.issuerNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.issuerAcmeDeactivateAuthorizations }}
+        - --issuer.acme-deactivate-authorizations={{ .Values.configuration.issuerAcmeDeactivateAuthorizations }}
         {{- end }}
         {{- if .Values.configuration.issuerAllowTargetIssuers }}
         - --issuer.allow-target-issuers={{ .Values.configuration.issuerAllowTargetIssuers }}

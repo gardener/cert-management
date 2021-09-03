@@ -31,6 +31,7 @@ createCRDs:
 
 configuration:
   # acceptedMaintainers:
+  # acmeDeactivateAuthorizations:
   # allowTargetIssuers:
   # bindAddressHttp:
   # cascadeDelete:
@@ -64,6 +65,7 @@ configuration:
   # ingressCertTargetNamespace:
   # ingressCertTargetsPoolSize:
   # issuerNamespace:
+  # issuerAcmeDeactivateAuthorizations:
   # issuerAllowTargetIssuers:
   # issuerCascadeDelete:
   # issuerCertClass:

@@ -55,6 +55,8 @@ type ObtainInput struct {
 	Callback ObtainerCallback
 	// RenewCert is the certificate to renew.
 	RenewCert *certificate.Resource
+	// AlwaysDeactivateAuthorizations deactivates authorizations to avoid their caching
+	AlwaysDeactivateAuthorizations bool
 }
 
 // DNSControllerSettings are the settings for the DNSController.
@@ -120,23 +122,25 @@ func NewObtainer() Obtainer {
 	return &obtainer{pendingDomains: map[string]time.Time{}}
 }
 
-func obtainForDomains(client *lego.Client, domains []string) (*certificate.Resource, error) {
+func obtainForDomains(client *lego.Client, domains []string, deactivateAuthz bool) (*certificate.Resource, error) {
 	request := certificate.ObtainRequest{
-		Domains: domains,
-		Bundle:  true,
+		Domains:                        domains,
+		Bundle:                         true,
+		AlwaysDeactivateAuthorizations: deactivateAuthz,
 	}
 	return client.Certificate.Obtain(request)
 }
 
-func obtainForCSR(client *lego.Client, csr []byte) (*certificate.Resource, error) {
+func obtainForCSR(client *lego.Client, csr []byte, deactivateAuthz bool) (*certificate.Resource, error) {
 	cert, err := extractCertificateRequest(csr)
 	if err != nil {
 		return nil, err
 	}
 	return client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
-		CSR:            cert,
-		Bundle:         true,
-		PreferredChain: "",
+		CSR:                            cert,
+		Bundle:                         true,
+		PreferredChain:                 "",
+		AlwaysDeactivateAuthorizations: deactivateAuthz,
 	})
 }
 
@@ -230,9 +234,9 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 		} else {
 			if input.CSR == nil {
 				domains := append([]string{*input.CommonName}, input.DNSNames...)
-				certificates, err = obtainForDomains(client, domains)
+				certificates, err = obtainForDomains(client, domains, input.AlwaysDeactivateAuthorizations)
 			} else {
-				certificates, err = obtainForCSR(client, input.CSR)
+				certificates, err = obtainForCSR(client, input.CSR, input.AlwaysDeactivateAuthorizations)
 			}
 		}
 		count := provider.GetChallengesCount()
