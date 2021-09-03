@@ -21,3 +21,6 @@ require (
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
 	sigs.k8s.io/kind v0.10.0
 )
+
+// because of outstanding PR#1480 (https://github.com/go-acme/lego/pull/1480)
+replace github.com/go-acme/lego/v4 => github.com/martinweindel/lego/v4 v4.4.1-0.20210903084339-fcad89274497

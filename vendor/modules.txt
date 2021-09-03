@@ -80,7 +80,7 @@ github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1
 github.com/gardener/external-dns-management/pkg/dns
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
-# github.com/go-acme/lego/v4 v4.4.0
+# github.com/go-acme/lego/v4 v4.4.0 => github.com/martinweindel/lego/v4 v4.4.1-0.20210903084339-fcad89274497
 ## explicit
 github.com/go-acme/lego/v4/acme
 github.com/go-acme/lego/v4/acme/api
@@ -699,3 +699,4 @@ sigs.k8s.io/kind/pkg/log
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
+# github.com/go-acme/lego/v4 => github.com/martinweindel/lego/v4 v4.4.1-0.20210903084339-fcad89274497

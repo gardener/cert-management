@@ -35,6 +35,7 @@ func init() {
 		StringOption(core.OptDNSClass, "class for creating challenge DNSEntries (in DNS cluster)").
 		StringOption(core.OptDNSOwnerID, "ownerId for creating challenge DNSEntries").
 		BoolOption(core.OptCascadeDelete, "If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted").
+		BoolOption(core.OptACMEDeactivateAuthorizations, "if true authorizations are always deactivated after each ACME certificate request").
 		StringOption(source.OptClass, "Identifier used to differentiate responsible controllers for entries").
 		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		DefaultedDurationOption(core.OptRenewalOverdueWindow, 25*24*time.Hour, "certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates)").
