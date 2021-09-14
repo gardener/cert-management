@@ -353,6 +353,8 @@ func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state s
 
 // SucceededAndTriggerCertificates handles succeeded and trigger certificates.
 func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj resources.Object, itype *string, regRaw []byte) reconcile.Status {
+	s.RememberIssuerQuotas(obj.ClusterKey(), obj.Data().(*api.Issuer).Spec.RequestsPerDayQuota)
+
 	s.reportAllCertificateMetrics()
 	s.triggerCertificates(logger, s.ToIssuerKey(obj.ClusterKey()))
 

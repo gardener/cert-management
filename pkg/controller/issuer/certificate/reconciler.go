@@ -412,7 +412,12 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	}
 
 	if accepted, requestsPerDayQuota := r.support.TryAcceptCertificateRequest(issuerKey); !accepted {
-		waitMinutes := 1440 / requestsPerDayQuota / 2
+		waitMinutes := 1
+		if requestsPerDayQuota == 0 {
+			err := fmt.Errorf("request quota lookup failed for issuer %s. Retrying in %d min. ", issuerKey, waitMinutes)
+			return r.recheck(logctx, obj, api.StatePending, err, time.Duration(waitMinutes)*time.Minute)
+		}
+		waitMinutes = 1440 / requestsPerDayQuota / 2
 		if waitMinutes < 5 {
 			waitMinutes = 5
 		}
