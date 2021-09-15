@@ -32,7 +32,8 @@ spec:
       name: REVOKED_AT
       priority: 500
       type: date
-    - description: if true certificate objects should be renewed before revoking old certificates certificate(s)
+    - description: if true certificate objects should be renewed before revoking old
+        certificates certificate(s)
       jsonPath: .spec.renew
       name: RENEW
       type: boolean
@@ -50,18 +51,24 @@ spec:
         description: CertificateRevocation is the certificate revocation custom resource.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
           spec:
-            description: CertificateRevocationSpec is the spec of the certificate revocation.
+            description: CertificateRevocationSpec is the spec of the certificate
+              revocation.
             properties:
               certificateRef:
-                description: CertificateRef is the references to the certificate to be revoked
+                description: CertificateRef is the references to the certificate to
+                  be revoked
                 properties:
                   name:
                     description: Name is the name of the certificate in the same namespace.
@@ -74,32 +81,42 @@ spec:
                 - namespace
                 type: object
               qualifyingDate:
-                description: QualifyingDate specifies that any certificate with the same DNS names like the given 'certificateRef' should be revoked if it is valid before this date. If not specified, it will be filled with the current time.
+                description: QualifyingDate specifies that any certificate with the
+                  same DNS names like the given 'certificateRef' should be revoked
+                  if it is valid before this date. If not specified, it will be filled
+                  with the current time.
                 format: date-time
                 type: string
               renew:
-                description: Renew specifies if certificate objects should be renewed before revoking old certificates
+                description: Renew specifies if certificate objects should be renewed
+                  before revoking old certificates
                 type: boolean
             type: object
           status:
-            description: CertificateRevocationStatus is the status of the certificate request.
+            description: CertificateRevocationStatus is the status of the certificate
+              request.
             properties:
               message:
                 description: Message is the status or error message.
                 type: string
               objects:
-                description: ObjectStatuses contains the statuses of the involved certificate objects
+                description: ObjectStatuses contains the statuses of the involved
+                  certificate objects
                 properties:
                   failed:
-                    description: Failed is the list of certificate objects whose processing failed
+                    description: Failed is the list of certificate objects whose processing
+                      failed
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -107,15 +124,19 @@ spec:
                       type: object
                     type: array
                   processing:
-                    description: Processing is the list of certificate objects to be processed
+                    description: Processing is the list of certificate objects to
+                      be processed
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -123,15 +144,19 @@ spec:
                       type: object
                     type: array
                   renewed:
-                    description: Renewed is the list of certificate objects successfully renewed
+                    description: Renewed is the list of certificate objects successfully
+                      renewed
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -139,15 +164,19 @@ spec:
                       type: object
                     type: array
                   revoked:
-                    description: Revoked is the list of certificate objects successfully revoked (without renewal)
+                    description: Revoked is the list of certificate objects successfully
+                      revoked (without renewal)
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -156,26 +185,33 @@ spec:
                     type: array
                 type: object
               observedGeneration:
-                description: ObservedGeneration is the observed generation of the spec.
+                description: ObservedGeneration is the observed generation of the
+                  spec.
                 format: int64
                 type: integer
               revocationApplied:
-                description: RevocationApplied is the timestamp when the revocation was completed
+                description: RevocationApplied is the timestamp when the revocation
+                  was completed
                 format: date-time
                 type: string
               secrets:
-                description: SecretStatuses contains the statuses of the involved certificate secrets
+                description: SecretStatuses contains the statuses of the involved
+                  certificate secrets
                 properties:
                   failed:
-                    description: Failed is the list of certificate secrets whose revocation failed
+                    description: Failed is the list of certificate secrets whose revocation
+                      failed
                     items:
-                      description: CertificateSecretRef is a reference to a secret together with the serial number
+                      description: CertificateSecretRef is a reference to a secret
+                        together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                         serialNumber:
                           description: SerialNumber is the serial number of the certificate
@@ -185,15 +221,19 @@ spec:
                       type: object
                     type: array
                   processing:
-                    description: Processing is the list of certificate secrets to be processed
+                    description: Processing is the list of certificate secrets to
+                      be processed
                     items:
-                      description: CertificateSecretRef is a reference to a secret together with the serial number
+                      description: CertificateSecretRef is a reference to a secret
+                        together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                         serialNumber:
                           description: SerialNumber is the serial number of the certificate
@@ -203,15 +243,19 @@ spec:
                       type: object
                     type: array
                   revoked:
-                    description: Revoked is the list of certificate secrets successfully revoked
+                    description: Revoked is the list of certificate secrets successfully
+                      revoked
                     items:
-                      description: CertificateSecretRef is a reference to a secret together with the serial number
+                      description: CertificateSecretRef is a reference to a secret
+                        together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                         serialNumber:
                           description: SerialNumber is the serial number of the certificate
