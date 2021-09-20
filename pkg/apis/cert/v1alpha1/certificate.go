@@ -116,7 +116,21 @@ type CertificateStatus struct {
 	// BackOff contains the state to back off failed certificate requests
 	// +optional
 	BackOff *BackOffState `json:"backoff,omitempty"`
+	// List of status conditions to indicate the status of certificates.
+	// Known condition types are `Ready`.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+const (
+	// CertificateConditionReady indicates that a certificate is ready for use.
+	// This is defined as:
+	// - The target secret exists
+	// - The target secret contains a certificate that has not expired
+	// - The target secret contains a private key valid for the certificate
+	// - The commonName and dnsNames attributes match those specified on the Certificate
+	CertificateConditionReady string = "Ready"
+)
 
 // QualifiedIssuerRef is the full qualified issuer reference.
 type QualifiedIssuerRef struct {

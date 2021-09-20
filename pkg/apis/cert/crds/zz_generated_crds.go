@@ -50,7 +50,8 @@ spec:
       name: REVOKED_AT
       priority: 500
       type: date
-    - description: if true certificate objects should be renewed before revoking old certificates certificate(s)
+    - description: if true certificate objects should be renewed before revoking old
+        certificates certificate(s)
       jsonPath: .spec.renew
       name: RENEW
       type: boolean
@@ -68,18 +69,24 @@ spec:
         description: CertificateRevocation is the certificate revocation custom resource.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
           spec:
-            description: CertificateRevocationSpec is the spec of the certificate revocation.
+            description: CertificateRevocationSpec is the spec of the certificate
+              revocation.
             properties:
               certificateRef:
-                description: CertificateRef is the references to the certificate to be revoked
+                description: CertificateRef is the references to the certificate to
+                  be revoked
                 properties:
                   name:
                     description: Name is the name of the certificate in the same namespace.
@@ -92,32 +99,42 @@ spec:
                 - namespace
                 type: object
               qualifyingDate:
-                description: QualifyingDate specifies that any certificate with the same DNS names like the given 'certificateRef' should be revoked if it is valid before this date. If not specified, it will be filled with the current time.
+                description: QualifyingDate specifies that any certificate with the
+                  same DNS names like the given 'certificateRef' should be revoked
+                  if it is valid before this date. If not specified, it will be filled
+                  with the current time.
                 format: date-time
                 type: string
               renew:
-                description: Renew specifies if certificate objects should be renewed before revoking old certificates
+                description: Renew specifies if certificate objects should be renewed
+                  before revoking old certificates
                 type: boolean
             type: object
           status:
-            description: CertificateRevocationStatus is the status of the certificate request.
+            description: CertificateRevocationStatus is the status of the certificate
+              request.
             properties:
               message:
                 description: Message is the status or error message.
                 type: string
               objects:
-                description: ObjectStatuses contains the statuses of the involved certificate objects
+                description: ObjectStatuses contains the statuses of the involved
+                  certificate objects
                 properties:
                   failed:
-                    description: Failed is the list of certificate objects whose processing failed
+                    description: Failed is the list of certificate objects whose processing
+                      failed
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -125,15 +142,19 @@ spec:
                       type: object
                     type: array
                   processing:
-                    description: Processing is the list of certificate objects to be processed
+                    description: Processing is the list of certificate objects to
+                      be processed
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -141,15 +162,19 @@ spec:
                       type: object
                     type: array
                   renewed:
-                    description: Renewed is the list of certificate objects successfully renewed
+                    description: Renewed is the list of certificate objects successfully
+                      renewed
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -157,15 +182,19 @@ spec:
                       type: object
                     type: array
                   revoked:
-                    description: Revoked is the list of certificate objects successfully revoked (without renewal)
+                    description: Revoked is the list of certificate objects successfully
+                      revoked (without renewal)
                     items:
-                      description: CertificateRef is the reference of the issuer by name.
+                      description: CertificateRef is the reference of the issuer by
+                        name.
                       properties:
                         name:
-                          description: Name is the name of the certificate in the same namespace.
+                          description: Name is the name of the certificate in the
+                            same namespace.
                           type: string
                         namespace:
-                          description: Namespace is the namespace of the certificate CR.
+                          description: Namespace is the namespace of the certificate
+                            CR.
                           type: string
                       required:
                       - name
@@ -174,26 +203,33 @@ spec:
                     type: array
                 type: object
               observedGeneration:
-                description: ObservedGeneration is the observed generation of the spec.
+                description: ObservedGeneration is the observed generation of the
+                  spec.
                 format: int64
                 type: integer
               revocationApplied:
-                description: RevocationApplied is the timestamp when the revocation was completed
+                description: RevocationApplied is the timestamp when the revocation
+                  was completed
                 format: date-time
                 type: string
               secrets:
-                description: SecretStatuses contains the statuses of the involved certificate secrets
+                description: SecretStatuses contains the statuses of the involved
+                  certificate secrets
                 properties:
                   failed:
-                    description: Failed is the list of certificate secrets whose revocation failed
+                    description: Failed is the list of certificate secrets whose revocation
+                      failed
                     items:
-                      description: CertificateSecretRef is a reference to a secret together with the serial number
+                      description: CertificateSecretRef is a reference to a secret
+                        together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                         serialNumber:
                           description: SerialNumber is the serial number of the certificate
@@ -203,15 +239,19 @@ spec:
                       type: object
                     type: array
                   processing:
-                    description: Processing is the list of certificate secrets to be processed
+                    description: Processing is the list of certificate secrets to
+                      be processed
                     items:
-                      description: CertificateSecretRef is a reference to a secret together with the serial number
+                      description: CertificateSecretRef is a reference to a secret
+                        together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                         serialNumber:
                           description: SerialNumber is the serial number of the certificate
@@ -221,15 +261,19 @@ spec:
                       type: object
                     type: array
                   revoked:
-                    description: Revoked is the list of certificate secrets successfully revoked
+                    description: Revoked is the list of certificate secrets successfully
+                      revoked
                     items:
-                      description: CertificateSecretRef is a reference to a secret together with the serial number
+                      description: CertificateSecretRef is a reference to a secret
+                        together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference a secret resource.
+                          description: Name is unique within a namespace to reference
+                            a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the secret name must be unique.
+                          description: Namespace defines the space within which the
+                            secret name must be unique.
                           type: string
                         serialNumber:
                           description: SerialNumber is the serial number of the certificate
@@ -314,10 +358,14 @@ spec:
         description: Certificate is the certificate CR.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -329,26 +377,33 @@ spec:
                 maxLength: 64
                 type: string
               csr:
-                description: CSR is the alternative way to provide CN,DNSNames and other information.
+                description: CSR is the alternative way to provide CN,DNSNames and
+                  other information.
                 format: byte
                 type: string
               dnsNames:
-                description: DNSNames are the optional additional domain names of the certificate.
+                description: DNSNames are the optional additional domain names of
+                  the certificate.
                 items:
                   type: string
                 type: array
               ensureRenewedAfter:
-                description: EnsureRenewedAfter specifies a time stamp in the past. Renewing is only triggered if certificate notBefore date is before this date.
+                description: EnsureRenewedAfter specifies a time stamp in the past.
+                  Renewing is only triggered if certificate notBefore date is before
+                  this date.
                 format: date-time
                 type: string
               issuerRef:
                 description: IssuerRef is the reference of the issuer to use.
                 properties:
                   name:
-                    description: Name is the name of the issuer (in the configured issuer namespace on default cluster or namespace on target cluster as given).
+                    description: Name is the name of the issuer (in the configured
+                      issuer namespace on default cluster or namespace on target cluster
+                      as given).
                     type: string
                   namespace:
-                    description: Namespace is the namespace of the issuer, only needed if issuer is defined on target cluster
+                    description: Namespace is the namespace of the issuer, only needed
+                      if issuer is defined on target cluster
                     type: string
                 required:
                 - name
@@ -357,16 +412,20 @@ spec:
                 description: Renew triggers a renewal if set to true
                 type: boolean
               secretName:
-                description: SecretName is the name of the secret object to use for storing the certificate.
+                description: SecretName is the name of the secret object to use for
+                  storing the certificate.
                 type: string
               secretRef:
-                description: SecretRef is the reference of the secret object to use for storing the certificate.
+                description: SecretRef is the reference of the secret object to use
+                  for storing the certificate.
                 properties:
                   name:
-                    description: Name is unique within a namespace to reference a secret resource.
+                    description: Name is unique within a namespace to reference a
+                      secret resource.
                     type: string
                   namespace:
-                    description: Namespace defines the space within which the secret name must be unique.
+                    description: Namespace defines the space within which the secret
+                      name must be unique.
                     type: string
                 type: object
             type: object
@@ -374,14 +433,17 @@ spec:
             description: CertificateStatus is the status of the certificate request.
             properties:
               backoff:
-                description: BackOff contains the state to back off failed certificate requests
+                description: BackOff contains the state to back off failed certificate
+                  requests
                 properties:
                   observedGeneration:
-                    description: ObservedGeneration is the observed generation the BackOffState is assigned to
+                    description: ObservedGeneration is the observed generation the
+                      BackOffState is assigned to
                     format: int64
                     type: integer
                   recheckAfter:
-                    description: RetryAfter is the timestamp this cert request is not retried before.
+                    description: RetryAfter is the timestamp this cert request is
+                      not retried before.
                     format: date-time
                     type: string
                   recheckInterval:
@@ -394,6 +456,77 @@ spec:
               commonName:
                 description: CommonName is the current CN.
                 type: string
+              conditions:
+                description: List of status conditions to indicate the status of certificates.
+                  Known condition types are `+"`"+`Ready`+"`"+`.
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    type FooStatus struct{     // Represents the observations of a
+                    foo's current state.     // Known .status.conditions.type are:
+                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
+                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
+                    \    Conditions []metav1.Condition `+"`"+`json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`+"`"+`
+                    \n     // other fields }"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
               dnsNames:
                 description: DNSNames are the current domain names.
                 items:
@@ -406,7 +539,8 @@ spec:
                 description: IssuerRef is the used issuer.
                 properties:
                   cluster:
-                    description: Cluster is the cluster name of the issuer ('default' or 'target'). optional because of backwards compatibility
+                    description: Cluster is the cluster name of the issuer ('default'
+                      or 'target'). optional because of backwards compatibility
                     type: string
                   name:
                     description: Name is the name of the issuer.
@@ -419,14 +553,16 @@ spec:
                 - namespace
                 type: object
               lastPendingTimestamp:
-                description: LastPendingTimestamp contains the start timestamp of the last pending status.
+                description: LastPendingTimestamp contains the start timestamp of
+                  the last pending status.
                 format: date-time
                 type: string
               message:
                 description: Message is the status or error message.
                 type: string
               observedGeneration:
-                description: ObservedGeneration is the observed generation of the spec.
+                description: ObservedGeneration is the observed generation of the
+                  spec.
                 format: int64
                 type: integer
               state:
@@ -503,10 +639,14 @@ spec:
         description: Issuer is the issuer CR.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -517,18 +657,22 @@ spec:
                 description: ACME is the ACME protocol specific spec.
                 properties:
                   autoRegistration:
-                    description: AutoRegistration is the flag if automatic registration should be applied if needed.
+                    description: AutoRegistration is the flag if automatic registration
+                      should be applied if needed.
                     type: boolean
                   domains:
-                    description: Domains optionally specifies domains allowed or forbidden for certificate requests
+                    description: Domains optionally specifies domains allowed or forbidden
+                      for certificate requests
                     properties:
                       exclude:
-                        description: Exclude are domain names for which certificate requests are forbidden (including any subdomains)
+                        description: Exclude are domain names for which certificate
+                          requests are forbidden (including any subdomains)
                         items:
                           type: string
                         type: array
                       include:
-                        description: Include are domain names for which certificate requests are allowed (including any subdomains)
+                        description: Include are domain names for which certificate
+                          requests are allowed (including any subdomains)
                         items:
                           type: string
                         type: array
@@ -537,19 +681,26 @@ spec:
                     description: Email is the email address to use for user registration.
                     type: string
                   externalAccountBinding:
-                    description: ACMEExternalAccountBinding is a reference to a CA external account of the ACME server.
+                    description: ACMEExternalAccountBinding is a reference to a CA
+                      external account of the ACME server.
                     properties:
                       keyID:
-                        description: keyID is the ID of the CA key that the External Account is bound to.
+                        description: keyID is the ID of the CA key that the External
+                          Account is bound to.
                         type: string
                       keySecretRef:
-                        description: keySecretRef is the secret ref to the Secret which holds the symmetric MAC key of the External Account Binding with data key 'hmacKey'. The secret key stored in the Secret **must** be un-padded, base64 URL encoded data.
+                        description: keySecretRef is the secret ref to the Secret
+                          which holds the symmetric MAC key of the External Account
+                          Binding with data key 'hmacKey'. The secret key stored in
+                          the Secret **must** be un-padded, base64 URL encoded data.
                         properties:
                           name:
-                            description: Name is unique within a namespace to reference a secret resource.
+                            description: Name is unique within a namespace to reference
+                              a secret resource.
                             type: string
                           namespace:
-                            description: Namespace defines the space within which the secret name must be unique.
+                            description: Namespace defines the space within which
+                              the secret name must be unique.
                             type: string
                         type: object
                     required:
@@ -557,20 +708,25 @@ spec:
                     - keySecretRef
                     type: object
                   privateKeySecretRef:
-                    description: PrivateKeySecretRef is the secret ref to the ACME private key.
+                    description: PrivateKeySecretRef is the secret ref to the ACME
+                      private key.
                     properties:
                       name:
-                        description: Name is unique within a namespace to reference a secret resource.
+                        description: Name is unique within a namespace to reference
+                          a secret resource.
                         type: string
                       namespace:
-                        description: Namespace defines the space within which the secret name must be unique.
+                        description: Namespace defines the space within which the
+                          secret name must be unique.
                         type: string
                     type: object
                   server:
                     description: Server is the URL of the ACME server.
                     type: string
                   skipDNSChallengeValidation:
-                    description: SkipDNSChallengeValidation marks that this issuer does not validate DNS challenges. In this case no DNS entries/records are created for a DNS Challenge and DNS propagation is not checked.
+                    description: SkipDNSChallengeValidation marks that this issuer
+                      does not validate DNS challenges. In this case no DNS entries/records
+                      are created for a DNS Challenge and DNS propagation is not checked.
                     type: boolean
                 required:
                 - email
@@ -583,15 +739,18 @@ spec:
                     description: PrivateKeySecretRef is the secret ref to the CA secret.
                     properties:
                       name:
-                        description: Name is unique within a namespace to reference a secret resource.
+                        description: Name is unique within a namespace to reference
+                          a secret resource.
                         type: string
                       namespace:
-                        description: Namespace defines the space within which the secret name must be unique.
+                        description: Namespace defines the space within which the
+                          secret name must be unique.
                         type: string
                     type: object
                 type: object
               requestsPerDayQuota:
-                description: RequestsPerDayQuota is the maximum number of certificate requests per days allowed for this issuer
+                description: RequestsPerDayQuota is the maximum number of certificate
+                  requests per days allowed for this issuer
                 type: integer
             type: object
           status:
@@ -609,17 +768,20 @@ spec:
                 description: Message is the status or error message.
                 type: string
               observedGeneration:
-                description: ObservedGeneration is the observed generation of the spec.
+                description: ObservedGeneration is the observed generation of the
+                  spec.
                 format: int64
                 type: integer
               requestsPerDayQuota:
-                description: RequestsPerDayQuota is the actual maximum number of certificate requests per days allowed for this issuer
+                description: RequestsPerDayQuota is the actual maximum number of certificate
+                  requests per days allowed for this issuer
                 type: integer
               state:
                 description: State is either empty, 'Pending', 'Error', or 'Ready'.
                 type: string
               type:
-                description: Type is the issuer type. Currently only 'acme' and 'ca' are supported.
+                description: Type is the issuer type. Currently only 'acme' and 'ca'
+                  are supported.
                 type: string
             required:
             - state

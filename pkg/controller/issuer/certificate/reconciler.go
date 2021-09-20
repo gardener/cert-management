@@ -1010,6 +1010,8 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 		}
 	}
 
+	status.Conditions = r.updateReadyCondition(mod, status.Conditions, state, msg, status.ObservedGeneration)
+
 	cn := crt.Spec.CommonName
 	dnsNames := crt.Spec.DNSNames
 	if crt.Spec.CSR != nil {
@@ -1033,6 +1035,44 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	}
 
 	return mod, status
+}
+
+func (r *certReconciler) updateReadyCondition(mod *resources.ModificationState, oldConditions []metav1.Condition,
+	state string, msg *string, observedGeneration int64) []metav1.Condition {
+	oldReadyCondition := &metav1.Condition{
+		Type:               api.CertificateConditionReady,
+		LastTransitionTime: metav1.NewTime(time.Now()),
+	}
+	if len(oldConditions) == 1 && oldConditions[0].Type == api.CertificateConditionReady {
+		oldReadyCondition = &oldConditions[0]
+	}
+	status := metav1.ConditionFalse
+	message := cmlutils.StringValue(msg)
+	if state == api.StateReady {
+		status = metav1.ConditionTrue
+		message = ""
+	}
+	newReadyCondition := metav1.Condition{
+		Type:               api.CertificateConditionReady,
+		Status:             status,
+		Message:            message,
+		ObservedGeneration: observedGeneration,
+		Reason:             state,
+		LastTransitionTime: oldReadyCondition.LastTransitionTime,
+	}
+	modified := false
+	if oldReadyCondition.Status != newReadyCondition.Status {
+		newReadyCondition.LastTransitionTime = metav1.NewTime(time.Now())
+		modified = true
+	}
+	modified = modified || oldReadyCondition.Message != newReadyCondition.Message
+	modified = modified || oldReadyCondition.ObservedGeneration != newReadyCondition.ObservedGeneration
+	modified = modified || oldReadyCondition.Reason != newReadyCondition.Reason
+	if modified {
+		mod.Modify(true)
+		return []metav1.Condition{newReadyCondition}
+	}
+	return oldConditions
 }
 
 func (r *certReconciler) updateStatus(logctx logger.LogContext, mod *resources.ModificationState) {
