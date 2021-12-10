@@ -314,7 +314,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
     In case you don’t already have one, take the following as an example:
 
     ```yaml
-    apiVersion: networking.k8s.io/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: vuejs-ingress
@@ -331,8 +331,12 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
         http:
           paths:
           - backend:
-              serviceName: vuejs-svc
-              servicePort: 8080
+              service:
+                name: vuejs-svc
+                port:
+                  number: 8080
+            path: /
+            pathType: Prefix
     ```
 
 2. Annotate the Ingress Resource
@@ -340,7 +344,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
    The annotation `cert.gardener.cloud/purpose: managed` instructs `cert-controller-manager` to handle certificate issuance for the domains found in labeled Ingress.
 
     ```yaml
-    apiVersion: networking.k8s.io/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: tls-example-ingress
@@ -360,9 +364,12 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
           http:
             paths:
               - backend:
-                  serviceName: echoheaders
-                  servicePort: 80
+                  service:
+                    name: echoheaders
+                    port:
+                      number: 80
                 path: /
+                pathType: Prefix
     ```
   
     The annotation `cert.gardener.cloud/commonname` can be set to explicitly specify the common name.
