@@ -194,7 +194,7 @@ fi
 
 if [ "$RUN_CONTROLLER" == "true" ]; then
   go build -mod=vendor -o $ROOTDIR/cert-controller-manager $ROOTDIR/cmd/cert-controller-manager
-  $ROOTDIR/cert-controller-manager --dns $DNS_KUBECONFIG >/dev/null 2>&1 &
+  $ROOTDIR/cert-controller-manager --dns $DNS_KUBECONFIG >/tmp/functest-cert-controller-manager.log 2>&1 &
   PID_CONTROLLER=$!
 fi
 

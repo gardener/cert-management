@@ -595,7 +595,7 @@ Flags:
       --lease-duration duration                            lease duration
       --lease-name string                                  name for lease object
       --lease-renew-deadline duration                      lease renew deadline
-      --lease-resource-lock string                         determines which resource lock to use for leader election, defaults to 'configmapsleases'
+      --lease-resource-lock string                         determines which resource lock to use for leader election, defaults to 'leases'
       --lease-retry-period duration                        lease retry period
   -D, --log-level string                                   logrus log level
       --maintainer string                                  maintainer key for crds (default "cert-controller-manager")
