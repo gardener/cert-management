@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+Copyright (c) 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 
 SPDX-License-Identifier: Apache-2.0
 */
@@ -64,7 +64,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // CertV1alpha1 retrieves the CertV1alpha1Client
 func (c *Clientset) CertV1alpha1() certv1alpha1.CertV1alpha1Interface {
