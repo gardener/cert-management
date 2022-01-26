@@ -19,10 +19,12 @@ package dns
 
 const CONTROLLER_GROUP_DNS_CONTROLLERS = "dnscontrollers"
 const CONTROLLER_GROUP_DNS_SOURCES = "dnssources"
+const CONTROLLER_GROUP_REPLICATION = "replication"
 
 const DEFAULT_CLASS = "gardendns"
 const ANNOTATION_GROUP = "dns.gardener.cloud"
 const CLASS_ANNOTATION = ANNOTATION_GROUP + "/class"
 const REALM_ANNOTATION = ANNOTATION_GROUP + "/realms"
+const NOT_RATE_LIMITED_ANNOTATION = ANNOTATION_GROUP + "/not-rate-limited"
 
 const OPT_SETUP = "setup"

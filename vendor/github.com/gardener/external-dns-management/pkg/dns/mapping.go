@@ -47,24 +47,35 @@ func MapToProvider(rtype string, dnsset *DNSSet, base string) (string, *RecordSe
 	name := dnsset.Name
 	rs := dnsset.Sets[rtype]
 	if rtype == RS_META {
-		prefix := dnsset.GetAttr(ATTR_PREFIX)
+		prefix := dnsset.GetMetaAttr(ATTR_PREFIX)
 		if prefix == "" {
 			prefix = TxtPrefix
-			dnsset.SetAttr(ATTR_PREFIX, prefix)
+			dnsset.SetMetaAttr(ATTR_PREFIX, prefix)
 		}
+		metaName := calcMetaRecordDomainName(name, prefix, base)
 		new := *dnsset.Sets[rtype]
 		new.Type = RS_TXT
-		add := ""
-		if strings.HasPrefix(name, "*.") {
-			add = "*."
-			name = name[2:]
-			if name == base {
-				prefix += "-base."
-			}
-		}
-		return add + prefix + name, &new
+		return metaName, &new
 	}
 	return name, rs
+}
+
+func calcMetaRecordDomainName(name, prefix, base string) string {
+	add := ""
+	if strings.HasPrefix(name, "*.") {
+		add = "*."
+		name = name[2:]
+		if name == base {
+			prefix += "-base."
+		}
+	}
+	return add + prefix + name
+}
+
+// CalcMetaRecordDomainNameForValidation returns domain name of metadata TXT DNS record if globally defined prefix is used.
+// As it does not consider the zone, it may be wrong for the zone base domain.
+func CalcMetaRecordDomainNameForValidation(name string) string {
+	return calcMetaRecordDomainName(name, TxtPrefix, "")
 }
 
 func MapFromProvider(dns string, rs *RecordSet) (string, *RecordSet) {
