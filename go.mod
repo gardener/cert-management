@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
-	github.com/gardener/controller-manager-library v0.2.1-0.20220126094020-f34771c852b2
+	github.com/gardener/controller-manager-library v0.2.1-0.20220127132236-5167be276ff5
 	github.com/gardener/external-dns-management v0.11.4
 	github.com/go-acme/lego/v4 v4.5.3
 	github.com/miekg/dns v1.1.44

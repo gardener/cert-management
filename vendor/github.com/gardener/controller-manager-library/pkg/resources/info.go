@@ -212,9 +212,10 @@ func (this *ResourceInfos) doUpdateGroup(dc *discovery.DiscoveryClient, group v1
 				}
 			}
 
-			if version.Version == group.PreferredVersion.Version {
-				for _, r := range list.APIResources {
-					this.preferredVersions[NewGroupKind(gv.Group, r.Kind)] = version.Version
+			for _, r := range list.APIResources {
+				gk := NewGroupKind(gv.Group, r.Kind)
+				if _, ok := this.preferredVersions[gk]; !ok || version.Version == group.PreferredVersion.Version {
+					this.preferredVersions[gk] = version.Version
 				}
 			}
 		}()
