@@ -112,6 +112,15 @@ func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 	atomic.AddInt32(&p.count, 1)
 	fqdn, value := dns01.GetRecord(domain, keyAuth)
 
+	if p.settings.FollowCNAME {
+		var err error
+		orgfqdn := fqdn
+		fqdn, err = utils.FollowCNAMEs(fqdn, p.settings.PrecheckNameservers)
+		if err != nil {
+			return fmt.Errorf("following CNAME for DNS01 challenge for %s failed: %w", orgfqdn, err)
+		}
+	}
+
 	values := p.addPresentingDomainValue(domain, value)
 
 	setSpec := func(e *dnsapi.DNSEntry) {

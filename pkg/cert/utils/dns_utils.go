@@ -8,9 +8,10 @@ package utils
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/miekg/dns"
-	"time"
 )
 
 const defaultPath = "/etc/resolv.conf"
@@ -89,6 +90,36 @@ func checkTXTValue(answer []dns.RR, values []string) bool {
 		}
 	}
 	return true
+}
+
+// FollowCNAMEs follows the CNAME records and returns the last non-CNAME fully qualified domain name
+// that it finds. Returns an error when a loop is found in the CNAME chain. The
+// argument fqdnChain is used by the function itself to keep track of which fqdns it
+// already encountered and detect loops.
+// Method copied from https://github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util/wait.go
+func FollowCNAMEs(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
+	r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
+	if err != nil {
+		return "", err
+	}
+	if r.Rcode != dns.RcodeSuccess {
+		return fqdn, err
+	}
+	for _, rr := range r.Answer {
+		cn, ok := rr.(*dns.CNAME)
+		if !ok || cn.Hdr.Name != fqdn {
+			continue
+		}
+		// Check if we were here before to prevent loops in the chain of CNAME records.
+		for _, fqdnInChain := range fqdnChain {
+			if cn.Target != fqdnInChain {
+				continue
+			}
+			return "", fmt.Errorf("Found recursive CNAME record to %q when looking up %q", cn.Target, fqdn)
+		}
+		return FollowCNAMEs(cn.Target, nameservers, append(fqdnChain, fqdn)...)
+	}
+	return fqdn, nil
 }
 
 // The following methods are copied from github.com/go-acme/lego/v3/challenge/dns01/nameserver.go

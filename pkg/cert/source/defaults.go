@@ -8,6 +8,7 @@ package source
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -182,7 +183,12 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources
 		issuer = &annotatedIssuer
 	}
 
-	info.Certs[secretName] = CertInfo{SecretName: secretName, Domains: annotatedDomains, IssuerName: issuer}
+	followCNAME := false
+	if value, ok := resources.GetAnnotation(obj.Data(), AnnotFollowCNAME); ok {
+		followCNAME, _ = strconv.ParseBool(value)
+	}
+
+	info.Certs[secretName] = CertInfo{SecretName: secretName, Domains: annotatedDomains, IssuerName: issuer, FollowCNAME: followCNAME}
 	return info, nil
 }
 

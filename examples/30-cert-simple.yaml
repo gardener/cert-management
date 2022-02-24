@@ -21,3 +21,9 @@ spec:
   secretRef:
     name: cert-simple-secret
     namespace: default
+
+  # If delegated domain for DNS01 challenge should be used. This has only an effect if a CNAME record is set for
+  # either '_acme-challenge.cert1.mydomain.com' or '_acme-challenge.cert1.my-other-domain.com'.
+  # For example: If a CNAME record exists '_acme-challenge.cert1.mydomain.com' => '_acme-challenge.writable.domain.com',
+  # the DNS challenge will be written to '_acme-challenge.writable.domain.com'.
+  #followCNAME: true

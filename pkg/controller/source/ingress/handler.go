@@ -8,6 +8,7 @@ package ingress
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	networkingv1 "k8s.io/api/networking/v1"
@@ -56,6 +57,11 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 		return info, nil
 	}
 
+	followCNAME := false
+	if value, ok := resources.GetAnnotation(obj.Data(), source.AnnotFollowCNAME); ok {
+		followCNAME, _ = strconv.ParseBool(value)
+	}
+
 	cn, _ := resources.GetAnnotation(obj.Data(), source.AnnotCommonName)
 	cn = strings.TrimSpace(cn)
 	var issuer *string
@@ -83,7 +89,7 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 		} else {
 			domains = mergeCommonName(cn, tls.Hosts)
 		}
-		info.Certs[tls.SecretName] = source.CertInfo{SecretName: tls.SecretName, Domains: domains, IssuerName: issuer}
+		info.Certs[tls.SecretName] = source.CertInfo{SecretName: tls.SecretName, Domains: domains, IssuerName: issuer, FollowCNAME: followCNAME}
 	}
 	return info, err
 }
