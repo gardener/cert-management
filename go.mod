@@ -6,7 +6,7 @@ require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.2.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20220127132236-5167be276ff5
 	github.com/gardener/external-dns-management v0.11.4
-	github.com/go-acme/lego/v4 v4.5.3
+	github.com/go-acme/lego/v4 v4.6.0
 	github.com/miekg/dns v1.1.44
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0

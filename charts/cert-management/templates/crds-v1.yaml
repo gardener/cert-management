@@ -305,6 +305,11 @@ spec:
                     this date.
                   format: date-time
                   type: string
+                followCNAME:
+                  description: FollowCNAME if true delegated domain for DNS01 challenge
+                    is used if CNAME record for DNS01 challange domain `_acme-challenge.<domain>`
+                    is set.
+                  type: boolean
                 issuerRef:
                   description: IssuerRef is the reference of the issuer to use.
                   properties:

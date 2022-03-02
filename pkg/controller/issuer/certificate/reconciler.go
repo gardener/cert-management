@@ -445,6 +445,10 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	}
 	var dnsSettings *legobridge.DNSControllerSettings
 	if issuer.Spec.ACME.SkipDNSChallengeValidation == nil || !*issuer.Spec.ACME.SkipDNSChallengeValidation {
+		followCNAME := false
+		if cert.Spec.FollowCNAME != nil && *cert.Spec.FollowCNAME {
+			followCNAME = true
+		}
 		dnsSettings = &legobridge.DNSControllerSettings{
 			Cluster:             r.dnsCluster,
 			Namespace:           cert.Namespace,
@@ -452,6 +456,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 			PrecheckNameservers: r.precheckNameservers,
 			AdditionalWait:      r.additionalWait,
 			PropagationTimeout:  r.propagationTimeout,
+			FollowCNAME:         followCNAME,
 		}
 		if r.dnsNamespace != nil {
 			dnsSettings.Namespace = *r.dnsNamespace

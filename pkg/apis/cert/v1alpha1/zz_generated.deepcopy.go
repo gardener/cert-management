@@ -371,6 +371,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		in, out := &in.EnsureRenewedAfter, &out.EnsureRenewedAfter
 		*out = (*in).DeepCopy()
 	}
+	if in.FollowCNAME != nil {
+		in, out := &in.FollowCNAME, &out.FollowCNAME
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

@@ -37,6 +37,8 @@ const (
 	AnnotCommonName = "cert.gardener.cloud/commonname"
 	// AnnotCertDNSNames is the annotation for explicitly specifying the DNS names (if not specified, values from "dns.gardener.cloud/dnsnames" is used)
 	AnnotCertDNSNames = "cert.gardener.cloud/dnsnames"
+	// AnnotFollowCNAME is the annotation for allowing delegated domains for DNS01 challenge
+	AnnotFollowCNAME = "cert.gardener.cloud/follow-cname"
 
 	// OptClass is the cert-class command line option
 	OptClass = "cert-class"

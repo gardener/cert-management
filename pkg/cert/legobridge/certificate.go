@@ -75,6 +75,8 @@ type DNSControllerSettings struct {
 	AdditionalWait time.Duration
 	// PropagationTimeout is the propagation timeout for the DNS challenge.
 	PropagationTimeout time.Duration
+	// FollowCNAME if true checks and follows CNAME records for DNS01 challenge domains.
+	FollowCNAME bool
 }
 
 // ObtainOutput is the result of the certificate obtain request.

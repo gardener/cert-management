@@ -68,6 +68,9 @@ type CertificateSpec struct {
 	// EnsureRenewedAfter specifies a time stamp in the past. Renewing is only triggered if certificate notBefore date is before this date.
 	// +optional
 	EnsureRenewedAfter *metav1.Time `json:"ensureRenewedAfter,omitempty"`
+	// FollowCNAME if true delegated domain for DNS01 challenge is used if CNAME record for DNS01 challange domain `_acme-challenge.<domain>` is set.
+	// +optional
+	FollowCNAME *bool `json:"followCNAME,omitempty"`
 }
 
 // IssuerRef is the reference of the issuer by name.

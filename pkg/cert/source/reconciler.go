@@ -315,6 +315,9 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 	} else {
 		cert.Namespace = r.namespace
 	}
+	if info.FollowCNAME {
+		cert.Spec.FollowCNAME = &info.FollowCNAME
+	}
 
 	e, _ := r.SlaveResoures()[0].Wrap(cert)
 
