@@ -39,6 +39,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Revoking certificates with renewal](#revoking-certificates-with-renewal)
     - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
   - [Metrics](#metrics)
+  - [Troubleshooting](#troubleshooting)
   - [Development](#development)
 
 ## Quick start using certificates in a Gardener shoot cluster
@@ -796,6 +797,36 @@ Besides the default Go metrics, the following cert-management specific metrics a
 | cert_management_overdue_renewal_certificates | -                    | Number of certificate objects with certificate's renewal overdue |
 | cert_management_revoked_certificates         | -                    | Number of certificate objects with revoked certificate |
 | cert_management_secrets                      | classification       | Number of certificate secrets per classification (only updated on startup and every 24h on GC of secrets). Currently there are three classifications: `total` = total number of certificate secrets on the source cluster, `revoked` = number of revoked certificate secrets, `backup`= number of backups of certificate secrets (every certificate has a backup secret in the `kube-system` namespace to allow revocation even if it is not used anymore) |
+
+
+## Troubleshooting
+
+Requesting certificates from an ACME provider (like Let's encrypt) is always performed using a DNS01 challenge.
+For this purpose, the `cert-controller-manager` creates an `DNSEntry` for the `dns-controller-manager`
+(see project [external-dns-management](https://github.com/gardener/external-dns-management)).
+Your `dns-controller-manager` needs a suitable `DNSProvider` responsible for the domain(s) of the common name and further
+DNS names of the certificate. It will create a DNS TXT record in the corresponding zone. 
+This DNS TXT record must be visible to the ACME issuer. In case of Let's encrypt this means the DNS record must be
+available to the public internet. If the certificate fails with an event `obtaining certificate failed: error: one or more domains had a problem`,
+there are a lot of possible reasons.
+Here are the two most frequent ones.
+
+1. You see a `Warning` event with `Failed check: DNS entry getting ready` like
+   ```txt
+   LAST SEEN   TYPE      REASON      OBJECT               MESSAGE
+   20m         Warning   reconcile   certificate/mycert   obtaining certificate failed: error: one or more domains had a problem: [mycert.<mydomain>] time limit exceeded . Details: DNS TXT record '_acme-challenge.mycert.<mydomain>' is not visible on public (or precheck) name servers. Failed check: DNS entry getting ready
+   ```
+   This means there is a problem with the `DNSEntry` which is not getting ready. Either there was no suitable `DNSProvider` for this domain, or the provider is not ready itself (e.g. invalid credentials) 
+   Please note that this `DNSEntry` is deleted automatically if a try to request the certificate request is finished.
+
+2. You see a `Warning` event with `Failed check: DNS record propagation` like
+   ```txt
+   LAST SEEN   TYPE      REASON      OBJECT               MESSAGE
+   10m         Warning   reconcile   certificate/mycert   obtaining certificate failed: error: one or more domains had a problem: [mycert.<mydomain>] time limit exceeded . Details: DNS TXT record '_acme-challenge.mycert.<mydomain>' is not visible on public (or precheck) name servers. Failed check: DNS record propagation
+   ```
+   This means the DNS TXT record could not be looked up by the configurated "precheck" nameservers. With the default configuration, these are some public DNS servers.
+   In this case, check if the configured `DNSProvider` uses a private hosted zone or if the "precheck" nameservers need to be adjusted to your use case.
+   There may also some configuration of the hosted zone itself (i.e. generic CNAME forwarding) which may cause problems. 
 
 ## Development
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 #############      builder       #############
-FROM golang:1.17.7 AS builder
+FROM golang:1.17.8 AS builder
 
 WORKDIR /build
 COPY . .
@@ -11,7 +11,7 @@ COPY . .
 RUN make release
 
 ############# base
-FROM alpine:3.15.0 AS base
+FROM alpine:3.15.3 AS base
 
 #############      cert-controller-manager     #############
 FROM base AS cert-controller-manager

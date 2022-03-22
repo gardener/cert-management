@@ -177,6 +177,10 @@ func (p *dummyProvider) GetChallengesCount() int {
 	return p.count
 }
 
+func (p *dummyProvider) GetPendingTXTRecordError() error {
+	return nil
+}
+
 func (o *obtainer) Obtain(input ObtainInput) error {
 	switch {
 	case input.User != nil:
@@ -250,7 +254,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
 			Renew:        input.RenewCert != nil,
-			Err:          niceError(err),
+			Err:          niceError(err, provider.GetPendingTXTRecordError()),
 		}
 		input.Callback(output)
 		o.releasePending(input)
@@ -425,11 +429,20 @@ func RevokeCertificate(user *RegistrationUser, cert []byte) error {
 	return client.Certificate.Revoke(cert)
 }
 
-func niceError(err error) error {
+func niceError(err, detailErr error) error {
+	if err == nil {
+		return nil
+	}
+	msg := err.Error()
 	part := "time limit exceeded: last error: %!w(<nil>)"
-	if err == nil || !strings.Contains(err.Error(), part) {
-		return err
+	if strings.Contains(msg, part) {
+		msg = strings.ReplaceAll(msg, part, "timeout of DNS propagation check")
 	}
 
-	return fmt.Errorf("%s", strings.ReplaceAll(err.Error(), part, "timeout of DNS propagation check"))
+	if detailErr != nil {
+		msg = fmt.Sprintf("%s. Details: %s", msg, detailErr)
+	}
+	msg = strings.ReplaceAll(msg, "\n", " ")
+
+	return fmt.Errorf("%s", msg)
 }
