@@ -30,6 +30,8 @@ import (
 type ProviderWithCount interface {
 	challenge.Provider
 	GetChallengesCount() int
+	// GetPendingTXTRecordError returns error with details if a TXT record for DNS challenge is not ready.
+	GetPendingTXTRecordError() error
 }
 
 var index uint32
@@ -65,6 +67,9 @@ type dnsControllerProvider struct {
 	presenting      map[string][]string
 	multiValues     bool
 	initialWait     bool
+
+	failedPendingDomain string
+	failedPendingCheck  string
 }
 
 var _ challenge.Provider = &dnsControllerProvider{}
@@ -217,6 +222,13 @@ func (p *dnsControllerProvider) GetChallengesCount() int {
 	return int(atomic.LoadInt32(&p.count))
 }
 
+func (p *dnsControllerProvider) GetPendingTXTRecordError() error {
+	if p.failedPendingDomain != "" {
+		return fmt.Errorf("DNS TXT record '_acme-challenge.%s' is not visible on public (or precheck) name servers. Failed check: %s", p.failedPendingDomain, p.failedPendingCheck)
+	}
+	return nil
+}
+
 func (p *dnsControllerProvider) prepareEntry(domain string) *dnsapi.DNSEntry {
 	entry := &dnsapi.DNSEntry{}
 	entry.Name = "cert--" + domain
@@ -262,6 +274,9 @@ func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
 }
 
 func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, values []string) bool, timeout time.Duration) bool {
+	p.failedPendingDomain = ""
+	p.failedPendingCheck = ""
+
 	waitTime := 5 * time.Second
 	endTime := time.Now().Add(timeout)
 	pendingDomain := ""
@@ -280,6 +295,9 @@ func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, 
 		p.logger.Infof("Waiting %d seconds for %s [%s]...", int(waitTime.Seconds()), msg, pendingDomain)
 		time.Sleep(waitTime)
 	}
+
+	p.failedPendingDomain = pendingDomain
+	p.failedPendingCheck = msg
 	return false
 }
 
