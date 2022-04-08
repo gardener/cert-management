@@ -390,7 +390,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
 
 If you have a service of type `LoadBalancer`, you can use the annotation `cert.gardener.cloud/secretname` together
 with the annotation `dns.gardener.cloud/dnsnames` from the `dns-controller-manager` to trigger automatic creation of 
-a certificate. If you wan to share a certificate between multiple services and ingresses, using the annotations 
+a certificate. If you want to share a certificate between multiple services and ingresses, using the annotations 
 `cert.gardener.cloud/commonname` and `cert.gardener.cloud/dnsnames` may be helpful.
 
 ```yaml
