@@ -199,7 +199,7 @@ if [ "$RUN_CONTROLLER" == "true" ]; then
 fi
 
 # install ginkgo
-go install -mod=vendor github.com/onsi/ginkgo/ginkgo
+go install -mod=vendor github.com/onsi/ginkgo/v2/ginkgo
 
 GOFLAGS="-mod=vendor" FUNCTEST_CONFIG=$FUNCTEST_CONFIG DNS_KUBECONFIG=$DNS_KUBECONFIG DNS_DOMAIN=$DNS_DOMAIN ginkgo -p "$@"
 
