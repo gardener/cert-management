@@ -393,7 +393,7 @@ spec:
                 type: string
               followCNAME:
                 description: FollowCNAME if true delegated domain for DNS01 challenge
-                  is used if CNAME record for DNS01 challange domain `+"`"+`_acme-challenge.<domain>`+"`"+`
+                  is used if CNAME record for DNS01 challange domain ` + "`" + `_acme-challenge.<domain>` + "`" + `
                   is set.
                 type: boolean
               issuerRef:
@@ -461,7 +461,7 @@ spec:
                 type: string
               conditions:
                 description: List of status conditions to indicate the status of certificates.
-                  Known condition types are `+"`"+`Ready`+"`"+`.
+                  Known condition types are ` + "`" + `Ready` + "`" + `.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -470,8 +470,8 @@ spec:
                     current state. // Known .status.conditions.type are: \"Available\",
                     \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
                     // +listType=map // +listMapKey=type Conditions []metav1.Condition
-                    `+"`"+`json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
-                    protobuf:\"bytes,1,rep,name=conditions\"`+"`"+` \n // other fields }"
+                    ` + "`" + `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` + "`" + ` \n // other fields }"
                   properties:
                     lastTransitionTime:
                       description: lastTransitionTime is the last time the condition
@@ -708,6 +708,13 @@ spec:
                     - keyID
                     - keySecretRef
                     type: object
+                  precheckNameservers:
+                    description: PrecheckNameservers overwrites the default precheck
+                      nameservers used for checking DNS propagation. Format ` + "`" + `host` + "`" + `
+                      or ` + "`" + `host:port` + "`" + `, e.g. "8.8.8.8" same as "8.8.8.8:53" or "google-public-dns-a.google.com:53".
+                    items:
+                      type: string
+                    type: array
                   privateKeySecretRef:
                     description: PrivateKeySecretRef is the secret ref to the ACME
                       private key.

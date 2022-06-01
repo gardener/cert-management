@@ -124,7 +124,7 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 
 	precheckNameservers, _ := c.GetStringOption(core.OptPrecheckNameservers)
 	reconciler.precheckNameservers = utils.PreparePrecheckNameservers(strings.Split(precheckNameservers, ","))
-	c.Infof("Using these nameservers for DNS propagation checks: %s", strings.Join(reconciler.precheckNameservers, ","))
+	c.Infof("Using these default nameservers for DNS propagation checks: %s", strings.Join(reconciler.precheckNameservers, ","))
 
 	reconciler.propagationTimeout, _ = c.GetDurationOption(core.OptPropagationTimeout)
 	c.Infof("Propagation timeout: %d seconds", int(reconciler.propagationTimeout.Seconds()))
@@ -449,11 +449,15 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		if cert.Spec.FollowCNAME != nil && *cert.Spec.FollowCNAME {
 			followCNAME = true
 		}
+		precheckNameservers := r.precheckNameservers
+		if issuer.Spec.ACME.PrecheckNameservers != nil {
+			precheckNameservers = utils.PreparePrecheckNameservers(issuer.Spec.ACME.PrecheckNameservers)
+		}
 		dnsSettings = &legobridge.DNSControllerSettings{
 			Cluster:             r.dnsCluster,
 			Namespace:           cert.Namespace,
 			OwnerID:             r.dnsOwnerID,
-			PrecheckNameservers: r.precheckNameservers,
+			PrecheckNameservers: precheckNameservers,
 			AdditionalWait:      r.additionalWait,
 			PropagationTimeout:  r.propagationTimeout,
 			FollowCNAME:         followCNAME,
