@@ -40,7 +40,7 @@ func init() {
 		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		DefaultedDurationOption(core.OptRenewalOverdueWindow, 25*24*time.Hour, "certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates)").
 		DefaultedStringOption(core.OptPrecheckNameservers, "8.8.8.8:53,8.8.4.4:53",
-			"DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf").
+			"Default DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf").
 		DefaultedDurationOption(core.OptPrecheckAdditionalWait, 10*time.Second, "additional wait time after DNS propagation check").
 		DefaultedDurationOption(core.OptPropagationTimeout, 120*time.Second, "propagation timeout for DNS challenge").
 		DefaultedIntOption(core.OptDefaultRequestsPerDayQuota, 10000,

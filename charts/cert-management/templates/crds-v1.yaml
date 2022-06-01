@@ -125,6 +125,13 @@ spec:
                         - keyID
                         - keySecretRef
                       type: object
+                    precheckNameservers:
+                      description: PrecheckNameservers overwrites the default precheck
+                        nameservers used for checking DNS propagation. Format `host`
+                        or `host:port`, e.g. "8.8.8.8" same as "8.8.8.8:53" or "google-public-dns-a.google.com:53".
+                      items:
+                        type: string
+                      type: array
                     privateKeySecretRef:
                       description: PrivateKeySecretRef is the secret ref to the ACME
                         private key.

@@ -84,6 +84,11 @@ type ACMESpec struct {
 	// Domains optionally specifies domains allowed or forbidden for certificate requests
 	// +optional
 	Domains *DNSSelection `json:"domains,omitempty"`
+
+	// PrecheckNameservers overwrites the default precheck nameservers used for checking DNS propagation.
+	// Format `host` or `host:port`, e.g. "8.8.8.8" same as "8.8.8.8:53" or "google-public-dns-a.google.com:53".
+	// +optional
+	PrecheckNameservers []string `json:"precheckNameservers,omitempty"`
 }
 
 // DNSSelection is a restriction on the domains to be allowed or forbidden for certificate requests

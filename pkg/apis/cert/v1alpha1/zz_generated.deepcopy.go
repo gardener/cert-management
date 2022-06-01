@@ -61,6 +61,11 @@ func (in *ACMESpec) DeepCopyInto(out *ACMESpec) {
 		*out = new(DNSSelection)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.PrecheckNameservers != nil {
+		in, out := &in.PrecheckNameservers, &out.PrecheckNameservers
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
