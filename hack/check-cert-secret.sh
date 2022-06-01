@@ -19,6 +19,9 @@ Helper for extracting information about the X509 certificate from the secret of 
 ./check-cert-secret.sh show-txt <namespace> <certificate name>
    show certificate as text
 
+./check-cert-secret.sh show-txt-all <namespace> <certificate name>
+   show certificate and chain as text
+
 ./check-cert-secret.sh show-ocsp <namespace> <certificate name>
    show OCSP response using OpenSSL as text
 
@@ -39,8 +42,8 @@ NS=$2
 CERTNAME=$3
 PREFIX="${TMPDIR}check-secret"
 X509CERT="$PREFIX/cert"
-certfile="$PREFIX/part-1.txt"
-immediatefile="$PREFIX/part-2.txt"
+certfile="$PREFIX/cert-0.pem"
+immediatefile="$PREFIX/cert-1.pem"
 ocspresponsefile="$PREFIX/ocsp.txt"
 
 prepareParts()
@@ -50,7 +53,9 @@ prepareParts()
     kubectl -n $NS get secret $(kubectl -n $NS get cert $CERTNAME  -o=jsonpath='{.spec.secretRef.name}') -o=jsonpath='{.data.tls\.crt}' | base64 -d > "$X509CERT"
 
     # split certificate and chain
-    cat $X509CERT | awk -v RS= -v PREFIX="$PREFIX" '{print > (PREFIX "/part-" NR ".txt")}'
+
+    #cat $X509CERT | awk -v PREFIX="$PREFIX" 'split_after == 1 {n++;split_after=0} /-----END CERTIFICATE-----/ {split_after=1} {print >  (PREFIX "cert" n ".pem")}'
+    csplit -s -z -f "$PREFIX/cert-" -b "%d.pem" $X509CERT '/-----BEGIN CERTIFICATE-----/' '{*}'
 }
 
 cleanup()
@@ -69,6 +74,18 @@ showTXT()
 {
     prepareParts
     openssl x509 -noout -text -in $certfile
+    cleanup
+}
+
+showTXTAll()
+{
+    prepareParts
+    for f in $PREFIX/cert*.pem
+    do
+      openssl x509 -noout -text -in $f
+      echo ""
+      echo ""
+    done
     cleanup
 }
 
@@ -121,6 +138,9 @@ case $1 in
   show-txt )   shift
                showTXT
                ;;
+  show-txt-all )   shift
+                   showTXTAll
+                   ;;
   show-ocsp )  shift
                showOCSP
                ;;
