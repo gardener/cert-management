@@ -223,11 +223,11 @@ spec:
                         together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference
+                          description: name is unique within a namespace to reference
                             a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the
+                          description: namespace defines the space within which the
                             secret name must be unique.
                           type: string
                         serialNumber:
@@ -245,11 +245,11 @@ spec:
                         together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference
+                          description: name is unique within a namespace to reference
                             a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the
+                          description: namespace defines the space within which the
                             secret name must be unique.
                           type: string
                         serialNumber:
@@ -267,11 +267,11 @@ spec:
                         together with the serial number
                       properties:
                         name:
-                          description: Name is unique within a namespace to reference
+                          description: name is unique within a namespace to reference
                             a secret resource.
                           type: string
                         namespace:
-                          description: Namespace defines the space within which the
+                          description: namespace defines the space within which the
                             secret name must be unique.
                           type: string
                         serialNumber:
@@ -423,11 +423,11 @@ spec:
                   for storing the certificate.
                 properties:
                   name:
-                    description: Name is unique within a namespace to reference a
+                    description: name is unique within a namespace to reference a
                       secret resource.
                     type: string
                   namespace:
-                    description: Namespace defines the space within which the secret
+                    description: namespace defines the space within which the secret
                       name must be unique.
                     type: string
                 type: object
@@ -696,11 +696,11 @@ spec:
                           the Secret **must** be un-padded, base64 URL encoded data.
                         properties:
                           name:
-                            description: Name is unique within a namespace to reference
+                            description: name is unique within a namespace to reference
                               a secret resource.
                             type: string
                           namespace:
-                            description: Namespace defines the space within which
+                            description: namespace defines the space within which
                               the secret name must be unique.
                             type: string
                         type: object
@@ -720,11 +720,11 @@ spec:
                       private key.
                     properties:
                       name:
-                        description: Name is unique within a namespace to reference
+                        description: name is unique within a namespace to reference
                           a secret resource.
                         type: string
                       namespace:
-                        description: Namespace defines the space within which the
+                        description: namespace defines the space within which the
                           secret name must be unique.
                         type: string
                     type: object
@@ -747,11 +747,11 @@ spec:
                     description: PrivateKeySecretRef is the secret ref to the CA secret.
                     properties:
                       name:
-                        description: Name is unique within a namespace to reference
+                        description: name is unique within a namespace to reference
                           a secret resource.
                         type: string
                       namespace:
-                        description: Namespace defines the space within which the
+                        description: namespace defines the space within which the
                           secret name must be unique.
                         type: string
                     type: object
