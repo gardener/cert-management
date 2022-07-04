@@ -11,14 +11,12 @@ COPY . .
 RUN make release
 
 ############# base
-FROM alpine:3.16.0 AS base
+FROM gcr.io/distroless/static-debian11:nonroot AS base
 
 #############      cert-controller-manager     #############
 FROM base AS cert-controller-manager
 
-RUN addgroup -S app && adduser -S -G app app
 WORKDIR /
 COPY --from=builder /build/cert-controller-manager /cert-controller-manager
-USER app
 
 ENTRYPOINT ["/cert-controller-manager"]
