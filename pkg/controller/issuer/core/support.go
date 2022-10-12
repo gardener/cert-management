@@ -471,7 +471,7 @@ func (s *Support) IssuerClusterObjectKey(certNamespace string, spec *api.Certifi
 	return utils.NewDefaultClusterIssuerKey(s.defaultIssuerName)
 }
 
-// FindIssuerKeyByName tries to find a issuer key on target or default cluster
+// FindIssuerKeyByName tries to find an issuer key on target or default cluster
 func (s *Support) FindIssuerKeyByName(namespace, issuerName string) *utils.IssuerKey {
 	var bestKey *utils.IssuerKey
 	var bestFit int
@@ -485,7 +485,8 @@ func (s *Support) FindIssuerKeyByName(namespace, issuerName string) *utils.Issue
 				}
 			}
 			if fit > bestFit {
-				bestKey = &key
+				k := key
+				bestKey = &k
 				bestFit = fit
 			}
 		}
