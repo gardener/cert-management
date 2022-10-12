@@ -50,7 +50,7 @@ prepareParts()
 {
     mkdir -p "$PREFIX"
     # extract certificate from certificate secret
-    kubectl -n $NS get secret $(kubectl -n $NS get cert $CERTNAME  -o=jsonpath='{.spec.secretRef.name}') -o=jsonpath='{.data.tls\.crt}' | base64 -d > "$X509CERT"
+    kubectl -n $NS get secret $(kubectl -n $NS get certificates.cert.gardener.cloud $CERTNAME  -o=jsonpath='{.spec.secretRef.name}') -o=jsonpath='{.data.tls\.crt}' | base64 -d > "$X509CERT"
 
     # split certificate and chain
 
