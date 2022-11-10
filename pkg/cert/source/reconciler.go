@@ -240,8 +240,8 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 }
 
 // Deleted is used as fallback, if the source object in another cluster is
-//  deleted unexpectedly (by removing the finalizer).
-//  It checks whether a slave is still available and deletes it.
+// deleted unexpectedly (by removing the finalizer).
+// It checks whether a slave is still available and deletes it.
 func (r *sourceReconciler) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
 	logger.Infof("%s finally deleted", key)
 	failed := false

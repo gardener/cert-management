@@ -105,6 +105,73 @@ spec:
                 required:
                 - name
                 type: object
+              keystores:
+                description: Keystores configures additional keystore output formats
+                  stored in the `secretName`/`secretRef` Secret resource.
+                properties:
+                  jks:
+                    description: JKS configures options for storing a JKS keystore
+                      in the `spec.secretName`/`spec.secretRef` Secret resource.
+                    properties:
+                      create:
+                        description: Create enables JKS keystore creation for the
+                          Certificate. If true, a file named `keystore.jks` will be
+                          created in the target Secret resource, encrypted using the
+                          password stored in `passwordSecretRef`. The keystore file
+                          will only be updated upon re-issuance.
+                        type: boolean
+                      passwordSecretRef:
+                        description: PasswordSecretRef is a reference to a key in
+                          a Secret resource containing the password used to encrypt
+                          the JKS keystore.
+                        properties:
+                          key:
+                            description: Key of the entry in the Secret resource's
+                              `data` field to be used.
+                            type: string
+                          secretName:
+                            description: SecretName of the secret resource being referred
+                              to in the same namespace.
+                            type: string
+                        required:
+                        - secretName
+                        type: object
+                    required:
+                    - create
+                    - passwordSecretRef
+                    type: object
+                  pkcs12:
+                    description: PKCS12 configures options for storing a PKCS12 keystore
+                      in the `spec.secretName`/`spec.secretRef` Secret resource.
+                    properties:
+                      create:
+                        description: Create enables PKCS12 keystore creation for the
+                          Certificate. If true, a file named `keystore.p12` will be
+                          created in the target Secret resource, encrypted using the
+                          password stored in `passwordSecretRef`. The keystore file
+                          will only be updated upon re-issuance.
+                        type: boolean
+                      passwordSecretRef:
+                        description: PasswordSecretRef is a reference to a key in
+                          a Secret resource containing the password used to encrypt
+                          the PKCS12 keystore.
+                        properties:
+                          key:
+                            description: Key of the entry in the Secret resource's
+                              `data` field to be used.
+                            type: string
+                          secretName:
+                            description: SecretName of the secret resource being referred
+                              to in the same namespace.
+                            type: string
+                        required:
+                        - secretName
+                        type: object
+                    required:
+                    - create
+                    - passwordSecretRef
+                    type: object
+                type: object
               renew:
                 description: Renew triggers a renewal if set to true
                 type: boolean

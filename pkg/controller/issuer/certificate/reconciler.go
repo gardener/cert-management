@@ -311,7 +311,7 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 
 	now := time.Now()
 	secretRef, err := r.writeCertificateSecret(logctx, result.IssuerInfo, cert.ObjectMeta, result.Certificates, specHash,
-		specSecretRef, &now)
+		specSecretRef, &now, spec.Keystores)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("writing certificate secret failed: %w", err)), false
 	}
@@ -683,6 +683,9 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 
 	msg := fmt.Sprintf("certificate (SN %s) valid from %v to %v", SerialNumberToString(cert.SerialNumber, false), cert.NotBefore, cert.NotAfter)
 	logctx.Infof(msg)
+	if err := r.updateKeystoresIfSpecChanged(logctx, secret, crt.Spec.Keystores); err != nil {
+		return r.failed(logctx, obj, api.StateError, err)
+	}
 	return r.succeeded(logctx, obj, &msg)
 }
 
@@ -868,11 +871,12 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 
 	var requestedAt *time.Time = ExtractRequestedAtFromAnnotation(secret)
 
-	return r.writeCertificateSecret(logctx, issuerInfo, objectMeta, certificates, specHash, specSecretRef, requestedAt)
+	return r.writeCertificateSecret(logctx, issuerInfo, objectMeta, certificates, specHash, specSecretRef, requestedAt, spec.Keystores)
 }
 
 func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo utils.IssuerInfo, objectMeta metav1.ObjectMeta,
-	certificates *certificate.Resource, specHash string, specSecretRef *corev1.SecretReference, requestedAt *time.Time) (*corev1.SecretReference, error) {
+	certificates *certificate.Resource, specHash string, specSecretRef *corev1.SecretReference,
+	requestedAt *time.Time, keystores *api.CertificateKeystores) (*corev1.SecretReference, error) {
 	secret := &corev1.Secret{
 		Type: corev1.SecretTypeTLS,
 	}
@@ -902,10 +906,15 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 		secret.SetOwnerReferences(ownerReferences)
 	}
 
+	err := r.addKeystores(secret, keystores)
+	if err != nil {
+		return nil, fmt.Errorf("adding keystores to secret failed: %w", err)
+	}
 	obj, err := r.certSecretResources.CreateOrUpdate(secret)
 	if err != nil {
 		return nil, fmt.Errorf("creating/updating certificate secret failed: %w", err)
 	}
+	legobridge.RemoveKeystoresFromSecret(secret)
 
 	ref, created, err := BackupSecret(r.certSecretResources, secret, specHash, issuerInfo)
 	if err != nil {
@@ -915,6 +924,26 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 	}
 
 	return &corev1.SecretReference{Name: obj.GetName(), Namespace: obj.GetNamespace()}, nil
+}
+
+func (r *certReconciler) addKeystores(secret *corev1.Secret, keystores *api.CertificateKeystores) error {
+	return legobridge.AddKeystoresToSecret(r.certSecretResources, secret, keystores)
+}
+
+func (r *certReconciler) updateKeystoresIfSpecChanged(logctx logger.LogContext, secret *corev1.Secret, keystores *api.CertificateKeystores) error {
+	modified, err := legobridge.UpdateKeystoresToSecret(r.certSecretResources, secret, keystores)
+	if err != nil {
+		return err
+	}
+	if !modified {
+		return nil
+	}
+	_, err = r.certSecretResources.CreateOrUpdate(secret)
+	if err != nil {
+		return fmt.Errorf("creating/updating certificate secret for keystores failed: %w", err)
+	}
+	logctx.Infof("updated keystores in certificate secret")
+	return nil
 }
 
 func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, obj resources.Object,

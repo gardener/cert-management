@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/test/functional/config"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
@@ -80,6 +81,7 @@ spec:
   - "*.cert3.{{.Domain}}"
   issuerRef:
     name: {{.Name}}
+  secretName: cert3-secret
 `
 
 var revoke2Template = `
@@ -105,6 +107,40 @@ spec:
     name: cert3
     namespace: {{.Namespace}}
   renew: true
+`
+
+var cert3WithKeystores = `
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keystore-password
+  namespace: {{.Namespace}}
+data:
+  password: cGFzcw== # pass
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert3
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert3.{{.Domain}}
+  dnsNames:
+  - "*.cert3.{{.Domain}}"
+  issuerRef:
+    name: {{.Name}}
+  keystores:
+    jks:
+      create: true
+      passwordSecretRef:
+        key: password
+        secretName: keystore-password
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        key: password
+        secretName: keystore-password
+  secretName: cert3-secret
 `
 
 func init() {
@@ -183,6 +219,27 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 					}),
 				}),
 			}))
+
+			By("check keystores in cert3", func() {
+				secret, err := u.KubectlGetSecret("cert3-secret")
+				Ω(err).Should(BeNil())
+				Ω(len(secret.Data)).Should(Equal(3))
+
+				manifestFilename, err := iss.CreateTempManifest("Manifest", cert3WithKeystores)
+				defer iss.DeleteTempManifest(manifestFilename)
+				Ω(err).Should(BeNil())
+				err = u.KubectlApply(manifestFilename)
+				Ω(err).Should(BeNil())
+
+				time.Sleep(3 * time.Second) // wait for reconciliation
+
+				secret, err = u.KubectlGetSecret("cert3-secret")
+				Ω(len(secret.Data)).Should(Equal(7))
+				Ω(secret.Data[legobridge.JKSTruststoreKey]).ShouldNot(BeNil())
+				Ω(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
+				Ω(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
+				Ω(secret.Data[legobridge.PKCS12SecretKey]).ShouldNot(BeNil())
+			})
 
 			By("revoking without renewal", func() {
 				// need to wait 30 seconds after certificate creation because of time drift (see func WasRequestedBefore() for details)
