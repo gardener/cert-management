@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const STATE_DELETED = "~DELETED~"
@@ -40,6 +41,18 @@ func (u *TestUtils) KubectlGetAllCertificates() (map[string]interface{}, error) 
 		return nil, err
 	}
 	return u.toItemMap(output)
+}
+
+func (u *TestUtils) KubectlGetSecret(name string) (*corev1.Secret, error) {
+	output, err := u.runKubeCtl("get secret " + name + " -o json")
+	if err != nil {
+		return nil, err
+	}
+	secret := &corev1.Secret{}
+	if err = json.Unmarshal([]byte(output), secret); err != nil {
+		return nil, err
+	}
+	return secret, nil
 }
 
 func (u *TestUtils) toItemMap(output string) (map[string]interface{}, error) {

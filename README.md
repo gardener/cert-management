@@ -28,6 +28,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Requesting a Certificate](#requesting-a-certificate)
     - [Using `commonName` and optional `dnsNames`](#using-commonname-and-optional-dnsnames)
     - [Using a certificate signing request (CSR)](#using-a-certificate-signing-request-csr)
+    - [Creating JKS or PKCS#12 keystores](#creating-jks-or-pkcs12-keystores)
   - [Requesting a Certificate for Ingress](#requesting-a-certificate-for-ingress)
     - [Process](#process)
   - [Requesting a Certificate for Service](#requesting-a-certificate-for-service)
@@ -295,6 +296,45 @@ spec:
 ```
 
 :warning: Using a CSR is only available for ACME Issuer
+
+### Creating JKS or PKCS#12 keystores
+
+By default, the certificate secret contains the TLS certificate using the standard
+data entries `tls.key`, `tls.crt` and `ca.crt`.
+
+With the `keystores` section in the certificate spec, bundles in the form of JKS or PKCS#12 keystores
+can be requested to be stored in the secret additionally.
+For the [JKS](https://en.wikipedia.org/wiki/Java_KeyStore) (Java keystore) format, the additional data entries are `keystore.jks` and `truststore.jks`.
+For [PKCS#12](https://en.wikipedia.org/wiki/PKCS_12) format, the data entries are named `keystore.p12` and `truststore.p12`.
+In both cases, the keystore file contains all the data, but the truststore file only the CA.
+The keystores are secured by the password as provided with the secret/key pair `passwordSecretRef`.
+
+For example see [examples/30-cert-simple-with-keystores.yaml](./examples/30-cert-simple-with-keystores.yaml):
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-simple-with-keystores
+  namespace: default
+spec:
+  commonName: ...
+
+  # enable keystore creation for both JKS and PKCS#12
+  # This will create additional data entries in the certificate secret named `keystore.jks`, `truststore.jks` for JKS
+  # and `keystore.p12`, `truststore.p12` for PKCS#12
+  keystores:
+    jks:
+      create: true
+      passwordSecretRef:
+        secretName: keystore-secret
+        key: password
+    pkcs12:
+      create: true
+      passwordSecretRef:
+        secretName: keystore-secret
+        key: password  
+```
 
 ## Requesting a Certificate for Ingress 
 

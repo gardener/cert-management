@@ -71,6 +71,9 @@ type CertificateSpec struct {
 	// FollowCNAME if true delegated domain for DNS01 challenge is used if CNAME record for DNS01 challange domain `_acme-challenge.<domain>` is set.
 	// +optional
 	FollowCNAME *bool `json:"followCNAME,omitempty"`
+	// Keystores configures additional keystore output formats stored in the `secretName`/`secretRef` Secret resource.
+	// +optional
+	Keystores *CertificateKeystores `json:"keystores,omitempty"`
 }
 
 // IssuerRef is the reference of the issuer by name.
@@ -150,4 +153,50 @@ type QualifiedIssuerRef struct {
 // IsDefaultCluster returns true if the reference is on the default cluster
 func (r QualifiedIssuerRef) IsDefaultCluster() bool {
 	return r.Cluster == "default"
+}
+
+// CertificateKeystores configures additional keystore output formats to be created in the Certificate's output Secret.
+type CertificateKeystores struct {
+	// JKS configures options for storing a JKS keystore in the `spec.secretName`/`spec.secretRef` Secret resource.
+	// +optional
+	JKS *JKSKeystore `json:"jks,omitempty"`
+
+	// PKCS12 configures options for storing a PKCS12 keystore in the `spec.secretName`/`spec.secretRef` Secret resource.
+	// +optional
+	PKCS12 *PKCS12Keystore `json:"pkcs12,omitempty"`
+}
+
+// JKSKeystore configures options for storing a JKS keystore in the `spec.secretName`/`spec.secretRef` Secret resource.
+type JKSKeystore struct {
+	// Create enables JKS keystore creation for the Certificate.
+	// If true, a file named `keystore.jks` will be created in the target
+	// Secret resource, encrypted using the password stored in `passwordSecretRef`.
+	// The keystore file will only be updated upon re-issuance.
+	Create bool `json:"create"`
+
+	// PasswordSecretRef is a reference to a key in a Secret resource
+	// containing the password used to encrypt the JKS keystore.
+	PasswordSecretRef SecretKeySelector `json:"passwordSecretRef"`
+}
+
+// PKCS12Keystore configures options for storing a PKCS12 keystore in the `spec.secretName`/`spec.secretRef` Secret resource.
+type PKCS12Keystore struct {
+	// Create enables PKCS12 keystore creation for the Certificate.
+	// If true, a file named `keystore.p12` will be created in the target
+	// Secret resource, encrypted using the password stored in `passwordSecretRef`.
+	// The keystore file will only be updated upon re-issuance.
+	Create bool `json:"create"`
+
+	// PasswordSecretRef is a reference to a key in a Secret resource
+	// containing the password used to encrypt the PKCS12 keystore.
+	PasswordSecretRef SecretKeySelector `json:"passwordSecretRef"`
+}
+
+// SecretKeySelector is a reference to a key in a Secret resource in the same namespace.
+type SecretKeySelector struct {
+	// SecretName of the secret resource being referred to in the same namespace.
+	SecretName string `json:"secretName"`
+
+	// Key of the entry in the Secret resource's `data` field to be used.
+	Key string `json:"key,omitempty"`
 }
