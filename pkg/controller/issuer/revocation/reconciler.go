@@ -7,6 +7,7 @@
 package revocation
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"strings"
@@ -562,6 +563,16 @@ func (r *revokeReconciler) setCertificateSecretsRevokedBySerialNumbers(hashKey s
 		}
 	}
 
+	if len(errs) > 0 {
+		var buf bytes.Buffer
+		for i, e := range errs {
+			if i > 0 {
+				buf.WriteString("; ")
+			}
+			buf.WriteString(e.Error())
+		}
+		err = fmt.Errorf("multiple errors: %s", buf.String())
+	}
 	return err
 }
 
