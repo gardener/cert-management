@@ -90,14 +90,14 @@ func (r *sourceReconciler) Setup() {
 	r.NestedReconciler.Setup()
 }
 
-func getCertificateSecretName(obj resources.Object) string {
+func getCertificateSecretName(obj resources.Object) (string, error) {
 	crt := certutils.Certificate(obj).Certificate()
 	if crt.Spec.SecretRef != nil {
-		return crt.Spec.SecretRef.Name
+		return crt.Spec.SecretRef.Name, nil
 	} else if crt.Spec.SecretName != nil {
-		return *crt.Spec.SecretName
+		return *crt.Spec.SecretName, nil
 	}
-	panic("missing secret name")
+	return "", fmt.Errorf("missing secret name for %s", obj.GetName())
 }
 
 func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
@@ -105,7 +105,10 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 	currentState := &CertCurrentState{CertStates: map[string]*CertState{}}
 	for _, s := range slaves {
 		crt := certutils.Certificate(s).Certificate()
-		secretName := getCertificateSecretName(s)
+		secretName, err := getCertificateSecretName(s)
+		if err != nil {
+			continue
+		}
 		currentState.CertStates[secretName] = &CertState{Spec: crt.Spec,
 			State: crt.Status.State, Message: crt.Status.Message, CreationTimestamp: crt.CreationTimestamp}
 	}
@@ -145,8 +148,10 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 	obsoleteSecretNames := utils.StringSet{}
 	current := []resources.Object{}
 	for _, s := range slaves {
-		secretName := getCertificateSecretName(s)
-		if _, ok := info.Certs[secretName]; !ok {
+		secretName, err := getCertificateSecretName(s)
+		if err != nil {
+			obsolete = append(obsolete, s)
+		} else if _, ok := info.Certs[secretName]; !ok {
 			obsolete = append(obsolete, s)
 			obsoleteSecretNames.Add(secretName)
 		} else {
@@ -169,7 +174,7 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 	if len(obsoleteSecretNames) > 0 {
 		logger.Infof("found obsolete secrets: %s", obsoleteSecretNames)
 		for _, o := range obsolete {
-			secretName := getCertificateSecretName(o)
+			secretName, _ := getCertificateSecretName(o)
 			err := r.deleteEntry(logger, obj, o)
 			if err != nil {
 				notifiedErrors = append(notifiedErrors, fmt.Sprintf("cannot remove certificate %q for secret %s: %s",
@@ -179,7 +184,10 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 	}
 
 	for _, o := range current {
-		secretName := getCertificateSecretName(o)
+		secretName, err := getCertificateSecretName(o)
+		if err != nil {
+			continue
+		}
 		mod, err := r.updateEntry(logger, info.Certs[secretName], o)
 		modified[secretName] = mod
 		if err != nil {
