@@ -33,7 +33,7 @@ import (
 	pkgapismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 func init() {
@@ -669,7 +669,7 @@ func Convert_acme_ACMEChallengeSolverHTTP01_To_v1alpha3_ACMEChallengeSolverHTTP0
 func autoConvert_v1alpha3_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
-	out.ParentRefs = *(*[]v1alpha2.ParentReference)(unsafe.Pointer(&in.ParentRefs))
+	out.ParentRefs = *(*[]v1beta1.ParentReference)(unsafe.Pointer(&in.ParentRefs))
 	return nil
 }
 
@@ -681,7 +681,7 @@ func Convert_v1alpha3_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_acme_ACMEChal
 func autoConvert_acme_ACMEChallengeSolverHTTP01GatewayHTTPRoute_To_v1alpha3_ACMEChallengeSolverHTTP01GatewayHTTPRoute(in *acme.ACMEChallengeSolverHTTP01GatewayHTTPRoute, out *ACMEChallengeSolverHTTP01GatewayHTTPRoute, s conversion.Scope) error {
 	out.ServiceType = v1.ServiceType(in.ServiceType)
 	out.Labels = *(*map[string]string)(unsafe.Pointer(&in.Labels))
-	out.ParentRefs = *(*[]v1alpha2.ParentReference)(unsafe.Pointer(&in.ParentRefs))
+	out.ParentRefs = *(*[]v1beta1.ParentReference)(unsafe.Pointer(&in.ParentRefs))
 	return nil
 }
 
@@ -876,6 +876,7 @@ func autoConvert_v1alpha3_ACMEIssuer_To_acme_ACMEIssuer(in *ACMEIssuer, out *acm
 	out.Email = in.Email
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	out.SkipTLSVerify = in.SkipTLSVerify
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
@@ -909,6 +910,7 @@ func autoConvert_acme_ACMEIssuer_To_v1alpha3_ACMEIssuer(in *acme.ACMEIssuer, out
 	out.Email = in.Email
 	out.Server = in.Server
 	out.PreferredChain = in.PreferredChain
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	out.SkipTLSVerify = in.SkipTLSVerify
 	if in.ExternalAccountBinding != nil {
 		in, out := &in.ExternalAccountBinding, &out.ExternalAccountBinding
