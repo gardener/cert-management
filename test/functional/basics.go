@@ -30,10 +30,44 @@ spec:
   acme:
     server: {{.Server}}
     email: {{.Email}}
+{{if not .PrivateKey }}
     autoRegistration: {{.AutoRegistration}}
+{{end}}
     privateKeySecretRef:
       name: {{.Name}}-secret
       namespace: {{.Namespace}}
+{{if .ExternalAccountBinding }}
+    externalAccountBinding:
+      keyID: {{ .ExternalAccountBinding.KeyID }}
+      keySecretRef:
+        name: {{.Name}}-eab-secret
+        namespace: {{.Namespace}}    
+{{end}}
+{{if .SkipDNSChallengeValidation }}
+    skipDNSChallengeValidation: true
+{{end}}
+{{end}}
+{{if .ExternalAccountBinding }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{.Name}}-eab-secret
+  namespace: {{.Namespace}}
+type: Opaque
+data:
+  hmacKey: {{ .ExternalAccountBinding.HmacKey }}
+{{end}}
+{{if .PrivateKey }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{.Name}}-secret
+  namespace: {{.Namespace}}
+type: Opaque
+data:
+  privateKey: {{ .PrivateKey }}
 {{end}}
 ---
 apiVersion: cert.gardener.cloud/v1alpha1
@@ -262,23 +296,25 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				Ω(err).Should(BeNil())
 			})
 
-			By("revoking with renewal", func() {
-				filename, err := iss.CreateTempManifest("revoke3", revoke3Template)
-				defer iss.DeleteTempManifest(filename)
-				Ω(err).Should(BeNil())
+			if !iss.SkipRevokeWithRenewal {
+				By("revoking with renewal", func() {
+					filename, err := iss.CreateTempManifest("revoke3", revoke3Template)
+					defer iss.DeleteTempManifest(filename)
+					Ω(err).Should(BeNil())
 
-				err = u.KubectlApply(filename)
-				Ω(err).Should(BeNil())
+					err = u.KubectlApply(filename)
+					Ω(err).Should(BeNil())
 
-				err = u.AwaitCertRevocationApplied("revoke-cert3")
-				Ω(err).Should(BeNil())
+					err = u.AwaitCertRevocationApplied("revoke-cert3")
+					Ω(err).Should(BeNil())
 
-				err = u.AwaitCertReady(entryName(iss, "3"))
-				Ω(err).Should(BeNil())
+					err = u.AwaitCertReady(entryName(iss, "3"))
+					Ω(err).Should(BeNil())
 
-				err = u.KubectlDelete(filename)
-				Ω(err).Should(BeNil())
-			})
+					err = u.KubectlDelete(filename)
+					Ω(err).Should(BeNil())
+				})
+			}
 
 			err = u.KubectlDelete(manifestFilename)
 			Ω(err).Should(BeNil())
