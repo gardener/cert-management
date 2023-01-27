@@ -59,14 +59,23 @@ func PrintConfigEnv() {
 }
 
 type IssuerConfig struct {
-	Name             string `json:"name"`
-	Type             string `json:"type"`
-	AutoRegistration bool   `json:"autoRegistration"`
-	Server           string `json:"server,omitempty"`
-	Email            string `json:"email,omitempty"`
+	Name                       string                  `json:"name"`
+	Type                       string                  `json:"type"`
+	AutoRegistration           bool                    `json:"autoRegistration"`
+	Server                     string                  `json:"server,omitempty"`
+	Email                      string                  `json:"email,omitempty"`
+	ExternalAccountBinding     *ExternalAccountBinding `json:"externalAccountBinding,omitempty"`
+	SkipDNSChallengeValidation bool                    `json:"skipDNSChallengeValidation,omitempty"`
+	PrivateKey                 string                  `json:"privateKey,omitempty"`
+	SkipRevokeWithRenewal      bool                    `json:"skipRevokeWithRenewal,omitempty"`
 
 	Namespace string
 	Domain    string
+}
+
+type ExternalAccountBinding struct {
+	KeyID   string `json:"keyID"`
+	HmacKey string `json:"hmacKey"`
 }
 
 type Config struct {
@@ -135,8 +144,8 @@ func (c *Config) postProcess() error {
 			if issuer.Email == "" {
 				return fmt.Errorf("Missing ACME email for %s", issuer.Name)
 			}
-			if !issuer.AutoRegistration {
-				return fmt.Errorf("Functional test only supports autoRegistration for ACME, see issuer %s", issuer.Name)
+			if !issuer.AutoRegistration && issuer.PrivateKey == "" {
+				return fmt.Errorf("Functional test only supports autoRegistration or privateKey for ACME, see issuer %s", issuer.Name)
 			}
 		}
 	}

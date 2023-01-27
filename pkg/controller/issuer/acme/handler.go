@@ -77,12 +77,12 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secretHash)
 		r.support.RememberAltIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secret, acme.Email)
 	}
+	objKey := obj.ClusterKey()
+	eabKeyID, eabHmacKey, err := r.support.LoadEABHmacKey(&objKey, issuerKey, acme)
+	if err != nil {
+		return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading EAB secret failed: %w", err))
+	}
 	if secret != nil {
-		objKey := obj.ClusterKey()
-		eabKeyID, eabHmacKey, err := r.support.LoadEABHmacKey(&objKey, issuerKey, acme)
-		if err != nil {
-			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading EAB secret failed: %w", err))
-		}
 		var raw []byte
 		if core.IsSameExistingRegistration(issuer.Status.ACME, secretHash) {
 			raw = issuer.Status.ACME.Raw
@@ -110,7 +110,7 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		}
 		return r.support.SucceededAndTriggerCertificates(logger, obj, &acmeType, wrapped)
 	} else if acme.AutoRegistration {
-		user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, nil, "", "")
+		user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, nil, eabKeyID, eabHmacKey)
 		if err != nil {
 			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("creating registration user failed: %w", err))
 		}
