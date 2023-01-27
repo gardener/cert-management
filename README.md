@@ -27,6 +27,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Certificate Authority (CA)](#certificate-authority-ca)
   - [Requesting a Certificate](#requesting-a-certificate)
     - [Using `commonName` and optional `dnsNames`](#using-commonname-and-optional-dnsnames)
+    - [Follow CNAME](#follow-cname)
     - [Using a certificate signing request (CSR)](#using-a-certificate-signing-request-csr)
     - [Creating JKS or PKCS#12 keystores](#creating-jks-or-pkcs12-keystores)
   - [Requesting a Certificate for Ingress](#requesting-a-certificate-for-ingress)
@@ -277,6 +278,39 @@ spec:
     name: issuer-staging
 ```
 
+### Follow CNAME
+
+This option is useful if a delegated domain for DNS01 challenge should be used.
+If you don't have permissions for the DNS hosted zone to write the DNS record for the challenge, you can
+ask the domain owner to provide a `CNAME` record to domain name in a writable hosted zone.
+
+Example:
+
+Assume you want to request a certificate for `my-service.example-domain.com`, but you only
+have write permissions for the hosted zone `sandbox.other-domain.com`.
+
+1. The owner of `example-domain.com` adds this `CNAME` DNS record
+
+   `_acme-challenge.my-service.example-domain.com` -> `_acme-challenge.my-service.sandbox.other-domain.com` 
+
+2. Set `followCNAME: true` in the certificate spec
+
+    ```yaml
+    apiVersion: cert.gardener.cloud/v1alpha1
+    kind: Certificate
+    metadata:
+      name: cert-follow
+      namespace: default
+    spec:
+      commonName: my-service.example-domain.com
+      followCNAME: true
+    ```
+
+In this case, the cert-management controller will see the `CNAME` record and write the `TXT` record for the 
+DNS challenge to the target, i.e. `_acme-challenge.my-service.sandbox.other-domain.com`.
+
+If you are using an annotated ingress or service resource, the option is set by the annotation `cert.gardener.cloud/follow-cname=true`.
+
 ### Using a certificate signing request (CSR)
 
 You can provide a complete CSR in PEM format (and encoded as Base64).
@@ -395,6 +429,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
         #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation (if not covered by `*.ingress.<GARDENER-CLUSTER>.<GARDENER-PROJECT>.shoot.example.com)
         #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from spec.tls[].hosts is used as common name
         #cert.gardener.cloud/dnsnames: "" # optional, if not specified the names from spec.tls[].hosts are used
+        #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
     spec:
       tls:
         - hosts:
@@ -443,6 +478,7 @@ metadata:
     #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation
     #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from dns.gardener.cloud/dnsnames is used as common name
     #cert.gardener.cloud/dnsnames: "" # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
+    #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
     dns.gardener.cloud/ttl: "600"
   name: test-service
   namespace: default
