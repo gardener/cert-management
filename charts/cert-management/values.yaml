@@ -9,7 +9,7 @@ replicaCount: 1
 
 image:
   repository: eu.gcr.io/gardener-project/cert-controller-manager
-  tag: v0.10.2-master
+  tag: v0.10.2
   pullPolicy: IfNotPresent
 
 resources:
