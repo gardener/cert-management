@@ -62,6 +62,9 @@ type CertificateSpec struct {
 	// SecretRef is the reference of the secret object to use for storing the certificate.
 	// +optional
 	SecretRef *corev1.SecretReference `json:"secretRef,omitempty"`
+	// SecretLabels are labels to add to the certificate secret.
+	// +optional
+	SecretLabels map[string]string `json:"secretLabels,omitempty"`
 	// Renew triggers a renewal if set to true
 	// +optional
 	Renew *bool `json:"renew,omitempty"`

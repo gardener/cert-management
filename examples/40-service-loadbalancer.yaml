@@ -13,6 +13,7 @@ metadata:
     #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from dns.gardener.cloud/dnsnames is used as common name
     #cert.gardener.cloud/dnsnames: "" # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
     #cert.gardener.cloud/follow-cname: "true" # optional, same as spec.followCNAME in certificates
+    #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
   name: test-service
   namespace: default
 spec:

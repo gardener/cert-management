@@ -311,6 +311,28 @@ DNS challenge to the target, i.e. `_acme-challenge.my-service.sandbox.other-doma
 
 If you are using an annotated ingress or service resource, the option is set by the annotation `cert.gardener.cloud/follow-cname=true`.
 
+### Secret Labels
+
+The `secretLabels` section allows to specify labels to be set for the certificate secret.
+
+Example:
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-secret-labels
+  namespace: default
+spec:
+  commonName: my-service.example-domain.com
+  secretName: my-secret
+  secretLabels:
+    key1: value1
+    key2: value2
+```
+
+In this case the secret `my-secret` will contains the labels.
+
 ### Using a certificate signing request (CSR)
 
 You can provide a complete CSR in PEM format (and encoded as Base64).
@@ -430,6 +452,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
         #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from spec.tls[].hosts is used as common name
         #cert.gardener.cloud/dnsnames: "" # optional, if not specified the names from spec.tls[].hosts are used
         #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
+        #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
     spec:
       tls:
         - hosts:
@@ -479,6 +502,7 @@ metadata:
     #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from dns.gardener.cloud/dnsnames is used as common name
     #cert.gardener.cloud/dnsnames: "" # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
     #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
+    #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
     dns.gardener.cloud/ttl: "600"
   name: test-service
   namespace: default

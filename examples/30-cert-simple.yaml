@@ -21,6 +21,10 @@ spec:
   secretRef:
     name: cert-simple-secret
     namespace: default
+  # optionally set labels for the secret
+  #secretLabels:
+  #  key1: value1
+  #  key2: value2
 
   # If delegated domain for DNS01 challenge should be used. This has only an effect if a CNAME record is set for
   # either '_acme-challenge.cert1.mydomain.com' or '_acme-challenge.cert1.my-other-domain.com'.

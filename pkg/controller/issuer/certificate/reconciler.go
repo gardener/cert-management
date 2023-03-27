@@ -246,6 +246,9 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 				if specHash != storedHash {
 					return r.removeStoredHashKeyAndRepeat(logctx, obj)
 				}
+				if err := r.updateSecretLabels(logctx, obj, secret); err != nil {
+					return r.failed(logctx, obj, api.StateError, err)
+				}
 				return r.checkForRenewAndSucceeded(logctx, obj, secret)
 			} else if storedOldHash := cert.Labels[LabelCertificateOldHashKey]; storedOldHash != "" {
 				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey, false)
@@ -311,7 +314,7 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 
 	now := time.Now()
 	secretRef, err := r.writeCertificateSecret(logctx, result.IssuerInfo, cert.ObjectMeta, result.Certificates, specHash,
-		specSecretRef, &now, spec.Keystores)
+		specSecretRef, &now, spec.Keystores, cert.Spec.SecretLabels)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("writing certificate secret failed: %w", err)), false
 	}
@@ -641,6 +644,22 @@ func (r *certReconciler) deleteSecret(secretRef *corev1.SecretReference) error {
 	return r.certSecretResources.DeleteByName(secret)
 }
 
+func (r *certReconciler) updateSecretLabels(logctx logger.LogContext, obj resources.Object, secret *corev1.Secret) error {
+	crt := obj.Data().(*api.Certificate)
+	modified := false
+	for k, v := range crt.Spec.SecretLabels {
+		if secret.Labels[k] != v {
+			resources.SetLabel(secret, k, v)
+			modified = true
+		}
+	}
+	if modified {
+		_, err := r.certSecretResources.Update(secret)
+		return err
+	}
+	return nil
+}
+
 func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj resources.Object, secret *corev1.Secret) reconcile.Status {
 	crt := obj.Data().(*api.Certificate)
 
@@ -871,12 +890,13 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 
 	var requestedAt *time.Time = ExtractRequestedAtFromAnnotation(secret)
 
-	return r.writeCertificateSecret(logctx, issuerInfo, objectMeta, certificates, specHash, specSecretRef, requestedAt, spec.Keystores)
+	return r.writeCertificateSecret(logctx, issuerInfo, objectMeta, certificates, specHash, specSecretRef, requestedAt, spec.Keystores, spec.SecretLabels)
 }
 
 func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo utils.IssuerInfo, objectMeta metav1.ObjectMeta,
 	certificates *certificate.Resource, specHash string, specSecretRef *corev1.SecretReference,
-	requestedAt *time.Time, keystores *api.CertificateKeystores) (*corev1.SecretReference, error) {
+	requestedAt *time.Time, keystores *api.CertificateKeystores,
+	secretLabels map[string]string) (*corev1.SecretReference, error) {
 	secret := &corev1.Secret{
 		Type: corev1.SecretTypeTLS,
 	}
@@ -890,6 +910,9 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 		}
 	} else {
 		secret.SetGenerateName(objectMeta.GetName() + "-")
+	}
+	for k, v := range secretLabels {
+		resources.SetLabel(secret, k, v)
 	}
 	resources.SetLabel(secret, LabelCertificateNewHashKey, specHash)
 	resources.SetLabel(secret, LabelCertificateKey, "true")

@@ -49,11 +49,16 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 	annotValue, _ := resources.GetAnnotation(obj.Data(), AnnotationPurposeKey)
 	labelValue, _ := resources.GetLabel(obj.Data(), DeprecatedLabelNamePurpose)
 	managed := annotValue == AnnotationPurposeValueManaged || labelValue == DeprecatedLabelValueManaged
+	if !managed {
+		logger.Debug("No annotation " + AnnotationPurposeKey + "=" + AnnotationPurposeValueManaged)
+		return info, nil
+	}
 	tlsDataArray, err := extractTLSData(obj)
 	if err != nil {
 		return info, err
 	}
-	if !managed || tlsDataArray == nil {
+	if tlsDataArray == nil {
+		logger.Debug("No TLS data")
 		return info, nil
 	}
 
@@ -89,7 +94,13 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 		} else {
 			domains = mergeCommonName(cn, tls.Hosts)
 		}
-		info.Certs[tls.SecretName] = source.CertInfo{SecretName: tls.SecretName, Domains: domains, IssuerName: issuer, FollowCNAME: followCNAME}
+		info.Certs[tls.SecretName] = source.CertInfo{
+			SecretName:   tls.SecretName,
+			Domains:      domains,
+			IssuerName:   issuer,
+			FollowCNAME:  followCNAME,
+			SecretLabels: source.ExtractSecretLabels(obj),
+		}
 	}
 	return info, err
 }

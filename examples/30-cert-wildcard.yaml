@@ -15,3 +15,7 @@ spec:
   secretRef:
     name: cert-wildcard-secret
     namespace: default
+  # optionally set labels for the secret
+  #secretLabels:
+  #  key1: value1
+  #  key2: value2

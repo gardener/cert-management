@@ -13,6 +13,7 @@ metadata:
     #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from spec.tls[].hosts is used as common name
     #cert.gardener.cloud/dnsnames: "" # optional, if not specified the names from spec.tls[].hosts are used
     #cert.gardener.cloud/follow-cname: "true" # optional, same as spec.followCNAME in certificates
+    #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
 spec:
   tls:
     - hosts:

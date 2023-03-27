@@ -156,11 +156,19 @@ func (s *DefaultCertSource) NewCertsInfo(logger logger.LogContext, obj resources
 func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (*CertsInfo, error) {
 	info := s.NewCertsInfo(logger, obj)
 	secretName, err := s.handler(logger, obj, current)
+	if err != nil {
+		logger.Debug(err.Error())
+		return nil, nil
+	}
 	a, ok := resources.GetAnnotation(obj.Data(), AnnotCertDNSNames)
-	if err != nil || !ok {
+	if !ok {
 		a, ok = resources.GetAnnotation(obj.Data(), AnnotDnsnames)
-		if err != nil || !ok {
-			return nil, nil
+		if !ok {
+			_, ok = resources.GetAnnotation(obj.Data(), AnnotCommonName)
+			if !ok {
+				logger.Debug("No dnsnames or commonname annotations")
+				return nil, nil
+			}
 		}
 	}
 
@@ -188,7 +196,13 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources
 		followCNAME, _ = strconv.ParseBool(value)
 	}
 
-	info.Certs[secretName] = CertInfo{SecretName: secretName, Domains: annotatedDomains, IssuerName: issuer, FollowCNAME: followCNAME}
+	info.Certs[secretName] = CertInfo{
+		SecretName:   secretName,
+		Domains:      annotatedDomains,
+		IssuerName:   issuer,
+		FollowCNAME:  followCNAME,
+		SecretLabels: ExtractSecretLabels(obj),
+	}
 	return info, nil
 }
 
