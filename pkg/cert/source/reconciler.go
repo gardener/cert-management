@@ -8,6 +8,7 @@ package source
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -326,6 +327,7 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 	if info.FollowCNAME {
 		cert.Spec.FollowCNAME = &info.FollowCNAME
 	}
+	cert.Spec.SecretLabels = info.SecretLabels
 
 	e, _ := r.SlaveResoures()[0].Wrap(cert)
 
@@ -390,6 +392,10 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 				spec.IssuerRef = nil
 				mod.Modify(true)
 			}
+		}
+		if !reflect.DeepEqual(spec.SecretLabels, info.SecretLabels) {
+			spec.SecretLabels = info.SecretLabels
+			mod.Modify(true)
 		}
 		if mod.IsModified() {
 			logger.Infof("update certificate object %s", obj.ObjectName())

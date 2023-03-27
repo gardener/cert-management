@@ -21,7 +21,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
   name: certificaterevocations.cert.gardener.cloud
 spec:
@@ -236,6 +236,7 @@ spec:
                       required:
                       - serialNumber
                       type: object
+                      x-kubernetes-map-type: atomic
                     type: array
                   processing:
                     description: Processing is the list of certificate secrets to
@@ -258,6 +259,7 @@ spec:
                       required:
                       - serialNumber
                       type: object
+                      x-kubernetes-map-type: atomic
                     type: array
                   revoked:
                     description: Revoked is the list of certificate secrets successfully
@@ -280,6 +282,7 @@ spec:
                       required:
                       - serialNumber
                       type: object
+                      x-kubernetes-map-type: atomic
                     type: array
                 type: object
               state:
@@ -295,12 +298,6 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
   `
 	utils.Must(registry.RegisterCRD(data))
 	data = `
@@ -309,7 +306,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
   name: certificates.cert.gardener.cloud
 spec:
@@ -481,6 +478,11 @@ spec:
               renew:
                 description: Renew triggers a renewal if set to true
                 type: boolean
+              secretLabels:
+                additionalProperties:
+                  type: string
+                description: SecretLabels are labels to add to the certificate secret.
+                type: object
               secretName:
                 description: SecretName is the name of the secret object to use for
                   storing the certificate.
@@ -498,6 +500,7 @@ spec:
                       name must be unique.
                     type: string
                 type: object
+                x-kubernetes-map-type: atomic
             type: object
           status:
             description: CertificateStatus is the status of the certificate request.
@@ -533,8 +536,8 @@ spec:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
                     use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{ // Represents the observations of a foo's
-                    current state. // Known .status.conditions.type are: \"Available\",
+                    \n type FooStatus struct{ // Represents the observations of a
+                    foo's current state. // Known .status.conditions.type are: \"Available\",
                     \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
                     // +listType=map // +listMapKey=type Conditions []metav1.Condition
                     ` + "`" + `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
@@ -647,12 +650,6 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
   `
 	utils.Must(registry.RegisterCRD(data))
 	data = `
@@ -661,7 +658,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
   name: issuers.cert.gardener.cloud
 spec:
@@ -771,6 +768,7 @@ spec:
                               the secret name must be unique.
                             type: string
                         type: object
+                        x-kubernetes-map-type: atomic
                     required:
                     - keyID
                     - keySecretRef
@@ -795,6 +793,7 @@ spec:
                           secret name must be unique.
                         type: string
                     type: object
+                    x-kubernetes-map-type: atomic
                   server:
                     description: Server is the URL of the ACME server.
                     type: string
@@ -822,6 +821,7 @@ spec:
                           secret name must be unique.
                         type: string
                     type: object
+                    x-kubernetes-map-type: atomic
                 type: object
               requestsPerDayQuota:
                 description: RequestsPerDayQuota is the maximum number of certificate
@@ -868,12 +868,6 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
   `
 	utils.Must(registry.RegisterCRD(data))
 }

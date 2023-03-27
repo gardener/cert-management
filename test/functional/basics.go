@@ -116,6 +116,9 @@ spec:
   issuerRef:
     name: {{.Name}}
   secretName: cert3-secret
+  secretLabels:
+    foo: bar
+    some.gardener.cloud/thing: "true"
 `
 
 var revoke2Template = `
@@ -273,6 +276,13 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				Ω(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
 				Ω(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
 				Ω(secret.Data[legobridge.PKCS12SecretKey]).ShouldNot(BeNil())
+			})
+
+			By("check secret labels in cert3", func() {
+				secret, err := u.KubectlGetSecret("cert3-secret")
+				Ω(err).Should(BeNil())
+				Ω(secret.Labels["foo"]).Should(Equal("bar"))
+				Ω(secret.Labels["some.gardener.cloud/thing"]).Should(Equal("true"))
 			})
 
 			By("revoking without renewal", func() {

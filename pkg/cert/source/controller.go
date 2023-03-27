@@ -39,6 +39,9 @@ const (
 	AnnotCertDNSNames = "cert.gardener.cloud/dnsnames"
 	// AnnotFollowCNAME is the annotation for allowing delegated domains for DNS01 challenge
 	AnnotFollowCNAME = "cert.gardener.cloud/follow-cname"
+	// AnnotCertSecretLabels is the annotation for setting labels for the secret resource
+	// comma-separated format "key1=value1,key2=value2"
+	AnnotCertSecretLabels = "cert.gardener.cloud/secret-labels"
 
 	// OptClass is the cert-class command line option
 	OptClass = "cert-class"
