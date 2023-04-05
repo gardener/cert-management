@@ -26,6 +26,9 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "cert-management.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+      {{- with .Values.podLabels }}
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
