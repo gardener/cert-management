@@ -389,6 +389,7 @@ func updateTypeStatus(mod *resources.ModificationState, status **runtime.RawExte
 func (s *Support) AddCertificate(cert *api.Certificate) {
 	certObjName, issuerKey := s.calcAssocObjectNames(cert)
 	s.state.AddCertAssoc(issuerKey, certObjName)
+	s.reportCertificateExpires(cert.Namespace, cert.Name, cert.Status.ExpirationDate)
 	s.reportCertificateMetrics(issuerKey)
 }
 
@@ -397,6 +398,7 @@ func (s *Support) RemoveCertificate(certObjName resources.ObjectName) {
 	s.state.RemoveCertAssoc(certObjName)
 	s.ClearCertRenewalOverdue(certObjName)
 	s.ClearCertRevoked(certObjName)
+	s.reportCertificateExpiresRemoved(certObjName.Namespace(), certObjName.Name())
 	s.reportAllCertificateMetrics()
 }
 
@@ -409,6 +411,20 @@ func (s *Support) reportAllCertificateMetrics() {
 	for _, key := range s.state.KnownIssuers() {
 		s.reportCertificateMetrics(key)
 	}
+}
+
+func (s *Support) reportCertificateExpires(namespace, name string, expires *string) {
+	var seconds int64 = 0
+	if expires != nil {
+		if expireTime, err := time.Parse(time.RFC3339, *expires); err == nil {
+			seconds = expireTime.Unix()
+		}
+	}
+	metrics.ReportCertObjectExpire(namespace, name, seconds)
+}
+
+func (s *Support) reportCertificateExpiresRemoved(namespace, name string) {
+	metrics.DeleteObjectEntriesExpire(namespace, name)
 }
 
 func (s *Support) calcAssocObjectNames(cert *api.Certificate) (resources.ObjectName, utils.IssuerKey) {

@@ -20,6 +20,7 @@ func init() {
 	prometheus.MustRegister(ACMETotalOrders)
 	prometheus.MustRegister(ACMEActiveDNSChallenges)
 	prometheus.MustRegister(CertEntries)
+	prometheus.MustRegister(CertObjectExpire)
 	prometheus.MustRegister(OverdueCertificates)
 	prometheus.MustRegister(RevokedCertificates)
 	prometheus.MustRegister(CertificateSecrets)
@@ -62,6 +63,15 @@ var (
 			Help: "Total number of certificate objects per issuer",
 		},
 		[]string{"issuertype", "issuer"},
+	)
+
+	// CertObjectExpire is the cert_management_cert_entries_expire gauge.
+	CertObjectExpire = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cert_management_cert_object_expire",
+			Help: "Expire date as Unix time (the number of seconds elapsed since January 1, 1970 UTC) for each certificate object",
+		},
+		[]string{"namespace", "name"},
 	)
 
 	// OverdueCertificates is the cert_management_overdue_renewal_certificates gauge.
@@ -137,4 +147,14 @@ func ReportRevokedCerts(count int) {
 // ReportCertificateSecrets sets the CertificateSecrets gauge
 func ReportCertificateSecrets(classification string, count int) {
 	CertificateSecrets.WithLabelValues(classification).Set(float64(count))
+}
+
+// ReportCertObjectExpire sets a CertObjectExpire gauge entry.
+func ReportCertObjectExpire(namespace, name string, unixSeconds int64) {
+	CertObjectExpire.WithLabelValues(namespace, name).Set(float64(unixSeconds))
+}
+
+// DeleteObjectEntriesExpire deletes a CertObjectExpire gauge entry.
+func DeleteObjectEntriesExpire(namespace, name string) {
+	CertObjectExpire.DeleteLabelValues(namespace, name)
 }
