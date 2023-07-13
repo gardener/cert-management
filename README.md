@@ -453,6 +453,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
         #cert.gardener.cloud/dnsnames: "" # optional, if not specified the names from spec.tls[].hosts are used
         #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
         #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
+        #cert.gardener.cloud/issuer: issuer-name # optional to specify custom issuer (use namespace/name for shoot issuers)
     spec:
       tls:
         - hosts:
@@ -503,6 +504,7 @@ metadata:
     #cert.gardener.cloud/dnsnames: "" # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
     #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
     #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
+    #cert.gardener.cloud/issuer: issuer-name # optional to specify custom issuer (use namespace/name for shoot issuers)
     dns.gardener.cloud/ttl: "600"
   name: test-service
   namespace: default
