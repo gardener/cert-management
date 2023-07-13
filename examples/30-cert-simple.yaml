@@ -17,6 +17,8 @@ spec:
   # if issuer is not specified, the default issuer is used
   issuerRef:
     name: issuer-staging
+    # for shoot issuers, the namespace must be specified
+    #namespace: my-ns
   # optionally specify secret to store certificate
   secretRef:
     name: cert-simple-secret

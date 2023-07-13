@@ -316,7 +316,12 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 		cert.Spec.DNSNames = info.Domains[1:]
 	}
 	if info.IssuerName != nil {
-		cert.Spec.IssuerRef = &api.IssuerRef{Name: *info.IssuerName}
+		parts := strings.SplitN(*info.IssuerName, "/", 2)
+		if len(parts) == 2 {
+			cert.Spec.IssuerRef = &api.IssuerRef{Namespace: parts[0], Name: parts[1]}
+		} else {
+			cert.Spec.IssuerRef = &api.IssuerRef{Name: *info.IssuerName}
+		}
 	}
 	cert.Spec.SecretName = &info.SecretName
 	if r.namespace == "" {
@@ -383,8 +388,15 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		mod.AssureStringPtrPtr(&spec.CommonName, cn)
 		certutils.AssureStringArray(mod, &spec.DNSNames, dnsNames)
 		if info.IssuerName != nil {
-			if spec.IssuerRef == nil || spec.IssuerRef.Name != *info.IssuerName {
-				spec.IssuerRef = &api.IssuerRef{Name: *info.IssuerName}
+			parts := strings.SplitN(*info.IssuerName, "/", 2)
+			var issuerRef *api.IssuerRef
+			if len(parts) == 2 {
+				issuerRef = &api.IssuerRef{Namespace: parts[0], Name: parts[1]}
+			} else {
+				issuerRef = &api.IssuerRef{Name: *info.IssuerName}
+			}
+			if spec.IssuerRef == nil || spec.IssuerRef.Name != issuerRef.Name || spec.IssuerRef.Namespace != issuerRef.Namespace {
+				spec.IssuerRef = issuerRef
 				mod.Modify(true)
 			}
 		} else {

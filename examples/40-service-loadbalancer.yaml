@@ -14,6 +14,7 @@ metadata:
     #cert.gardener.cloud/dnsnames: "" # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
     #cert.gardener.cloud/follow-cname: "true" # optional, same as spec.followCNAME in certificates
     #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
+    #cert.gardener.cloud/issuer: issuer-name # optional to specify custom issuer (use namespace/name for shoot issuers)
   name: test-service
   namespace: default
 spec:
