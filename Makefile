@@ -52,7 +52,7 @@ test:
 generate:
 	@./hack/generate-code
 	@GO111MODULE=on go generate ./pkg/apis/cert/...
-	cp ./pkg/apis/cert/crds/*.yaml ./charts/cert-management/templates/
+	@./hack/copy-crds.sh
 
 .PHONY: docker-images
 docker-images:
