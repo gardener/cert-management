@@ -4,6 +4,7 @@
 
 REGISTRY              := eu.gcr.io/gardener-project
 EXECUTABLE            := cert-controller-manager
+REPO_ROOT             := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT               := github.com/gardener/cert-management
 CERT_IMAGE_REPOSITORY := $(REGISTRY)/cert-controller-manager
 VERSION               := $(shell cat VERSION)
@@ -14,6 +15,7 @@ IMAGE_TAG             := $(VERSION)
 revendor:
 	@GO111MODULE=on go mod tidy
 	@GO111MODULE=on go mod vendor
+	@chmod +x $(REPO_ROOT)/vendor/github.com/gardener/controller-manager-library/hack/run-in.sh
 
 .PHONY: check
 check:
