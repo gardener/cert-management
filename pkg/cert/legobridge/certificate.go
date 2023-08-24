@@ -57,6 +57,8 @@ type ObtainInput struct {
 	RenewCert *certificate.Resource
 	// AlwaysDeactivateAuthorizations deactivates authorizations to avoid their caching
 	AlwaysDeactivateAuthorizations bool
+	// PreferredChain
+	PreferredChain string
 }
 
 // DNSControllerSettings are the settings for the DNSController.
@@ -124,16 +126,17 @@ func NewObtainer() Obtainer {
 	return &obtainer{pendingDomains: map[string]time.Time{}}
 }
 
-func obtainForDomains(client *lego.Client, domains []string, deactivateAuthz bool) (*certificate.Resource, error) {
+func obtainForDomains(client *lego.Client, domains []string, deactivateAuthz bool, preferredChain string) (*certificate.Resource, error) {
 	request := certificate.ObtainRequest{
 		Domains:                        domains,
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: deactivateAuthz,
+		PreferredChain:                 preferredChain,
 	}
 	return client.Certificate.Obtain(request)
 }
 
-func obtainForCSR(client *lego.Client, csr []byte, deactivateAuthz bool) (*certificate.Resource, error) {
+func obtainForCSR(client *lego.Client, csr []byte, deactivateAuthz bool, preferredChain string) (*certificate.Resource, error) {
 	cert, err := extractCertificateRequest(csr)
 	if err != nil {
 		return nil, err
@@ -141,7 +144,7 @@ func obtainForCSR(client *lego.Client, csr []byte, deactivateAuthz bool) (*certi
 	return client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
 		CSR:                            cert,
 		Bundle:                         true,
-		PreferredChain:                 "",
+		PreferredChain:                 preferredChain,
 		AlwaysDeactivateAuthorizations: deactivateAuthz,
 	})
 }
@@ -240,9 +243,9 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 		} else {
 			if input.CSR == nil {
 				domains := append([]string{*input.CommonName}, input.DNSNames...)
-				certificates, err = obtainForDomains(client, domains, input.AlwaysDeactivateAuthorizations)
+				certificates, err = obtainForDomains(client, domains, input.AlwaysDeactivateAuthorizations, input.PreferredChain)
 			} else {
-				certificates, err = obtainForCSR(client, input.CSR, input.AlwaysDeactivateAuthorizations)
+				certificates, err = obtainForCSR(client, input.CSR, input.AlwaysDeactivateAuthorizations, input.PreferredChain)
 			}
 		}
 		count := provider.GetChallengesCount()

@@ -173,6 +173,12 @@ spec:
                     - passwordSecretRef
                     type: object
                 type: object
+              preferredChain:
+                description: 'PreferredChain allows to specify the preferred certificate
+                  chain: if the CA offers multiple certificate chains, prefer the
+                  chain with an issuer matching this Subject Common Name. If no match,
+                  the default offered chain will be used.'
+                type: string
               renew:
                 description: Renew triggers a renewal if set to true
                 type: boolean

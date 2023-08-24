@@ -114,7 +114,7 @@ func (c *Challenge) Solve(authz acme.Authorization) error {
 		return err
 	}
 
-	fqdn, value := GetRecord(authz.Identifier.Value, keyAuth)
+	info := GetChallengeInfo(authz.Identifier.Value, keyAuth)
 
 	var timeout, interval time.Duration
 	switch provider := c.provider.(type) {
@@ -129,7 +129,7 @@ func (c *Challenge) Solve(authz acme.Authorization) error {
 	time.Sleep(interval)
 
 	err = wait.For("propagation", timeout, interval, func() (bool, error) {
-		stop, errP := c.preCheck.call(domain, fqdn, value)
+		stop, errP := c.preCheck.call(domain, info.EffectiveFQDN, info.Value)
 		if !stop || errP != nil {
 			log.Infof("[%s] acme: Waiting for DNS record propagation.", domain)
 		}
@@ -172,19 +172,67 @@ type sequential interface {
 }
 
 // GetRecord returns a DNS record which will fulfill the `dns-01` challenge.
+// Deprecated: use GetChallengeInfo instead.
 func GetRecord(domain, keyAuth string) (fqdn, value string) {
+	info := GetChallengeInfo(domain, keyAuth)
+
+	return info.EffectiveFQDN, info.Value
+}
+
+// ChallengeInfo contains the information use to create the TXT record.
+type ChallengeInfo struct {
+	// FQDN is the full-qualified challenge domain (i.e. `_acme-challenge.[domain].`)
+	FQDN string
+
+	// EffectiveFQDN contains the resulting FQDN after the CNAMEs resolutions.
+	EffectiveFQDN string
+
+	// Value contains the value for the TXT record.
+	Value string
+}
+
+// GetChallengeInfo returns information used to create a DNS record which will fulfill the `dns-01` challenge.
+func GetChallengeInfo(domain, keyAuth string) ChallengeInfo {
 	keyAuthShaBytes := sha256.Sum256([]byte(keyAuth))
 	// base64URL encoding without padding
-	value = base64.RawURLEncoding.EncodeToString(keyAuthShaBytes[:sha256.Size])
-	fqdn = fmt.Sprintf("_acme-challenge.%s.", domain)
+	value := base64.RawURLEncoding.EncodeToString(keyAuthShaBytes[:sha256.Size])
 
-	if ok, _ := strconv.ParseBool(os.Getenv("LEGO_EXPERIMENTAL_CNAME_SUPPORT")); ok {
-		r, err := dnsQuery(fqdn, dns.TypeCNAME, recursiveNameservers, true)
-		// Check if the domain has CNAME then return that
-		if err == nil && r.Rcode == dns.RcodeSuccess {
-			fqdn = updateDomainWithCName(r, fqdn)
-		}
+	ok, _ := strconv.ParseBool(os.Getenv("LEGO_DISABLE_CNAME_SUPPORT"))
+
+	return ChallengeInfo{
+		Value:         value,
+		FQDN:          getChallengeFQDN(domain, false),
+		EffectiveFQDN: getChallengeFQDN(domain, !ok),
+	}
+}
+
+func getChallengeFQDN(domain string, followCNAME bool) string {
+	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
+
+	if !followCNAME {
+		return fqdn
 	}
 
-	return
+	// recursion counter so it doesn't spin out of control
+	for limit := 0; limit < 50; limit++ {
+		// Keep following CNAMEs
+		r, err := dnsQuery(fqdn, dns.TypeCNAME, recursiveNameservers, true)
+
+		if err != nil || r.Rcode != dns.RcodeSuccess {
+			// No more CNAME records to follow, exit
+			break
+		}
+
+		// Check if the domain has CNAME then use that
+		cname := updateDomainWithCName(r, fqdn)
+		if cname == fqdn {
+			break
+		}
+
+		log.Infof("Found CNAME entry for %q: %q", fqdn, cname)
+
+		fqdn = cname
+	}
+
+	return fqdn
 }

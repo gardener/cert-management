@@ -77,6 +77,9 @@ type CertificateSpec struct {
 	// Keystores configures additional keystore output formats stored in the `secretName`/`secretRef` Secret resource.
 	// +optional
 	Keystores *CertificateKeystores `json:"keystores,omitempty"`
+	// PreferredChain allows to specify the preferred certificate chain: if the CA offers multiple certificate chains, prefer the chain with an issuer matching this Subject Common Name. If no match, the default offered chain will be used.
+	// +optional
+	PreferredChain *string `json:"preferredChain,omitempty"`
 }
 
 // IssuerRef is the reference of the issuer by name.

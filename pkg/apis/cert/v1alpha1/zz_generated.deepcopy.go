@@ -419,6 +419,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = new(CertificateKeystores)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.PreferredChain != nil {
+		in, out := &in.PreferredChain, &out.PreferredChain
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

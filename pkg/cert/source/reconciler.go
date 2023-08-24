@@ -333,6 +333,9 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 		cert.Spec.FollowCNAME = &info.FollowCNAME
 	}
 	cert.Spec.SecretLabels = info.SecretLabels
+	if info.PreferredChain != "" {
+		cert.Spec.PreferredChain = &info.PreferredChain
+	}
 
 	e, _ := r.SlaveResoures()[0].Wrap(cert)
 
@@ -407,6 +410,27 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		}
 		if !reflect.DeepEqual(spec.SecretLabels, info.SecretLabels) {
 			spec.SecretLabels = info.SecretLabels
+			mod.Modify(true)
+		}
+		oldFollow := spec.FollowCNAME != nil && *spec.FollowCNAME
+		if info.FollowCNAME != oldFollow {
+			if info.FollowCNAME {
+				spec.FollowCNAME = &info.FollowCNAME
+			} else {
+				spec.FollowCNAME = nil
+			}
+			mod.Modify(true)
+		}
+		oldPreferredChain := ""
+		if spec.PreferredChain != nil {
+			oldPreferredChain = *spec.PreferredChain
+		}
+		if info.PreferredChain != oldPreferredChain {
+			if info.PreferredChain != "" {
+				spec.PreferredChain = &info.PreferredChain
+			} else {
+				spec.PreferredChain = nil
+			}
 			mod.Modify(true)
 		}
 		if mod.IsModified() {
