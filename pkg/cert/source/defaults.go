@@ -195,13 +195,15 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources
 	if value, ok := resources.GetAnnotation(obj.Data(), AnnotFollowCNAME); ok {
 		followCNAME, _ = strconv.ParseBool(value)
 	}
+	preferredChain, _ := resources.GetAnnotation(obj.Data(), AnnotPreferredChain)
 
 	info.Certs[secretName] = CertInfo{
-		SecretName:   secretName,
-		Domains:      annotatedDomains,
-		IssuerName:   issuer,
-		FollowCNAME:  followCNAME,
-		SecretLabels: ExtractSecretLabels(obj),
+		SecretName:     secretName,
+		Domains:        annotatedDomains,
+		IssuerName:     issuer,
+		FollowCNAME:    followCNAME,
+		SecretLabels:   ExtractSecretLabels(obj),
+		PreferredChain: preferredChain,
 	}
 	return info, nil
 }

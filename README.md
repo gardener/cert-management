@@ -28,6 +28,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Requesting a Certificate](#requesting-a-certificate)
     - [Using `commonName` and optional `dnsNames`](#using-commonname-and-optional-dnsnames)
     - [Follow CNAME](#follow-cname)
+    - [Preferred Chain](#preferred-chain)
     - [Using a certificate signing request (CSR)](#using-a-certificate-signing-request-csr)
     - [Creating JKS or PKCS#12 keystores](#creating-jks-or-pkcs12-keystores)
   - [Requesting a Certificate for Ingress](#requesting-a-certificate-for-ingress)
@@ -311,6 +312,25 @@ DNS challenge to the target, i.e. `_acme-challenge.my-service.sandbox.other-doma
 
 If you are using an annotated ingress or service resource, the option is set by the annotation `cert.gardener.cloud/follow-cname=true`.
 
+### Preferred Chain
+
+If the CA offers multiple certificate chains, you can select the chain with the optional `preferredChain` field.
+The value is the Subject Common Name of the issuer. If no match, the default offered chain will be used.
+Please consult the documentation of the ACME server about offered certificate chains.
+
+Example:
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-follow
+  namespace: default
+spec:
+  commonName: my-service.example-domain.com
+  preferredChain: "ISRG Root X1"
+```
+
 ### Secret Labels
 
 The `secretLabels` section allows to specify labels to be set for the certificate secret.
@@ -448,12 +468,13 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
       annotations:
         # Let Gardener manage certificates for this Ingress.
         cert.gardener.cloud/purpose: managed
-        #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation (if not covered by `*.ingress.<GARDENER-CLUSTER>.<GARDENER-PROJECT>.shoot.example.com)
-        #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from spec.tls[].hosts is used as common name
-        #cert.gardener.cloud/dnsnames: "" # optional, if not specified the names from spec.tls[].hosts are used
-        #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
+        #dns.gardener.cloud/class: garden                             # needed on Gardener shoot clusters for managed DNS record creation (if not covered by `*.ingress.<GARDENER-CLUSTER>.<GARDENER-PROJECT>.shoot.example.com)
+        #cert.gardener.cloud/commonname: "*.demo.mydomain.com"        # optional, if not specified the first name from spec.tls[].hosts is used as common name
+        #cert.gardener.cloud/dnsnames: ""                             # optional, if not specified the names from spec.tls[].hosts are used
+        #cert.gardener.cloud/follow-cname: "true"                     # optional, to activate CNAME following for the DNS challenge
         #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
-        #cert.gardener.cloud/issuer: issuer-name # optional to specify custom issuer (use namespace/name for shoot issuers)
+        #cert.gardener.cloud/issuer: issuer-name                      # optional to specify custom issuer (use namespace/name for shoot issuers)
+        #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     spec:
       tls:
         - hosts:
@@ -499,12 +520,13 @@ metadata:
   annotations:
     cert.gardener.cloud/secretname: test-service-secret
     dns.gardener.cloud/dnsnames: test-service.demo.mydomain.com
-    #dns.gardener.cloud/class: garden # needed on Gardener shoot clusters for managed DNS record creation
-    #cert.gardener.cloud/commonname: "*.demo.mydomain.com" # optional, if not specified the first name from dns.gardener.cloud/dnsnames is used as common name
-    #cert.gardener.cloud/dnsnames: "" # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
-    #cert.gardener.cloud/follow-cname: "true" # optional, to activate CNAME following for the DNS challenge
+    #dns.gardener.cloud/class: garden                             # needed on Gardener shoot clusters for managed DNS record creation
+    #cert.gardener.cloud/commonname: "*.demo.mydomain.com"        # optional, if not specified the first name from dns.gardener.cloud/dnsnames is used as common name
+    #cert.gardener.cloud/dnsnames: ""                             # optional, if specified overrides dns.gardener.cloud/dnsnames annotation for certificate names
+    #cert.gardener.cloud/follow-cname: "true"                     # optional, to activate CNAME following for the DNS challenge
     #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
-    #cert.gardener.cloud/issuer: issuer-name # optional to specify custom issuer (use namespace/name for shoot issuers)
+    #cert.gardener.cloud/issuer: issuer-name                      # optional to specify custom issuer (use namespace/name for shoot issuers)
+    #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     dns.gardener.cloud/ttl: "600"
   name: test-service
   namespace: default

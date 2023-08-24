@@ -42,6 +42,8 @@ const (
 	// AnnotCertSecretLabels is the annotation for setting labels for the secret resource
 	// comma-separated format "key1=value1,key2=value2"
 	AnnotCertSecretLabels = "cert.gardener.cloud/secret-labels"
+	// AnnotPreferredChain is the annotation for the certificate preferred chain
+	AnnotPreferredChain = "cert.gardener.cloud/preferred-chain"
 
 	// OptClass is the cert-class command line option
 	OptClass = "cert-class"

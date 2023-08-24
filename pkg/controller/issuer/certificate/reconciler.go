@@ -473,10 +473,14 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	if r.dnsClass != nil {
 		targetDNSClass = *r.dnsClass
 	}
+	preferredChain := ""
+	if cert.Spec.PreferredChain != nil {
+		preferredChain = *cert.Spec.PreferredChain
+	}
 	input := legobridge.ObtainInput{User: reguser, DNSSettings: dnsSettings, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
 		TargetClass: targetDNSClass, Callback: callback, RequestName: objectName, RenewCert: renewCert,
-		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
+		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations, PreferredChain: preferredChain,
 	}
 
 	err = r.obtainer.Obtain(input)

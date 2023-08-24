@@ -20,11 +20,12 @@ import (
 
 // CertInfo contains basic certificate data.
 type CertInfo struct {
-	SecretName   string
-	Domains      []string
-	IssuerName   *string
-	FollowCNAME  bool
-	SecretLabels map[string]string
+	SecretName     string
+	Domains        []string
+	IssuerName     *string
+	FollowCNAME    bool
+	SecretLabels   map[string]string
+	PreferredChain string
 }
 
 // CertsInfo contains a map of CertInfo.

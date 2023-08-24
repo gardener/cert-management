@@ -67,6 +67,8 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 		followCNAME, _ = strconv.ParseBool(value)
 	}
 
+	preferredChain, _ := resources.GetAnnotation(obj.Data(), source.AnnotPreferredChain)
+
 	cn, _ := resources.GetAnnotation(obj.Data(), source.AnnotCommonName)
 	cn = strings.TrimSpace(cn)
 	var issuer *string
@@ -95,11 +97,12 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 			domains = mergeCommonName(cn, tls.Hosts)
 		}
 		info.Certs[tls.SecretName] = source.CertInfo{
-			SecretName:   tls.SecretName,
-			Domains:      domains,
-			IssuerName:   issuer,
-			FollowCNAME:  followCNAME,
-			SecretLabels: source.ExtractSecretLabels(obj),
+			SecretName:     tls.SecretName,
+			Domains:        domains,
+			IssuerName:     issuer,
+			FollowCNAME:    followCNAME,
+			SecretLabels:   source.ExtractSecretLabels(obj),
+			PreferredChain: preferredChain,
 		}
 	}
 	return info, err
