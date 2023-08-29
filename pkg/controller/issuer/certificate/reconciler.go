@@ -240,7 +240,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 			}
 			// ignore if SecretRef is specified but not existing
 			// will later be used to store the secret
-		} else {
+		} else if x509cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data); err == nil {
 			if storedHash := cert.Labels[LabelCertificateNewHashKey]; storedHash != "" {
 				specHash := r.buildSpecNewHash(&cert.Spec, issuerKey)
 				if specHash != storedHash {
@@ -268,8 +268,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 			}
 
 			// corner case: existing secret but no stored hash, check if renewal is overdue
-			x509cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data)
-			if err == nil && r.isRenewalOverdue(x509cert) {
+			if r.isRenewalOverdue(x509cert) {
 				r.support.SetCertRenewalOverdue(obj.ObjectName())
 			}
 		}
