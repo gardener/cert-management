@@ -119,6 +119,26 @@ spec:
   secretLabels:
     foo: bar
     some.gardener.cloud/thing: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cert4-secret
+  namespace: {{.Namespace}}
+type: Opaque
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert4
+  namespace: {{.Namespace}}
+  labels:
+    cert.gardener.cloud/hash: a74c0e0a617fd1499cddac5136b8e09e3ca30edd4f173f7e73d8910b
+spec:
+  commonName: cert4.{{.Domain}}
+  secretName: cert4-secret
+  issuerRef:
+    name: {{.Name}}
 `
 
 var revoke2Template = `
@@ -283,6 +303,11 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				Ω(err).Should(BeNil())
 				Ω(secret.Labels["foo"]).Should(Equal("bar"))
 				Ω(secret.Labels["some.gardener.cloud/thing"]).Should(Equal("true"))
+			})
+
+			By("check starting from invalid state in cert4", func() {
+				err = u.AwaitCertReady("cert4")
+				Ω(err).Should(BeNil())
 			})
 
 			By("revoking without renewal", func() {
