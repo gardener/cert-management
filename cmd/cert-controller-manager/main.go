@@ -74,5 +74,7 @@ func main() {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+	// set LEGO_DISABLE_CNAME_SUPPORT=true as we have our own logic for FollowCNAME
+	os.Setenv("LEGO_DISABLE_CNAME_SUPPORT", "true")
 	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing", migrateExtensionsIngress)
 }
