@@ -115,7 +115,9 @@ func retryOnUpdateError(fn func() error) error {
 func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
 	metrics.AddActiveACMEDNSChallenge(p.issuerKey)
 	atomic.AddInt32(&p.count, 1)
-	fqdn, value := dns01.GetRecord(domain, keyAuth)
+	info := dns01.GetChallengeInfo(domain, keyAuth)
+	value := info.Value
+	fqdn := info.FQDN
 
 	if p.settings.FollowCNAME {
 		var err error
