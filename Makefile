@@ -16,6 +16,7 @@ revendor:
 	@GO111MODULE=on go mod tidy
 	@GO111MODULE=on go mod vendor
 	@chmod +x $(REPO_ROOT)/vendor/github.com/gardener/controller-manager-library/hack/run-in.sh
+	@chmod +x $(REPO_ROOT)/vendor/k8s.io/code-generator/*.sh
 
 .PHONY: check
 check:
@@ -53,6 +54,7 @@ generate:
 	@./hack/generate-code
 	@GO111MODULE=on go generate ./pkg/apis/cert/...
 	@./hack/copy-crds.sh
+	@go fmt ./pkg/...
 
 .PHONY: docker-images
 docker-images:

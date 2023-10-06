@@ -14,7 +14,6 @@ import (
 	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -26,9 +25,9 @@ type FakeCertificates struct {
 	ns   string
 }
 
-var certificatesResource = schema.GroupVersionResource{Group: "cert.gardener.cloud", Version: "v1alpha1", Resource: "certificates"}
+var certificatesResource = v1alpha1.SchemeGroupVersion.WithResource("certificates")
 
-var certificatesKind = schema.GroupVersionKind{Group: "cert.gardener.cloud", Version: "v1alpha1", Kind: "Certificate"}
+var certificatesKind = v1alpha1.SchemeGroupVersion.WithKind("Certificate")
 
 // Get takes name of the certificate, and returns the corresponding certificate object, and an error if there is any.
 func (c *FakeCertificates) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Certificate, err error) {
