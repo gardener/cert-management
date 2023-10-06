@@ -14,7 +14,6 @@ import (
 	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -26,9 +25,9 @@ type FakeIssuers struct {
 	ns   string
 }
 
-var issuersResource = schema.GroupVersionResource{Group: "cert.gardener.cloud", Version: "v1alpha1", Resource: "issuers"}
+var issuersResource = v1alpha1.SchemeGroupVersion.WithResource("issuers")
 
-var issuersKind = schema.GroupVersionKind{Group: "cert.gardener.cloud", Version: "v1alpha1", Kind: "Issuer"}
+var issuersKind = v1alpha1.SchemeGroupVersion.WithKind("Issuer")
 
 // Get takes name of the issuer, and returns the corresponding issuer object, and an error if there is any.
 func (c *FakeIssuers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Issuer, err error) {
