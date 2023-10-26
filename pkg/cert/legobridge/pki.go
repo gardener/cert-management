@@ -33,8 +33,6 @@ var (
 )
 
 const (
-	// DefaultSigAlgo is the default Signature Algorithm (letsencrypt default).
-	DefaultSigAlgo x509.SignatureAlgorithm = x509.SHA256WithRSA
 	// DefaultPubKeyAlgo is the default Public Key Algorithm (letsencrypt default).
 	DefaultPubKeyAlgo x509.PublicKeyAlgorithm = x509.RSA
 	// DefaultCertKeyUsage is the default Key Usage (letsencrypt default).
@@ -389,10 +387,13 @@ func bytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
 	if err == nil {
 		return key, nil
 	}
-
 	key2, err2 := x509.ParsePKCS1PrivateKey(block.Bytes)
-	if err2 != nil {
-		return nil, fmt.Errorf("decoding private key failed with %s (ec) and %s (rsa)", err, err2)
+	if err2 == nil {
+		return key2, nil
 	}
-	return key2, nil
+	key3, err3 := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err3 != nil {
+		return nil, fmt.Errorf("decoding private key failed with %s (ec) and %s (rsa PKCS1) and %s (PKCS8)", err, err2, err3)
+	}
+	return key3, nil
 }

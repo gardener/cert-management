@@ -52,10 +52,10 @@ prepareParts()
     # extract certificate from certificate secret
     kubectl -n $NS get secret $(kubectl -n $NS get certificates.cert.gardener.cloud $CERTNAME  -o=jsonpath='{.spec.secretRef.name}') -o=jsonpath='{.data.tls\.crt}' | base64 -d > "$X509CERT"
 
+    CSPLIT=gcsplit # use gnu csplit on mac (install with "brew install coreutils")
+    which $CSPLIT || export CSPLIT=csplit
     # split certificate and chain
-
-    #cat $X509CERT | awk -v PREFIX="$PREFIX" 'split_after == 1 {n++;split_after=0} /-----END CERTIFICATE-----/ {split_after=1} {print >  (PREFIX "cert" n ".pem")}'
-    csplit -s -z -f "$PREFIX/cert-" -b "%d.pem" $X509CERT '/-----BEGIN CERTIFICATE-----/' '{*}'
+    $CSPLIT -s -z -f "$PREFIX/cert-" -b "%d.pem" $X509CERT '/-----BEGIN CERTIFICATE-----/' '{*}'
 }
 
 cleanup()
