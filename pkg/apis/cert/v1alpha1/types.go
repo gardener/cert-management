@@ -328,7 +328,7 @@ type IssuerList struct {
 // Issuer is the issuer CR.
 // +kubebuilder:storageversion
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Namespaced,path=issuers,shortName=issuer,singular=issuer
+// +kubebuilder:resource:scope=Namespaced,path=issuers,singular=issuer
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name=SERVER,description="ACME Server",JSONPath=".spec.acme.server",type=string
 // +kubebuilder:printcolumn:name=EMAIL,description="ACME Registration email",JSONPath=".spec.acme.email",type=string
