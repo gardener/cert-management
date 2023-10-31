@@ -670,8 +670,6 @@ spec:
     kind: Issuer
     listKind: IssuerList
     plural: issuers
-    shortNames:
-    - issuer
     singular: issuer
   scope: Namespaced
   versions:
