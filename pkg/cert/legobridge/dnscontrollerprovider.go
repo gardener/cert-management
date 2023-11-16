@@ -7,6 +7,7 @@
 package legobridge
 
 import (
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -52,7 +53,9 @@ func newDNSControllerProvider(settings DNSControllerSettings,
 		issuerKey:       issuerKey,
 		ttl:             int64(settings.PropagationTimeout.Seconds()),
 		initialWait:     true,
-		presenting:      map[string][]string{}}, nil
+		presenting:      map[string][]string{},
+		entries:         map[string]*dnsapi.DNSEntry{},
+	}, nil
 }
 
 type dnsControllerProvider struct {
@@ -70,6 +73,7 @@ type dnsControllerProvider struct {
 
 	failedPendingDomain string
 	failedPendingCheck  string
+	entries             map[string]*dnsapi.DNSEntry
 }
 
 var _ challenge.Provider = &dnsControllerProvider{}
@@ -245,7 +249,30 @@ func (p *dnsControllerProvider) checkDNSEntryReady(domain string, values []strin
 		return true // no more waiting
 	}
 	entry = obj.Data().(*dnsapi.DNSEntry)
+	p.entries[domain] = entry
 	return entry.Status.State == "Ready" && len(entry.Status.Targets) == len(values)
+}
+
+func (p *dnsControllerProvider) failedDNSEntryReadyMessage(final bool) string {
+	if final {
+		var errs []error
+		for key, entry := range p.entries {
+			switch {
+			case entry.Status.State == "Ready":
+				continue
+			case entry.Status.State == "" && entry.Status.Provider == nil:
+				errs = append(errs, fmt.Errorf("no provider found to apply DNS entry for %s", key))
+			case entry.Status.Message != nil:
+				errs = append(errs, fmt.Errorf("DNS entry for %s has state %s (%s)", key, entry.Status.State, *entry.Status.Message))
+			default:
+				errs = append(errs, fmt.Errorf("DNS entry for %s has state %s", key, entry.Status.State))
+			}
+		}
+		if len(errs) > 0 {
+			return "DNS entry getting ready: " + errors.Join(errs...).Error()
+		}
+	}
+	return "DNS entry getting ready"
 }
 
 func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
@@ -262,9 +289,9 @@ func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
 	// until all entries are ready
 
 	prepareWaitTimeout := 30*time.Second + 5*time.Second*time.Duration(len(p.presenting))
-	ok := p.waitFor("DNS entry getting ready", p.checkDNSEntryReady, prepareWaitTimeout)
+	ok := p.waitFor(p.failedDNSEntryReadyMessage, p.checkDNSEntryReady, prepareWaitTimeout)
 	if ok {
-		ok = p.waitFor("DNS record propagation", p.isDNSTxtRecordReady, waitTimeout)
+		ok = p.waitFor(func(bool) string { return "DNS record propagation" }, p.isDNSTxtRecordReady, waitTimeout)
 	}
 	if ok {
 		// wait some additional seconds to enlarge probability of record propagation to DNS server use by ACME server
@@ -275,7 +302,7 @@ func (p *dnsControllerProvider) Timeout() (timeout, interval time.Duration) {
 	return waitTimeout / 2, dns01.DefaultPollingInterval
 }
 
-func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, values []string) bool, timeout time.Duration) bool {
+func (p *dnsControllerProvider) waitFor(msgfunc func(bool) string, isReady func(domain string, values []string) bool, timeout time.Duration) bool {
 	p.failedPendingDomain = ""
 	p.failedPendingCheck = ""
 
@@ -294,12 +321,12 @@ func (p *dnsControllerProvider) waitFor(msg string, isReady func(domain string, 
 		if ready {
 			return true
 		}
-		p.logger.Infof("Waiting %d seconds for %s [%s]...", int(waitTime.Seconds()), msg, pendingDomain)
+		p.logger.Infof("Waiting %d seconds for %s [%s]...", int(waitTime.Seconds()), msgfunc(false), pendingDomain)
 		time.Sleep(waitTime)
 	}
 
 	p.failedPendingDomain = pendingDomain
-	p.failedPendingCheck = msg
+	p.failedPendingCheck = msgfunc(true)
 	return false
 }
 
