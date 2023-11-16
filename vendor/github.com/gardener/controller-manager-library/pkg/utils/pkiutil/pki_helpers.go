@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// made changes:
+// rsaKeySize was changed from 2048 to 3072
+
 package pkiutil
 
 import (
@@ -21,7 +24,7 @@ const (
 	CertificateBlockType = "CERTIFICATE"
 	// RSAPrivateKeyBlockType is a possible value for pem.Block.Type.
 	RSAPrivateKeyBlockType = "RSA PRIVATE KEY"
-	rsaKeySize             = 2048
+	rsaKeySize             = 3072
 )
 
 // NewPrivateKey creates an RSA private key

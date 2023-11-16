@@ -89,7 +89,8 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 	c.logger.V(0).Info("Building in container: " + containerID)
 
 	// make artifacts directory
-	if err = cmder.Command("mkdir", "/kind/").Run(); err != nil {
+	// TODO: remove this after the next release, we pre-create this in the base image now
+	if err = cmder.Command("mkdir", "-p", "/kind/").Run(); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to make directory %v", err)
 		return err
 	}
@@ -262,17 +263,11 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		image := image // https://golang.org/doc/faq#closures_and_goroutines
 		fns = append(fns, func() error {
 			if !builtImages.Has(image) {
-				/*
-					TODO: show errors when we have real errors. See comments in
-					importer implementation
-					err := importer.Pull(image, dockerBuildOsAndArch(c.arch))
-					if err != nil {
-						c.logger.Warnf("Failed to pull %s with error: %v", image, err)
-						runE := exec.RunErrorForError(err)
-						c.logger.Warn(string(runE.Output))
-					}
-				*/
-				_ = importer.Pull(image, dockerBuildOsAndArch(c.arch))
+				if err = importer.Pull(image, dockerBuildOsAndArch(c.arch)); err != nil {
+					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
+					runE := exec.RunErrorForError(err)
+					c.logger.Warn(string(runE.Output))
+				}
 			}
 			return nil
 		})
