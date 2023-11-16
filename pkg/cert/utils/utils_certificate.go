@@ -47,39 +47,49 @@ func (o *CertificateObject) Status() *api.CertificateStatus {
 	return &o.Certificate().Status
 }
 
-// SafeCommonName return the common name or "".
-func (o *CertificateObject) SafeCommonName() string {
+// SafeFirstDNSName returns the first DNS name (common name if set) or "".
+func (o *CertificateObject) SafeFirstDNSName() string {
 	cn := o.Spec().CommonName
-	if cn == nil {
-		cn = o.Status().CommonName
+	if cn != nil {
+		return *cn
 	}
-	if cn == nil {
-		return ""
+
+	if len(o.Spec().DNSNames) > 0 {
+		return o.Spec().DNSNames[0]
 	}
-	return *cn
+
+	cn = o.Status().CommonName
+	if cn != nil {
+		return *cn
+	}
+
+	if len(o.Status().DNSNames) > 0 {
+		return o.Status().DNSNames[0]
+	}
+
+	return ""
 }
 
 ////////////////////////////////////////
 
 // ExtractDomains collects CommonName and DNSNames directly from spec or from CSR.
-// The first item is the common name
+// The first item is the common name if provided.
 func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
 	var err error
 	cn := spec.CommonName
-	if cn == nil || *cn == "" {
-		return nil, fmt.Errorf("missing common name")
-	}
 	dnsNames := spec.DNSNames
-	if spec.CommonName != nil {
+	if spec.CommonName != nil || len(spec.DNSNames) > 0 {
 		if spec.CSR != nil {
 			return nil, fmt.Errorf("cannot specify both commonName and csr")
 		}
 		if len(spec.DNSNames) >= 100 {
 			return nil, fmt.Errorf("invalid number of DNS names: %d (max 99)", len(spec.DNSNames))
 		}
-		count := utf8.RuneCount([]byte(*spec.CommonName))
-		if count > 64 {
-			return nil, fmt.Errorf("the Common Name is limited to 64 characters (X.509 ASN.1 specification), but first given domain %s has %d characters", *spec.CommonName, count)
+		if spec.CommonName != nil {
+			count := utf8.RuneCount([]byte(*spec.CommonName))
+			if count > 64 {
+				return nil, fmt.Errorf("the Common Name is limited to 64 characters (X.509 ASN.1 specification), but first given domain %s has %d characters", *spec.CommonName, count)
+			}
 		}
 	} else {
 		if spec.CSR == nil {
@@ -91,7 +101,10 @@ func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
 		}
 	}
 
-	return append([]string{*cn}, dnsNames...), nil
+	if cn != nil {
+		dnsNames = append([]string{*cn}, dnsNames...)
+	}
+	return dnsNames, nil
 }
 
 // ExtractCommonNameAnDNSNames extracts values from a CSR (Certificate Signing Request).
@@ -102,7 +115,9 @@ func ExtractCommonNameAnDNSNames(csr []byte) (cn *string, san []string, err erro
 		return
 	}
 	cnvalue := certificateRequest.Subject.CommonName
-	cn = &cnvalue
+	if cnvalue != "" {
+		cn = &cnvalue
+	}
 	san = certificateRequest.DNSNames[:]
 	for _, ip := range certificateRequest.IPAddresses {
 		san = append(san, ip.String())

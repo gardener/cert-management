@@ -46,6 +46,7 @@ type Certificate struct {
 // CertificateSpec is the spec of the certificate to request.
 type CertificateSpec struct {
 	// CommonName is the CN for the certificate (max. 64 chars).
+	// +optional
 	// +kubebuilder:validation:MaxLength=64
 	CommonName *string `json:"commonName,omitempty"`
 	// DNSNames are the optional additional domain names of the certificate.

@@ -438,7 +438,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
     spec:
       tls:
       # Gardener managed default domain.
-      # The first host is used as common name and must not exceed 64 characters
+      # The first host is used as common name if it does not exceed 64 characters
       - hosts:
         - test.ingress.<GARDENER-CLUSTER>.<GARDENER-PROJECT>.shoot.example.com
         # Certificate and private key reside in this secret.
@@ -540,7 +540,7 @@ spec:
 ```
 
 The annotation `cert.gardener.cloud/commonname` is optional. If not specified, the first name of the annotation
-`dns.gardener.cloud/dnsnames` is used as common name. It is useful to specify it explicitly, if no `DNSEntry`
+`dns.gardener.cloud/dnsnames` is used as common name if it does not exceed 64 characters. It is useful to specify it explicitly, if no `DNSEntry`
 should be created for the common name by the dns-controller-manager.
 A typical use case is if the common name (limited to 64 characters) is set only to
 deal with real domain names specified with `dns.gardener.cloud/dnsnames` which are longer than 64 characters.

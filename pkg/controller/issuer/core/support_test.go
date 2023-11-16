@@ -124,6 +124,14 @@ var _ = Describe("Support", func() {
 		Expect(key.Cluster()).To(Equal(certutils.ClusterTarget))
 		Expect(key.Namespace()).To(Equal(namespace1))
 
+		spec2b := &api.CertificateSpec{
+			DNSNames: []string{"foo.sel1t.example.com"},
+		}
+		key = support.IssuerClusterObjectKey("foo", spec2b)
+		Expect(key.Name()).To(Equal("issuer1"))
+		Expect(key.Cluster()).To(Equal(certutils.ClusterTarget))
+		Expect(key.Namespace()).To(Equal(namespace1))
+
 		spec3 := &api.CertificateSpec{
 			CommonName: pointer.String("bar.example.com"),
 			IssuerRef: &api.IssuerRef{

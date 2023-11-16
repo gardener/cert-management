@@ -242,7 +242,10 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			certificates, err = renew(client, input.RenewCert)
 		} else {
 			if input.CSR == nil {
-				domains := append([]string{*input.CommonName}, input.DNSNames...)
+				domains := input.DNSNames
+				if input.CommonName != nil {
+					domains = append([]string{*input.CommonName}, domains...)
+				}
 				certificates, err = obtainForDomains(client, domains, input.AlwaysDeactivateAuthorizations, input.PreferredChain)
 			} else {
 				certificates, err = obtainForCSR(client, input.CSR, input.AlwaysDeactivateAuthorizations, input.PreferredChain)
@@ -333,13 +336,19 @@ func (o *obtainer) releasePending(input ObtainInput) {
 
 func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
 	if input.CSR == nil {
-		return append([]string{*input.CommonName}, input.DNSNames...), nil
+		if input.CommonName != nil {
+			return append([]string{*input.CommonName}, input.DNSNames...), nil
+		}
+		return input.DNSNames, nil
 	}
 	cn, san, err := utils.ExtractCommonNameAnDNSNames(input.CSR)
 	if err != nil {
 		return nil, err
 	}
-	return append([]string{*cn}, san...), nil
+	if cn != nil {
+		return append([]string{*cn}, san...), nil
+	}
+	return san, nil
 }
 
 // CertificatesToSecretData converts a certificate resource to secret data.
