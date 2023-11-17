@@ -249,6 +249,9 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 				if err := r.updateSecretLabels(logctx, obj, secret); err != nil {
 					return r.failed(logctx, obj, api.StateError, err)
 				}
+				if status := r.updateNotAfterAnnotation(logctx, obj, x509cert.NotAfter); status != nil {
+					return *status
+				}
 				return r.checkForRenewAndSucceeded(logctx, obj, secret)
 			} else if storedOldHash := cert.Labels[LabelCertificateOldHashKey]; storedOldHash != "" {
 				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey, false)
@@ -709,6 +712,19 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		return r.failed(logctx, obj, api.StateError, err)
 	}
 	return r.succeeded(logctx, obj, &msg)
+}
+
+func (r *certReconciler) updateNotAfterAnnotation(logctx logger.LogContext, obj resources.Object, notAfter time.Time) *reconcile.Status {
+	notAfterStr := notAfter.Format(time.RFC3339)
+	if obj.GetAnnotation(AnnotationNotAfter) != notAfterStr {
+		crt := obj.Data().(*api.Certificate)
+		resources.SetAnnotation(crt, AnnotationNotAfter, notAfterStr)
+		if err := obj.Update(); err != nil {
+			status := r.failed(logctx, obj, crt.Status.State, fmt.Errorf("updating annotation: %w", err))
+			return &status
+		}
+	}
+	return nil
 }
 
 func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj resources.Object) *reconcile.Status {
