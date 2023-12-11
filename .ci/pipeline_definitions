@@ -21,7 +21,7 @@ cert-management:
 
     steps:
       build:
-        image: golang:1.20.2
+        image: golang:1.21.5
         output_dir: binary
       check:
         image: golang:1.20.2
