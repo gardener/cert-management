@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 cert-management:
-  template: 'default'
   base_definition:
-    repo: ~
     traits:
       version:
         preprocess: 'inject-commit-hash'
