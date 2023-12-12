@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-REGISTRY              := eu.gcr.io/gardener-project
+REGISTRY              :=  europe-docker.pkg.dev/gardener-project/public
 EXECUTABLE            := cert-controller-manager
 REPO_ROOT             := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROJECT               := github.com/gardener/cert-management

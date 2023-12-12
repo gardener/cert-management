@@ -7,12 +7,13 @@ cert-management:
       version:
         preprocess: inject-branch-name
         inject_effective_version: true
-      component_descriptor: ~
+      component_descriptor:
+        ocm_repository: europe-docker.pkg.dev/gardener-project/snapshots
       publish:
         dockerimages:
           cert-management:
             dockerfile: build/Dockerfile
-            image: eu.gcr.io/gardener-project/cert-controller-manager
+            image: europe-docker.pkg.dev/gardener-project/snapshots/cert-controller-manager
             inputs:
               repos:
                 source: ~
@@ -36,6 +37,8 @@ cert-management:
           preprocess: inject-commit-hash
         component_descriptor:
           retention_policy: 'clean-snapshots'
+          ocm_repository_mappings:
+            - repository: europe-docker.pkg.dev/gardener-project/releases
 
     pull-request:
       traits:
@@ -47,10 +50,16 @@ cert-management:
       traits:
         version:
           preprocess: 'finalize'
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/releases
         release:
           nextversion: 'bump_minor'
           next_version_callback: '.ci/prepare_release'
           release_callback: '.ci/prepare_release'
+        publish:
+          dockerimages:
+            cert-management:
+              image: europe-docker.pkg.dev/gardener-project/releases/cert-controller-manager
         slack:
           default_channel: 'internal_scp_workspace'
           channel_cfgs:
@@ -62,6 +71,12 @@ cert-management:
       traits:
         version:
           preprocess: finalize
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/releases
+        publish:
+          dockerimages:
+            cert-management:
+              image: europe-docker.pkg.dev/gardener-project/releases/cert-controller-manager
         release:
           nextversion: bump_patch
           next_version_callback: '.ci/prepare_release'
@@ -78,6 +93,12 @@ cert-management:
         release:
           nextversion: noop
           release_callback: .ci/prepare_release
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/releases
+        publish:
+          dockerimages:
+            cert-management:
+              image: europe-docker.pkg.dev/gardener-project/releases/cert-controller-manager
         slack:
           channel_cfgs:
             internal_scp_workspace:
