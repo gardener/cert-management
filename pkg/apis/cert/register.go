@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//go:generate bash ../../../vendor/github.com/gardener/controller-manager-library/hack/generate-crds
+//go:generate sh -c "CONTROLLER_GEN=$CONTROLLER_GEN bash $CONTROLLER_MANAGER_LIB_HACK_DIR/generate-crds"
 
 package cert
 

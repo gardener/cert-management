@@ -46,8 +46,12 @@ func SrcReconciler(sourceType CertSourceType, rtype controller.ReconcilerType) c
 		}
 		c.Infof("responsible for classes: %s (%s)", classes, classes.Main())
 		c.Infof("target class           : %s", targetclass)
+		slaveAccess, err := reconcilers.NewSlaveAccess(c, sourceType.Name(), slaveResources, MasterResourcesType(sourceType.GroupKind()))
+		if err != nil {
+			return nil, err
+		}
 		reconciler := &sourceReconciler{
-			SlaveAccess: reconcilers.NewSlaveAccess(c, sourceType.Name(), slaveResources, MasterResourcesType(sourceType.GroupKind())),
+			SlaveAccess: slaveAccess,
 			source:      s,
 			classes:     classes,
 			targetclass: targetclass,
