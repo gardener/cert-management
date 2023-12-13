@@ -40,7 +40,7 @@ func NewEventFeedback(logger logger.LogContext, obj resources.Object, events map
 // Ready adds a ready event
 func (f *EventFeedback) Ready(info *CertInfo, msg string) {
 	if msg == "" {
-		msg = fmt.Sprintf("cert request is ready")
+		msg = "cert request is ready"
 	}
 	f.event(info, msg)
 }
@@ -48,7 +48,7 @@ func (f *EventFeedback) Ready(info *CertInfo, msg string) {
 // Pending adds a pending event.
 func (f *EventFeedback) Pending(info *CertInfo, msg string) {
 	if msg == "" {
-		msg = fmt.Sprintf("cert request is pending")
+		msg = "cert request is pending"
 	}
 	f.event(info, msg)
 }
@@ -117,7 +117,7 @@ func (t *certsourcetype) GroupKind() schema.GroupKind {
 }
 
 // Create creates a CertSource.
-func (t *handlercertsourcetype) Create(c controller.Interface) (CertSource, error) {
+func (t *handlercertsourcetype) Create(_ controller.Interface) (CertSource, error) {
 	return t, nil
 }
 
@@ -127,11 +127,13 @@ func (t *creatorcertsourcetype) Create(c controller.Interface) (CertSource, erro
 }
 
 // Setup is the setup method.
-func (s *DefaultCertSource) Setup() {
+func (s *DefaultCertSource) Setup() error {
+	return nil
 }
 
 // Start is the start method.
-func (s *DefaultCertSource) Start() {
+func (s *DefaultCertSource) Start() error {
+	return nil
 }
 
 // GetEvents returns the events for a cluster object key.
@@ -215,7 +217,7 @@ func (s *DefaultCertSource) Delete(logger logger.LogContext, obj resources.Objec
 }
 
 // Deleted performs cleanup.
-func (s *DefaultCertSource) Deleted(logger logger.LogContext, key resources.ClusterObjectKey) {
+func (s *DefaultCertSource) Deleted(_ logger.LogContext, key resources.ClusterObjectKey) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	delete(s.Events, key)

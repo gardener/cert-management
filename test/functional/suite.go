@@ -7,14 +7,15 @@
 package functional
 
 import (
-	"github.com/gardener/cert-management/test/functional/config"
 	"sync"
+
+	"github.com/gardener/cert-management/test/functional/config"
 )
 
 var _config *config.Config
 var lock sync.Mutex
 
-func addIssuerTests(testFactory IssuerTestFactory) {
+func addIssuerTests(testFactory issuerTestFactory) {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -27,4 +28,4 @@ func addIssuerTests(testFactory IssuerTestFactory) {
 	}
 }
 
-type IssuerTestFactory func(config *config.Config, issuer *config.IssuerConfig)
+type issuerTestFactory func(config *config.Config, issuer *config.IssuerConfig)

@@ -37,7 +37,7 @@ func (r *slaveReconciler) Start() {
 		if k.Cluster() == main {
 			if _, err := cluster.GetCachedObject(k); errors.IsNotFound(err) {
 				r.controller.Infof("trigger vanished origin %s", k.ObjectKey())
-				r.controller.EnqueueKey(k)
+				_ = r.controller.EnqueueKey(k)
 			} else {
 				r.controller.Debugf("found origin %s", k.ObjectKey())
 			}

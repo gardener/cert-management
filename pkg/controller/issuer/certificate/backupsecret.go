@@ -23,9 +23,16 @@ import (
 // Returns the secret reference to the backup.
 // All ACME certificates have a backup in the kube-system namespace to allow revoking them
 // even if they are already renewed
-func BackupSecret(res resources.Interface, secret *corev1.Secret, hashKey string,
-	issuerInfo utils.IssuerInfo) (ref *api.CertificateSecretRef, created bool, err error) {
-
+func BackupSecret(
+	res resources.Interface,
+	secret *corev1.Secret,
+	hashKey string,
+	issuerInfo utils.IssuerInfo,
+) (
+	ref *api.CertificateSecretRef,
+	created bool,
+	err error,
+) {
 	if issuerInfo.IssuerType() != utils.IssuerTypeACME {
 		return
 	}

@@ -84,15 +84,19 @@ type sourceReconciler struct {
 	nameprefix  string
 }
 
-func (r *sourceReconciler) Start() {
-	r.source.Start()
-	r.NestedReconciler.Start()
+func (r *sourceReconciler) Start() error {
+	if err := r.source.Start(); err != nil {
+		return err
+	}
+	return r.NestedReconciler.Start()
 }
 
-func (r *sourceReconciler) Setup() {
+func (r *sourceReconciler) Setup() error {
 	r.SlaveAccess.Setup()
-	r.source.Setup()
-	r.NestedReconciler.Setup()
+	if err := r.source.Setup(); err != nil {
+		return err
+	}
+	return r.NestedReconciler.Setup()
 }
 
 func getCertificateSecretName(obj resources.Object) (string, error) {
@@ -222,7 +226,7 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 					}
 					info.Feedback.Failed(&certInfo, err)
 				case api.StatePending:
-					msg := fmt.Sprintf("certificate pending")
+					msg := "certificate pending"
 					if s.Message != nil {
 						msg = fmt.Sprintf("%s: %s", msg, *s.Message)
 					}

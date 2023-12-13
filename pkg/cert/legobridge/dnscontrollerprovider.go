@@ -116,7 +116,7 @@ func retryOnUpdateError(fn func() error) error {
 	return err
 }
 
-func (p *dnsControllerProvider) Present(domain, token, keyAuth string) error {
+func (p *dnsControllerProvider) Present(domain, _, keyAuth string) error {
 	metrics.AddActiveACMEDNSChallenge(p.issuerKey)
 	atomic.AddInt32(&p.count, 1)
 	info := dns01.GetChallengeInfo(domain, keyAuth)
@@ -208,7 +208,7 @@ func (p *dnsControllerProvider) removePresentingDomain(domain string) bool {
 	return true
 }
 
-func (p *dnsControllerProvider) CleanUp(domain, token, keyAuth string) error {
+func (p *dnsControllerProvider) CleanUp(domain, _, _ string) error {
 	metrics.RemoveActiveACMEDNSChallenge(p.issuerKey)
 
 	if !p.removePresentingDomain(domain) {

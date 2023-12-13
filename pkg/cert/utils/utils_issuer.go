@@ -26,7 +26,6 @@ func (o *IssuerObject) Issuer() *api.Issuer {
 
 // Issuer returns the issuer object.
 func Issuer(o resources.Object) *IssuerObject {
-
 	if o.IsA(issuerType) {
 		return &IssuerObject{o}
 	}

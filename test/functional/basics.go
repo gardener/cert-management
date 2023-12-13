@@ -210,28 +210,28 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 		It("should work with "+iss.Name, func() {
 			manifestFilename, err := iss.CreateTempManifest("Manifest", basicTemplate)
 			defer iss.DeleteTempManifest(manifestFilename)
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			u := cfg.Utils
 
 			err = u.AwaitKubectlGetCRDs("issuers.cert.gardener.cloud", "certificates.cert.gardener.cloud")
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			err = u.KubectlApply(manifestFilename)
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			err = u.AwaitIssuerReady(iss.Name)
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			entryNames := []string{}
 			for _, name := range []string{"1", "2", "2b", "3"} {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.AwaitCertReady(entryNames...)
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			itemMap, err := u.KubectlGetAllCertificates()
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(itemMap).Should(MatchKeys(IgnoreExtras, Keys{
 				entryName(iss, "1"): MatchKeys(IgnoreExtras, Keys{
@@ -279,19 +279,20 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 			By("check keystores in cert3", func() {
 				secret, err := u.KubectlGetSecret("cert3-secret")
-				Ω(err).Should(BeNil())
-				Ω(len(secret.Data)).Should(Equal(3))
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(secret.Data).Should(HaveLen(3))
 
 				manifestFilename, err := iss.CreateTempManifest("Manifest", cert3WithKeystores)
 				defer iss.DeleteTempManifest(manifestFilename)
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 				err = u.KubectlApply(manifestFilename)
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 
 				time.Sleep(3 * time.Second) // wait for reconciliation
 
 				secret, err = u.KubectlGetSecret("cert3-secret")
-				Ω(len(secret.Data)).Should(Equal(7))
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(secret.Data).Should(HaveLen(7))
 				Ω(secret.Data[legobridge.JKSTruststoreKey]).ShouldNot(BeNil())
 				Ω(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
 				Ω(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
@@ -300,14 +301,14 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 			By("check secret labels in cert3", func() {
 				secret, err := u.KubectlGetSecret("cert3-secret")
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 				Ω(secret.Labels["foo"]).Should(Equal("bar"))
 				Ω(secret.Labels["some.gardener.cloud/thing"]).Should(Equal("true"))
 			})
 
 			By("check starting from invalid state in cert4", func() {
 				err = u.AwaitCertReady("cert4")
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 			})
 
 			By("revoking without renewal", func() {
@@ -316,49 +317,49 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 				filename, err := iss.CreateTempManifest("revoke2", revoke2Template)
 				defer iss.DeleteTempManifest(filename)
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 
 				err = u.KubectlApply(filename)
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 
 				err = u.AwaitCertRevocationApplied("revoke-cert2")
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 
 				err = u.AwaitCertRevoked(entryName(iss, "2"), entryName(iss, "2b"))
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 
 				err = u.KubectlDelete(filename)
-				Ω(err).Should(BeNil())
+				Ω(err).ShouldNot(HaveOccurred())
 			})
 
 			if !iss.SkipRevokeWithRenewal {
 				By("revoking with renewal", func() {
 					filename, err := iss.CreateTempManifest("revoke3", revoke3Template)
 					defer iss.DeleteTempManifest(filename)
-					Ω(err).Should(BeNil())
+					Ω(err).ShouldNot(HaveOccurred())
 
 					err = u.KubectlApply(filename)
-					Ω(err).Should(BeNil())
+					Ω(err).ShouldNot(HaveOccurred())
 
 					err = u.AwaitCertRevocationApplied("revoke-cert3")
-					Ω(err).Should(BeNil())
+					Ω(err).ShouldNot(HaveOccurred())
 
 					err = u.AwaitCertReady(entryName(iss, "3"))
-					Ω(err).Should(BeNil())
+					Ω(err).ShouldNot(HaveOccurred())
 
 					err = u.KubectlDelete(filename)
-					Ω(err).Should(BeNil())
+					Ω(err).ShouldNot(HaveOccurred())
 				})
 			}
 
 			err = u.KubectlDelete(manifestFilename)
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			err = u.AwaitCertDeleted(entryNames...)
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 
 			err = u.AwaitIssuerDeleted(iss.Name)
-			Ω(err).Should(BeNil())
+			Ω(err).ShouldNot(HaveOccurred())
 		})
 	})
 }

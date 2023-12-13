@@ -136,27 +136,26 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 
 type certReconciler struct {
 	reconcile.DefaultReconciler
-	support                    *core.Support
-	obtainer                   legobridge.Obtainer
-	targetCluster              cluster.Interface
-	dnsCluster                 cluster.Interface
-	certResources              resources.Interface
-	certSecretResources        resources.Interface
-	rateLimiting               time.Duration
-	pendingRequests            *legobridge.PendingCertificateRequests
-	pendingResults             *legobridge.PendingResults
-	dnsNamespace               *string
-	dnsClass                   *string
-	dnsOwnerID                 *string
-	precheckNameservers        []string
-	additionalWait             time.Duration
-	propagationTimeout         time.Duration
-	renewalWindow              time.Duration
-	renewalOverdueWindow       time.Duration
-	defaultRequestsPerDayQuota int
-	classes                    *controller.Classes
-	cascadeDelete              bool
-	garbageCollectorTicker     *time.Ticker
+	support                *core.Support
+	obtainer               legobridge.Obtainer
+	targetCluster          cluster.Interface
+	dnsCluster             cluster.Interface
+	certResources          resources.Interface
+	certSecretResources    resources.Interface
+	rateLimiting           time.Duration
+	pendingRequests        *legobridge.PendingCertificateRequests
+	pendingResults         *legobridge.PendingResults
+	dnsNamespace           *string
+	dnsClass               *string
+	dnsOwnerID             *string
+	precheckNameservers    []string
+	additionalWait         time.Duration
+	propagationTimeout     time.Duration
+	renewalWindow          time.Duration
+	renewalOverdueWindow   time.Duration
+	classes                *controller.Classes
+	cascadeDelete          bool
+	garbageCollectorTicker *time.Ticker
 
 	alwaysDeactivateAuthorizations bool
 }
@@ -188,7 +187,7 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 	if cert.Status.BackOff != nil &&
 		obj.GetGeneration() == cert.Status.BackOff.ObservedGeneration &&
 		time.Now().Before(cert.Status.BackOff.RetryAfter.Time) {
-		interval := cert.Status.BackOff.RetryAfter.Time.Sub(time.Now())
+		interval := time.Until(cert.Status.BackOff.RetryAfter.Time)
 		if interval < 30*time.Second {
 			interval = 30 * time.Second
 		}
@@ -246,7 +245,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 				if specHash != storedHash {
 					return r.removeStoredHashKeyAndRepeat(logctx, obj)
 				}
-				if err := r.updateSecretLabels(logctx, obj, secret); err != nil {
+				if err := r.updateSecretLabels(obj, secret); err != nil {
 					return r.failed(logctx, obj, api.StateError, err)
 				}
 				if status := r.updateNotAfterAnnotation(logctx, obj, x509cert.NotAfter); status != nil {
@@ -360,7 +359,7 @@ func (r *certReconciler) lastPendingRateLimitingSeconds(timestamp *metav1.Time) 
 	if endTime == nil {
 		return 0
 	}
-	seconds := int(endTime.Sub(time.Now()).Seconds() + 0.5)
+	seconds := int(time.Until(*endTime).Seconds() + 0.5)
 	if seconds > 0 {
 		return seconds
 	}
@@ -600,11 +599,11 @@ func (r *certReconciler) validateDomainsAndCsr(spec *api.CertificateSpec, issuer
 		}
 		names.Insert(name)
 	}
-	err = r.checkDomainRangeRestriction(issuerDomains, spec, domainsToValidate, issuerKey)
+	err = r.checkDomainRangeRestriction(issuerDomains, domainsToValidate, issuerKey)
 	return err
 }
 
-func (r *certReconciler) checkDomainRangeRestriction(issuerDomains *api.DNSSelection, spec *api.CertificateSpec, domains []string, issuerKey utils.IssuerKey) error {
+func (r *certReconciler) checkDomainRangeRestriction(issuerDomains *api.DNSSelection, domains []string, issuerKey utils.IssuerKey) error {
 	if r.support.IsDefaultIssuer(issuerKey) && r.support.DefaultIssuerDomainRanges() != nil {
 		ranges := r.support.DefaultIssuerDomainRanges()
 		for _, domain := range domains {
@@ -639,18 +638,7 @@ func (r *certReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev1.
 	return secret, nil
 }
 
-func (r *certReconciler) deleteSecret(secretRef *corev1.SecretReference) error {
-	if secretRef == nil {
-		return nil
-	}
-
-	secret := &metav1.ObjectMeta{}
-	secret.SetName(secretRef.Name)
-	secret.SetNamespace(secretRef.Namespace)
-	return r.certSecretResources.DeleteByName(secret)
-}
-
-func (r *certReconciler) updateSecretLabels(logctx logger.LogContext, obj resources.Object, secret *corev1.Secret) error {
+func (r *certReconciler) updateSecretLabels(obj resources.Object, secret *corev1.Secret) error {
 	crt := obj.Data().(*api.Certificate)
 	modified := false
 	for k, v := range crt.Spec.SecretLabels {
@@ -874,7 +862,6 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 			if best == nil ||
 				bestNotAfter.Before(cert.NotAfter) ||
 				secretRef != nil && bestNotAfter.Equal(cert.NotAfter) && obj.GetName() == secretRef.Name && core.NormalizeNamespace(obj.GetNamespace()) == core.NormalizeNamespace(secretRef.Namespace) {
-
 				best = obj
 				bestNotAfter = cert.NotAfter
 
