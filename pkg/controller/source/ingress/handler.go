@@ -43,7 +43,7 @@ func NewIngressSource(_ controller.Interface) (source.CertSource, error) {
 }
 
 // GetCertsInfo returns CertsInfo for the given object
-func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *source.CertCurrentState) (*source.CertsInfo, error) {
+func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, _ *source.CertCurrentState) (*source.CertsInfo, error) {
 	info := s.NewCertsInfo(logger, obj)
 
 	annotValue, _ := resources.GetAnnotation(obj.Data(), AnnotationPurposeKey)

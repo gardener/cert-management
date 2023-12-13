@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/cert-manager/cert-manager v1.11.0
-	github.com/gardener/controller-manager-library v0.2.1-0.20231116080219-8cf0e5458fdc
+	github.com/gardener/controller-manager-library v0.2.1-0.20231213134107-496e1a49d791
 	github.com/gardener/external-dns-management v0.15.3
 	github.com/go-acme/lego/v4 v4.14.0
 	github.com/miekg/dns v1.1.55
@@ -58,6 +58,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/ironcore-dev/vgopath v0.1.3 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

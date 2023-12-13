@@ -31,7 +31,6 @@ func (o *CertificateObject) Certificate() *api.Certificate {
 
 // Certificate returns the certificate object
 func Certificate(o resources.Object) *CertificateObject {
-
 	if o.IsA(certificateType) {
 		return &CertificateObject{o}
 	}

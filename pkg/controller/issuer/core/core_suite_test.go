@@ -15,5 +15,5 @@ import (
 
 func TestCore(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Suite")
+	RunSpecs(t, "Issuer Core Suite")
 }

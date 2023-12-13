@@ -83,12 +83,12 @@ var slaveResources = reconcilers.ClusterResources(ctrl.TargetCluster, certificat
 
 // MasterResourcesType creates the master resource type interfaces function.
 func MasterResourcesType(kind schema.GroupKind) reconcilers.Resources {
-	return func(c controller.Interface) []resources.Interface {
+	return func(c controller.Interface) ([]resources.Interface, error) {
 		target := c.GetMainCluster()
 		res, err := target.Resources().GetByGK(kind)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
-		return []resources.Interface{res}
+		return []resources.Interface{res}, nil
 	}
 }

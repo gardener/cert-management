@@ -167,12 +167,12 @@ type dummyProvider struct {
 
 var _ ProviderWithCount = &dummyProvider{}
 
-func (p *dummyProvider) Present(domain, token, keyAuth string) error {
+func (p *dummyProvider) Present(_, _, _ string) error {
 	p.count++
 	return nil
 }
 
-func (p *dummyProvider) CleanUp(domain, token, keyAuth string) error {
+func (p *dummyProvider) CleanUp(_, _, _ string) error {
 	return nil
 }
 

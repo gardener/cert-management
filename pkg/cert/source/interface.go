@@ -44,8 +44,8 @@ type CertFeedback interface {
 
 // CertSource is...
 type CertSource interface {
-	Start()
-	Setup()
+	Start() error
+	Setup() error
 
 	GetCertsInfo(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (*CertsInfo, error)
 

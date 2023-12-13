@@ -14,9 +14,7 @@ func NormalizeDomainRange(domainRange string) string {
 	if strings.HasPrefix(normalized, "*.") {
 		normalized = normalized[1:]
 	}
-	if strings.HasSuffix(normalized, ".") {
-		normalized = normalized[0 : len(normalized)-1]
-	}
+	normalized = strings.TrimSuffix(normalized, ".")
 	return normalized
 }
 
@@ -55,9 +53,7 @@ func IsInDomainRange(domain, domainRange string) bool {
 		return true
 	}
 	domain = strings.ToLower(domain)
-	if strings.HasSuffix(domain, ".") {
-		domain = domain[0 : len(domain)-1]
-	}
+	domain = strings.TrimSuffix(domain, ".")
 	if !strings.HasSuffix(domain, domainRange) {
 		return false
 	}

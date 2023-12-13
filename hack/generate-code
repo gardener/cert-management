@@ -4,21 +4,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set -e
+
 rm -f ${GOPATH}/bin/*-gen
 
-if [[ -z "${SOURCE_PATH}" ]]; then
-  export SOURCE_PATH="$(readlink -f "$(dirname ${0})/..")"
-else
-  export SOURCE_PATH="$(readlink -f "${SOURCE_PATH}")"
-fi
-
-source "$SOURCE_PATH/build/settings.src"
+SOURCE_PATH="$(readlink -f "$(dirname ${0})/..")"
 
 rm -rf "$SOURCE_PATH/pkg/client/cert"
 
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SOURCE_PATH}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
+# setup virtual GOPATH
+source "$CONTROLLER_MANAGER_LIB_HACK_DIR"/vgopath-setup.sh
+trap 'rm -rf "$VIRTUAL_GOPATH"; rm -rf $REPO_ROOT/vendor' EXIT
 
+go mod vendor
+CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SOURCE_PATH}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../code-generator)}
 source "${CODEGEN_PKG}/kube_codegen.sh"
+
+PKGPATH=github.com/gardener/cert-management
 
 kube::codegen::gen_helpers \
   --input-pkg-root $PKGPATH/pkg/apis \
@@ -28,6 +30,6 @@ kube::codegen::gen_helpers \
 kube::codegen::gen_client \
     --with-watch \
     --input-pkg-root $PKGPATH/pkg/apis \
-    --output-pkg-root $PKGPATH/pkg/client/$APINAME \
+    --output-pkg-root $PKGPATH/pkg/client/cert \
     --output-base "${SOURCE_PATH}/../../.." \
     --boilerplate "${SOURCE_PATH}/hack/LICENSE_BOILERPLATE.txt"

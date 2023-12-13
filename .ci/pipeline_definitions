@@ -12,7 +12,7 @@ cert-management:
       publish:
         dockerimages:
           cert-management:
-            dockerfile: build/Dockerfile
+            dockerfile: 'Dockerfile'
             image: europe-docker.pkg.dev/gardener-project/snapshots/cert-controller-manager
             inputs:
               repos:

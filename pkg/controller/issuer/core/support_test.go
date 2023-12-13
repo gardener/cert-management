@@ -193,9 +193,9 @@ func (t testCluster) GetMigrationIds() utils.StringSet {
 func (t testCluster) Config() rest.Config {
 	panic("unsupported")
 }
-func (t testCluster) GetAttr(key interface{}) interface{} {
+func (t testCluster) GetAttr(_ interface{}) interface{} {
 	panic("unsupported")
 }
-func (t testCluster) SetAttr(key, value interface{}) {
+func (t testCluster) SetAttr(_, _ interface{}) {
 	panic("unsupported")
 }

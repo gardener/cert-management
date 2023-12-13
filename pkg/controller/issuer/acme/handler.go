@@ -67,11 +67,10 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 	if acme.PrivateKeySecretRef != nil {
 		secret, err = r.support.ReadIssuerSecret(issuerKey, acme.PrivateKeySecretRef)
 		if err != nil {
-			if acme.AutoRegistration {
-				logger.Info("spec.acme.privateKeySecretRef not existing, creating new account")
-			} else {
+			if !acme.AutoRegistration {
 				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
 			}
+			logger.Info("spec.acme.privateKeySecretRef not existing, creating new account")
 		}
 		secretHash = r.support.CalcSecretHash(secret)
 		r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, secretHash)

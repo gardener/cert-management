@@ -186,7 +186,6 @@ func (h *CompoundHandler) DeletedSecret(logger logger.LogContext, key resources.
 
 func (h *CompoundHandler) failedNoType(logger logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
 	return h.support.Failed(logger, obj, state, nil, err, false)
-
 }
 
 func (h *CompoundHandler) addIssuerHandlerFactories(factories []IssuerHandlerFactory) error {
@@ -460,7 +459,7 @@ func (s *Support) IssuerNamespace() string {
 // IssuerClusterObjectKey returns either the specified issuer or it tries to find a matching issuer by
 // matching domains.
 // It tries to find the issuer first on the target cluster, then on the default cluster
-func (s *Support) IssuerClusterObjectKey(certNamespace string, spec *api.CertificateSpec) utils.IssuerKey {
+func (s *Support) IssuerClusterObjectKey(_ string, spec *api.CertificateSpec) utils.IssuerKey {
 	if spec.IssuerRef != nil {
 		if spec.IssuerRef.Namespace == "" {
 			// it on the default cluster

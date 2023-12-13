@@ -171,7 +171,7 @@ func (r *revokeReconciler) Reconcile(logctx logger.LogContext, obj resources.Obj
 	return r.finishRevocation(logctx, obj, shouldRenewBeforeRevoke)
 }
 
-func (r *revokeReconciler) Deleted(logctx logger.LogContext, key resources.ClusterObjectKey) reconcile.Status {
+func (r *revokeReconciler) Deleted(logctx logger.LogContext, _ resources.ClusterObjectKey) reconcile.Status {
 	logctx.Infof("deleted")
 
 	return reconcile.Succeeded(logctx)
@@ -622,7 +622,7 @@ func (r *revokeReconciler) failedStop(logctx logger.LogContext, obj resources.Ob
 	return r.status(logctx, obj, state, err, true)
 }
 
-func (r *revokeReconciler) status(logctx logger.LogContext, obj resources.Object, state string, err error, stop bool) reconcile.Status {
+func (r *revokeReconciler) status(logctx logger.LogContext, obj resources.Object, state string, err error, _ bool) reconcile.Status {
 	msg := err.Error()
 
 	rerr, isRecoverable := err.(*recoverableError)
@@ -641,10 +641,6 @@ func (r *revokeReconciler) status(logctx logger.LogContext, obj resources.Object
 	return reconcile.Failed(logctx, err)
 }
 
-func (r *revokeReconciler) recheck(logger logger.LogContext, obj resources.Object, state string, err error, interval time.Duration) reconcile.Status {
-	return r.status(logger, obj, state, &recoverableError{Msg: err.Error(), Interval: interval}, false)
-}
-
 func createLabelCertificateHashKeySelector(hash string) (labels.Selector, error) {
 	requirement, err := labels.NewRequirement(certificate.LabelCertificateNewHashKey, selection.Equals, []string{hash})
 	if err != nil {
@@ -656,17 +652,17 @@ func createLabelCertificateHashKeySelector(hash string) (labels.Selector, error)
 func isInvolved(revocation *api.CertificateRevocation, cert *api.Certificate) bool {
 	if revocation.Status.Objects != nil {
 		for _, ref := range revocation.Status.Objects.Processing {
-			if ref.Namespace == cert.Namespace && ref.Name == ref.Name {
+			if ref.Namespace == cert.Namespace && ref.Name == cert.Name {
 				return true
 			}
 		}
 		for _, ref := range revocation.Status.Objects.Revoked {
-			if ref.Namespace == cert.Namespace && ref.Name == ref.Name {
+			if ref.Namespace == cert.Namespace && ref.Name == cert.Name {
 				return true
 			}
 		}
 		for _, ref := range revocation.Status.Objects.Failed {
-			if ref.Namespace == cert.Namespace && ref.Name == ref.Name {
+			if ref.Namespace == cert.Namespace && ref.Name == cert.Name {
 				return true
 			}
 		}
