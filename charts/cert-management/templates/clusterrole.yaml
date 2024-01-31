@@ -74,3 +74,14 @@ rules:
   - list
   - update
   - create
+- apiGroups:
+  - dns.gardener.cloud
+  resources:
+  - dnsentries
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+  - create
+  - delete
