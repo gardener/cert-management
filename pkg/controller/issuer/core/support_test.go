@@ -11,11 +11,10 @@ import (
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/utils"
-	"k8s.io/client-go/rest"
-	"k8s.io/utils/pointer"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/client-go/rest"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
@@ -110,22 +109,30 @@ var _ = Describe("Support", func() {
 		support.AddIssuerDomains(issuer1t, sel1t)
 
 		spec := &api.CertificateSpec{
-			CommonName: pointer.String("foo.example.com"),
+			CommonName: ptr.To("foo.example.com"),
 		}
 		key := support.IssuerClusterObjectKey("foo", spec)
 		Expect(key.Name()).To(Equal("issuer1"))
 		Expect(key.Cluster()).To(Equal(certutils.ClusterDefault))
 
 		spec2 := &api.CertificateSpec{
-			CommonName: pointer.String("foo.sel1t.example.com"),
+			CommonName: ptr.To("foo.sel1t.example.com"),
 		}
 		key = support.IssuerClusterObjectKey("foo", spec2)
 		Expect(key.Name()).To(Equal("issuer1"))
 		Expect(key.Cluster()).To(Equal(certutils.ClusterTarget))
 		Expect(key.Namespace()).To(Equal(namespace1))
 
+		spec2b := &api.CertificateSpec{
+			DNSNames: []string{"foo.sel1t.example.com"},
+		}
+		key = support.IssuerClusterObjectKey("foo", spec2b)
+		Expect(key.Name()).To(Equal("issuer1"))
+		Expect(key.Cluster()).To(Equal(certutils.ClusterTarget))
+		Expect(key.Namespace()).To(Equal(namespace1))
+
 		spec3 := &api.CertificateSpec{
-			CommonName: pointer.String("bar.example.com"),
+			CommonName: ptr.To("bar.example.com"),
 			IssuerRef: &api.IssuerRef{
 				Name:      "issuer1",
 				Namespace: namespace1,
@@ -143,7 +150,7 @@ var _ = Describe("Support", func() {
 
 		// unknown issuer
 		spec4 := &api.CertificateSpec{
-			CommonName: pointer.String("bar.example.com"),
+			CommonName: ptr.To("bar.example.com"),
 			IssuerRef: &api.IssuerRef{
 				Name:      "issuer-bar",
 				Namespace: "foo",

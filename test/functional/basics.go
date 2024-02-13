@@ -7,6 +7,7 @@
 package functional
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -139,6 +140,20 @@ spec:
   secretName: cert4-secret
   issuerRef:
     name: {{.Name}}
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert5
+  namespace: {{.Namespace}}
+spec:
+  commonName: 
+  dnsNames:
+  - cert5.very-very-very-very-very-very-very-very-very-very-very-long.{{.Domain}} # more than 64 chars
+  - cert5.{{.Domain}}
+  secretName: cert5-secret
+  issuerRef:
+    name: {{.Name}}
 `
 
 var revoke2Template = `
@@ -207,7 +222,7 @@ func init() {
 
 func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 	_ = Describe("basics-"+iss.Name, func() {
-		It("should work with "+iss.Name, func() {
+		It("should work with "+iss.Name, func(_ context.Context) {
 			manifestFilename, err := iss.CreateTempManifest("Manifest", basicTemplate)
 			defer iss.DeleteTempManifest(manifestFilename)
 			Ω(err).ShouldNot(HaveOccurred())
@@ -224,7 +239,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			Ω(err).ShouldNot(HaveOccurred())
 
 			entryNames := []string{}
-			for _, name := range []string{"1", "2", "2b", "3"} {
+			for _, name := range []string{"1", "2", "2b", "3", "5"} {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.AwaitCertReady(entryNames...)
@@ -271,6 +286,13 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 					"status": MatchKeys(IgnoreExtras, Keys{
 						"commonName":     Equal(dnsName(iss, "cert3")),
 						"dnsNames":       And(HaveLen(1), ContainElement(dnsName(iss, "*.cert3"))),
+						"state":          Equal("Ready"),
+						"expirationDate": HavePrefix("20"),
+					}),
+				}),
+				entryName(iss, "5"): MatchKeys(IgnoreExtras, Keys{
+					"status": MatchKeys(IgnoreExtras, Keys{
+						"dnsNames":       And(HaveLen(2), ContainElements(dnsName(iss, "cert5.very-very-very-very-very-very-very-very-very-very-very-long"), dnsName(iss, "cert5"))),
 						"state":          Equal("Ready"),
 						"expirationDate": HavePrefix("20"),
 					}),
@@ -360,7 +382,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 			err = u.AwaitIssuerDeleted(iss.Name)
 			Ω(err).ShouldNot(HaveOccurred())
-		})
+		}, SpecTimeout(180*time.Second))
 	})
 }
 

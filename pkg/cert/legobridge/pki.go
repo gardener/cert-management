@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/go-acme/lego/v4/certificate"
+	"k8s.io/utils/ptr"
 )
 
 var (
@@ -164,7 +165,7 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 		Version:            3,
 		PublicKeyAlgorithm: DefaultPubKeyAlgo,
 		Subject: pkix.Name{
-			CommonName:         *input.CommonName,
+			CommonName:         ptr.Deref(input.CommonName, ""),
 			Country:            subjectCA.Country,
 			Organization:       subjectCA.Organization,
 			OrganizationalUnit: subjectCA.OrganizationalUnit,

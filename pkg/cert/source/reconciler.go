@@ -264,12 +264,12 @@ func (r *sourceReconciler) Deleted(logger logger.LogContext, key resources.Clust
 	failed := false
 	for _, s := range r.Slaves().GetByOwnerKey(key) {
 		err := s.Delete()
-		commonName := certutils.Certificate(s).SafeCommonName()
+		firstDNSName := certutils.Certificate(s).SafeFirstDNSName()
 		if err != nil && !errors.IsNotFound(err) {
-			logger.Warnf("cannot delete certificate %s(%s): %s", s.ObjectName(), commonName, err)
+			logger.Warnf("cannot delete certificate %s(%s): %s", s.ObjectName(), firstDNSName, err)
 			failed = true
 		} else {
-			logger.Infof("delete certificate for vanished %s(%s)", s.ObjectName(), commonName)
+			logger.Infof("delete certificate for vanished %s(%s)", s.ObjectName(), firstDNSName)
 		}
 	}
 	if failed {
@@ -284,11 +284,11 @@ func (r *sourceReconciler) Delete(logger logger.LogContext, obj resources.Object
 	failed := false
 	logger.Infof("certificate source is deleting -> delete certificate")
 	for _, s := range r.Slaves().GetByOwner(obj) {
-		commonName := certutils.Certificate(s).SafeCommonName()
-		logger.Infof("delete certificate %s(%s)", s.ObjectName(), commonName)
+		firstDNSName := certutils.Certificate(s).SafeFirstDNSName()
+		logger.Infof("delete certificate %s(%s)", s.ObjectName(), firstDNSName)
 		err := s.Delete()
 		if err != nil && !errors.IsNotFound(err) {
-			logger.Warnf("cannot delete certificate %s for %s: %s", s.ObjectName(), commonName, err)
+			logger.Warnf("cannot delete certificate %s for %s: %s", s.ObjectName(), firstDNSName, err)
 			failed = true
 		}
 	}
@@ -320,8 +320,13 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 		resources.SetAnnotation(cert, AnnotClass, r.targetclass)
 	}
 	if len(info.Domains) > 0 {
-		cert.Spec.CommonName = &info.Domains[0]
-		cert.Spec.DNSNames = info.Domains[1:]
+		if len(info.Domains[0]) <= 64 {
+			cert.Spec.CommonName = &info.Domains[0]
+			cert.Spec.DNSNames = info.Domains[1:]
+		} else {
+			cert.Spec.CommonName = nil
+			cert.Spec.DNSNames = info.Domains
+		}
 	}
 	if info.IssuerName != nil {
 		parts := strings.SplitN(*info.IssuerName, "/", 2)
