@@ -7,6 +7,7 @@
 package functional
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -221,7 +222,7 @@ func init() {
 
 func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 	_ = Describe("basics-"+iss.Name, func() {
-		It("should work with "+iss.Name, func() {
+		It("should work with "+iss.Name, func(_ context.Context) {
 			manifestFilename, err := iss.CreateTempManifest("Manifest", basicTemplate)
 			defer iss.DeleteTempManifest(manifestFilename)
 			Ω(err).ShouldNot(HaveOccurred())
@@ -381,7 +382,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 			err = u.AwaitIssuerDeleted(iss.Name)
 			Ω(err).ShouldNot(HaveOccurred())
-		})
+		}, SpecTimeout(180*time.Second))
 	})
 }
 

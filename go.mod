@@ -20,7 +20,7 @@ require (
 	k8s.io/client-go v0.28.3
 	k8s.io/code-generator v0.28.3
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 	sigs.k8s.io/kind v0.20.0
 	software.sslmate.com/src/go-pkcs12 v0.4.0
 )
