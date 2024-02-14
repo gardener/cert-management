@@ -1,6 +1,5 @@
 # Certificate Management
-
-[![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
+[![REUSE status](https://api.reuse.software/badge/github.com/gardener/cert-management)](https://api.reuse.software/info/github.com/gardener/cert-management)
 
 The cert-manager manages TLS certificates in Kubernetes clusters using custom resources.
 
