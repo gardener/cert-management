@@ -397,8 +397,13 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		var cn *string
 		var dnsNames []string
 		if len(info.Domains) > 0 {
-			cn = &info.Domains[0]
-			dnsNames = info.Domains[1:]
+			if len(info.Domains[0]) <= 64 {
+				cn = &info.Domains[0]
+				dnsNames = info.Domains[1:]
+			} else {
+				cn = nil
+				dnsNames = info.Domains
+			}
 		}
 
 		mod.AssureStringPtrPtr(&spec.CommonName, cn)
