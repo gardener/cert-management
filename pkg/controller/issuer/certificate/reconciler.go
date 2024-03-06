@@ -771,10 +771,10 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 	if spec.CommonName != nil {
 		h.Write([]byte(*spec.CommonName))
 		h.Write([]byte{0})
-		for _, domain := range spec.DNSNames {
-			h.Write([]byte(domain))
-			h.Write([]byte{0})
-		}
+	}
+	for _, domain := range spec.DNSNames {
+		h.Write([]byte(domain))
+		h.Write([]byte{0})
 	}
 	if spec.CSR != nil {
 		h.Write([]byte{0})
