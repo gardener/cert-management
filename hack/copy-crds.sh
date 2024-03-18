@@ -8,7 +8,7 @@
 set -e
 
 source_dir="$(dirname "$0")/../pkg/apis/cert/crds"
-destination_dir="$(dirname "$0")/../charts/cert-management/templates/"
+destination_dir="$(dirname "$0")/../pkg/deployer/kubernetes/"
 
 # Function to update the metadata section and copy to destination
 update_and_copy() {
