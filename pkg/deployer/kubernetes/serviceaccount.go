@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ServiceAccount return a new v1 ServiceAccount object for 'cert-management'.
-func ServiceAccount(name, namespace string) *corev1.ServiceAccount {
+// EmptyServiceAccount returns a v1 ServiceAccount with basic metadata filled only.
+func EmptyServiceAccount(name, namespace string) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
