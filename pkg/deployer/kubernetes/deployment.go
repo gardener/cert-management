@@ -10,12 +10,14 @@ import (
 	"fmt"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
+	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
 	gardenerutils "github.com/gardener/gardener/pkg/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/ptr"
 )
 
@@ -36,6 +38,7 @@ func MutateDeployment(
 	serviceAccountName string,
 	image string,
 	serverPort int32,
+	caBundleSecret *corev1.Secret,
 ) {
 	metav1.SetMetaDataLabel(&deployment.ObjectMeta, resourcesv1alpha1.HighAvailabilityConfigType, resourcesv1alpha1.HighAvailabilityConfigTypeController)
 
@@ -92,6 +95,34 @@ func MutateDeployment(
 			},
 		},
 	}
+
+	if caBundleSecret != nil {
+		container := &deployment.Spec.Template.Spec.Containers[0]
+		container.Env = append(container.Env,
+			corev1.EnvVar{
+				Name:  "LEGO_CA_SYSTEM_CERT_POOL",
+				Value: "true",
+			},
+			corev1.EnvVar{
+				Name:  "LEGO_CA_CERTIFICATES",
+				Value: "/var/run/cert-manager/certs/bundle.crt",
+			},
+		)
+		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+			Name:      "ca-certificates",
+			ReadOnly:  true,
+			MountPath: "/var/run/cert-manager/certs",
+		})
+		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, corev1.Volume{
+			Name: "ca-certificates",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: caBundleSecret.Name,
+				},
+			},
+		})
+	}
+	utilruntime.Must(references.InjectAnnotations(deployment))
 }
 
 func getDeploymentLabels() map[string]string {

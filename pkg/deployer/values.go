@@ -17,5 +17,6 @@ type Values struct {
 
 // Configuration contains configuration options for 'cert-management'.
 type Configuration struct {
-	HttpServerPort int32
+	HttpServerPort      int32
+	CACertificateBundle *string
 }

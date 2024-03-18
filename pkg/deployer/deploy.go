@@ -67,9 +67,21 @@ func (d *deployer) Deploy(ctx context.Context) error {
 		{Obj: roleBinding, Class: d.class, MutateFn: func() {
 			kubernetes.ReconcileRoleBinding(roleBinding, serviceAccount.Name, role.Name)
 		}},
-		{Obj: deployment, Class: d.class, MutateFn: func() {
-			kubernetes.MutateDeployment(deployment, d.values.PodLabels, d.values.Name, d.values.Image, d.values.Config.HttpServerPort)
-		}},
+	}
+
+	if bundleData := d.values.Config.CACertificateBundle; bundleData != nil {
+		caBundleSecret := kubernetes.EmptyCABundleCertificateSecret(d.values.Name, d.values.Namespace)
+
+		resourceConfigs = append(resourceConfigs, component.ResourceConfig{Obj: caBundleSecret, Class: d.class, MutateFn: func() {
+			kubernetes.ReconcileCABundleCertificateSecret(caBundleSecret, []byte(*bundleData))
+		}})
+		resourceConfigs = append(resourceConfigs, component.ResourceConfig{Obj: deployment, Class: d.class, MutateFn: func() {
+			kubernetes.MutateDeployment(deployment, d.values.PodLabels, d.values.Name, d.values.Image, d.values.Config.HttpServerPort, caBundleSecret)
+		}})
+	} else {
+		resourceConfigs = append(resourceConfigs, component.ResourceConfig{Obj: deployment, Class: d.class, MutateFn: func() {
+			kubernetes.MutateDeployment(deployment, d.values.PodLabels, d.values.Name, d.values.Image, d.values.Config.HttpServerPort, nil)
+		}})
 	}
 
 	return component.DeployResourceConfigs(
