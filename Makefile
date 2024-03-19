@@ -65,8 +65,8 @@ clean:
 generate: clean $(VGOPATH) $(CONTROLLER_GEN)
 	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) ./hack/generate-code
 	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/apis/cert/...
-	@go generate ./hack/deployer
 	@./hack/copy-crds.sh
+	@go generate ./hack/deployer
 	@go fmt ./pkg/...
 
 .PHONY: docker-images

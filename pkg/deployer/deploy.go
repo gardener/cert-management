@@ -12,6 +12,7 @@ import (
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
@@ -28,6 +29,7 @@ func init() {
 		kubernetesscheme.AddToScheme,
 		certv1alpha1.AddToScheme,
 		resourcesv1alpha1.AddToScheme,
+		apiextensionsv1.AddToScheme,
 	)
 
 	utilruntime.Must(schemeBuilder.AddToScheme(Scheme))
@@ -69,7 +71,24 @@ func (d *deployer) Deploy(ctx context.Context) error {
 	roleBinding := kubernetes.EmptyRoleBinding(d.values.Name, d.values.Namespace)
 	deployment := kubernetes.EmptyDeployment(d.values.Name, d.values.Namespace)
 
+	codec := codecFactory.CodecForVersions(serializer, serializer, apiextensionsv1.SchemeGroupVersion, apiextensionsv1.SchemeGroupVersion)
+	crdCertificateRevocations, err := kubernetes.EmptyCRDRevocations(codec)
+	if err != nil {
+		return err
+	}
+	crdCertificates, err := kubernetes.EmptyCRDCertificates(codec)
+	if err != nil {
+		return err
+	}
+	crdIssuers, err := kubernetes.EmptyCRDIssuers(codec)
+	if err != nil {
+		return err
+	}
+
 	resourceConfigs := []component.ResourceConfig{
+		{Obj: crdCertificateRevocations, Class: d.class},
+		{Obj: crdCertificates, Class: d.class},
+		{Obj: crdIssuers, Class: d.class},
 		{Obj: serviceAccount, Class: d.class},
 		{Obj: clusterRole, Class: d.class, MutateFn: func() {
 			kubernetes.ReconcileClusterRole(clusterRole)
