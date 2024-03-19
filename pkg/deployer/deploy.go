@@ -9,20 +9,36 @@ package deployer
 import (
 	"context"
 
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/deployer/kubernetes"
 )
 
+func init() {
+	schemeBuilder := runtime.NewSchemeBuilder(
+		kubernetesscheme.AddToScheme,
+		certv1alpha1.AddToScheme,
+		resourcesv1alpha1.AddToScheme,
+	)
+
+	utilruntime.Must(schemeBuilder.AddToScheme(Scheme))
+}
+
 var (
-	scheme       = runtime.NewScheme()
-	codecFactory = runtimeserializer.NewCodecFactory(scheme)
-	serializer   = json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Pretty: false, Strict: false})
+	// Scheme is the scheme relevant for the deployer.
+	Scheme = runtime.NewScheme()
+
+	codecFactory = runtimeserializer.NewCodecFactory(Scheme)
+	serializer   = json.NewSerializerWithOptions(json.DefaultMetaFactory, Scheme, Scheme, json.SerializerOptions{Yaml: true, Pretty: false, Strict: false})
 )
 
 type deployer struct {
@@ -91,7 +107,7 @@ func (d *deployer) Deploy(ctx context.Context) error {
 		// TODO(timuthy): Change utility in `gardener/gardener` to not pass shoot here.
 		component.ClusterTypeShoot,
 		ManagedResourceName,
-		managedresources.NewRegistry(scheme, codecFactory, serializer),
+		managedresources.NewRegistry(Scheme, codecFactory, serializer),
 		resourceConfigs,
 	)
 }

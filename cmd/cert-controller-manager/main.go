@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -27,6 +28,7 @@ import (
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
 	_ "github.com/gardener/cert-management/pkg/controller/source/ingress"
 	_ "github.com/gardener/cert-management/pkg/controller/source/service"
+	"github.com/gardener/cert-management/pkg/deployer/gen"
 )
 
 var version string
@@ -74,6 +76,12 @@ func main() {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+
+	if len(os.Args) == 6 && os.Args[1] == "generate-manifests" && os.Args[2] == "--values" && os.Args[4] == "--output" {
+		fmt.Println(gen.Generate(context.Background(), os.Args[3], os.Args[5]))
+		os.Exit(0)
+	}
+
 	// set LEGO_DISABLE_CNAME_SUPPORT=true as we have our own logic for FollowCNAME
 	os.Setenv("LEGO_DISABLE_CNAME_SUPPORT", "true")
 	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing", migrateExtensionsIngress)

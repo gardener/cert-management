@@ -1,0 +1,34 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: cert-management-local
+  namespace: default
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+- apiGroups:
+  - coordination.k8s.io
+  resourceNames:
+  - cert-controller-manager-controllers
+  resources:
+  - leases
+  verbs:
+  - get
+  - watch
+  - update
+- apiGroups:
+  - dns.gardener.cloud
+  resources:
+  - dnsentries
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+  - create
+  - delete

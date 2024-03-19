@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: issuers.cert.gardener.cloud
 spec:
   group: cert.gardener.cloud
@@ -51,14 +51,19 @@ spec:
         description: Issuer is the issuer CR.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -101,10 +106,11 @@ spec:
                           Account is bound to.
                         type: string
                       keySecretRef:
-                        description: keySecretRef is the secret ref to the Secret
-                          which holds the symmetric MAC key of the External Account
-                          Binding with data key 'hmacKey'. The secret key stored in
-                          the Secret **must** be un-padded, base64 URL encoded data.
+                        description: |-
+                          keySecretRef is the secret ref to the
+                          Secret which holds the symmetric MAC key of the External Account Binding with data key 'hmacKey'.
+                          The secret key stored in the Secret **must** be un-padded, base64 URL
+                          encoded data.
                         properties:
                           name:
                             description: name is unique within a namespace to reference
@@ -121,9 +127,9 @@ spec:
                     - keySecretRef
                     type: object
                   precheckNameservers:
-                    description: PrecheckNameservers overwrites the default precheck
-                      nameservers used for checking DNS propagation. Format `host`
-                      or `host:port`, e.g. "8.8.8.8" same as "8.8.8.8:53" or "google-public-dns-a.google.com:53".
+                    description: |-
+                      PrecheckNameservers overwrites the default precheck nameservers used for checking DNS propagation.
+                      Format `host` or `host:port`, e.g. "8.8.8.8" same as "8.8.8.8:53" or "google-public-dns-a.google.com:53".
                     items:
                       type: string
                     type: array
@@ -145,9 +151,10 @@ spec:
                     description: Server is the URL of the ACME server.
                     type: string
                   skipDNSChallengeValidation:
-                    description: SkipDNSChallengeValidation marks that this issuer
-                      does not validate DNS challenges. In this case no DNS entries/records
-                      are created for a DNS Challenge and DNS propagation is not checked.
+                    description: |-
+                      SkipDNSChallengeValidation marks that this issuer does not validate DNS challenges.
+                      In this case no DNS entries/records are created for a DNS Challenge and DNS propagation
+                      is not checked.
                     type: boolean
                 required:
                 - email

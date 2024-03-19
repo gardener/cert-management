@@ -24,6 +24,7 @@ require (
 	k8s.io/code-generator v0.29.2
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
+	sigs.k8s.io/controller-runtime v0.17.2
 	sigs.k8s.io/kind v0.20.0
 	software.sslmate.com/src/go-pkcs12 v0.4.0
 )
@@ -136,7 +137,6 @@ require (
 	k8s.io/kube-aggregator v0.29.2 // indirect
 	k8s.io/kubelet v0.29.2 // indirect
 	k8s.io/metrics v0.29.2 // indirect
-	sigs.k8s.io/controller-runtime v0.17.2 // indirect
 	sigs.k8s.io/controller-tools v0.14.0 // indirect
 	sigs.k8s.io/gateway-api v0.6.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
