@@ -68,6 +68,13 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 	}
 
 	preferredChain, _ := resources.GetAnnotation(obj.Data(), source.AnnotPreferredChain)
+	algorithm, _ := resources.GetAnnotation(obj.Data(), source.AnnotPrivateKeyAlgorithm)
+	keySize := 0
+	if keySizeStr, ok := resources.GetAnnotation(obj.Data(), source.AnnotPrivateKeySize); ok {
+		if value, err := strconv.Atoi(keySizeStr); err == nil {
+			keySize = value
+		}
+	}
 
 	cn, _ := resources.GetAnnotation(obj.Data(), source.AnnotCommonName)
 	cn = strings.TrimSpace(cn)
@@ -97,12 +104,14 @@ func (s *CIngressSource) GetCertsInfo(logger logger.LogContext, obj resources.Ob
 			domains = mergeCommonName(cn, tls.Hosts)
 		}
 		info.Certs[tls.SecretName] = source.CertInfo{
-			SecretName:     tls.SecretName,
-			Domains:        domains,
-			IssuerName:     issuer,
-			FollowCNAME:    followCNAME,
-			SecretLabels:   source.ExtractSecretLabels(obj),
-			PreferredChain: preferredChain,
+			SecretName:          tls.SecretName,
+			Domains:             domains,
+			IssuerName:          issuer,
+			FollowCNAME:         followCNAME,
+			SecretLabels:        source.ExtractSecretLabels(obj),
+			PreferredChain:      preferredChain,
+			PrivateKeyAlgorithm: algorithm,
+			PrivateKeySize:      keySize,
 		}
 	}
 	return info, err

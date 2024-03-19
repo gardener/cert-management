@@ -82,6 +82,9 @@ type CertificateSpec struct {
 	// PreferredChain allows to specify the preferred certificate chain: if the CA offers multiple certificate chains, prefer the chain with an issuer matching this Subject Common Name. If no match, the default offered chain will be used.
 	// +optional
 	PreferredChain *string `json:"preferredChain,omitempty"`
+	// Private key options. These include the key algorithm and size.
+	// +optional
+	PrivateKey *CertificatePrivateKey `json:"privateKey,omitempty"`
 }
 
 // IssuerRef is the reference of the issuer by name.
@@ -91,6 +94,43 @@ type IssuerRef struct {
 	// Namespace is the namespace of the issuer, only needed if issuer is defined on target cluster
 	// +optional
 	Namespace string `json:"namespace,omitempty"`
+}
+
+// PrivateKeyAlgorithm is the type for the algorithm
+// +kubebuilder:validation:Enum=RSA;ECDSA
+type PrivateKeyAlgorithm string
+
+const (
+	// RSAKeyAlgorithm is the value to use the RSA algorithm for the private key.
+	RSAKeyAlgorithm PrivateKeyAlgorithm = "RSA"
+
+	// ECDSAKeyAlgorithm is the value to use the ECDSA algorithm for the private key.
+	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ECDSA"
+)
+
+// CertificatePrivateKey contains configuration options for private keys
+// used by the Certificate controller.
+// These include the key algorithm and size.
+type CertificatePrivateKey struct {
+	// Algorithm is the private key algorithm of the corresponding private key
+	// for this certificate.
+	//
+	// If provided, allowed values are either `RSA` or `ECDSA`.
+	// If `algorithm` is specified and `size` is not provided,
+	// key size of 2048 will be used for `RSA` key algorithm and
+	// key size of 256 will be used for `ECDSA` key algorithm.
+	// +optional
+	Algorithm PrivateKeyAlgorithm `json:"algorithm,omitempty"`
+
+	// Size is the key bit size of the corresponding private key for this certificate.
+	//
+	// If `algorithm` is set to `RSA`, valid values are `2048`, `3072` or `4096`,
+	// and will default to `2048` if not specified.
+	// If `algorithm` is set to `ECDSA`, valid values are `256` or `384`,
+	// and will default to `256` if not specified.
+	// No other values are allowed.
+	// +optional
+	Size int `json:"size,omitempty"`
 }
 
 // BackOffState stores the status for exponential back off on repeated cert request failure

@@ -28,6 +28,8 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Using `commonName` and optional `dnsNames`](#using-commonname-and-optional-dnsnames)
     - [Follow CNAME](#follow-cname)
     - [Preferred Chain](#preferred-chain)
+    - [Secret Labels](#secret-labels)
+    - [Specifying private key algorithm and size](#specifying-private-key-algorithm-and-size)
     - [Using a certificate signing request (CSR)](#using-a-certificate-signing-request-csr)
     - [Creating JKS or PKCS#12 keystores](#creating-jks-or-pkcs12-keystores)
   - [Requesting a Certificate for Ingress](#requesting-a-certificate-for-ingress)
@@ -352,6 +354,33 @@ spec:
 
 In this case the secret `my-secret` will contains the labels.
 
+### Specifying private key algorithm and size
+
+By default, the certificate uses `RSA` with a key size of 2048 bits for the private key
+Add the `privateKey` section to specify private key algorithm and/or size.
+
+Example:
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-ecdsa
+  namespace: default
+spec:
+  commonName: my-service.example-domain.com
+  secretName: my-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+```
+
+Allowed values for `spec.privateKey.algorithm` are `RSA` and `ECDSA`.
+For `RSA`, the allowed key sizes are `2048`, `3072`, and `4096`. If the size field is not specified,
+`2048` is used by default.
+For `ECDSA`, the allowed key sizes are `256` and `384`.  If the size field is not specified,
+`256` is used by default. 
+
 ### Using a certificate signing request (CSR)
 
 You can provide a complete CSR in PEM format (and encoded as Base64).
@@ -474,6 +503,8 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
         #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
         #cert.gardener.cloud/issuer: issuer-name                      # optional to specify custom issuer (use namespace/name for shoot issuers)
         #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
+        #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
+        #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
     spec:
       tls:
         - hosts:
@@ -526,6 +557,8 @@ metadata:
     #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
     #cert.gardener.cloud/issuer: issuer-name                      # optional to specify custom issuer (use namespace/name for shoot issuers)
     #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
+    #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
+    #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
     dns.gardener.cloud/ttl: "600"
   name: test-service
   namespace: default

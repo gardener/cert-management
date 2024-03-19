@@ -8,7 +8,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"text/template"
 
@@ -155,7 +154,7 @@ func (c *Config) postProcess() error {
 func (p *IssuerConfig) CreateTempManifest(name, templateContent string) (string, error) {
 	tmpl, err := template.New(name).Parse(templateContent)
 
-	f, err := ioutil.TempFile("", fmt.Sprintf("%s-*.yaml", p.Name))
+	f, err := os.CreateTemp("", fmt.Sprintf("%s-*.yaml", p.Name))
 	if err != nil {
 		return "", err
 	}

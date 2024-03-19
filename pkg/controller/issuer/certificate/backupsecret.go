@@ -92,28 +92,6 @@ func BackupSecret(
 	}, true, nil
 }
 
-// FindAllCertificateSecretsByOldHashLabel get all certificate secrets by the old certificate hash
-func FindAllCertificateSecretsByOldHashLabel(res resources.Interface, hashKey, altHashKey string) ([]resources.Object, error) {
-	opts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateOldHashKey, hashKey),
-	}
-	objs, err := res.List(opts)
-	if err != nil {
-		return nil, err
-	}
-	opts = metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", LabelCertificateOldHashKey, altHashKey),
-	}
-	objs2, err := res.List(opts)
-	if err != nil {
-		return nil, err
-	}
-	if len(objs2) > 0 {
-		objs = append(objs, objs2...)
-	}
-	return objs, nil
-}
-
 // FindAllCertificateSecretsByNewHashLabel get all certificate secrets by the certificate hash
 func FindAllCertificateSecretsByNewHashLabel(res resources.Interface, hashKey string) ([]resources.Object, error) {
 	opts := metav1.ListOptions{

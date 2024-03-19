@@ -45,6 +45,21 @@ const (
 	// AnnotPreferredChain is the annotation for the certificate preferred chain
 	AnnotPreferredChain = "cert.gardener.cloud/preferred-chain"
 
+	// AnnotPrivateKeyAlgorithm is the annotation key to set the PrivateKeyAlgorithm for a Certificate.
+	// If PrivateKeyAlgorithm is specified and `size` is not provided,
+	// key size of 256 will be used for `ECDSA` key algorithm and
+	// key size of 2048 will be used for `RSA` key algorithm.
+	// If unset an algorithm `RSA` will be used.
+	AnnotPrivateKeyAlgorithm = "cert.gardener.cloud/private-key-algorithm"
+
+	// AnnotPrivateKeySize is the annotation key to set the size of the private key for a Certificate.
+	// If PrivateKeyAlgorithm is set to `RSA`, valid values are `2048`, `3072`, or `4096`,
+	// and will default to `2048` if not specified.
+	// If PrivateKeyAlgorithm is set to `ECDSA`, valid values are `256` or `384`,
+	// and will default to `256` if not specified.
+	// No other values are allowed.
+	AnnotPrivateKeySize = "cert.gardener.cloud/private-key-size"
+
 	// OptClass is the cert-class command line option
 	OptClass = "cert-class"
 	// OptTargetclass is the target-cert-class command line option

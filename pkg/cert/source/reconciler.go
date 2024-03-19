@@ -350,6 +350,13 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 		cert.Spec.PreferredChain = &info.PreferredChain
 	}
 
+	if info.PrivateKeyAlgorithm != "" || info.PrivateKeySize != 0 {
+		cert.Spec.PrivateKey = &api.CertificatePrivateKey{
+			Algorithm: api.PrivateKeyAlgorithm(info.PrivateKeyAlgorithm),
+			Size:      info.PrivateKeySize,
+		}
+	}
+
 	e, _ := r.SlaveResoures()[0].Wrap(cert)
 
 	err := r.Slaves().CreateSlave(obj, e)
@@ -451,6 +458,25 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 			}
 			mod.Modify(true)
 		}
+
+		oldAlgorithm := ""
+		oldKeySize := 0
+		if spec.PrivateKey != nil {
+			oldAlgorithm = string(spec.PrivateKey.Algorithm)
+			oldKeySize = spec.PrivateKey.Size
+		}
+		if info.PrivateKeyAlgorithm != oldAlgorithm || info.PrivateKeySize != oldKeySize {
+			if info.PrivateKeyAlgorithm != "" || info.PrivateKeySize != 0 {
+				spec.PrivateKey = &api.CertificatePrivateKey{
+					Algorithm: api.PrivateKeyAlgorithm(info.PrivateKeyAlgorithm),
+					Size:      info.PrivateKeySize,
+				}
+			} else {
+				spec.PrivateKey = nil
+			}
+			mod.Modify(true)
+		}
+
 		if mod.IsModified() {
 			logger.Infof("update certificate object %s", obj.ObjectName())
 		}
