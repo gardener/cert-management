@@ -44,19 +44,30 @@ var (
 )
 
 type deployer struct {
-	client client.Client
-	values Values
-	class  component.Class
+	client                   client.Client
+	values                   Values
+	class                    component.Class
+	managedResourceNamespace string
 }
 
 var _ component.DeployWaiter = (*deployer)(nil)
 
 // New returns a new 'cert-management' deployer instance.
-func New(client client.Client, values Values, class component.Class) component.DeployWaiter {
+func New(
+	client client.Client,
+	values Values,
+	class component.Class,
+	managedResourceNamespace string,
+) component.DeployWaiter {
+	if managedResourceNamespace == "" {
+		managedResourceNamespace = values.Namespace
+	}
+
 	return &deployer{
-		client: client,
-		values: values,
-		class:  class,
+		client:                   client,
+		values:                   values,
+		class:                    class,
+		managedResourceNamespace: managedResourceNamespace,
 	}
 }
 
@@ -122,7 +133,7 @@ func (d *deployer) Deploy(ctx context.Context) error {
 	return component.DeployResourceConfigs(
 		ctx,
 		d.client,
-		d.values.Namespace,
+		d.managedResourceNamespace,
 		// TODO(timuthy): Change utility in `gardener/gardener` to not pass shoot here.
 		component.ClusterTypeShoot,
 		ManagedResourceName,
