@@ -14,10 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/go-acme/lego/v4/certcrypto"
+	"k8s.io/utils/ptr"
 
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
@@ -148,12 +149,20 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 }
 
 // ToKeyType extracts the key type from the
-func ToKeyType(privateKeySpec *v1alpha1.CertificatePrivateKey) (certcrypto.KeyType, error) {
+func ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, error) {
 	keyType := certcrypto.RSA2048
 	if privateKeySpec != nil {
-		switch privateKeySpec.Algorithm {
-		case "", v1alpha1.RSAKeyAlgorithm:
-			switch privateKeySpec.Size {
+		algorithm := api.RSAKeyAlgorithm
+		if privateKeySpec.Algorithm != nil && *privateKeySpec.Algorithm != "" {
+			algorithm = *privateKeySpec.Algorithm
+		}
+		size := 0
+		if privateKeySpec.Size != nil && *privateKeySpec.Size != 0 {
+			size = int(*privateKeySpec.Size)
+		}
+		switch algorithm {
+		case api.RSAKeyAlgorithm:
+			switch size {
 			case 0, 2048:
 				keyType = certcrypto.RSA2048
 			case 3072:
@@ -161,41 +170,45 @@ func ToKeyType(privateKeySpec *v1alpha1.CertificatePrivateKey) (certcrypto.KeyTy
 			case 4096:
 				keyType = certcrypto.RSA4096
 			default:
-				return "", fmt.Errorf("invalid key size for RSA: %d (allowed values are 2048, 3072, and 4096)", privateKeySpec.Size)
+				return "", fmt.Errorf("invalid key size for RSA: %d (allowed values are 2048, 3072, and 4096)", size)
 			}
-		case v1alpha1.ECDSAKeyAlgorithm:
-			switch privateKeySpec.Size {
+		case api.ECDSAKeyAlgorithm:
+			switch size {
 			case 0, 256:
 				keyType = certcrypto.EC256
 			case 384:
 				keyType = certcrypto.EC384
 			default:
-				return "", fmt.Errorf("invalid key size for ECDSA: %d (allowed values are 256 and 384)", privateKeySpec.Size)
+				return "", fmt.Errorf("invalid key size for ECDSA: %d (allowed values are 256 and 384)", size)
 			}
 		default:
 			return "", fmt.Errorf("invalid private key algorithm %s (allowed values are '%s' and '%s')",
-				privateKeySpec.Algorithm, v1alpha1.RSAKeyAlgorithm, v1alpha1.ECDSAKeyAlgorithm)
+				algorithm, api.RSAKeyAlgorithm, api.ECDSAKeyAlgorithm)
 		}
 	}
 	return keyType, nil
 }
 
 // FromKeyType converts key type back to
-func FromKeyType(keyType certcrypto.KeyType) *v1alpha1.CertificatePrivateKey {
+func FromKeyType(keyType certcrypto.KeyType) *api.CertificatePrivateKey {
 	switch keyType {
 	case certcrypto.RSA2048:
-		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.RSAKeyAlgorithm, Size: 2048}
+		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 2048)
 	case certcrypto.RSA3072:
-		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.RSAKeyAlgorithm, Size: 3072}
+		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 3072)
 	case certcrypto.RSA4096:
-		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.RSAKeyAlgorithm, Size: 4096}
+		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 4096)
 	case certcrypto.EC256:
-		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.ECDSAKeyAlgorithm, Size: 256}
+		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 256)
 	case certcrypto.EC384:
-		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.ECDSAKeyAlgorithm, Size: 384}
+		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 384)
 	default:
 		return nil
 	}
+}
+
+func newCertificatePrivateKey(algorithm api.PrivateKeyAlgorithm, size api.PrivateKeySize) *api.CertificatePrivateKey {
+	return &api.CertificatePrivateKey{Algorithm: ptr.To(algorithm), Size: ptr.To(size)}
 }
 
 func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certificate.Resource, error) {

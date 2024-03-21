@@ -199,6 +199,13 @@ spec:
                       to `2048` if not specified. If `algorithm` is set to `ECDSA`,
                       valid values are `256` or `384`, and will default to `256` if
                       not specified. No other values are allowed."
+                    enum:
+                    - 256
+                    - 384
+                    - 2048
+                    - 3072
+                    - 4096
+                    format: int32
                     type: integer
                 type: object
               renew:

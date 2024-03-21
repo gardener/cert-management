@@ -356,7 +356,7 @@ In this case the secret `my-secret` will contains the labels.
 
 ### Specifying private key algorithm and size
 
-By default, the certificate uses `RSA` with a key size of 2048 bits for the private key
+By default, the certificate uses `RSA` with a key size of 2048 bits for the private key.
 Add the `privateKey` section to specify private key algorithm and/or size.
 
 Example:

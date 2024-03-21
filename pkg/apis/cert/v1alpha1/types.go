@@ -108,6 +108,10 @@ const (
 	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ECDSA"
 )
 
+// PrivateKeySize is the size for the algorithm
+// +kubebuilder:validation:Enum=256;384;2048;3072;4096
+type PrivateKeySize int32
+
 // CertificatePrivateKey contains configuration options for private keys
 // used by the Certificate controller.
 // These include the key algorithm and size.
@@ -120,7 +124,7 @@ type CertificatePrivateKey struct {
 	// key size of 2048 will be used for `RSA` key algorithm and
 	// key size of 256 will be used for `ECDSA` key algorithm.
 	// +optional
-	Algorithm PrivateKeyAlgorithm `json:"algorithm,omitempty"`
+	Algorithm *PrivateKeyAlgorithm `json:"algorithm,omitempty"`
 
 	// Size is the key bit size of the corresponding private key for this certificate.
 	//
@@ -130,7 +134,7 @@ type CertificatePrivateKey struct {
 	// and will default to `256` if not specified.
 	// No other values are allowed.
 	// +optional
-	Size int `json:"size,omitempty"`
+	Size *PrivateKeySize `json:"size,omitempty"`
 }
 
 // BackOffState stores the status for exponential back off on repeated cert request failure
