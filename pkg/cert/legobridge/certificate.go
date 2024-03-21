@@ -97,6 +97,8 @@ type ObtainOutput struct {
 	DNSNames []string
 	// CSR is the copy from the input.
 	CSR []byte
+	// KeyType is the copy from the input.
+	KeyType certcrypto.KeyType
 	// Renew is the flag if this was a renew request.
 	Renew bool
 	// Err contains the obtain request error.
@@ -176,6 +178,24 @@ func ToKeyType(privateKeySpec *v1alpha1.CertificatePrivateKey) (certcrypto.KeyTy
 		}
 	}
 	return keyType, nil
+}
+
+// FromKeyType converts key type back to
+func FromKeyType(keyType certcrypto.KeyType) *v1alpha1.CertificatePrivateKey {
+	switch keyType {
+	case certcrypto.RSA2048:
+		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.RSAKeyAlgorithm, Size: 2048}
+	case certcrypto.RSA3072:
+		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.RSAKeyAlgorithm, Size: 3072}
+	case certcrypto.RSA4096:
+		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.RSAKeyAlgorithm, Size: 4096}
+	case certcrypto.EC256:
+		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.ECDSAKeyAlgorithm, Size: 256}
+	case certcrypto.EC384:
+		return &v1alpha1.CertificatePrivateKey{Algorithm: v1alpha1.ECDSAKeyAlgorithm, Size: 384}
+	default:
+		return nil
+	}
 }
 
 func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certificate.Resource, error) {
@@ -300,6 +320,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
+			KeyType:      input.KeyType,
 			CSR:          input.CSR,
 			Renew:        input.RenewCert != nil,
 			Err:          niceError(err, provider.GetPendingTXTRecordError()),

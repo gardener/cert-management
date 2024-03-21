@@ -294,6 +294,7 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		DNSNames:   result.DNSNames,
 		CSR:        result.CSR,
 		IssuerRef:  &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
+		PrivateKey: legobridge.FromKeyType(result.KeyType),
 	}
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
@@ -1032,6 +1033,10 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 
 func (r *certReconciler) updateReadyCondition(mod *resources.ModificationState, oldConditions []metav1.Condition,
 	state string, msg *string, observedGeneration int64) []metav1.Condition {
+	if state == "" {
+		// ignore intermediate state
+		return oldConditions
+	}
 	oldReadyCondition := &metav1.Condition{
 		Type:               api.CertificateConditionReady,
 		LastTransitionTime: metav1.NewTime(time.Now()),
