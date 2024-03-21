@@ -96,7 +96,7 @@ type IssuerRef struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
-// PrivateKeyAlgorithm is the type for the algorithm
+// PrivateKeyAlgorithm is the type for the algorithm.
 // +kubebuilder:validation:Enum=RSA;ECDSA
 type PrivateKeyAlgorithm string
 
@@ -108,7 +108,7 @@ const (
 	ECDSAKeyAlgorithm PrivateKeyAlgorithm = "ECDSA"
 )
 
-// PrivateKeySize is the size for the algorithm
+// PrivateKeySize is the size for the algorithm.
 // +kubebuilder:validation:Enum=256;384;2048;3072;4096
 type PrivateKeySize int32
 
@@ -202,7 +202,7 @@ type QualifiedIssuerRef struct {
 	Namespace string `json:"namespace"`
 }
 
-// IsDefaultCluster returns true if the reference is on the default cluster
+// IsDefaultCluster returns true if the reference is on the default cluster.
 func (r QualifiedIssuerRef) IsDefaultCluster() bool {
 	return r.Cluster == "default"
 }

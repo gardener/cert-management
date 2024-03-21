@@ -148,7 +148,7 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 	return client.Certificate.Obtain(request)
 }
 
-// ToKeyType extracts the key type from the
+// ToKeyType extracts the key type from the private key spec.
 func ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, error) {
 	keyType := certcrypto.RSA2048
 	if privateKeySpec != nil {
@@ -189,7 +189,7 @@ func ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, e
 	return keyType, nil
 }
 
-// FromKeyType converts key type back to
+// FromKeyType converts key type back to a private key spec.
 func FromKeyType(keyType certcrypto.KeyType) *api.CertificatePrivateKey {
 	switch keyType {
 	case certcrypto.RSA2048:
@@ -270,7 +270,7 @@ func (o *obtainer) Obtain(input ObtainInput) error {
 	}
 }
 
-// Obtain starts the async obtain request.
+// ObtainACME starts the async obtain request.
 func (o *obtainer) ObtainACME(input ObtainInput) error {
 	err := o.setPending(input)
 	if err != nil {
