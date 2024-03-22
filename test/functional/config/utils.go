@@ -7,12 +7,16 @@
 package config
 
 import (
+	"crypto/ecdsa"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -28,7 +32,7 @@ type TestUtils struct {
 
 func CreateDefaultTestUtils() *TestUtils {
 	return &TestUtils{
-		AwaitTimeout:  90 * time.Second,
+		AwaitTimeout:  120 * time.Second,
 		PollingPeriod: 200 * time.Millisecond,
 		Namespace:     "default",
 		Verbose:       true,
@@ -53,6 +57,36 @@ func (u *TestUtils) KubectlGetSecret(name string) (*corev1.Secret, error) {
 		return nil, err
 	}
 	return secret, nil
+}
+
+func (u *TestUtils) CheckCertificatePrivateKey(secretName string, algorithm x509.PublicKeyAlgorithm, keySize int) error {
+	secret, err := u.KubectlGetSecret(secretName)
+	if err != nil {
+		return err
+	}
+	cert, err := legobridge.DecodeCertificateFromSecretData(secret.Data)
+	if err != nil {
+		return err
+	}
+	if cert.PublicKeyAlgorithm != algorithm {
+		return fmt.Errorf("algorithm mismatch: %s != %s", cert.PublicKeyAlgorithm, algorithm)
+	}
+
+	switch pub := cert.PublicKey.(type) {
+	case *rsa.PublicKey:
+		size := pub.N.BitLen()
+		if size != keySize {
+			return fmt.Errorf("key size mismatch: %d != %d", size, keySize)
+		}
+	case *ecdsa.PublicKey:
+		size := pub.Curve.Params().N.BitLen()
+		if size != keySize {
+			return fmt.Errorf("key size mismatch: %d != %d", size, keySize)
+		}
+	default:
+		return fmt.Errorf("unknown public key")
+	}
+	return nil
 }
 
 func (u *TestUtils) toItemMap(output string) (map[string]interface{}, error) {

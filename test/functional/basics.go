@@ -8,6 +8,7 @@ package functional
 
 import (
 	"context"
+	"crypto/x509"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -154,6 +155,62 @@ spec:
   secretName: cert5-secret
   issuerRef:
     name: {{.Name}}
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert6
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert6.{{.Domain}}
+  secretName: cert6-secret
+  issuerRef:
+    name: {{.Name}}
+  privateKey:
+    algorithm: RSA
+    size: 3072
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert7
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert7.{{.Domain}}
+  secretName: cert7-secret
+  issuerRef:
+    name: {{.Name}}
+  privateKey:
+    algorithm: RSA
+    size: 4096
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert8
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert8.{{.Domain}}
+  secretName: cert8-secret
+  issuerRef:
+    name: {{.Name}}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert9
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert9.{{.Domain}}
+  secretName: cert9-secret
+  issuerRef:
+    name: {{.Name}}
+  privateKey:
+    algorithm: ECDSA
+    size: 384
 `
 
 var revoke2Template = `
@@ -239,7 +296,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			Ω(err).ShouldNot(HaveOccurred())
 
 			entryNames := []string{}
-			for _, name := range []string{"1", "2", "2b", "3", "5"} {
+			for _, name := range []string{"1", "2", "2b", "3", "5", "6", "7", "8", "9"} {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.AwaitCertReady(entryNames...)
@@ -297,7 +354,41 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 						"expirationDate": HavePrefix("20"),
 					}),
 				}),
+				entryName(iss, "6"): MatchKeys(IgnoreExtras, Keys{
+					"status": MatchKeys(IgnoreExtras, Keys{
+						"commonName":     Equal(dnsName(iss, "cert6")),
+						"state":          Equal("Ready"),
+						"expirationDate": HavePrefix("20"),
+					}),
+				}),
+				entryName(iss, "7"): MatchKeys(IgnoreExtras, Keys{
+					"status": MatchKeys(IgnoreExtras, Keys{
+						"commonName":     Equal(dnsName(iss, "cert7")),
+						"state":          Equal("Ready"),
+						"expirationDate": HavePrefix("20"),
+					}),
+				}),
+				entryName(iss, "8"): MatchKeys(IgnoreExtras, Keys{
+					"status": MatchKeys(IgnoreExtras, Keys{
+						"commonName":     Equal(dnsName(iss, "cert8")),
+						"state":          Equal("Ready"),
+						"expirationDate": HavePrefix("20"),
+					}),
+				}),
+				entryName(iss, "9"): MatchKeys(IgnoreExtras, Keys{
+					"status": MatchKeys(IgnoreExtras, Keys{
+						"commonName":     Equal(dnsName(iss, "cert9")),
+						"state":          Equal("Ready"),
+						"expirationDate": HavePrefix("20"),
+					}),
+				}),
 			}))
+
+			Ω(u.CheckCertificatePrivateKey("cert3-secret", x509.RSA, 2048)).ShouldNot(HaveOccurred())
+			Ω(u.CheckCertificatePrivateKey("cert6-secret", x509.RSA, 3072)).ShouldNot(HaveOccurred())
+			Ω(u.CheckCertificatePrivateKey("cert7-secret", x509.RSA, 4096)).ShouldNot(HaveOccurred())
+			Ω(u.CheckCertificatePrivateKey("cert8-secret", x509.ECDSA, 256)).ShouldNot(HaveOccurred())
+			Ω(u.CheckCertificatePrivateKey("cert9-secret", x509.ECDSA, 384)).ShouldNot(HaveOccurred())
 
 			By("check keystores in cert3", func() {
 				secret, err := u.KubectlGetSecret("cert3-secret")

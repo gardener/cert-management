@@ -199,13 +199,23 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources
 	}
 	preferredChain, _ := resources.GetAnnotation(obj.Data(), AnnotPreferredChain)
 
+	algorithm, _ := resources.GetAnnotation(obj.Data(), AnnotPrivateKeyAlgorithm)
+	keySize := 0
+	if keySizeStr, ok := resources.GetAnnotation(obj.Data(), AnnotPrivateKeySize); ok {
+		if value, err := strconv.Atoi(keySizeStr); err == nil {
+			keySize = value
+		}
+	}
+
 	info.Certs[secretName] = CertInfo{
-		SecretName:     secretName,
-		Domains:        annotatedDomains,
-		IssuerName:     issuer,
-		FollowCNAME:    followCNAME,
-		SecretLabels:   ExtractSecretLabels(obj),
-		PreferredChain: preferredChain,
+		SecretName:          secretName,
+		Domains:             annotatedDomains,
+		IssuerName:          issuer,
+		FollowCNAME:         followCNAME,
+		SecretLabels:        ExtractSecretLabels(obj),
+		PreferredChain:      preferredChain,
+		PrivateKeyAlgorithm: algorithm,
+		PrivateKeySize:      keySize,
 	}
 	return info, nil
 }

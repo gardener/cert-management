@@ -9,11 +9,13 @@ package certificate
 import (
 	"crypto/sha256"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,7 +25,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
-	"github.com/gardener/controller-manager-library/pkg/errors"
+	cmlerrors "github.com/gardener/controller-manager-library/pkg/errors"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	cmlutils "github.com/gardener/controller-manager-library/pkg/utils"
@@ -39,8 +41,6 @@ import (
 )
 
 const (
-	// LabelCertificateOldHashKey is the old label for the certificate hash
-	LabelCertificateOldHashKey = api.GroupName + "/certificate-hash"
 	// LabelCertificateNewHashKey is the new label for the certificate hash
 	LabelCertificateNewHashKey = api.GroupName + "/hash"
 	// LabelCertificateKey is the label for marking secrets created for a certificate
@@ -234,7 +234,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 	if secretRef != nil {
 		secret, err = r.loadSecret(secretRef)
 		if err != nil {
-			if !apierrrors.IsNotFound(errors.Cause(err)) {
+			if !apierrrors.IsNotFound(cmlerrors.Cause(err)) {
 				return r.failed(logctx, obj, api.StateError, err)
 			}
 			// ignore if SecretRef is specified but not existing
@@ -252,21 +252,6 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 					return *status
 				}
 				return r.checkForRenewAndSucceeded(logctx, obj, secret)
-			} else if storedOldHash := cert.Labels[LabelCertificateOldHashKey]; storedOldHash != "" {
-				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey, false)
-				specAltHash := r.buildSpecOldHash(&cert.Spec, issuerKey, true)
-				if specOldHash != storedOldHash && specAltHash != storedOldHash {
-					return r.removeStoredHashKeyAndRepeat(logctx, obj)
-				}
-				specNewHash := r.buildSpecNewHash(&cert.Spec, issuerKey)
-				return r.migrateSpecHash(logctx, obj, specOldHash, specAltHash, specNewHash)
-			} else if storedOldHash := secret.Labels[LabelCertificateOldHashKey]; storedOldHash != "" {
-				specOldHash := r.buildSpecOldHash(&cert.Spec, issuerKey, false)
-				specAltHash := r.buildSpecOldHash(&cert.Spec, issuerKey, true)
-				if specOldHash == storedOldHash || specAltHash == storedOldHash {
-					specNewHash := r.buildSpecNewHash(&cert.Spec, issuerKey)
-					return r.migrateSpecHash(logctx, obj, specOldHash, specAltHash, specNewHash)
-				}
 			}
 
 			// corner case: existing secret but no stored hash, check if renewal is overdue
@@ -309,6 +294,7 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		DNSNames:   result.DNSNames,
 		CSR:        result.CSR,
 		IssuerRef:  &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
+		PrivateKey: legobridge.FromKeyType(result.KeyType),
 	}
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
@@ -478,16 +464,31 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	if cert.Spec.PreferredChain != nil {
 		preferredChain = *cert.Spec.PreferredChain
 	}
-	input := legobridge.ObtainInput{User: reguser, DNSSettings: dnsSettings, IssuerKey: issuerKey,
-		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		TargetClass: targetDNSClass, Callback: callback, RequestName: objectName, RenewCert: renewCert,
-		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations, PreferredChain: preferredChain,
+	keyType, err := legobridge.ToKeyType(cert.Spec.PrivateKey)
+	if err != nil {
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid private key configuration: %w", err))
+	}
+	input := legobridge.ObtainInput{
+		User:                           reguser,
+		DNSSettings:                    dnsSettings,
+		IssuerKey:                      issuerKey,
+		CommonName:                     cert.Spec.CommonName,
+		DNSNames:                       cert.Spec.DNSNames,
+		CSR:                            cert.Spec.CSR,
+		TargetClass:                    targetDNSClass,
+		Callback:                       callback,
+		RequestName:                    objectName,
+		RenewCert:                      renewCert,
+		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
+		PreferredChain:                 preferredChain,
+		KeyType:                        keyType,
 	}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
-		switch err.(type) {
-		case *legobridge.ConcurrentObtainError:
+		var concurrentObtainError *legobridge.ConcurrentObtainError
+		switch {
+		case errors.As(err, &concurrentObtainError):
 			return r.delay(logctx, obj, api.StatePending, err)
 		default:
 			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
@@ -573,8 +574,9 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
-		switch err.(type) {
-		case *legobridge.ConcurrentObtainError:
+		var concurrentObtainError *legobridge.ConcurrentObtainError
+		switch {
+		case errors.As(err, &concurrentObtainError):
 			return r.delay(logctx, obj, api.StatePending, err)
 		default:
 			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
@@ -592,7 +594,7 @@ func (r *certReconciler) validateDomainsAndCsr(spec *api.CertificateSpec, issuer
 		return err
 	}
 
-	names := sets.String{}
+	names := sets.Set[string]{}
 	for _, name := range domainsToValidate {
 		if names.Has(name) {
 			return fmt.Errorf("duplicate domain: %s", name)
@@ -740,32 +742,6 @@ func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj
 	return nil
 }
 
-func (r *certReconciler) buildSpecOldHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey, useAltHash bool) string {
-	h := sha256.New224()
-	if spec.CommonName != nil {
-		h.Write([]byte(*spec.CommonName))
-		h.Write([]byte{0})
-		for _, domain := range spec.DNSNames {
-			h.Write([]byte(domain))
-			h.Write([]byte{0})
-		}
-	}
-	if spec.CSR != nil {
-		h.Write([]byte{0})
-		h.Write(spec.CSR)
-		h.Write([]byte{0})
-	}
-	var hash string
-	if !useAltHash {
-		hash = r.support.GetIssuerSecretHash(issuerKey)
-	} else {
-		hash = r.support.GetAltIssuerSecretHash(issuerKey)
-	}
-	h.Write([]byte(hash))
-	h.Write([]byte{0})
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
 func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
 	h := sha256.New224()
 	if spec.CommonName != nil {
@@ -783,6 +759,10 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 	}
 	h.Write([]byte(issuerKey.String()))
 	h.Write([]byte{0})
+	if keyType, err := legobridge.ToKeyType(spec.PrivateKey); err == nil && keyType != certcrypto.RSA2048 {
+		h.Write([]byte(keyType))
+		h.Write([]byte{0})
+	}
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
@@ -832,17 +812,6 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 	if err != nil {
 		return nil, "", nil
 	}
-	updateLabels := false
-	if len(objs) == 0 {
-		// for migration v0.7.x to v0.8.x only
-		updateLabels = true
-		oldHash := r.buildSpecOldHash(spec, issuerKey, false)
-		altHash := r.buildSpecOldHash(spec, issuerKey, true)
-		objs, err = FindAllCertificateSecretsByOldHashLabel(r.certSecretResources, oldHash, altHash)
-		if err != nil {
-			return nil, "", nil
-		}
-	}
 
 	secretRef, _ := r.determineSecretRef(namespace, spec)
 	var best resources.Object
@@ -864,12 +833,6 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 				secretRef != nil && bestNotAfter.Equal(cert.NotAfter) && obj.GetName() == secretRef.Name && core.NormalizeNamespace(obj.GetNamespace()) == core.NormalizeNamespace(secretRef.Namespace) {
 				best = obj
 				bestNotAfter = cert.NotAfter
-
-				// for migration v0.7.x to v0.8.x only
-				if updateLabels {
-					obj.SetLabels(resources.AddLabel(obj.GetLabels(), LabelCertificateNewHashKey, specHash))
-					_ = obj.Update()
-				}
 			}
 		}
 	}
@@ -894,8 +857,7 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 	}
 	certificates := legobridge.SecretDataToCertificates(secret.Data)
 
-	var requestedAt *time.Time = ExtractRequestedAtFromAnnotation(secret)
-
+	requestedAt := ExtractRequestedAtFromAnnotation(secret)
 	return r.writeCertificateSecret(logctx, issuerInfo, objectMeta, certificates, specHash, specSecretRef, requestedAt, spec.Keystores, spec.SecretLabels)
 }
 
@@ -997,47 +959,12 @@ func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, o
 
 func (r *certReconciler) removeStoredHashKeyAndRepeat(logctx logger.LogContext, obj resources.Object) reconcile.Status {
 	c := obj.Data().(*api.Certificate)
-	delete(c.Labels, LabelCertificateOldHashKey)
 	delete(c.Labels, LabelCertificateNewHashKey)
 	obj2, err := r.certResources.Update(c)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating certificate resource failed: %w", err))
 	}
 	return r.repeat(logctx, obj2)
-}
-
-func (r *certReconciler) migrateSpecHash(logctx logger.LogContext, obj resources.Object, specOldHash, specAltHash, specNewHash string) reconcile.Status {
-	logctx.Infof("migrating spec hash")
-
-	crt := obj.Data().(*api.Certificate)
-
-	objs, err := FindAllCertificateSecretsByOldHashLabel(r.certSecretResources, specOldHash, specAltHash)
-	if err != nil {
-		return r.failed(logctx, obj, api.StateError, fmt.Errorf("find all certificates by old hash failed: %w", err))
-	}
-
-	for _, secret := range objs {
-		if _, ok := resources.GetLabel(secret.Data(), LabelCertificateNewHashKey); !ok {
-			secret.SetLabels(resources.AddLabel(secret.GetLabels(), LabelCertificateNewHashKey, specNewHash))
-			err = secret.Update()
-			if err != nil {
-				logctx.Warnf("updating label for certificate secret %s failed: %w", secret.ObjectName(), err)
-			}
-		}
-	}
-
-	if crt.Labels == nil {
-		crt.Labels = map[string]string{}
-	}
-	crt.Labels[LabelCertificateNewHashKey] = specNewHash
-	_, err = r.certResources.Update(crt)
-	if err != nil {
-		return r.failed(logctx, obj, api.StateError, fmt.Errorf("updating certificate resource failed: %w", err))
-	}
-
-	time.Sleep(500 * time.Millisecond)
-
-	return reconcile.Succeeded(logctx)
 }
 
 func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string, msg *string, mode backoffMode) (*resources.ModificationState, *api.CertificateStatus) {
@@ -1106,6 +1033,10 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 
 func (r *certReconciler) updateReadyCondition(mod *resources.ModificationState, oldConditions []metav1.Condition,
 	state string, msg *string, observedGeneration int64) []metav1.Condition {
+	if state == "" {
+		// ignore intermediate state
+		return oldConditions
+	}
 	oldReadyCondition := &metav1.Condition{
 		Type:               api.CertificateConditionReady,
 		LastTransitionTime: metav1.NewTime(time.Now()),
@@ -1160,7 +1091,8 @@ func (r *certReconciler) failedStop(logctx logger.LogContext, obj resources.Obje
 func (r *certReconciler) status(logctx logger.LogContext, obj resources.Object, state string, err error, stop bool) reconcile.Status {
 	msg := err.Error()
 
-	rerr, isRecoverable := err.(*core.RecoverableError)
+	var rerr *core.RecoverableError
+	isRecoverable := errors.As(err, &rerr)
 	backoffMode := boNone
 	if !isRecoverable {
 		if stop {

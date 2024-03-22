@@ -14,6 +14,7 @@ import (
 
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
@@ -350,6 +351,8 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 		cert.Spec.PreferredChain = &info.PreferredChain
 	}
 
+	cert.Spec.PrivateKey = createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize)
+
 	e, _ := r.SlaveResoures()[0].Wrap(cert)
 
 	err := r.Slaves().CreateSlave(obj, e)
@@ -451,10 +454,31 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 			}
 			mod.Modify(true)
 		}
+
+		newPrivateKey := createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize)
+		if !reflect.DeepEqual(spec.PrivateKey, newPrivateKey) {
+			spec.PrivateKey = newPrivateKey
+			mod.Modify(true)
+		}
+
 		if mod.IsModified() {
 			logger.Infof("update certificate object %s", obj.ObjectName())
 		}
 		return mod.IsModified(), nil
 	}
 	return obj.Modify(f)
+}
+
+func createPrivateKey(algorithm string, size int) *api.CertificatePrivateKey {
+	if algorithm == "" && size == 0 {
+		return nil
+	}
+	obj := &api.CertificatePrivateKey{}
+	if algorithm != "" {
+		obj.Algorithm = ptr.To(api.PrivateKeyAlgorithm(algorithm))
+	}
+	if size != 0 {
+		obj.Size = ptr.To(api.PrivateKeySize(size))
+	}
+	return obj
 }

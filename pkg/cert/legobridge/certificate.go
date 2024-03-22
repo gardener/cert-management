@@ -14,8 +14,11 @@ import (
 	"sync"
 	"time"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/go-acme/lego/v4/certcrypto"
+	"k8s.io/utils/ptr"
 
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
@@ -59,6 +62,8 @@ type ObtainInput struct {
 	AlwaysDeactivateAuthorizations bool
 	// PreferredChain
 	PreferredChain string
+	// KeyType represents the algo and size to use for the private key (only used if CSR is not set).
+	KeyType certcrypto.KeyType
 }
 
 // DNSControllerSettings are the settings for the DNSController.
@@ -93,6 +98,8 @@ type ObtainOutput struct {
 	DNSNames []string
 	// CSR is the copy from the input.
 	CSR []byte
+	// KeyType is the copy from the input.
+	KeyType certcrypto.KeyType
 	// Renew is the flag if this was a renew request.
 	Renew bool
 	// Err contains the obtain request error.
@@ -126,17 +133,85 @@ func NewObtainer() Obtainer {
 	return &obtainer{pendingDomains: map[string]time.Time{}}
 }
 
-func obtainForDomains(client *lego.Client, domains []string, deactivateAuthz bool, preferredChain string) (*certificate.Resource, error) {
+func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) (*certificate.Resource, error) {
+	privateKey, err := certcrypto.GeneratePrivateKey(input.KeyType)
+	if err != nil {
+		return nil, err
+	}
 	request := certificate.ObtainRequest{
 		Domains:                        domains,
 		Bundle:                         true,
-		AlwaysDeactivateAuthorizations: deactivateAuthz,
-		PreferredChain:                 preferredChain,
+		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
+		PreferredChain:                 input.PreferredChain,
+		PrivateKey:                     privateKey,
 	}
 	return client.Certificate.Obtain(request)
 }
 
-func obtainForCSR(client *lego.Client, csr []byte, deactivateAuthz bool, preferredChain string) (*certificate.Resource, error) {
+// ToKeyType extracts the key type from the private key spec.
+func ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, error) {
+	keyType := certcrypto.RSA2048
+	if privateKeySpec != nil {
+		algorithm := api.RSAKeyAlgorithm
+		if privateKeySpec.Algorithm != nil && *privateKeySpec.Algorithm != "" {
+			algorithm = *privateKeySpec.Algorithm
+		}
+		size := 0
+		if privateKeySpec.Size != nil && *privateKeySpec.Size != 0 {
+			size = int(*privateKeySpec.Size)
+		}
+		switch algorithm {
+		case api.RSAKeyAlgorithm:
+			switch size {
+			case 0, 2048:
+				keyType = certcrypto.RSA2048
+			case 3072:
+				keyType = certcrypto.RSA3072
+			case 4096:
+				keyType = certcrypto.RSA4096
+			default:
+				return "", fmt.Errorf("invalid key size for RSA: %d (allowed values are 2048, 3072, and 4096)", size)
+			}
+		case api.ECDSAKeyAlgorithm:
+			switch size {
+			case 0, 256:
+				keyType = certcrypto.EC256
+			case 384:
+				keyType = certcrypto.EC384
+			default:
+				return "", fmt.Errorf("invalid key size for ECDSA: %d (allowed values are 256 and 384)", size)
+			}
+		default:
+			return "", fmt.Errorf("invalid private key algorithm %s (allowed values are '%s' and '%s')",
+				algorithm, api.RSAKeyAlgorithm, api.ECDSAKeyAlgorithm)
+		}
+	}
+	return keyType, nil
+}
+
+// FromKeyType converts key type back to a private key spec.
+func FromKeyType(keyType certcrypto.KeyType) *api.CertificatePrivateKey {
+	switch keyType {
+	case certcrypto.RSA2048:
+		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 2048)
+	case certcrypto.RSA3072:
+		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 3072)
+	case certcrypto.RSA4096:
+		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 4096)
+	case certcrypto.EC256:
+		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 256)
+	case certcrypto.EC384:
+		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 384)
+	default:
+		return nil
+	}
+}
+
+func newCertificatePrivateKey(algorithm api.PrivateKeyAlgorithm, size api.PrivateKeySize) *api.CertificatePrivateKey {
+	return &api.CertificatePrivateKey{Algorithm: ptr.To(algorithm), Size: ptr.To(size)}
+}
+
+func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certificate.Resource, error) {
 	cert, err := extractCertificateRequest(csr)
 	if err != nil {
 		return nil, err
@@ -144,8 +219,8 @@ func obtainForCSR(client *lego.Client, csr []byte, deactivateAuthz bool, preferr
 	return client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
 		CSR:                            cert,
 		Bundle:                         true,
-		PreferredChain:                 preferredChain,
-		AlwaysDeactivateAuthorizations: deactivateAuthz,
+		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
+		PreferredChain:                 input.PreferredChain,
 	})
 }
 
@@ -195,7 +270,7 @@ func (o *obtainer) Obtain(input ObtainInput) error {
 	}
 }
 
-// Obtain starts the async obtain request.
+// ObtainACME starts the async obtain request.
 func (o *obtainer) ObtainACME(input ObtainInput) error {
 	err := o.setPending(input)
 	if err != nil {
@@ -246,9 +321,9 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 				if input.CommonName != nil {
 					domains = append([]string{*input.CommonName}, domains...)
 				}
-				certificates, err = obtainForDomains(client, domains, input.AlwaysDeactivateAuthorizations, input.PreferredChain)
+				certificates, err = obtainForDomains(client, domains, input)
 			} else {
-				certificates, err = obtainForCSR(client, input.CSR, input.AlwaysDeactivateAuthorizations, input.PreferredChain)
+				certificates, err = obtainForCSR(client, input.CSR, input)
 			}
 		}
 		count := provider.GetChallengesCount()
@@ -258,6 +333,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
+			KeyType:      input.KeyType,
 			CSR:          input.CSR,
 			Renew:        input.RenewCert != nil,
 			Err:          niceError(err, provider.GetPendingTXTRecordError()),
