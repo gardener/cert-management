@@ -1,15 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - clusterrole____cert-management.yaml
-  - clusterrolebinding____cert-management.yaml
+  - clusterrole____cert-controller-manager.yaml
+  - clusterrolebinding____cert-controller-manager.yaml
   - customresourcedefinition____certificaterevocations.cert.gardener.cloud.yaml
   - customresourcedefinition____certificates.cert.gardener.cloud.yaml
   - customresourcedefinition____issuers.cert.gardener.cloud.yaml
-  - deployment__default__cert-management.yaml
-  - role__default__cert-management.yaml
-  - rolebinding__default__cert-management.yaml
-  - serviceaccount__default__cert-management.yaml
+  - deployment__default__cert-controller-manager.yaml
+  - role__default__cert-controller-manager.yaml
+  - rolebinding__default__cert-controller-manager.yaml
+  - serviceaccount__default__cert-controller-manager.yaml
 images:
   - name: europe-docker.pkg.dev/gardener-project/public/cert-controller-manager
     newName: europe-docker.pkg.dev/gardener-project/public/cert-controller-manager

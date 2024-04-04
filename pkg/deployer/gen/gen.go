@@ -57,7 +57,7 @@ func Generate(ctx context.Context, valuesFilePath string, outputDir string) erro
 	}
 
 	values := &deployer.Values{}
-	if err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(valuesBytes), 1024).Decode(values); err != nil {
+	if err := yaml.Unmarshal(valuesBytes, values); err != nil {
 		return err
 	}
 

@@ -1,4 +1,4 @@
-name: cert-management
+name: cert-controller-manager
 namespace: default
 podLabels:
   networking.gardener.cloud/to-dns: allowed

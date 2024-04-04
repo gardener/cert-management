@@ -4,7 +4,7 @@ metadata:
   creationTimestamp: null
   labels:
     high-availability-config.resources.gardener.cloud/type: controller
-  name: cert-management
+  name: cert-controller-manager
   namespace: default
 spec:
   replicas: 1
@@ -44,7 +44,7 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 5
-        name: cert-management
+        name: cert-controller-manager
         ports:
         - containerPort: 8080
           protocol: TCP
@@ -55,5 +55,5 @@ spec:
           requests:
             cpu: 50m
             memory: 64Mi
-      serviceAccountName: cert-management
+      serviceAccountName: cert-controller-manager
 status: {}

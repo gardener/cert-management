@@ -14,8 +14,37 @@ patches:
       group: apps
       version: v1
       kind: Deployment
-      name: cert-management
+      name: cert-controller-manager
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --acme-deactivate-authorizations 
+
+  ## example: use different namespace for challenge DNSEntries
+  #- target:
+  #    group: apps
+  #    version: v1
+  #    kind: Deployment
+  #    name: cert-controller-manager
+  #  patch: |-
+  #    - op: add
+  #      path: /spec/template/spec/containers/0/args/-
+  #      value: --dns-namespace=my-namespace
+  #- target:
+  #    kind: ClusterRole
+  #    name: cert-controller-manager
+  #  patch: |-
+  #    - op: add
+  #      path: /rules/-
+  #      value:
+  #        apiGroups:
+  #          - dns.gardener.cloud
+  #        resources:
+  #          - dnsentries
+  #        verbs:
+  #          - get
+  #          - list
+  #          - update
+  #          - watch
+  #          - create
+  #          - delete
