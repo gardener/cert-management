@@ -1,10 +1,10 @@
-"name": "cert-management-local"
-"namespace": "default"
-"podLabels":
-  "networking.gardener.cloud/to-dns": "allowed"
-  "networking.gardener.cloud/to-runtime-apiserver": "allowed"
-  "networking.gardener.cloud/to-public-networks": "allowed"
-  "networking.gardener.cloud/to-private-networks": "allowed"
-"image": "image:123"
-"config":
-  "httpServerPort": 443
+name: cert-management
+namespace: default
+podLabels:
+  networking.gardener.cloud/to-dns: allowed
+  networking.gardener.cloud/to-runtime-apiserver: allowed
+  networking.gardener.cloud/to-public-networks: allowed
+  networking.gardener.cloud/to-private-networks: allowed
+image: europe-docker.pkg.dev/gardener-project/public/cert-controller-manager:latest
+config:
+  httpServerPort: 8080

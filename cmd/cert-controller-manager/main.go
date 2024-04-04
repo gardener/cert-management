@@ -7,9 +7,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -66,23 +66,23 @@ func init() {
 	resources.Register(coordinationv1.SchemeBuilder)
 }
 
-func migrateExtensionsIngress(c controllermanager.Configuration) controllermanager.Configuration {
-	return c.GlobalGroupKindMigrations(resources.NewGroupKind("extensions", "Ingress"),
-		resources.NewGroupKind("networking.k8s.io", "Ingress"))
-}
-
 func main() {
-	if len(os.Args) == 2 && os.Args[1] == "version" {
-		fmt.Println(version)
-		os.Exit(0)
-	}
-
-	if len(os.Args) == 6 && os.Args[1] == "generate-manifests" && os.Args[2] == "--values" && os.Args[4] == "--output" {
-		fmt.Println(gen.Generate(context.Background(), os.Args[3], os.Args[5]))
-		os.Exit(0)
+	if len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-") {
+		switch os.Args[1] {
+		case "version":
+			fmt.Println(version)
+			os.Exit(0)
+		case "generate-manifests":
+			os.Exit(gen.GenerateWithArgs(os.Args[2:], os.Args[1]))
+		default:
+			fmt.Println("Supported subcommand are:")
+			fmt.Printf("    %s version\n", os.Args[0])
+			fmt.Printf("    %s generate-manifests --values <values-file> --output <output-file>\n", os.Args[0])
+			os.Exit(1)
+		}
 	}
 
 	// set LEGO_DISABLE_CNAME_SUPPORT=true as we have our own logic for FollowCNAME
 	os.Setenv("LEGO_DISABLE_CNAME_SUPPORT", "true")
-	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing", migrateExtensionsIngress)
+	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "The cert-manager manages TLS certificates in Kubernetes clusters using custom resources")
 }

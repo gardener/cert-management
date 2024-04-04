@@ -8,6 +8,7 @@ package deployer
 
 import (
 	"context"
+	"strings"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/component"
@@ -50,7 +51,14 @@ type deployer struct {
 	managedResourceNamespace string
 }
 
-var _ component.DeployWaiter = (*deployer)(nil)
+// DeployWaiterWithImages is an extended interface of DeployWaiter to access the images.
+type DeployWaiterWithImages interface {
+	component.DeployWaiter
+	// Images returns image map with key containing image name and value the image tag.
+	Images() map[string]string
+}
+
+var _ DeployWaiterWithImages = (*deployer)(nil)
 
 // New returns a new 'cert-management' deployer instance.
 func New(
@@ -58,7 +66,7 @@ func New(
 	values Values,
 	class component.Class,
 	managedResourceNamespace string,
-) component.DeployWaiter {
+) DeployWaiterWithImages {
 	if managedResourceNamespace == "" {
 		managedResourceNamespace = values.Namespace
 	}
@@ -137,6 +145,7 @@ func (d *deployer) Deploy(ctx context.Context) error {
 		// TODO(timuthy): Change utility in `gardener/gardener` to not pass shoot here.
 		component.ClusterTypeShoot,
 		ManagedResourceName,
+		nil,
 		managedresources.NewRegistry(Scheme, codecFactory, serializer),
 		resourceConfigs,
 	)
@@ -159,4 +168,15 @@ func (d *deployer) Wait(ctx context.Context) error {
 func (d *deployer) WaitCleanup(ctx context.Context) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (d *deployer) Images() map[string]string {
+	images := map[string]string{}
+	parts := strings.SplitN(d.values.Image, ":", 2)
+	tag := "unknown"
+	if len(parts) == 2 {
+		tag = parts[1]
+	}
+	images[parts[0]] = tag
+	return images
 }

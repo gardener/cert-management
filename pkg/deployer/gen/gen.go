@@ -9,7 +9,12 @@ package gen
 import (
 	"bytes"
 	"context"
+	"flag"
+	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
+	"text/template"
 
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/component"
@@ -24,7 +29,27 @@ import (
 	"github.com/gardener/cert-management/pkg/deployer"
 )
 
-// Generate renders manifests from 'cert-management' and write the results to the given output dir.
+// GenerateWithArgs renders kustomize base profile from 'cert-management' with given command line arguments.
+func GenerateWithArgs(args []string, subcommand string) int {
+	var (
+		flagSet = flag.NewFlagSet(fmt.Sprintf("%s %s", os.Args[0], subcommand), flag.ExitOnError)
+		values  = flagSet.String("values", "values.yaml", "path to file with values for chart generation")
+		output  = flagSet.String("output", "bundle.yaml", "output directory for chart bundle manifest")
+	)
+	if err := flagSet.Parse(args); err != nil {
+		println(err.Error())
+		flagSet.Usage()
+		return 1
+	}
+
+	if err := Generate(context.Background(), *values, *output); err != nil {
+		println(err.Error())
+		return 2
+	}
+	return 0
+}
+
+// Generate renders kustomize base profile from 'cert-management' and write the results to the given output dir.
 func Generate(ctx context.Context, valuesFilePath string, outputDir string) error {
 	valuesBytes, err := os.ReadFile(valuesFilePath)
 	if err != nil {
@@ -40,7 +65,7 @@ func Generate(ctx context.Context, valuesFilePath string, outputDir string) erro
 	objectTracker := testing.NewObjectTracker(deployerScheme, scheme.Codecs.UniversalDecoder())
 	cl := fakeclient.NewClientBuilder().WithScheme(deployerScheme).WithObjectTracker(objectTracker).Build()
 
-	depl := deployer.New(cl, *values, component.Application)
+	depl := deployer.New(cl, *values, component.Application, "default")
 	if err := depl.Deploy(ctx); err != nil {
 		return err
 	}
@@ -68,12 +93,51 @@ func Generate(ctx context.Context, valuesFilePath string, outputDir string) erro
 			return err
 		}
 
-		for k, d := range secret.Data {
-			if err := os.WriteFile(outputDir+"/"+k, d, os.FileMode(0600)); err != nil {
+		os.MkdirAll(outputDir, os.FileMode(0755))
+		var resources []string
+		for name, d := range secret.Data {
+			resources = append(resources, name)
+			if err := os.WriteFile(filepath.Join(outputDir, name), d, os.FileMode(0644)); err != nil {
 				return err
 			}
 		}
+		sort.Strings(resources)
+
+		if err := writeKustomizeFile(outputDir, resources, depl.Images()); err != nil {
+			return err
+		}
+		path, err := filepath.Abs(outputDir)
+		if err != nil {
+			path = outputDir
+		}
+		fmt.Printf("Written base manifest to directory %s\n", path)
 	}
 
 	return nil
+}
+
+func writeKustomizeFile(outputDir string, resources []string, images map[string]string) error {
+	tmpl, err := template.New("kustomization").Parse(`apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+{{- range .resources}}
+  - {{.}}
+{{- end}}
+images:
+{{- range $name, $tag := .images}}
+  - name: {{ $name }}
+    newName: {{ $name }}
+    newTag: {{ $tag }}
+{{- end}}
+`)
+	if err != nil {
+		return err
+	}
+
+	buf := bytes.Buffer{}
+	err = tmpl.Execute(&buf, map[string]any{"resources": resources, "images": images})
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(outputDir, "kustomization.yaml"), buf.Bytes(), os.FileMode(0644))
 }

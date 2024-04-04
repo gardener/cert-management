@@ -678,7 +678,24 @@ The cert-controller-manager communicated with up to four different clusters:
   If option is omitted, the source cluster is also used for target.
 
 ### Usage
-The complete list of options is:
+
+To install a deployment of the cert-management, please use kustomize manifests at [manifests/profiles/example](manifests/profiles/example)
+as a starting point.
+
+To print the manifest bundle, execute
+```bash
+kubectl kustomize manifests/profiles/example
+```
+
+To apply it on a Kubernetes cluster, execute
+```bash
+kubectl apply -k manifests/profiles/example
+```
+
+See [Declarative Management of Kubernetes Objects Using Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/)
+for more details about Kustomize.
+
+The complete list of command line options is:
 
 ```text
 Usage:

@@ -59,7 +59,7 @@ test: $(GINKGO)
 
 .PHONY: clean
 clean:
-	@rm -rf $(REPO_ROOT)/examples/deployment/*
+	@rm -rf $(REPO_ROOT)/manifests/profiles/base/*
 
 .PHONY: generate
 generate: clean $(VGOPATH) $(CONTROLLER_GEN)

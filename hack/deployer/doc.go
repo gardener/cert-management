@@ -4,4 +4,4 @@
 
 package deployer
 
-//go:generate go run ../../cmd/cert-controller-manager/main.go generate-manifests --values  ./values.yaml --output ../../examples/deployment
+//go:generate go run ../../cmd/generate-manifests/main.go --values  ./values.yaml --output ../../manifests/profiles/base
