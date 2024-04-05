@@ -10,6 +10,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/gardener/cert-management/pkg/deployer/kustomize"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
@@ -25,6 +26,9 @@ import (
 	"github.com/gardener/cert-management/pkg/deployer/kubernetes"
 )
 
+// ManagedResourceName is the name of the 'cert-management' managed resource.
+const ManagedResourceName = "cert-management-deployment"
+
 func init() {
 	schemeBuilder := runtime.NewSchemeBuilder(
 		kubernetesscheme.AddToScheme,
@@ -39,8 +43,8 @@ func init() {
 var (
 	// Scheme is the scheme relevant for the deployer.
 	Scheme = runtime.NewScheme()
-
-	codecFactory = runtimeserializer.NewCodecFactory(Scheme)
+	// CodecFactory is the codec factory for the scheme.
+	CodecFactory = runtimeserializer.NewCodecFactory(Scheme)
 	serializer   = json.NewSerializerWithOptions(json.DefaultMetaFactory, Scheme, Scheme, json.SerializerOptions{Yaml: true, Pretty: false, Strict: false})
 )
 
@@ -51,14 +55,7 @@ type deployer struct {
 	managedResourceNamespace string
 }
 
-// DeployWaiterWithImages is an extended interface of DeployWaiter to access the images.
-type DeployWaiterWithImages interface {
-	component.DeployWaiter
-	// Images returns image map with key containing image name and value the image tag.
-	Images() map[string]string
-}
-
-var _ DeployWaiterWithImages = (*deployer)(nil)
+var _ kustomize.DeployWaiterEx = (*deployer)(nil)
 
 // New returns a new 'cert-management' deployer instance.
 func New(
@@ -66,7 +63,7 @@ func New(
 	values Values,
 	class component.Class,
 	managedResourceNamespace string,
-) DeployWaiterWithImages {
+) kustomize.DeployWaiterEx {
 	if managedResourceNamespace == "" {
 		managedResourceNamespace = values.Namespace
 	}
@@ -79,9 +76,6 @@ func New(
 	}
 }
 
-// ManagedResourceName is the name of the 'cert-management' managed resource.
-const ManagedResourceName = "cert-management-deployment"
-
 func (d *deployer) Deploy(ctx context.Context) error {
 	serviceAccount := kubernetes.EmptyServiceAccount(d.values.Name, d.values.Namespace)
 	clusterRole := kubernetes.EmptyClusterRole(d.values.Name)
@@ -90,7 +84,7 @@ func (d *deployer) Deploy(ctx context.Context) error {
 	roleBinding := kubernetes.EmptyRoleBinding(d.values.Name, d.values.Namespace)
 	deployment := kubernetes.EmptyDeployment(d.values.Name, d.values.Namespace)
 
-	codec := codecFactory.CodecForVersions(serializer, serializer, apiextensionsv1.SchemeGroupVersion, apiextensionsv1.SchemeGroupVersion)
+	codec := CodecFactory.CodecForVersions(serializer, serializer, apiextensionsv1.SchemeGroupVersion, apiextensionsv1.SchemeGroupVersion)
 	crdCertificateRevocations, err := kubernetes.EmptyCRDRevocations(codec)
 	if err != nil {
 		return err
@@ -146,7 +140,7 @@ func (d *deployer) Deploy(ctx context.Context) error {
 		component.ClusterTypeShoot,
 		ManagedResourceName,
 		nil,
-		managedresources.NewRegistry(Scheme, codecFactory, serializer),
+		managedresources.NewRegistry(Scheme, CodecFactory, serializer),
 		resourceConfigs,
 	)
 }

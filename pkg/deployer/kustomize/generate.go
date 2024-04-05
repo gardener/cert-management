@@ -4,12 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package gen
+package kustomize
 
 import (
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -20,59 +19,48 @@ import (
 	"github.com/gardener/gardener/pkg/component"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/testing"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/gardener/cert-management/pkg/deployer"
 )
 
-// GenerateWithArgs renders kustomize base profile from 'cert-management' with given command line arguments.
-func GenerateWithArgs(args []string, subcommand string) int {
-	var (
-		flagSet = flag.NewFlagSet(fmt.Sprintf("%s %s", os.Args[0], subcommand), flag.ExitOnError)
-		values  = flagSet.String("values", "values.yaml", "path to file with values for chart generation")
-		output  = flagSet.String("output", "bundle.yaml", "output directory for chart bundle manifest")
-	)
-	if err := flagSet.Parse(args); err != nil {
-		println(err.Error())
-		flagSet.Usage()
-		return 1
-	}
-
-	if err := Generate(context.Background(), *values, *output); err != nil {
-		println(err.Error())
-		return 2
-	}
-	return 0
+// DeployWaiterEx is an extended interface of DeployWaiter to access the images.
+type DeployWaiterEx interface {
+	component.DeployWaiter
+	// Images returns image map with key containing image name and value the image tag.
+	Images() map[string]string
 }
 
-// Generate renders kustomize base profile from 'cert-management' and write the results to the given output dir.
-func Generate(ctx context.Context, valuesFilePath string, outputDir string) error {
-	valuesBytes, err := os.ReadFile(valuesFilePath)
+// DeployWaiterExCreator is factory function to create a DeployWaiterEx.
+type DeployWaiterExCreator func(cl client.Client) (DeployWaiterEx, error)
+
+// GenerateValues are values for the Generate method.
+type GenerateValues struct {
+	Scheme              *runtime.Scheme
+	CodecFactory        serializer.CodecFactory
+	ManagedResourceName string
+	Namespace           string
+	OutputDir           string
+}
+
+// Generate generates manifests from deployer to values.OutputDir folder.
+func Generate(ctx context.Context, creator DeployWaiterExCreator, values GenerateValues) error {
+	objectTracker := testing.NewObjectTracker(values.Scheme, values.CodecFactory.UniversalDecoder())
+	cl := fakeclient.NewClientBuilder().WithScheme(values.Scheme).WithObjectTracker(objectTracker).Build()
+
+	depl, err := creator(cl)
 	if err != nil {
 		return err
 	}
-
-	values := &deployer.Values{}
-	if err := yaml.Unmarshal(valuesBytes, values); err != nil {
-		return err
-	}
-
-	deployerScheme := deployer.Scheme
-	objectTracker := testing.NewObjectTracker(deployerScheme, scheme.Codecs.UniversalDecoder())
-	cl := fakeclient.NewClientBuilder().WithScheme(deployerScheme).WithObjectTracker(objectTracker).Build()
-
-	depl := deployer.New(cl, *values, component.Application, "default")
 	if err := depl.Deploy(ctx); err != nil {
 		return err
 	}
 
 	managedResource := &resourcesv1alpha1.ManagedResource{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deployer.ManagedResourceName,
+			Name:      values.ManagedResourceName,
 			Namespace: values.Namespace,
 		},
 	}
@@ -93,24 +81,26 @@ func Generate(ctx context.Context, valuesFilePath string, outputDir string) erro
 			return err
 		}
 
-		os.MkdirAll(outputDir, os.FileMode(0755))
+		if err := os.MkdirAll(values.OutputDir, os.FileMode(0755)); err != nil {
+			return err
+		}
 		var resources []string
 		for name, d := range secret.Data {
 			resources = append(resources, name)
-			if err := os.WriteFile(filepath.Join(outputDir, name), d, os.FileMode(0644)); err != nil {
+			if err := os.WriteFile(filepath.Join(values.OutputDir, name), d, os.FileMode(0644)); err != nil {
 				return err
 			}
 		}
 		sort.Strings(resources)
 
-		if err := writeKustomizeFile(outputDir, resources, depl.Images()); err != nil {
+		if err := writeKustomizeFile(values.OutputDir, resources, depl.Images()); err != nil {
 			return err
 		}
-		path, err := filepath.Abs(outputDir)
+		path, err := filepath.Abs(values.OutputDir)
 		if err != nil {
-			path = outputDir
+			path = values.OutputDir
 		}
-		fmt.Printf("Written base manifest to directory %s\n", path)
+		fmt.Printf("Written manifests to directory %s\n", path)
 	}
 
 	return nil

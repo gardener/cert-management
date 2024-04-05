@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gardener/cert-management/pkg/deployer"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -28,7 +29,6 @@ import (
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
 	_ "github.com/gardener/cert-management/pkg/controller/source/ingress"
 	_ "github.com/gardener/cert-management/pkg/controller/source/service"
-	"github.com/gardener/cert-management/pkg/deployer/gen"
 )
 
 var version string
@@ -73,7 +73,7 @@ func main() {
 			fmt.Println(version)
 			os.Exit(0)
 		case "generate-manifests":
-			os.Exit(gen.GenerateWithArgs(os.Args[2:], os.Args[1]))
+			deployer.GenerateManifestsCommand(os.Args[2:], os.Args[1])
 		default:
 			fmt.Println("Supported subcommand are:")
 			fmt.Printf("    %s version\n", os.Args[0])

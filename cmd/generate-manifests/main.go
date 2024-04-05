@@ -9,11 +9,9 @@ package main
 import (
 	"os"
 
-	"github.com/gardener/cert-management/pkg/deployer/gen"
+	"github.com/gardener/cert-management/pkg/deployer"
 )
 
-var version string
-
 func main() {
-	os.Exit(gen.GenerateWithArgs(os.Args[1:], ""))
+	deployer.GenerateManifestsCommand(os.Args[1:], "")
 }
