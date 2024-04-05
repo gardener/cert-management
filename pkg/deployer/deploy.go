@@ -151,18 +151,17 @@ func (d *deployer) Destroy(ctx context.Context) error {
 }
 
 func (d *deployer) Wait(ctx context.Context) error {
-	return managedresources.WaitUntilHealthy(ctx, d.client, d.values.Namespace, ManagedResourceName)
 	timeoutCtx, cancel := context.WithTimeout(ctx, TimeoutWaitForManagedResource)
 	defer cancel()
 
-	return managedresources.WaitUntilHealthy(timeoutCtx, d.client, d.values.Namespace, ManagedResourceName)
+	return managedresources.WaitUntilHealthy(timeoutCtx, d.client, d.values.ManagedResourceConfig.Namespace, ManagedResourceName)
 }
 
 func (d *deployer) WaitCleanup(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, TimeoutWaitForManagedResource)
 	defer cancel()
 
-	return managedresources.WaitUntilDeleted(timeoutCtx, d.client, d.values.Namespace, ManagedResourceName)
+	return managedresources.WaitUntilDeleted(timeoutCtx, d.client, d.values.ManagedResourceConfig.Namespace, ManagedResourceName)
 }
 
 func (d *deployer) Images() map[string]string {
