@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
+    app.kubernetes.io/instance: cert-management
+    app.kubernetes.io/name: cert-management
     high-availability-config.resources.gardener.cloud/type: controller
   name: cert-controller-manager
   namespace: default

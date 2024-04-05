@@ -40,6 +40,7 @@ func MutateDeployment(
 	serverPort int32,
 	caBundleSecret *corev1.Secret,
 ) {
+	deployment.Labels = getDeploymentLabels()
 	metav1.SetMetaDataLabel(&deployment.ObjectMeta, resourcesv1alpha1.HighAvailabilityConfigType, resourcesv1alpha1.HighAvailabilityConfigTypeController)
 
 	deployment.Spec = appsv1.DeploymentSpec{

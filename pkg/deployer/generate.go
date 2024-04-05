@@ -13,7 +13,6 @@ import (
 	"os"
 
 	"github.com/gardener/cert-management/pkg/deployer/kustomize"
-	"github.com/gardener/gardener/pkg/component"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -51,7 +50,7 @@ func GenerateManifests(ctx context.Context, valuesFilePath string, outputDir str
 	}
 
 	creator := func(cl client.Client) (kustomize.DeployWaiterEx, error) {
-		return New(cl, *values, component.Application, "default"), nil
+		return New(cl, *values), nil
 	}
 
 	return kustomize.Generate(ctx, creator, kustomize.GenerateValues{
