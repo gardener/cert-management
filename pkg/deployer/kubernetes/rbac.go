@@ -105,7 +105,7 @@ func ReconcileRole(role *rbacv1.Role) {
 			APIGroups:     []string{"coordination.k8s.io"},
 			Resources:     []string{"leases"},
 			ResourceNames: []string{"cert-controller-manager-controllers"},
-			Verbs:         []string{"get", "watch", "update"},
+			Verbs:         []string{"get", "watch", "update", "patch"},
 		},
 		{
 			APIGroups: []string{"dns.gardener.cloud"},

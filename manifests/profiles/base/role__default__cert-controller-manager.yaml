@@ -21,6 +21,7 @@ rules:
   - get
   - watch
   - update
+  - patch
 - apiGroups:
   - dns.gardener.cloud
   resources:

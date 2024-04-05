@@ -54,7 +54,7 @@ func MutateDeployment(
 			Spec: corev1.PodSpec{
 				ServiceAccountName: serviceAccountName,
 				Containers: []corev1.Container{{
-					Name:            deployment.Name,
+					Name:            "cert-management",
 					Image:           image,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Args: []string{

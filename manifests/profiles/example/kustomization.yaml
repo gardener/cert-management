@@ -8,6 +8,9 @@ images:
   - name: europe-docker.pkg.dev/gardener-project/public/cert-controller-manager
     newTag: v0.13.1-master
 
+#commonLabels:
+#  app.kubernetes.io/instance: my-instance-name
+
 patches:
   # example for adding command line flag
   - target:
