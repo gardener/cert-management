@@ -1,6 +1,6 @@
 module github.com/gardener/cert-management
 
-go 1.22.1
+go 1.22.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -8,16 +8,16 @@ require (
 	github.com/cert-manager/cert-manager v1.11.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20231213134107-496e1a49d791
 	github.com/gardener/external-dns-management v0.15.3
-	github.com/gardener/gardener v1.91.2
+	github.com/gardener/gardener v1.92.1
 	github.com/go-acme/lego/v4 v4.15.0
 	github.com/miekg/dns v1.1.58
-	github.com/onsi/ginkgo/v2 v2.17.0
+	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.4.0
 	github.com/prometheus/client_golang v1.18.0
 	golang.org/x/crypto v0.21.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
-	golang.org/x/net v0.21.0
+	golang.org/x/net v0.22.0
 	k8s.io/api v0.29.3
 	k8s.io/apiextensions-apiserver v0.29.3
 	k8s.io/apimachinery v0.29.3
@@ -107,15 +107,15 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
-	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
+	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.17.0 // indirect
+	golang.org/x/tools v0.19.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20231106174013-bbf56f31fb17 // indirect
