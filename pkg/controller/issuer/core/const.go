@@ -44,4 +44,10 @@ const (
 	OptAllowTargetIssuers = "allow-target-issuers"
 	// OptACMEDeactivateAuthorizations if true authorizations are always deactivated after each certificate request
 	OptACMEDeactivateAuthorizations = "acme-deactivate-authorizations"
+	// OptDefaultRSAPrivateKeySize allows to override a default bit size for the certificates using RSA private keys (2048 if not specified)
+	OptDefaultRSAPrivateKeySize = "default-rsa-private-key-size"
+	// OptDefaultECDSAPrivateKeySize allows to override a default bit size for the certificates using ECDSA private keys (256 if not specified)
+	OptDefaultECDSAPrivateKeySize = "default-ecdsa-private-key-size"
+	// OptDefaultPrivateKeyAlgorithm allows to override the default algorithm for certificate private keys ('rsa' if not specified)
+	OptDefaultPrivateKeyAlgorithm = "default-private-key-algorithm"
 )

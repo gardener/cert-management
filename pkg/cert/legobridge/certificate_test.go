@@ -12,27 +12,36 @@ import (
 	"github.com/go-acme/lego/v4/certcrypto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 )
 
 var _ = DescribeTable("KeyType conversion",
 	func(keyType certcrypto.KeyType, algorithm api.PrivateKeyAlgorithm, size int) {
+		defaults, err := NewCertificatePrivateKeyDefaults(api.RSAKeyAlgorithm, 2048, 256)
+		Expect(err).ToNot(HaveOccurred())
+
 		var key *api.CertificatePrivateKey
-		if size >= 0 {
-			key = newCertificatePrivateKey(algorithm, api.PrivateKeySize(size))
+		if len(algorithm) > 0 {
+			key = &api.CertificatePrivateKey{Algorithm: ptr.To(algorithm)}
 		}
-		actualKeyType, err := ToKeyType(key)
+		if size > 0 {
+			if key == nil {
+				key = &api.CertificatePrivateKey{}
+			}
+			key.Size = ptr.To(api.PrivateKeySize(size))
+		}
+		actualKeyType, err := defaults.ToKeyType(key)
 		if keyType == "" {
 			Expect(err).To(HaveOccurred())
 		} else {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actualKeyType).To(Equal(keyType))
-			actualKeyType, err = ToKeyType(FromKeyType(keyType))
+			actualKeyType, err = defaults.ToKeyType(FromKeyType(keyType))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actualKeyType).To(Equal(keyType))
 		}
 	},
-	Entry("default", certcrypto.RSA2048, api.PrivateKeyAlgorithm(""), -1),
-	Entry("empty", certcrypto.RSA2048, api.PrivateKeyAlgorithm(""), 0),
+	Entry("default", certcrypto.RSA2048, api.PrivateKeyAlgorithm(""), 0),
 	Entry("RSA from empty config", certcrypto.RSA2048, api.RSAKeyAlgorithm, 0),
 	Entry("RSA2048", certcrypto.RSA2048, api.RSAKeyAlgorithm, 2048),
 	Entry("RSA3072", certcrypto.RSA3072, api.RSAKeyAlgorithm, 3072),

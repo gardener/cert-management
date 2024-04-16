@@ -56,8 +56,8 @@ type ObtainInput struct {
 	TargetClass string
 	// Callback is the callback function to return the ObtainOutput.
 	Callback ObtainerCallback
-	// RenewCert is the certificate to renew.
-	RenewCert *certificate.Resource
+	// Renew is flag if it is a renew request.
+	Renew bool
 	// AlwaysDeactivateAuthorizations deactivates authorizations to avoid their caching
 	AlwaysDeactivateAuthorizations bool
 	// PreferredChain
@@ -100,8 +100,6 @@ type ObtainOutput struct {
 	CSR []byte
 	// KeyType is the copy from the input.
 	KeyType certcrypto.KeyType
-	// Renew is the flag if this was a renew request.
-	Renew bool
 	// Err contains the obtain request error.
 	Err error
 }
@@ -117,6 +115,14 @@ type Obtainer interface {
 type ConcurrentObtainError struct {
 	// DomainName is the domain name concurrently requested
 	DomainName string
+}
+
+// CertificatePrivateKeyDefaults contains default algorithms and sizes for new private keys.
+// These defaults are only used for new certificates or on renewal.
+type CertificatePrivateKeyDefaults struct {
+	algorithm    api.PrivateKeyAlgorithm
+	rsaKeySize   api.PrivateKeySize
+	ecdsaKeySize api.PrivateKeySize
 }
 
 func (d *ConcurrentObtainError) Error() string {
@@ -148,45 +154,84 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 	return client.Certificate.Obtain(request)
 }
 
-// ToKeyType extracts the key type from the private key spec.
-func ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, error) {
-	keyType := certcrypto.RSA2048
-	if privateKeySpec != nil {
-		algorithm := api.RSAKeyAlgorithm
-		if privateKeySpec.Algorithm != nil && *privateKeySpec.Algorithm != "" {
-			algorithm = *privateKeySpec.Algorithm
-		}
-		size := 0
-		if privateKeySpec.Size != nil && *privateKeySpec.Size != 0 {
-			size = int(*privateKeySpec.Size)
-		}
-		switch algorithm {
-		case api.RSAKeyAlgorithm:
-			switch size {
-			case 0, 2048:
-				keyType = certcrypto.RSA2048
-			case 3072:
-				keyType = certcrypto.RSA3072
-			case 4096:
-				keyType = certcrypto.RSA4096
-			default:
-				return "", fmt.Errorf("invalid key size for RSA: %d (allowed values are 2048, 3072, and 4096)", size)
-			}
-		case api.ECDSAKeyAlgorithm:
-			switch size {
-			case 0, 256:
-				keyType = certcrypto.EC256
-			case 384:
-				keyType = certcrypto.EC384
-			default:
-				return "", fmt.Errorf("invalid key size for ECDSA: %d (allowed values are 256 and 384)", size)
-			}
-		default:
-			return "", fmt.Errorf("invalid private key algorithm %s (allowed values are '%s' and '%s')",
-				algorithm, api.RSAKeyAlgorithm, api.ECDSAKeyAlgorithm)
-		}
+// NewCertificatePrivateKeyDefaults creates a defaults for certifcate private key generation.
+func NewCertificatePrivateKeyDefaults(algorithm api.PrivateKeyAlgorithm, rsaKeySize, ecdsaKeySize api.PrivateKeySize) (*CertificatePrivateKeyDefaults, error) {
+	if algorithm != api.RSAKeyAlgorithm && algorithm != api.ECDSAKeyAlgorithm {
+		return nil, fmt.Errorf("invalid algoritm: '%s' (allowed values: '%s' and '%s')", algorithm, api.RSAKeyAlgorithm, api.ECDSAKeyAlgorithm)
 	}
-	return keyType, nil
+	if rsaKeySize != 2048 && rsaKeySize != 3072 && rsaKeySize != 4096 {
+		return nil, fmt.Errorf("invalid RSA private key size: %d (allowed values: 2048, 3072, 4096)", rsaKeySize)
+	}
+	if ecdsaKeySize != 256 && ecdsaKeySize != 384 {
+		return nil, fmt.Errorf("invalid ECDSA private key size: %d (allowed values: 256, 384)", ecdsaKeySize)
+	}
+	return &CertificatePrivateKeyDefaults{
+		algorithm:    algorithm,
+		rsaKeySize:   rsaKeySize,
+		ecdsaKeySize: ecdsaKeySize,
+	}, nil
+}
+
+func (d CertificatePrivateKeyDefaults) String() string {
+	return fmt.Sprintf("Defaults for certificate private keys: algorithm=%s, RSA key size=%d, ECDSA key size=%d",
+		d.algorithm, d.rsaKeySize, d.ecdsaKeySize)
+}
+
+// ToKeyType extracts the key type from the private key spec.
+func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, error) {
+	algorithm := d.algorithm
+	if privateKeySpec != nil && privateKeySpec.Algorithm != nil {
+		algorithm = *privateKeySpec.Algorithm
+	}
+	var defaultSize api.PrivateKeySize
+	switch algorithm {
+	case api.RSAKeyAlgorithm:
+		defaultSize = d.rsaKeySize
+	case api.ECDSAKeyAlgorithm:
+		defaultSize = d.ecdsaKeySize
+	default:
+		return "", fmt.Errorf("invalid private key algorithm %s (allowed values are '%s' and '%s')",
+			algorithm, api.RSAKeyAlgorithm, api.ECDSAKeyAlgorithm)
+	}
+	size := defaultSize
+	if privateKeySpec != nil && privateKeySpec.Size != nil {
+		size = *privateKeySpec.Size
+	}
+
+	switch algorithm {
+	case api.RSAKeyAlgorithm:
+		switch size {
+		case 2048:
+			return certcrypto.RSA2048, nil
+		case 3072:
+			return certcrypto.RSA3072, nil
+		case 4096:
+			return certcrypto.RSA4096, nil
+		default:
+			return "", fmt.Errorf("invalid key size for RSA: %d (allowed values are 2048, 3072, and 4096)", size)
+		}
+	case api.ECDSAKeyAlgorithm:
+		switch size {
+		case 256:
+			return certcrypto.EC256, nil
+		case 384:
+			return certcrypto.EC384, nil
+		default:
+			return "", fmt.Errorf("invalid key size for ECDSA: %d (allowed values are 256 and 384)", size)
+		}
+	default:
+		return "", fmt.Errorf("invalid private key algorithm %s (allowed values are '%s' and '%s')",
+			algorithm, api.RSAKeyAlgorithm, api.ECDSAKeyAlgorithm)
+	}
+}
+
+// IsDefaultKeyType returns true if the keyType matched the default one.
+func (d CertificatePrivateKeyDefaults) IsDefaultKeyType(keyType certcrypto.KeyType) bool {
+	defaultKeyType, err := d.ToKeyType(nil)
+	if err != nil {
+		return false
+	}
+	return defaultKeyType == keyType
 }
 
 // FromKeyType converts key type back to a private key spec.
@@ -230,10 +275,6 @@ func extractCertificateRequest(csr []byte) (*x509.CertificateRequest, error) {
 		return nil, fmt.Errorf("decoding CSR failed")
 	}
 	return x509.ParseCertificateRequest(block.Bytes)
-}
-
-func renew(client *lego.Client, renewCert *certificate.Resource) (*certificate.Resource, error) {
-	return client.Certificate.Renew(*renewCert, true, false, "")
 }
 
 type dummyProvider struct {
@@ -313,21 +354,17 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 	go func() {
 		var certificates *certificate.Resource
 		var err error
-		if input.RenewCert != nil {
-			certificates, err = renew(client, input.RenewCert)
-		} else {
-			if input.CSR == nil {
-				domains := input.DNSNames
-				if input.CommonName != nil {
-					domains = append([]string{*input.CommonName}, domains...)
-				}
-				certificates, err = obtainForDomains(client, domains, input)
-			} else {
-				certificates, err = obtainForCSR(client, input.CSR, input)
+		if input.CSR == nil {
+			domains := input.DNSNames
+			if input.CommonName != nil {
+				domains = append([]string{*input.CommonName}, domains...)
 			}
+			certificates, err = obtainForDomains(client, domains, input)
+		} else {
+			certificates, err = obtainForCSR(client, input.CSR, input)
 		}
 		count := provider.GetChallengesCount()
-		metrics.AddACMEOrder(input.IssuerKey, err == nil, count, input.RenewCert != nil)
+		metrics.AddACMEOrder(input.IssuerKey, err == nil, count, input.Renew)
 		output := &ObtainOutput{
 			Certificates: certificates,
 			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerKey),
@@ -335,7 +372,6 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			DNSNames:     input.DNSNames,
 			KeyType:      input.KeyType,
 			CSR:          input.CSR,
-			Renew:        input.RenewCert != nil,
 			Err:          niceError(err, provider.GetPendingTXTRecordError()),
 		}
 		input.Callback(output)
@@ -356,12 +392,8 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 		var certificates *certificate.Resource
 		var err error
 
-		if input.RenewCert != nil {
-			certificates, err = renewCASignedCert(input.RenewCert, input.CAKeyPair)
-		} else {
-			if input.CSR == nil {
-				certificates, err = newCASignedCertFromInput(input)
-			}
+		if input.CSR == nil {
+			certificates, err = newCASignedCertFromInput(input)
 		}
 		output := &ObtainOutput{
 			Certificates: certificates,
@@ -369,7 +401,6 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
-			Renew:        input.RenewCert != nil,
 			Err:          err,
 		}
 		input.Callback(output)
@@ -469,18 +500,7 @@ func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-// renewCASignedCert returns a new Certificate signed by a CA.
-// An x509.CertificateRequest is created based on the info extracted from the existing PEM encoded CSR.
-func renewCASignedCert(renewCert *certificate.Resource, CAKeyPair *TLSKeyPair) (*certificate.Resource, error) {
-	crt, err := DecodeCertificate(renewCert.Certificate)
-	if err != nil {
-		return nil, err
-	}
-	csr := extractCertReqFromCert(crt)
-	return newCASignedCertFromCertReq(csr, CAKeyPair)
-}
-
-// renewCASignedCert returns a new Certificate signed by a CA.
+// newCASignedCertFromInput returns a new Certificate signed by a CA.
 // An x509.CertificateRequest is created from scratch based on and ObtainInput object
 func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) {
 	csr, err := createCertReq(input)

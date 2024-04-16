@@ -485,9 +485,8 @@ spec:
                     description: "Algorithm is the private key algorithm of the corresponding
                       private key for this certificate. \n If provided, allowed values
                       are either ` + "`" + `RSA` + "`" + ` or ` + "`" + `ECDSA` + "`" + `. If ` + "`" + `algorithm` + "`" + ` is specified and
-                      ` + "`" + `size` + "`" + ` is not provided, key size of 2048 will be used for ` + "`" + `RSA` + "`" + `
-                      key algorithm and key size of 256 will be used for ` + "`" + `ECDSA` + "`" + ` key
-                      algorithm."
+                      ` + "`" + `size` + "`" + ` is not provided, deployment specific default values will
+                      be used."
                     enum:
                     - RSA
                     - ECDSA
@@ -496,9 +495,10 @@ spec:
                     description: "Size is the key bit size of the corresponding private
                       key for this certificate. \n If ` + "`" + `algorithm` + "`" + ` is set to ` + "`" + `RSA` + "`" + `,
                       valid values are ` + "`" + `2048` + "`" + `, ` + "`" + `3072` + "`" + ` or ` + "`" + `4096` + "`" + `, and will default
-                      to ` + "`" + `2048` + "`" + ` if not specified. If ` + "`" + `algorithm` + "`" + ` is set to ` + "`" + `ECDSA` + "`" + `,
-                      valid values are ` + "`" + `256` + "`" + ` or ` + "`" + `384` + "`" + `, and will default to ` + "`" + `256` + "`" + ` if
-                      not specified. No other values are allowed."
+                      to a deployment specific value if not specified. If ` + "`" + `algorithm` + "`" + `
+                      is set to ` + "`" + `ECDSA` + "`" + `, valid values are ` + "`" + `256` + "`" + ` or ` + "`" + `384` + "`" + `, and will
+                      default to a deployment specific value if not specified. No
+                      other values are allowed."
                     enum:
                     - 256
                     - 384

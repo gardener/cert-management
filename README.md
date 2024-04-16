@@ -356,7 +356,15 @@ In this case the secret `my-secret` will contains the labels.
 
 ### Specifying private key algorithm and size
 
-By default, the certificate uses `RSA` with a key size of 2048 bits for the private key.
+The private key algorithm and size used by default are deployment specific.
+To override these defaults, you may override them in the certificate itself.
+Please note, that changing these values will lead to an immediate renewal of the certificate.
+In case the default values have changed in the deployment, and you have not overwritten it, the new
+default values will only apply to new certificates or when a certificate is renewed.
+
+*Note: The default algorithm and sizes can be overwritten by command line arguments `--default-private-key-algorithm`,
+`--default-rsa-private-key-size`, `--default-ecdsa-private-key-size`*
+
 Add the `privateKey` section to specify private key algorithm and/or size.
 
 Example:
@@ -377,9 +385,9 @@ spec:
 
 Allowed values for `spec.privateKey.algorithm` are `RSA` and `ECDSA`.
 For `RSA`, the allowed key sizes are `2048`, `3072`, and `4096`. If the size field is not specified,
-`2048` is used by default.
+a deployment specific default value will be used.
 For `ECDSA`, the allowed key sizes are `256` and `384`.  If the size field is not specified,
-`256` is used by default. 
+a deployment specific default value will be used.
 
 ### Using a certificate signing request (CSR)
 
@@ -695,9 +703,12 @@ Flags:
       --config string                                      config file
   -c, --controllers string                                 comma separated list of controllers to start (<name>,<group>,all)
       --cpuprofile string                                  set file for cpu profiling
+      --default-ecdsa-private-key-size int                 Default certificate private key size for 'ecdsa' algorithm.
       --default-issuer string                              name of default issuer (from default cluster)
       --default-issuer-domain-ranges string                domain range restrictions when using default issuer separated by comma
+      --default-private-key-algorithm string               default algorithm for certificate private keys
       --default-requests-per-day-quota int                 Default value for requestsPerDayQuota if not set explicitly in the issuer spec.
+      --default-rsa-private-key-size int                   Default certificate private key size for 'rsa' algorithm.
       --default.pool.resync-period duration                Period for resynchronization for pool default
       --default.pool.size int                              Worker pool size for pool default
       --disable-namespace-restriction                      disable access restriction for namespace local access only
@@ -725,9 +736,12 @@ Flags:
       --issuer.allow-target-issuers                        If true, issuers are also watched on the target cluster of controller issuer
       --issuer.cascade-delete                              If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted of controller issuer
       --issuer.cert-class string                           Identifier used to differentiate responsible controllers for entries of controller issuer
+      --issuer.default-ecdsa-private-key-size int          Default certificate private key size for 'ecdsa' algorithm. of controller issuer
       --issuer.default-issuer string                       name of default issuer (from default cluster) of controller issuer
       --issuer.default-issuer-domain-ranges string         domain range restrictions when using default issuer separated by comma of controller issuer
+      --issuer.default-private-key-algorithm string        default algorithm for certificate private keys of controller issuer
       --issuer.default-requests-per-day-quota int          Default value for requestsPerDayQuota if not set explicitly in the issuer spec. of controller issuer
+      --issuer.default-rsa-private-key-size int            Default certificate private key size for 'rsa' algorithm. of controller issuer
       --issuer.default.pool.resync-period duration         Period for resynchronization for pool default of controller issuer
       --issuer.default.pool.size int                       Worker pool size for pool default of controller issuer
       --issuer.dns-class string                            class for creating challenge DNSEntries (in DNS cluster) of controller issuer
@@ -738,7 +752,7 @@ Flags:
       --issuer.pool.resync-period duration                 Period for resynchronization of controller issuer
       --issuer.pool.size int                               Worker pool size of controller issuer
       --issuer.precheck-additional-wait duration           additional wait time after DNS propagation check of controller issuer
-      --issuer.precheck-nameservers string                 DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf of controller issuer
+      --issuer.precheck-nameservers string                 Default DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf of controller issuer
       --issuer.propagation-timeout duration                propagation timeout for DNS challenge of controller issuer
       --issuer.renewal-overdue-window duration             certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates) of controller issuer
       --issuer.renewal-window duration                     certificate is renewed if its validity period is shorter of controller issuer
@@ -764,7 +778,7 @@ Flags:
       --pool.resync-period duration                        Period for resynchronization
       --pool.size int                                      Worker pool size
       --precheck-additional-wait duration                  additional wait time after DNS propagation check
-      --precheck-nameservers string                        DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf
+      --precheck-nameservers string                        Default DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf
       --propagation-timeout duration                       propagation timeout for DNS challenge
       --renewal-overdue-window duration                    certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates)
       --renewal-window duration                            certificate is renewed if its validity period is shorter

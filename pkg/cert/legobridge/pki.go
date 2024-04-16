@@ -143,19 +143,6 @@ func generateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte,
 	return key, pem, nil
 }
 
-// extractCertReqFromCert extracts all the info from an x509.Certificate
-// to create an x509.CertificateRequest, this is used for Certificate renewal.
-func extractCertReqFromCert(cert *x509.Certificate) *x509.CertificateRequest {
-	var csr x509.CertificateRequest
-	csr.Version = cert.Version
-	csr.PublicKeyAlgorithm = cert.PublicKeyAlgorithm
-	csr.Subject = cert.Subject
-	csr.DNSNames = cert.DNSNames
-	csr.EmailAddresses = cert.EmailAddresses
-
-	return &csr
-}
-
 // createCertReq creates an x509.CertificateRequest template that can be used
 // to generate a PEM encoded CSR.
 func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
