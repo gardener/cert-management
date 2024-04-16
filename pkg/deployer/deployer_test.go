@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/component"
-	componenttest "github.com/gardener/gardener/pkg/component/test"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
+	testruntime "github.com/gardener/gardener/pkg/utils/test/runtime"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -17,15 +18,30 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	. "github.com/gardener/cert-management/pkg/deployer"
 )
+
+var (
+	scheme = runtime.NewScheme()
+)
+
+func init() {
+	schemeBuilder := runtime.NewSchemeBuilder(
+		kubernetesscheme.AddToScheme,
+		v1alpha1.AddToScheme,
+	)
+
+	utilruntime.Must(schemeBuilder.AddToScheme(scheme))
+}
 
 var _ = Describe("Deployer", func() {
 	var (
@@ -296,12 +312,12 @@ var _ = Describe("Deployer", func() {
 			Expect(managedResourceSecret.Data[fmt.Sprintf("customresourcedefinition____%s.yaml", name)]).NotTo(BeNil(), name)
 		}
 
-		Expect(string(managedResourceSecret.Data["serviceaccount__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(componenttest.Serialize(serviceAccount)))
-		Expect(string(managedResourceSecret.Data["clusterrole____cert-controller-manager.yaml"])).To(Equal(componenttest.Serialize(clusterRole)))
-		Expect(string(managedResourceSecret.Data["clusterrolebinding____cert-controller-manager.yaml"])).To(Equal(componenttest.Serialize(clusterRoleBinding)))
-		Expect(string(managedResourceSecret.Data["role__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(componenttest.Serialize(role)))
-		Expect(string(managedResourceSecret.Data["rolebinding__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(componenttest.Serialize(roleBinding)))
-		Expect(string(managedResourceSecret.Data["deployment__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(componenttest.Serialize(deploy)))
+		Expect(string(managedResourceSecret.Data["serviceaccount__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(serialize(serviceAccount)))
+		Expect(string(managedResourceSecret.Data["clusterrole____cert-controller-manager.yaml"])).To(Equal(serialize(clusterRole)))
+		Expect(string(managedResourceSecret.Data["clusterrolebinding____cert-controller-manager.yaml"])).To(Equal(serialize(clusterRoleBinding)))
+		Expect(string(managedResourceSecret.Data["role__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(serialize(role)))
+		Expect(string(managedResourceSecret.Data["rolebinding__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(serialize(roleBinding)))
+		Expect(string(managedResourceSecret.Data["deployment__"+namespace+"__cert-controller-manager.yaml"])).To(Equal(serialize(deploy)))
 	}
 
 	JustBeforeEach(func() {
@@ -401,7 +417,7 @@ var _ = Describe("Deployer", func() {
 
 			checkDeployment(&deploy, 10)
 
-			Expect(string(managedResourceSecret.Data["secret__"+namespace+"__cert-controller-manager-79db81ac.yaml"])).To(Equal(componenttest.Serialize(expectedSecret)))
+			Expect(string(managedResourceSecret.Data["secret__"+namespace+"__cert-controller-manager-79db81ac.yaml"])).To(Equal(serialize(expectedSecret)))
 		})
 	})
 
@@ -420,3 +436,7 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 })
+
+func serialize(obj client.Object) string {
+	return testruntime.Serialize(obj, scheme)
+}
