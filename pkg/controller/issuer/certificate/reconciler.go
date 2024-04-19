@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
@@ -82,6 +81,15 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 
 	deactivateAuthorizations, _ := c.GetBoolOption(core.OptACMEDeactivateAuthorizations)
 
+	algorithm, _ := c.GetStringOption(core.OptDefaultPrivateKeyAlgorithm)
+	rsaSize, _ := c.GetIntOption(core.OptDefaultRSAPrivateKeySize)
+	ecdsaSize, _ := c.GetIntOption(core.OptDefaultECDSAPrivateKeySize)
+	defaults, err := legobridge.NewCertificatePrivateKeyDefaults(api.PrivateKeyAlgorithm(algorithm), api.PrivateKeySize(rsaSize), api.PrivateKeySize(ecdsaSize))
+	if err != nil {
+		return nil, err
+	}
+	c.Infof(defaults.String())
+
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &certReconciler{
 		support:                        support,
@@ -95,6 +103,7 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 		pendingRequests:                legobridge.NewPendingRequests(),
 		pendingResults:                 legobridge.NewPendingResults(),
 		alwaysDeactivateAuthorizations: deactivateAuthorizations,
+		certificatePrivateKeyDefaults:  *defaults,
 	}
 
 	dnsNamespace, _ := c.GetStringOption(core.OptDNSNamespace)
@@ -158,6 +167,7 @@ type certReconciler struct {
 	garbageCollectorTicker *time.Ticker
 
 	alwaysDeactivateAuthorizations bool
+	certificatePrivateKeyDefaults  legobridge.CertificatePrivateKeyDefaults
 }
 
 func (r *certReconciler) Start() {
@@ -265,7 +275,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 		remainingSeconds := r.lastPendingRateLimitingSeconds(cert.Status.LastPendingTimestamp)
 		return reconcile.Delay(logctx, fmt.Errorf("waiting for end of pending rate limiting in %d seconds", remainingSeconds))
 	}
-	return r.obtainCertificateAndPending(logctx, obj, nil)
+	return r.obtainCertificateAndPending(logctx, obj, false)
 }
 
 func (r *certReconciler) addEvent(obj resources.Object, status reconcile.Status, msg *string) {
@@ -357,7 +367,7 @@ func (r *certReconciler) challengePending(crt *api.Certificate) bool {
 	return r.pendingRequests.Contains(name)
 }
 
-func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, obj resources.Object, renewSecret *corev1.Secret) reconcile.Status {
+func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, obj resources.Object, renew bool) reconcile.Status {
 	cert := obj.Data().(*api.Certificate)
 	logctx.Infof("obtain certificate")
 
@@ -371,16 +381,16 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid issuer spec: only ACME or CA can be set, but not both"))
 	}
 	if issuer.Spec.ACME != nil {
-		return r.obtainCertificateAndPendingACME(logctx, obj, renewSecret, cert, issuerKey, issuer)
+		return r.obtainCertificateAndPendingACME(logctx, obj, renew, cert, issuerKey, issuer)
 	}
 	if issuer.Spec.CA != nil {
-		return r.obtainCertificateCA(logctx, obj, renewSecret, cert, issuerKey, issuer)
+		return r.obtainCertificateCA(logctx, obj, renew, cert, issuerKey, issuer)
 	}
 	return r.failed(logctx, obj, api.StateError, fmt.Errorf("incomplete issuer spec (ACME or CA section must be provided)"))
 }
 
 func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContext, obj resources.Object,
-	renewSecret *corev1.Secret, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
+	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
 	reguser, err := r.support.RestoreRegUser(issuerKey, issuer)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
@@ -415,11 +425,6 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 			"Up to %d requests per day are allowed. To change the quota, set `spec.requestsPerDayQuota` for issuer %s",
 			waitMinutes, requestsPerDayQuota, issuerKey)
 		return r.recheck(logctx, obj, api.StatePending, err, time.Duration(waitMinutes)*time.Minute)
-	}
-
-	var renewCert *certificate.Resource
-	if renewSecret != nil {
-		renewCert = legobridge.SecretDataToCertificates(renewSecret.Data)
 	}
 
 	objectName := obj.ObjectName()
@@ -464,10 +469,11 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	if cert.Spec.PreferredChain != nil {
 		preferredChain = *cert.Spec.PreferredChain
 	}
-	keyType, err := legobridge.ToKeyType(cert.Spec.PrivateKey)
+	keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(cert.Spec.PrivateKey)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid private key configuration: %w", err))
 	}
+
 	input := legobridge.ObtainInput{
 		User:                           reguser,
 		DNSSettings:                    dnsSettings,
@@ -478,7 +484,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		TargetClass:                    targetDNSClass,
 		Callback:                       callback,
 		RequestName:                    objectName,
-		RenewCert:                      renewCert,
+		Renew:                          renew,
 		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
 		PreferredChain:                 preferredChain,
 		KeyType:                        keyType,
@@ -530,7 +536,7 @@ func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer
 }
 
 func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resources.Object,
-	renewSecret *corev1.Secret, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
+	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
 	CAKeyPair, err := r.restoreCA(issuerKey, issuer)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
@@ -551,11 +557,6 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
 	}
 
-	var renewCert *certificate.Resource
-	if renewSecret != nil {
-		renewCert = legobridge.SecretDataToCertificates(renewSecret.Data)
-	}
-
 	objectName := obj.ObjectName()
 	sublogctx := logctx.NewContext("callback", cert.Name)
 	callback := func(output *legobridge.ObtainOutput) {
@@ -570,7 +571,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		Callback: callback, RenewCert: renewCert}
+		Callback: callback, Renew: renew}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
@@ -690,7 +691,7 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		}
 
 		logctx.Infof("start obtaining certificate")
-		return r.obtainCertificateAndPending(logctx, obj, secret)
+		return r.obtainCertificateAndPending(logctx, obj, true)
 	}
 	if revoked {
 		return r.revoked(logctx, obj)
@@ -759,7 +760,7 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 	}
 	h.Write([]byte(issuerKey.String()))
 	h.Write([]byte{0})
-	if keyType, err := legobridge.ToKeyType(spec.PrivateKey); err == nil && keyType != certcrypto.RSA2048 {
+	if keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(spec.PrivateKey); err == nil && !r.certificatePrivateKeyDefaults.IsDefaultKeyType(keyType) {
 		h.Write([]byte(keyType))
 		h.Write([]byte{0})
 	}

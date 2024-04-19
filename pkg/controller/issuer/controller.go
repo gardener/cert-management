@@ -46,6 +46,11 @@ func init() {
 		DefaultedIntOption(core.OptDefaultRequestsPerDayQuota, 10000,
 			"Default value for requestsPerDayQuota if not set explicitly in the issuer spec.").
 		DefaultedBoolOption(core.OptAllowTargetIssuers, false, "If true, issuers are also watched on the target cluster").
+		DefaultedIntOption(core.OptDefaultRSAPrivateKeySize, 2048,
+			"Default certificate private key size for 'rsa' algorithm.").
+		DefaultedIntOption(core.OptDefaultECDSAPrivateKeySize, 256,
+			"Default certificate private key size for 'ecdsa' algorithm.").
+		DefaultedStringOption(core.OptDefaultPrivateKeyAlgorithm, "RSA", "default algorithm for certificate private keys").
 		FinalizerDomain(cert.GroupName).
 		Cluster(ctrl.TargetCluster).
 		DefaultWorkerPool(2, 24*time.Hour).
