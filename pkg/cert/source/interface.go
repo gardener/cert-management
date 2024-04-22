@@ -20,6 +20,7 @@ import (
 
 // CertInfo contains basic certificate data.
 type CertInfo struct {
+	SecretNamespace     *string
 	SecretName          string
 	Domains             []string
 	IssuerName          *string
@@ -32,8 +33,7 @@ type CertInfo struct {
 
 // CertsInfo contains a map of CertInfo.
 type CertsInfo struct {
-	Certs    map[string]CertInfo
-	Feedback CertFeedback
+	Certs map[string]CertInfo
 }
 
 // CertFeedback is an interface for reporting certificate status.
@@ -49,7 +49,8 @@ type CertSource interface {
 	Start() error
 	Setup() error
 
-	GetCertsInfo(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (*CertsInfo, error)
+	CreateCertFeedback(logger logger.LogContext, obj resources.Object) CertFeedback
+	GetCertsInfo(logger logger.LogContext, objData resources.ObjectData) (*CertsInfo, error)
 
 	Delete(logger logger.LogContext, obj resources.Object) reconcile.Status
 	Deleted(logger logger.LogContext, key resources.ClusterObjectKey)
@@ -63,7 +64,7 @@ type CertSourceType interface {
 }
 
 // CertTargetExtractor is type for extractor.
-type CertTargetExtractor func(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (string, error)
+type CertTargetExtractor func(logger logger.LogContext, objData resources.ObjectData) (string, error)
 
 // CertSourceCreator is type for creator.
 type CertSourceCreator func(controller.Interface) (CertSource, error)
@@ -93,7 +94,7 @@ func (s *CertCurrentState) ContainsSecretName(name string) bool {
 
 // NewCertSourceTypeForExtractor creates CertSourceType for extractor.
 func NewCertSourceTypeForExtractor(name string, kind schema.GroupKind, handler CertTargetExtractor) CertSourceType {
-	return &handlercertsourcetype{certsourcetype{name, kind}, NewDefaultCertSource(handler, kind)}
+	return &handlercertsourcetype{certsourcetype{name, kind}, NewDefaultCertSource(handler)}
 }
 
 // NewCertSourceTypeForCreator creates CertSourceType for creator.

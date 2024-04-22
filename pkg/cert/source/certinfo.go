@@ -13,12 +13,12 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
-func (r *sourceReconciler) getCertsInfo(logger logger.LogContext, obj resources.Object, s CertSource, current *CertCurrentState) (*CertsInfo, error) {
+func (r *sourceReconciler) getCertsInfo(logger logger.LogContext, obj resources.Object, s CertSource) (*CertsInfo, CertFeedback, error) {
 	if !r.classes.IsResponsibleFor(logger, obj) {
-		return nil, nil
+		return nil, nil, nil
 	}
-	info, err := s.GetCertsInfo(logger, obj, current)
-	return info, err
+	info, err := s.GetCertsInfo(logger, obj.Data())
+	return info, s.CreateCertFeedback(logger, obj), err
 }
 
 // DomainsString returns all domains as comma separated string (common name and DNS names)

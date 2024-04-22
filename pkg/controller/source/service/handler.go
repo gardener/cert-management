@@ -18,8 +18,8 @@ import (
 )
 
 // GetSecretName finds the secret name from the object annotations
-func GetSecretName(_ logger.LogContext, obj resources.Object, _ *source.CertCurrentState) (string, error) {
-	svc := obj.Data().(*api.Service)
+func GetSecretName(_ logger.LogContext, objData resources.ObjectData) (string, error) {
+	svc := objData.(*api.Service)
 	if svc.Spec.Type != api.ServiceTypeLoadBalancer {
 		return "", fmt.Errorf("service is not of type LoadBalancer")
 	}

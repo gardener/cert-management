@@ -13,10 +13,10 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
-var mainResource = resources.NewGroupKind("networking.k8s.io", "Ingress")
+var MainResource = resources.NewGroupKind("networking.k8s.io", "Ingress")
 
 func init() {
-	source.CertSourceController(source.NewCertSourceTypeForCreator("ingress-cert", mainResource, NewIngressSource), nil).
+	source.CertSourceController(source.NewCertSourceTypeForCreator("ingress-cert", MainResource, NewIngressSource), nil).
 		FinalizerDomain("cert.gardener.cloud").
 		RequireLease(ctrl.SourceCluster).
 		MustRegister(ctrl.ControllerGroupSource)

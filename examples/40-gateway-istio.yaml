@@ -1,0 +1,39 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  annotations:
+    cert.gardener.cloud/purpose: managed
+    #cert.gardener.cloud/commonname: "*.demo.mydomain.com"        # optional, if not specified the first name from spec.tls[].hosts is used as common name
+    #cert.gardener.cloud/dnsnames: ""                             # optional, if not specified the names from spec.tls[].hosts are used
+    #cert.gardener.cloud/follow-cname: "true"                     # optional, to activate CNAME following for the DNS challenge
+    #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
+    #cert.gardener.cloud/issuer: issuer-name                      # optional to specify custom issuer (use namespace/name for shoot issuers)
+    #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
+    #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
+    #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+  name: my-gateway
+  namespace: default
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - hosts:
+        - uk.example.com
+        - eu.example.com
+      port:
+        name: https-443
+        number: 443
+        protocol: HTTPS
+      tls:                         # this server is ignored by the cert-controller-manager, as `tls.credentialName` is not set
+        mode: SIMPLE
+        privateKey: /etc/certs/privatekey.pem
+        serverCertificate: /etc/certs/servercert.pem
+    - hosts:
+        - bookinfo-namespace/*.example2.com
+      port:
+        name: https-9443
+        number: 9443
+        protocol: HTTPS
+      tls:
+        credentialName: my-secret  # only servers with credentialName will be considered
+        mode: SIMPLE

@@ -17,8 +17,8 @@ func requireFinalizer(src resources.Object, cluster resources.Cluster) bool {
 }
 
 // ExtractSecretLabels extracts label key value map from annotation
-func ExtractSecretLabels(obj resources.Object) (secretLabels map[string]string) {
-	if labels, ok := resources.GetAnnotation(obj.Data(), AnnotCertSecretLabels); ok {
+func ExtractSecretLabels(objData resources.ObjectData) (secretLabels map[string]string) {
+	if labels, ok := resources.GetAnnotation(objData, AnnotCertSecretLabels); ok {
 		secretLabels = map[string]string{}
 		for _, pair := range strings.Split(labels, ",") {
 			pair = strings.TrimSpace(pair)
