@@ -34,7 +34,7 @@ type gatewaySource struct {
 	state  *resourcesState
 }
 
-func NewGatewaySource(c controller.Interface) (source.CertSource, error) {
+func newGatewaySource(c controller.Interface) (source.CertSource, error) {
 	lister, err := newResourceLister(c)
 	if err != nil {
 		return nil, err
@@ -131,17 +131,6 @@ func (s *gatewaySource) appendHostsFromVirtualServices(virtualServices []resourc
 		}
 	}
 	return hosts
-}
-
-func (s *gatewaySource) getSelectors(obj resources.ObjectData) map[string]string {
-	switch data := obj.(type) {
-	case *istionetworkingv1beta1.Gateway:
-		return data.Spec.Selector
-	case *istionetworkingv1alpha3.Gateway:
-		return data.Spec.Selector
-	default:
-		return nil
-	}
 }
 
 type stdResourceLister struct {

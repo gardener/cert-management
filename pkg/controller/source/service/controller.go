@@ -13,6 +13,7 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
+// MainResource is the service resource.
 var MainResource = resources.NewGroupKind("core", "Service")
 
 func init() {

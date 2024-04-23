@@ -14,7 +14,7 @@ import (
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-func HTTPRoutesReconciler(c controller.Interface) (reconcile.Interface, error) {
+func httpRoutesReconciler(c controller.Interface) (reconcile.Interface, error) {
 	state, err := getOrCreateSharedState(c)
 	if err != nil {
 		return nil, err

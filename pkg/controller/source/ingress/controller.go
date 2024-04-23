@@ -13,6 +13,7 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
+// MainResource is the GroupKind for the ingress resource.
 var MainResource = resources.NewGroupKind("networking.k8s.io", "Ingress")
 
 func init() {

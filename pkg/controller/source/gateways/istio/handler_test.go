@@ -336,7 +336,3 @@ func makeCertInfo(secretName string, names ...string) source.CertInfo {
 		Domains:    names,
 	}
 }
-
-func modifyCertInfo(info source.CertInfo, modifier func(info source.CertInfo) source.CertInfo) source.CertInfo {
-	return modifier(info)
-}

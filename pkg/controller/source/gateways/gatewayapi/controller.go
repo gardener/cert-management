@@ -14,10 +14,13 @@ import (
 	"github.com/gardener/cert-management/pkg/cert/source"
 )
 
+// Group is the group of the Gateway API.
 const Group = "gateway.networking.k8s.io"
 
 var (
-	GroupKindGateway   = resources.NewGroupKind(Group, "Gateway")
+	// GroupKindGateway is the GroupKind for the Gateway resource.
+	GroupKindGateway = resources.NewGroupKind(Group, "Gateway")
+	// GroupKindHTTPRoute is the GroupKind for the HTTPRoute resource.
 	GroupKindHTTPRoute = resources.NewGroupKind(Group, "HTTPRoute")
 )
 
@@ -25,7 +28,7 @@ func init() {
 	source.CertSourceController(source.NewCertSourceTypeForCreator("k8s-gateways-dns", GroupKindGateway, NewGatewaySource), nil).
 		FinalizerDomain("dns.gardener.cloud").
 		DeactivateOnCreationErrorCheck(deactivateOnMissingMainResource).
-		Reconciler(HTTPRoutesReconciler, "httproutes").
+		Reconciler(httpRoutesReconciler, "httproutes").
 		Cluster(cluster.DEFAULT).
 		WorkerPool("httproutes", 2, 0).
 		ReconcilerWatchesByGK("httproutes", GroupKindHTTPRoute).

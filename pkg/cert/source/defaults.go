@@ -156,6 +156,7 @@ func NewCertsInfo() *CertsInfo {
 	return &CertsInfo{Certs: map[string]CertInfo{}}
 }
 
+// CreateCertFeedback creates an event feedback for the given object.
 func (s *DefaultCertSource) CreateCertFeedback(logger logger.LogContext, obj resources.Object) CertFeedback {
 	events := s.GetEvents(obj.ClusterKey())
 	return NewEventFeedback(logger, obj, events)

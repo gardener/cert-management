@@ -17,10 +17,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-const CONTROLLER = "watch-gateways-crds"
+// Controller is the controller name.
+const Controller = "watch-gateways-crds"
 
 func init() {
-	controller.Configure(CONTROLLER).
+	controller.Configure(Controller).
 		Reconciler(Create).
 		DefaultWorkerPool(1, 0*time.Second).
 		MainResource(apiextensionsv1.GroupName, "CustomResourceDefinition").
@@ -38,6 +39,7 @@ var _ reconcile.Interface = &reconciler{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// Create creates the controller to watch for gateway CRDs.
 func Create(controller controller.Interface) (reconcile.Interface, error) {
 	return &reconciler{
 		controller: controller,

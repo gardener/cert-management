@@ -29,12 +29,14 @@ const (
 // TLSDataCollector collects TLS secret names for hosts.
 type TLSDataCollector func(objData resources.ObjectData) ([]*TLSData, error)
 
+// TLSData contains the collection results: secret name and host list.
 type TLSData struct {
 	SecretNamespace *string
 	SecretName      string
 	Hosts           []string
 }
 
+// GetCertsInfoByCollector collects data from annotations and from the resources needed for creating certificates.
 func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectData, tlsDataCollector TLSDataCollector) (*source.CertsInfo, error) {
 	info := source.NewCertsInfo()
 

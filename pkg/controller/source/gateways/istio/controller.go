@@ -17,12 +17,14 @@ import (
 )
 
 var (
-	GroupKindGateway        = resources.NewGroupKind("networking.istio.io", "Gateway")
+	// GroupKindGateway is the GroupKind for the Gateway resource.
+	GroupKindGateway = resources.NewGroupKind("networking.istio.io", "Gateway")
+	// GroupKindVirtualService is the GroupKind for the VirtualService resource.
 	GroupKindVirtualService = resources.NewGroupKind("networking.istio.io", "VirtualService")
 )
 
 func init() {
-	source.CertSourceController(source.NewCertSourceTypeForCreator("istio-gateways-dns", GroupKindGateway, NewGatewaySource), nil).
+	source.CertSourceController(source.NewCertSourceTypeForCreator("istio-gateways-dns", GroupKindGateway, newGatewaySource), nil).
 		FinalizerDomain("dns.gardener.cloud").
 		DeactivateOnCreationErrorCheck(deactivateOnMissingMainResource).
 		Reconciler(newTargetSourcesReconciler, "targetsources").
