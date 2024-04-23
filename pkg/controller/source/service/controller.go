@@ -13,10 +13,11 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
-var mainResource = resources.NewGroupKind("core", "Service")
+// MainResource is the service resource.
+var MainResource = resources.NewGroupKind("core", "Service")
 
 func init() {
-	source.CertSourceController(source.NewCertSourceTypeForExtractor("service-cert", mainResource, GetSecretName), nil).
+	source.CertSourceController(source.NewCertSourceTypeForExtractor("service-cert", MainResource, GetSecretName), nil).
 		FinalizerDomain("cert.gardener.cloud").
 		RequireLease(ctrl.SourceCluster).
 		MustRegister(ctrl.ControllerGroupSource)

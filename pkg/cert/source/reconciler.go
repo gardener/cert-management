@@ -123,7 +123,7 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 			State: crt.Status.State, Message: crt.Status.Message, CreationTimestamp: crt.CreationTimestamp}
 	}
 
-	info, err := r.getCertsInfo(logger, obj, r.source, currentState)
+	info, feedback, err := r.getCertsInfo(logger, obj, r.source)
 	if err != nil {
 		obj.Event(core.EventTypeWarning, "reconcile", err.Error())
 	}
@@ -174,7 +174,7 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 	if len(missingSecretNames) > 0 {
 		logger.Infof("found missing secrets: %s", missingSecretNames)
 		for secretName := range missingSecretNames {
-			err := r.createEntryFor(logger, obj, info.Certs[secretName], info.Feedback)
+			err := r.createEntryFor(logger, obj, info.Certs[secretName], feedback)
 			if err != nil {
 				notifiedErrors = append(notifiedErrors, fmt.Sprintf("cannot create certificate for secret %s: %s ", secretName, err))
 			}
@@ -208,13 +208,13 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 
 	if len(notifiedErrors) > 0 {
 		msg := strings.Join(notifiedErrors, ", ")
-		if info.Feedback != nil {
-			info.Feedback.Failed(nil, fmt.Errorf("%s", msg))
+		if feedback != nil {
+			feedback.Failed(nil, fmt.Errorf("%s", msg))
 		}
 		return reconcile.Delay(logger, fmt.Errorf("reconcile failed: %s", msg))
 	}
 
-	if info.Feedback != nil {
+	if feedback != nil {
 		threshold := time.Now().Add(-2 * time.Minute)
 		for secretName, certInfo := range info.Certs {
 			s := currentState.CertStates[secretName]
@@ -225,27 +225,27 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 					if s.Message != nil {
 						err = fmt.Errorf("%s: %s", err, *s.Message)
 					}
-					info.Feedback.Failed(&certInfo, err)
+					feedback.Failed(&certInfo, err)
 				case api.StatePending:
 					msg := "certificate pending"
 					if s.Message != nil {
 						msg = fmt.Sprintf("%s: %s", msg, *s.Message)
 					}
-					info.Feedback.Pending(&certInfo, msg)
+					feedback.Pending(&certInfo, msg)
 				case api.StateReady:
 					msg := "certificate ready"
 					if s.Message != nil {
 						msg = *s.Message
 					}
-					info.Feedback.Ready(&certInfo, msg)
+					feedback.Ready(&certInfo, msg)
 				default:
 					if s.CreationTimestamp.Time.Before(threshold) {
-						info.Feedback.Pending(&certInfo, "no certcontrollers running?")
+						feedback.Pending(&certInfo, "no certcontrollers running?")
 					}
 				}
 			}
 		}
-		info.Feedback.Succeeded()
+		feedback.Succeeded()
 	}
 
 	status := r.NestedReconciler.Reconcile(logger, obj)
@@ -337,7 +337,14 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 			cert.Spec.IssuerRef = &api.IssuerRef{Name: *info.IssuerName}
 		}
 	}
-	cert.Spec.SecretName = &info.SecretName
+	if info.SecretNamespace != nil {
+		cert.Spec.SecretRef = &core.SecretReference{
+			Name:      info.SecretName,
+			Namespace: *info.SecretNamespace,
+		}
+	} else {
+		cert.Spec.SecretName = &info.SecretName
+	}
 	if r.namespace == "" {
 		cert.Namespace = obj.GetNamespace()
 	} else {

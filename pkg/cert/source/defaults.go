@@ -69,6 +69,9 @@ func (f *EventFeedback) event(info *CertInfo, msg string, warning ...bool) {
 	channel := ""
 	if info != nil {
 		channel = info.SecretName
+		if info.SecretNamespace != nil {
+			channel = *info.SecretNamespace + "/" + info.SecretName
+		}
 	}
 	if msg != f.events[channel] {
 		key := f.source.ClusterKey()
@@ -102,7 +105,7 @@ type DefaultCertSource struct {
 var _ CertSource = &DefaultCertSource{}
 
 // NewDefaultCertSource creates a DefaultCertSource
-func NewDefaultCertSource(handler CertTargetExtractor, _ schema.GroupKind) DefaultCertSource {
+func NewDefaultCertSource(handler CertTargetExtractor) DefaultCertSource {
 	return DefaultCertSource{handler: handler, Events: map[resources.ClusterObjectKey]map[string]string{}}
 }
 
@@ -149,59 +152,46 @@ func (s *DefaultCertSource) GetEvents(key resources.ClusterObjectKey) map[string
 }
 
 // NewCertsInfo creates a CertsInfo
-func (s *DefaultCertSource) NewCertsInfo(logger logger.LogContext, obj resources.Object) *CertsInfo {
+func NewCertsInfo() *CertsInfo {
+	return &CertsInfo{Certs: map[string]CertInfo{}}
+}
+
+// CreateCertFeedback creates an event feedback for the given object.
+func (s *DefaultCertSource) CreateCertFeedback(logger logger.LogContext, obj resources.Object) CertFeedback {
 	events := s.GetEvents(obj.ClusterKey())
-	return &CertsInfo{Certs: map[string]CertInfo{}, Feedback: NewEventFeedback(logger, obj, events)}
+	return NewEventFeedback(logger, obj, events)
 }
 
 // GetCertsInfo fills a CertsInfo for an object.
-func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources.Object, current *CertCurrentState) (*CertsInfo, error) {
-	info := s.NewCertsInfo(logger, obj)
-	secretName, err := s.handler(logger, obj, current)
+func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resources.ObjectData) (*CertsInfo, error) {
+	info := NewCertsInfo()
+	secretName, err := s.handler(logger, objData)
 	if err != nil {
 		logger.Debug(err.Error())
 		return nil, nil
 	}
-	a, ok := resources.GetAnnotation(obj.Data(), AnnotCertDNSNames)
-	if !ok {
-		a, ok = resources.GetAnnotation(obj.Data(), AnnotDnsnames)
-		if !ok {
-			_, ok = resources.GetAnnotation(obj.Data(), AnnotCommonName)
-			if !ok {
-				logger.Debug("No dnsnames or commonname annotations")
-				return nil, nil
-			}
-		}
-	}
 
-	cn, _ := resources.GetAnnotation(obj.Data(), AnnotCommonName)
-	cn = strings.TrimSpace(cn)
-	annotatedDomains := []string{}
-	if cn != "" {
-		annotatedDomains = append(annotatedDomains, cn)
-	}
-	for _, e := range strings.Split(a, ",") {
-		e = strings.TrimSpace(e)
-		if e != "" && e != cn {
-			annotatedDomains = append(annotatedDomains, e)
-		}
+	annotatedDomains, _ := GetDomainsFromAnnotations(objData)
+	if annotatedDomains == nil {
+		logger.Debug("No dnsnames or commonname annotations")
+		return nil, nil
 	}
 
 	var issuer *string
-	annotatedIssuer, ok := resources.GetAnnotation(obj.Data(), AnnotIssuer)
+	annotatedIssuer, ok := resources.GetAnnotation(objData, AnnotIssuer)
 	if ok {
 		issuer = &annotatedIssuer
 	}
 
 	followCNAME := false
-	if value, ok := resources.GetAnnotation(obj.Data(), AnnotFollowCNAME); ok {
+	if value, ok := resources.GetAnnotation(objData, AnnotFollowCNAME); ok {
 		followCNAME, _ = strconv.ParseBool(value)
 	}
-	preferredChain, _ := resources.GetAnnotation(obj.Data(), AnnotPreferredChain)
+	preferredChain, _ := resources.GetAnnotation(objData, AnnotPreferredChain)
 
-	algorithm, _ := resources.GetAnnotation(obj.Data(), AnnotPrivateKeyAlgorithm)
+	algorithm, _ := resources.GetAnnotation(objData, AnnotPrivateKeyAlgorithm)
 	keySize := 0
-	if keySizeStr, ok := resources.GetAnnotation(obj.Data(), AnnotPrivateKeySize); ok {
+	if keySizeStr, ok := resources.GetAnnotation(objData, AnnotPrivateKeySize); ok {
 		if value, err := strconv.Atoi(keySizeStr); err == nil {
 			keySize = value
 		}
@@ -212,7 +202,7 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, obj resources
 		Domains:             annotatedDomains,
 		IssuerName:          issuer,
 		FollowCNAME:         followCNAME,
-		SecretLabels:        ExtractSecretLabels(obj),
+		SecretLabels:        ExtractSecretLabels(objData),
 		PreferredChain:      preferredChain,
 		PrivateKeyAlgorithm: algorithm,
 		PrivateKeySize:      keySize,
@@ -231,4 +221,38 @@ func (s *DefaultCertSource) Deleted(_ logger.LogContext, key resources.ClusterOb
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	delete(s.Events, key)
+}
+
+// GetDomainsFromAnnotations gets includes annotated DNS names (DNS names from annotation "cert.gardener.cloud/dnsnames"
+// or alternatively "dns.gardener.cloud/dnsnames") and the optional common name.
+// The common name is added to the returned domain list
+func GetDomainsFromAnnotations(objData resources.ObjectData) (annotatedDomains []string, cn string) {
+	a, ok := resources.GetAnnotation(objData, AnnotCertDNSNames)
+	if !ok {
+		a, ok = resources.GetAnnotation(objData, AnnotDnsnames)
+		if a == "*" || a == "all" {
+			a = ""
+			ok = false
+		}
+		if !ok {
+			_, ok = resources.GetAnnotation(objData, AnnotCommonName)
+			if !ok {
+				return nil, ""
+			}
+		}
+	}
+
+	cn, _ = resources.GetAnnotation(objData, AnnotCommonName)
+	cn = strings.TrimSpace(cn)
+	annotatedDomains = []string{}
+	if cn != "" {
+		annotatedDomains = append(annotatedDomains, cn)
+	}
+	for _, e := range strings.Split(a, ",") {
+		e = strings.TrimSpace(e)
+		if e != "" && e != cn {
+			annotatedDomains = append(annotatedDomains, e)
+		}
+	}
+	return annotatedDomains, cn
 }

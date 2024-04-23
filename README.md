@@ -35,6 +35,9 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Requesting a Certificate for Ingress](#requesting-a-certificate-for-ingress)
     - [Process](#process)
   - [Requesting a Certificate for Service](#requesting-a-certificate-for-service)
+  - [Requesting a Certificate for Gateways](#requesting-a-certificate-for-gateways)
+    - [Istio gateways](#istio-gateways)
+    - [Gateway API gateways](#gateway-api-gateways)
   - [Demo quick start](#demo-quick-start)
   - [Using the cert-controller-manager](#using-the-cert-controller-manager)
     - [Usage](#usage)
@@ -664,6 +667,111 @@ if it has exactly the same common name and DNS names.
         NAME          COMMON NAME           ISSUER           STATUS   EXPIRATION_DATE        DNS_NAMES                 AGE
         cert-simple   cert1.mydomain.com    issuer-staging   Ready    2019-11-10T09:48:17Z   [cert1.my-domain.com]     34s
         ```
+## Requesting a Certificate for Gateways
+
+There are source controllers for `Gateways` from [Istio](https://github.com/istio/istio) or the new 
+Kubernetes [Gateway API](https://gateway-api.sigs.k8s.io/).
+By annotating the `Gateway` resource with the `cert.gardener.cloud/purpose=managed` annotation,
+certificates are managed automatically for the hosts.
+
+### Istio gateways
+
+For Istio, gateways for API versions `networking.istio.io/v1beta1` and `networking.istio.io/v1alpha3` are supported.
+
+To enable automatic management of `Certificate` resources, annotate the Istio `Gateway` resource with `cert.gardener.cloud/purpose=managed`.
+The domain names are extracted from the `spec.servers.hosts` field and from the field `spec.hosts` of related `VirtualService` resources.
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  annotations:
+    cert.gardener.cloud/purpose: managed
+    #cert.gardener.cloud/commonname: "*.demo.mydomain.com"        # optional, if not specified the first name from spec.tls[].hosts is used as common name
+    #cert.gardener.cloud/dnsnames: ""                             # optional, if not specified the names from spec.tls[].hosts are used
+    #cert.gardener.cloud/follow-cname: "true"                     # optional, to activate CNAME following for the DNS challenge
+    #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
+    #cert.gardener.cloud/issuer: issuer-name                      # optional to specify custom issuer (use namespace/name for shoot issuers)
+    #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
+    #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
+    #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+  name: my-gateway
+  namespace: default
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - hosts:
+        - uk.example.com
+        - eu.example.com
+      port:
+        name: https-443
+        number: 443
+        protocol: HTTPS
+      tls:                         # this server is ignored by the cert-controller-manager, as `tls.credentialName` is not set
+        mode: SIMPLE
+        privateKey: /etc/certs/privatekey.pem
+        serverCertificate: /etc/certs/servercert.pem
+    - hosts:
+        - bookinfo-namespace/*.example2.com
+      port:
+        name: https-9443
+        number: 9443
+        protocol: HTTPS
+      tls:
+        credentialName: my-secret  # only servers with credentialName will be considered
+        mode: SIMPLE
+```
+
+In this case, only a `Certificate` resource would be created with domain name `*.example2.com`, as the first server item
+specifies no `tls.credentialName` field.
+
+See the [Istio tutorial](docs/usage/tutorials/istio-gateways.md) for a more detailed example.
+
+### Gateway API gateways
+
+The Gateway API versions `gateway.networking.k8s.io/v1`, `gateway.networking.k8s.io/v1beta1`  and `gateway.networking.k8s.io/v1alpha2` are supported.
+
+To enable automatic management of `Certificate` resources, annotate the Gateway API `Gateway` resource with `cert.gardener.cloud/purpose=managed`.
+The domain names are extracted from the `spec.listeners.hostnames` field and from the field `spec.hostnames` of related `HTTPRoute` resources.
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert.gardener.cloud/purpose: managed
+    #cert.gardener.cloud/commonname: "*.demo.mydomain.com"        # optional, if not specified the first name from spec.tls[].hosts is used as common name
+    #cert.gardener.cloud/dnsnames: ""                             # optional, if not specified the names from spec.tls[].hosts are used
+    #cert.gardener.cloud/follow-cname: "true"                     # optional, to activate CNAME following for the DNS challenge
+    #cert.gardener.cloud/secret-labels: "key1=value1,key2=value2" # optional labels for the certificate secret
+    #cert.gardener.cloud/issuer: issuer-name                      # optional to specify custom issuer (use namespace/name for shoot issuers)
+    #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
+    #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
+    #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+  name: my-gateway
+  namespace: default
+spec:
+  gatewayClassName: my-gateway-class
+  listeners:
+    - allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              shared-gateway-access: "true"
+      hostname: foo.example.com
+      name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        certificateRefs:
+          - name: my-tls-secret      # note: listeners are only considered if they have exactly one certificateRefs item
+```
+
+In this case, a single `Certificate` resource with domain name `foo.example.com` would be created.
+
+See the [Gateway API tutorial](docs/usage/tutorials/gateway-api-gateways.md) for a more detailed example.
 
 ## Using the cert-controller-manager
 
