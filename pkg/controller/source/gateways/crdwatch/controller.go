@@ -23,6 +23,7 @@ const Controller = "watch-gateways-crds"
 func init() {
 	controller.Configure(Controller).
 		Reconciler(Create).
+		Cluster(ctrl.SourceCluster).
 		DefaultWorkerPool(1, 0*time.Second).
 		MainResource(apiextensionsv1.GroupName, "CustomResourceDefinition").
 		MustRegister(ctrl.ControllerGroupSource)

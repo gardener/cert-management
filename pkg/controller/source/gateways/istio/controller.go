@@ -12,7 +12,6 @@ import (
 	"github.com/gardener/cert-management/pkg/controller/source/ingress"
 	"github.com/gardener/cert-management/pkg/controller/source/service"
 
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
@@ -25,11 +24,11 @@ var (
 
 func init() {
 	source.CertSourceController(source.NewCertSourceTypeForCreator("istio-gateways-dns", GroupKindGateway, newGatewaySource), nil).
-		FinalizerDomain("dns.gardener.cloud").
+		FinalizerDomain("cert.gardener.cloud").
+		RequireLease(ctrl.SourceCluster).
 		DeactivateOnCreationErrorCheck(deactivateOnMissingMainResource).
 		Reconciler(newTargetSourcesReconciler, "targetsources").
 		Reconciler(newVirtualServicesReconciler, "virtualservices").
-		Cluster(cluster.DEFAULT).
 		WorkerPool("targetsources", 2, 0).
 		ReconcilerWatchesByGK("targetsources", service.MainResource, ingress.MainResource).
 		WorkerPool("virtualservices", 2, 0).
