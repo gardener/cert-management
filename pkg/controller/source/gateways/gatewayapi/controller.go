@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	ctrl "github.com/gardener/cert-management/pkg/controller"
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
@@ -26,10 +25,10 @@ var (
 
 func init() {
 	source.CertSourceController(source.NewCertSourceTypeForCreator("k8s-gateways-dns", GroupKindGateway, NewGatewaySource), nil).
-		FinalizerDomain("dns.gardener.cloud").
+		FinalizerDomain("cert.gardener.cloud").
+		RequireLease(ctrl.SourceCluster).
 		DeactivateOnCreationErrorCheck(deactivateOnMissingMainResource).
 		Reconciler(httpRoutesReconciler, "httproutes").
-		Cluster(cluster.DEFAULT).
 		WorkerPool("httproutes", 2, 0).
 		ReconcilerWatchesByGK("httproutes", GroupKindHTTPRoute).
 		MustRegister(ctrl.ControllerGroupSource)
