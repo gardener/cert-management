@@ -70,7 +70,7 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 		}
 	}
 
-	annotatedDomains, cn := source.GetDomainsFromAnnotations(objData)
+	annotatedDomains, cn := source.GetDomainsFromAnnotations(objData, false)
 
 	var issuer *string
 	annotatedIssuer, ok := resources.GetAnnotation(objData, source.AnnotIssuer)

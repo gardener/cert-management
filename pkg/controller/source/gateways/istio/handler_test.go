@@ -10,7 +10,6 @@ import (
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
-	dnssource "github.com/gardener/external-dns-management/pkg/dns/source"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
@@ -187,10 +186,30 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "c.example2.com")),
+		Entry("ignore dns.gardener.cloud/dnsnames annotation", defaultSources, &istionetworkingv1beta1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					source.AnnotDnsnames:            "a.example.com,c.example.com",
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+				},
+			},
+			Spec: networkingv1beta1.Gateway{
+				Servers: []*networkingv1beta1.Server{
+					{
+						Hosts: []string{"*/a.example.com", "ns2/c.example.com", "d.example.com"},
+						Tls: &networkingv1beta1.ServerTLSSettings{
+							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+							CredentialName: "mysecret",
+						},
+					},
+				},
+				Selector: selectorService2,
+			},
+		}, nil, singleCertInfo("mysecret", "a.example.com", "c.example.com", "d.example.com")),
 		Entry("selective hosts", defaultSources, &istionetworkingv1beta1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					dnssource.DNS_ANNOTATION:        "a.example.com,c.example.com",
+					source.AnnotCertDNSNames:        "a.example.com,c.example.com",
 					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
 				},
 			},
@@ -207,7 +226,26 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "a.example.com", "c.example.com")),
-
+		Entry("explicit common name", defaultSources, &istionetworkingv1beta1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					source.AnnotCommonName:          "cn.example.com",
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+				},
+			},
+			Spec: networkingv1beta1.Gateway{
+				Servers: []*networkingv1beta1.Server{
+					{
+						Hosts: []string{"*/a.example.com", "ns2/c.example.com", "d.example.com"},
+						Tls: &networkingv1beta1.ServerTLSSettings{
+							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+							CredentialName: "mysecret",
+						},
+					},
+				},
+				Selector: selectorService2,
+			},
+		}, nil, singleCertInfo("mysecret", "cn.example.com", "a.example.com", "c.example.com", "d.example.com")),
 		Entry("gateway with virtual services", defaultSources, &istionetworkingv1beta1.Gateway{
 			ObjectMeta: standardObjectMeta,
 			Spec: networkingv1beta1.Gateway{

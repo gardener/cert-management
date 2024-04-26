@@ -171,7 +171,7 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		return nil, nil
 	}
 
-	annotatedDomains, _ := GetDomainsFromAnnotations(objData)
+	annotatedDomains, _ := GetDomainsFromAnnotations(objData, true)
 	if annotatedDomains == nil {
 		logger.Debug("No dnsnames or commonname annotations")
 		return nil, nil
@@ -226,18 +226,23 @@ func (s *DefaultCertSource) Deleted(_ logger.LogContext, key resources.ClusterOb
 // GetDomainsFromAnnotations gets includes annotated DNS names (DNS names from annotation "cert.gardener.cloud/dnsnames"
 // or alternatively "dns.gardener.cloud/dnsnames") and the optional common name.
 // The common name is added to the returned domain list
-func GetDomainsFromAnnotations(objData resources.ObjectData) (annotatedDomains []string, cn string) {
+func GetDomainsFromAnnotations(objData resources.ObjectData, forService bool) (annotatedDomains []string, cn string) {
 	a, ok := resources.GetAnnotation(objData, AnnotCertDNSNames)
 	if !ok {
-		a, ok = resources.GetAnnotation(objData, AnnotDnsnames)
-		if a == "*" || a == "all" {
-			a = ""
-			ok = false
+		if forService {
+			a, ok = resources.GetAnnotation(objData, AnnotDnsnames)
+			if a == "*" || a == "all" {
+				a = ""
+				ok = false
+			}
 		}
 		if !ok {
-			_, ok = resources.GetAnnotation(objData, AnnotCommonName)
+			cn, ok = resources.GetAnnotation(objData, AnnotCommonName)
 			if !ok {
 				return nil, ""
+			}
+			if !forService {
+				return nil, cn
 			}
 		}
 	}
