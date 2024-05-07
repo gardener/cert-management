@@ -31,9 +31,10 @@ func init() {
 		DefaultedStringOption(core.OptDefaultIssuer, "default-issuer", "name of default issuer (from default cluster)").
 		DefaultedStringOption(core.OptIssuerNamespace, "default", "namespace to lookup issuers on default cluster").
 		StringOption(core.OptDefaultIssuerDomainRanges, "domain range restrictions when using default issuer separated by comma").
-		StringOption(core.OptDNSNamespace, "namespace for creating challenge DNSEntries (in DNS cluster)").
+		StringOption(core.OptDNSNamespace, "namespace for creating challenge DNSEntries or DNSRecords (in DNS cluster)").
 		StringOption(core.OptDNSClass, "class for creating challenge DNSEntries (in DNS cluster)").
 		StringOption(core.OptDNSOwnerID, "ownerId for creating challenge DNSEntries").
+		BoolOption(core.OptUseDNSRecords, "if true, DNSRecords (using Gardener Provider extensions) are created instead of DNSEntries").
 		BoolOption(core.OptCascadeDelete, "If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted").
 		BoolOption(core.OptACMEDeactivateAuthorizations, "if true authorizations are always deactivated after each ACME certificate request").
 		StringOption(source.OptClass, "Identifier used to differentiate responsible controllers for entries").

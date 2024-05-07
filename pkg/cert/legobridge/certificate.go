@@ -84,6 +84,16 @@ type DNSControllerSettings struct {
 	PropagationTimeout time.Duration
 	// FollowCNAME if true checks and follows CNAME records for DNS01 challenge domains.
 	FollowCNAME bool
+	// DNSRecordSettings are additional fields needed to create a DNSRecord. If set, DNSChallenge will use DNSRecords instead of DNSEntries.
+	DNSRecordSettings *DNSRecordSettings
+}
+
+// DNSRecordSettings are additional fields needed to create a DNSRecord.
+type DNSRecordSettings struct {
+	// Type is the provider type.
+	Type string
+	// SecretRef is a reference to a secret that contains the cloud provider specific credentials.
+	SecretRef corev1.SecretReference
 }
 
 // ObtainOutput is the result of the certificate obtain request.
@@ -328,7 +338,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 
 	var provider ProviderWithCount
 	if input.DNSSettings != nil {
-		provider, err = newDNSControllerProvider(*input.DNSSettings, input.RequestName,
+		provider, err = newDelegatingProvider(*input.DNSSettings, input.RequestName,
 			input.TargetClass, input.IssuerKey)
 		if err != nil {
 			o.releasePending(input)

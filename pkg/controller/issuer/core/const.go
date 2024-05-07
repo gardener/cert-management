@@ -24,6 +24,8 @@ const (
 	OptDNSClass = "dns-class"
 	// OptDNSOwnerID is the DNS owner identifier command line option.
 	OptDNSOwnerID = "dns-owner-id"
+	// OptUseDNSRecords is the command line option to use DNSRecords instead of DNSEntries for DNS challenges.
+	OptUseDNSRecords = "use-dnsrecords"
 	// OptDefaultIssuerDomainRanges are the domain ranges the default issuer is restricted to.
 	OptDefaultIssuerDomainRanges = "default-issuer-domain-ranges"
 	// OptRenewalWindow is the renewal window command line option.

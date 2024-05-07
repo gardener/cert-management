@@ -41,9 +41,12 @@ configuration:
   # config:
   # controllers:
   # cpuprofile:
+  # defaultEcdsaPrivateKeySize:
   # defaultIssuer:
   # defaultIssuerDomainRanges:
+  # defaultPrivateKeyAlgorithm:
   # defaultRequestsPerDayQuota:
+  # defaultRsaPrivateKeySize:
   # defaultPoolResyncPeriod:
   # defaultPoolSize:
   # disableNamespaceRestriction:
@@ -56,6 +59,7 @@ configuration:
   # dnsMigrationIds:
   # forceCrdUpdate:
   # gracePeriod:
+  # httproutesPoolSize:
   # ingressCertCertClass:
   # ingressCertCertTargetClass:
   # ingressCertDefaultPoolResyncPeriod:
@@ -70,9 +74,12 @@ configuration:
   # issuerAllowTargetIssuers:
   # issuerCascadeDelete:
   # issuerCertClass:
+  # issuerDefaultEcdsaPrivateKeySize:
   # issuerDefaultIssuer:
   # issuerDefaultIssuerDomainRanges:
+  # issuerDefaultPrivateKeyAlgorithm:
   # issuerDefaultRequestsPerDayQuota:
+  # issuerDefaultRsaPrivateKeySize:
   # issuerDefaultPoolResyncPeriod:
   # issuerDefaultPoolSize:
   # issuerDnsClass:
@@ -89,7 +96,29 @@ configuration:
   # issuerRenewalWindow:
   # issuerRevocationsPoolSize:
   # issuerSecretsPoolSize:
+  # issuerUseDnsrecords:
   # issuersPoolSize:
+  # istioGatewaysDnsCertClass:
+  # istioGatewaysDnsCertTargetClass:
+  # istioGatewaysDnsDefaultPoolResyncPeriod:
+  # istioGatewaysDnsDefaultPoolSize:
+  # istioGatewaysDnsPoolResyncPeriod:
+  # istioGatewaysDnsPoolSize:
+  # istioGatewaysDnsTargetNamePrefix:
+  # istioGatewaysDnsTargetNamespace:
+  # istioGatewaysDnsTargetsPoolSize:
+  # istioGatewaysDnsTargetsourcesPoolSize:
+  # istioGatewaysDnsVirtualservicesPoolSize:
+  # k8sGatewaysDnsCertClass:
+  # k8sGatewaysDnsCertTargetClass:
+  # k8sGatewaysDnsDefaultPoolResyncPeriod:
+  # k8sGatewaysDnsDefaultPoolSize:
+  # k8sGatewaysDnsHttproutesPoolSize:
+  # k8sGatewaysDnsPoolResyncPeriod:
+  # k8sGatewaysDnsPoolSize:
+  # k8sGatewaysDnsTargetNamePrefix:
+  # k8sGatewaysDnsTargetNamespace:
+  # k8sGatewaysDnsTargetsPoolSize:
   # kubeconfig:
   # kubeconfigDisableDeployCrds:
   # kubeconfigId:
@@ -135,6 +164,11 @@ configuration:
   # targetId:
   # targetMigrationIds:
   # targetsPoolSize:
+  # targetsourcesPoolSize:
+  # useDnsrecords:
   # version:
+  # virtualservicesPoolSize:
+  # watchGatewaysCrdsDefaultPoolSize:
+  # watchGatewaysCrdsPoolSize:
 
 additionalConfiguration: []

@@ -15,6 +15,7 @@ cd $SCRIPT_BASEDIR
 
 FUNCTEST_CONFIG=functest-config.yaml
 RUN_CONTROLLER=true
+USE_DNSRECORDS=false
 
 usage()
 {
@@ -34,6 +35,7 @@ Options:
     -v                     verbose output of script (not test itself)
     -f <config.yaml>       path to functest configuration file (defaults to $FUNCTEST_CONFIG)
     --no-controller        do not start the cert-controller-manager
+    --use-dnsrecords       use DNS records instead of DNS entries
     --dns                  kubeconfig for writing temporary DNS entries of challenges (default to $DNS_KUBECONFIG or $KUBECONFIG)
     --dns-domain <domain>  DNS domain suffix to use for certificates (must have a DNS provider)
 For options of ginkgo run:
@@ -63,6 +65,9 @@ while [ "$1" != "" ]; do
                            ;;
         --no-controller )  shift
                            RUN_CONTROLLER=false
+                           ;;
+        --use-dnsrecords )  shift
+                           USE_DNSRECORDS=true
                            ;;
         --dns )            shift
                            DNS_KUBECONFIG=$1
@@ -194,14 +199,19 @@ fi
 
 if [ "$RUN_CONTROLLER" == "true" ]; then
   go build -o $ROOTDIR/cert-controller-manager $ROOTDIR/cmd/cert-controller-manager
-  $ROOTDIR/cert-controller-manager --dns $DNS_KUBECONFIG >/tmp/functest-cert-controller-manager.log 2>&1 &
+  $ROOTDIR/cert-controller-manager --dns $DNS_KUBECONFIG --use-dnsrecords=$USE_DNSRECORDS --omit-lease >/tmp/functest-cert-controller-manager.log 2>&1 &
   PID_CONTROLLER=$!
 fi
 
 # install ginkgo
 go install github.com/onsi/ginkgo/v2/ginkgo
 
-FUNCTEST_CONFIG=$FUNCTEST_CONFIG DNS_KUBECONFIG=$DNS_KUBECONFIG DNS_DOMAIN=$DNS_DOMAIN ginkgo -p "$@"
+if [ "$USE_DNSRECORDS" == "true" ]; then
+  echo "USE_DNSRECORDS=true"
+  kubectl --kubeconfig=$DNS_KUBECONFIG apply -f resources/10-crd-extensions.gardener.cloud_dnsrecords.yaml
+fi
+
+FUNCTEST_CONFIG=$FUNCTEST_CONFIG DNS_KUBECONFIG=$DNS_KUBECONFIG DNS_DOMAIN=$DNS_DOMAIN USE_DNSRECORDS=$USE_DNSRECORDS ginkgo -p "$@"
 
 RETCODE=$?
 
