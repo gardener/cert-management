@@ -206,6 +206,7 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		PreferredChain:      preferredChain,
 		PrivateKeyAlgorithm: algorithm,
 		PrivateKeySize:      keySize,
+		Annotations:         CopyDNSRecordsAnnotations(objData),
 	}
 	return info, nil
 }

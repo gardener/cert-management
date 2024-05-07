@@ -45,6 +45,11 @@ const (
 	// AnnotPreferredChain is the annotation for the certificate preferred chain
 	AnnotPreferredChain = "cert.gardener.cloud/preferred-chain"
 
+	// AnnotDNSRecordProviderType is the annotation for providing the provider type for DNS records.
+	AnnotDNSRecordProviderType = api.GroupName + "/dnsrecord-provider-type"
+	// AnnotDNSRecordSecretRef is the annotation for providing the secret ref for DNS records.
+	AnnotDNSRecordSecretRef = api.GroupName + "/dnsrecord-secret-ref"
+
 	// AnnotPrivateKeyAlgorithm is the annotation key to set the PrivateKeyAlgorithm for a Certificate.
 	// If PrivateKeyAlgorithm is specified and `size` is not provided,
 	// key size of 256 will be used for `ECDSA` key algorithm and

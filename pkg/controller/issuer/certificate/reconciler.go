@@ -56,10 +56,6 @@ const (
 	AnnotationRevoked = api.GroupName + "/revoked"
 	// AnnotationRequestedAt is the annotation for storing the timestamp when the certificate was requested
 	AnnotationRequestedAt = api.GroupName + "/requestedAt"
-	// AnnotationDNSRecordProviderType is the annotation for providing the provider type for DNS records.
-	AnnotationDNSRecordProviderType = api.GroupName + "/dnsrecord-provider-type"
-	// AnnotationDNSRecordSecretRef is the annotation for providing the secret ref for DNS records.
-	AnnotationDNSRecordSecretRef = api.GroupName + "/dnsrecord-secret-ref"
 )
 
 type backoffMode int
@@ -1321,13 +1317,13 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 }
 
 func createDNSRecordSettings(cert *api.Certificate) (*legobridge.DNSRecordSettings, error) {
-	typ := cert.Annotations[AnnotationDNSRecordProviderType]
+	typ := cert.Annotations[source.AnnotDNSRecordProviderType]
 	if typ == "" {
-		return nil, fmt.Errorf("missing annotation %s for creating DNSRecord", AnnotationDNSRecordProviderType)
+		return nil, fmt.Errorf("missing annotation %s for creating DNSRecord", source.AnnotDNSRecordProviderType)
 	}
-	ref := cert.Annotations[AnnotationDNSRecordSecretRef]
+	ref := cert.Annotations[source.AnnotDNSRecordSecretRef]
 	if ref == "" {
-		return nil, fmt.Errorf("missing annotation %s for creating DNSRecord", AnnotationDNSRecordSecretRef)
+		return nil, fmt.Errorf("missing annotation %s for creating DNSRecord", source.AnnotDNSRecordSecretRef)
 	}
 	parts := strings.SplitN(ref, "/", 2)
 	var secretRef corev1.SecretReference

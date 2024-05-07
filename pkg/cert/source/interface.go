@@ -29,6 +29,7 @@ type CertInfo struct {
 	PreferredChain      string
 	PrivateKeyAlgorithm string
 	PrivateKeySize      int
+	Annotations         map[string]string
 }
 
 // CertsInfo contains a map of CertInfo.

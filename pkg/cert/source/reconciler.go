@@ -360,6 +360,10 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 
 	cert.Spec.PrivateKey = createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize)
 
+	for key, value := range info.Annotations {
+		resources.SetAnnotation(cert, key, value)
+	}
+
 	e, _ := r.SlaveResoures()[0].Wrap(cert)
 
 	err := r.Slaves().CreateSlave(obj, e)
@@ -466,6 +470,12 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		if !reflect.DeepEqual(spec.PrivateKey, newPrivateKey) {
 			spec.PrivateKey = newPrivateKey
 			mod.Modify(true)
+		}
+
+		for key, value := range info.Annotations {
+			if resources.SetAnnotation(o, key, value) {
+				mod.Modify(true)
+			}
 		}
 
 		if mod.IsModified() {

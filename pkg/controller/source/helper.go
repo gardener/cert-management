@@ -77,6 +77,7 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 	if ok {
 		issuer = &annotatedIssuer
 	}
+
 	for _, tls := range tlsDataArray {
 		if tls.SecretName == "" {
 			err = fmt.Errorf("tls entry for hosts %s has no secretName", source.DomainsString(tls.Hosts))
@@ -102,6 +103,7 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 			PreferredChain:      preferredChain,
 			PrivateKeyAlgorithm: algorithm,
 			PrivateKeySize:      keySize,
+			Annotations:         source.CopyDNSRecordsAnnotations(objData),
 		}
 	}
 	return info, err
