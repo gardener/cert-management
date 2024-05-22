@@ -12,8 +12,8 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	networkingv1beta1 "istio.io/api/networking/v1beta1"
-	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	apinetworkingv1 "istio.io/api/networking/v1"
+	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,29 +54,29 @@ var _ = Describe("Istio Gateway Handler", func() {
 				ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
 			},
 		}
-		vsvc1 = &istionetworkingv1beta1.VirtualService{
-			Spec: networkingv1beta1.VirtualService{
+		vsvc1 = &istionetworkingv1.VirtualService{
+			Spec: apinetworkingv1.VirtualService{
 				Gateways: []string{"test/g1"},
 				Hosts:    []string{"foo.example.com", "bar.example.com"},
 			},
 		}
-		vsvc2 = &istionetworkingv1beta1.VirtualService{
-			Spec: networkingv1beta1.VirtualService{
+		vsvc2 = &istionetworkingv1.VirtualService{
+			Spec: apinetworkingv1.VirtualService{
 				Gateways: []string{"test/g1"},
 				Hosts:    []string{"foo.example.com"},
 			},
 		}
-		vsvc3 = &istionetworkingv1beta1.VirtualService{
-			Spec: networkingv1beta1.VirtualService{
+		vsvc3 = &istionetworkingv1.VirtualService{
+			Spec: apinetworkingv1.VirtualService{
 				Gateways: []string{"test/g2"},
 				Hosts:    []string{"bla.example.com"},
 			},
 		}
-		allVirtualServices = []*istionetworkingv1beta1.VirtualService{vsvc1, vsvc2, vsvc3}
+		allVirtualServices = []*istionetworkingv1.VirtualService{vsvc1, vsvc2, vsvc3}
 	)
 
 	var _ = DescribeTable("GetCertsInfo",
-		func(sources map[string]*corev1.LoadBalancerStatus, gateway *istionetworkingv1beta1.Gateway, virtualServices []*istionetworkingv1beta1.VirtualService, expectedMap map[string]source.CertInfo) {
+		func(sources map[string]*corev1.LoadBalancerStatus, gateway *istionetworkingv1.Gateway, virtualServices []*istionetworkingv1.VirtualService, expectedMap map[string]source.CertInfo) {
 			lister := &testResourceLister{sources: sources, virtualServices: virtualServices}
 			state := newState()
 			handler, err := newGatewaySourceWithResourceLister(lister, state)
@@ -97,43 +97,43 @@ var _ = Describe("Istio Gateway Handler", func() {
 			expectedInfo.Certs = expectedMap
 			Expect(*actual).To(Equal(*expectedInfo))
 		},
-		Entry("unmanaged gateway", defaultSources, &istionetworkingv1beta1.Gateway{
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+		Entry("unmanaged gateway", defaultSources, &istionetworkingv1.Gateway{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{Hosts: []string{"a.example.com"}},
 				},
 				Selector: selectorService1,
 			},
 		}, nil, emptyMap),
-		Entry("without TLS settings", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("without TLS settings", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{Hosts: []string{"a.example.com"}},
 				},
 				Selector: selectorService1,
 			},
 		}, nil, emptyMap),
-		Entry("with passthrough", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("with passthrough", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"a.example.com"},
-						Tls:   &networkingv1beta1.ServerTLSSettings{Mode: networkingv1beta1.ServerTLSSettings_PASSTHROUGH},
+						Tls:   &apinetworkingv1.ServerTLSSettings{Mode: apinetworkingv1.ServerTLSSettings_PASSTHROUGH},
 					},
 				},
 				Selector: selectorService1,
 			},
 		}, nil, emptyMap),
-		Entry("assigned gateway to service", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("assigned gateway to service", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"a.example.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -141,14 +141,14 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService1,
 			},
 		}, nil, singleCertInfo("mysecret", "a.example.com")),
-		Entry("assigned gateway to service with virtual services", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("assigned gateway to service with virtual services", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"a.example.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -156,14 +156,14 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService1,
 			},
 		}, allVirtualServices, singleCertInfo("mysecret", "a.example.com", "foo.example.com", "bar.example.com")),
-		Entry("assigned gateway to service with hostname", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("assigned gateway to service with hostname", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"ns1/b.example.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -171,14 +171,14 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "b.example.com")),
-		Entry("ignore '*' hosts", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("ignore '*' hosts", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"*", "ns2/c.example2.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -186,19 +186,19 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "c.example2.com")),
-		Entry("ignore dns.gardener.cloud/dnsnames annotation", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("ignore dns.gardener.cloud/dnsnames annotation", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
 					source.AnnotDnsnames:            "a.example.com,c.example.com",
 					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
 				},
 			},
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"*/a.example.com", "ns2/c.example.com", "d.example.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -206,19 +206,19 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "a.example.com", "c.example.com", "d.example.com")),
-		Entry("selective hosts", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("selective hosts", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
 					source.AnnotCertDNSNames:        "a.example.com,c.example.com",
 					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
 				},
 			},
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"*/a.example.com", "ns2/c.example.com", "d.example.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -226,19 +226,19 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "a.example.com", "c.example.com")),
-		Entry("explicit common name", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("explicit common name", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
 					source.AnnotCommonName:          "cn.example.com",
 					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
 				},
 			},
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"*/a.example.com", "ns2/c.example.com", "d.example.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -246,14 +246,14 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "cn.example.com", "a.example.com", "c.example.com", "d.example.com")),
-		Entry("gateway with virtual services", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("gateway with virtual services", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"*.example.com"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -261,14 +261,14 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, allVirtualServices, singleCertInfo("mysecret", "*.example.com")),
-		Entry("gateway with wildcard host and virtual services", defaultSources, &istionetworkingv1beta1.Gateway{
+		Entry("gateway with wildcard host and virtual services", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
-			Spec: networkingv1beta1.Gateway{
-				Servers: []*networkingv1beta1.Server{
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
 					{
 						Hosts: []string{"*"},
-						Tls: &networkingv1beta1.ServerTLSSettings{
-							Mode:           networkingv1beta1.ServerTLSSettings_SIMPLE,
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
 							CredentialName: "mysecret",
 						},
 					},
@@ -281,7 +281,7 @@ var _ = Describe("Istio Gateway Handler", func() {
 
 type testResourceLister struct {
 	sources         map[string]*corev1.LoadBalancerStatus
-	virtualServices []*istionetworkingv1beta1.VirtualService
+	virtualServices []*istionetworkingv1.VirtualService
 }
 
 var _ resourceLister = &testResourceLister{}

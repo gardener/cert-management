@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/gardener/controller-manager-library/pkg/utils"
+	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	coordinationv1 "k8s.io/api/coordination/v1"
@@ -73,6 +74,7 @@ func init() {
 	utils.Must(resources.Register(coordinationv1.SchemeBuilder))
 	utils.Must(resources.Register(istionetworkingv1alpha3.SchemeBuilder))
 	utils.Must(resources.Register(istionetworkingv1beta1.SchemeBuilder))
+	utils.Must(resources.Register(istionetworkingv1.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1alpha2.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1beta1.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1.SchemeBuilder))
