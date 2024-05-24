@@ -676,13 +676,13 @@ certificates are managed automatically for the hosts.
 
 ### Istio gateways
 
-For Istio, gateways for API versions `networking.istio.io/v1beta1` and `networking.istio.io/v1alpha3` are supported.
+For Istio, gateways for API versions `networking.istio.io/v1`, `networking.istio.io/v1beta1`, and `networking.istio.io/v1alpha3` are supported.
 
 To enable automatic management of `Certificate` resources, annotate the Istio `Gateway` resource with `cert.gardener.cloud/purpose=managed`.
 The domain names are extracted from the `spec.servers.hosts` field and from the field `spec.hosts` of related `VirtualService` resources.
 
 ```yaml
-apiVersion: networking.istio.io/v1beta1
+apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   annotations:

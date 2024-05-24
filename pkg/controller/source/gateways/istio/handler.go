@@ -11,6 +11,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,6 +72,15 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 		var array []*ctrlsource.TLSData
 
 		switch data := objData.(type) {
+		case *istionetworkingv1.Gateway:
+			for _, server := range data.Spec.Servers {
+				if server.Tls != nil && server.Tls.CredentialName != "" {
+					array = append(array, &ctrlsource.TLSData{
+						SecretName: server.Tls.CredentialName,
+						Hosts:      parsedHosts(server.Hosts),
+					})
+				}
+			}
 		case *istionetworkingv1beta1.Gateway:
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
@@ -120,6 +130,10 @@ func (s *gatewaySource) appendHostsFromVirtualServices(virtualServices []resourc
 
 	for _, vsvc := range virtualServices {
 		switch r := vsvc.(type) {
+		case *istionetworkingv1.VirtualService:
+			for _, h := range r.Spec.Hosts {
+				hosts = addHost(hosts, h)
+			}
 		case *istionetworkingv1beta1.VirtualService:
 			for _, h := range r.Spec.Hosts {
 				hosts = addHost(hosts, h)
