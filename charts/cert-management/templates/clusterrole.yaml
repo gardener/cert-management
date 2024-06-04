@@ -95,7 +95,7 @@ rules:
   - update
   - create
   - watch
-{{- if .Values.configuration.useDnsRecords }}
+{{- if .Values.configuration.useDnsrecords }}
 - apiGroups:
   - extensions.gardener.cloud
   resources:
