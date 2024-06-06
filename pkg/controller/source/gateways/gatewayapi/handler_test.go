@@ -282,14 +282,16 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 				Namespace: "test",
 				Name:      "g1",
 				Annotations: map[string]string{
-					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
-					source.AnnotPreferredChain:      "chain2",
-					source.AnnotCommonName:          "a.example.com",
-					source.AnnotCertDNSNames:        "c.example.com,d.example.com",
-					source.AnnotIssuer:              "test-issuer",
-					source.AnnotPrivateKeyAlgorithm: "ECDSA",
-					source.AnnotPrivateKeySize:      "384",
-					source.AnnotCertSecretLabels:    "a=b, c=bar42",
+					ctrlsource.AnnotationPurposeKey:   ctrlsource.AnnotationPurposeValueManaged,
+					source.AnnotPreferredChain:        "chain2",
+					source.AnnotCommonName:            "a.example.com",
+					source.AnnotCertDNSNames:          "c.example.com,d.example.com",
+					source.AnnotIssuer:                "test-issuer",
+					source.AnnotPrivateKeyAlgorithm:   "ECDSA",
+					source.AnnotPrivateKeySize:        "384",
+					source.AnnotCertSecretLabels:      "a=b, c=bar42",
+					source.AnnotDNSRecordProviderType: "dummy-type",
+					source.AnnotDNSRecordSecretRef:    "dummy",
 				},
 			},
 			Spec: gatewayapisv1.GatewaySpec{
@@ -311,6 +313,10 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 			info.PrivateKeySize = 384
 			info.IssuerName = ptr.To("test-issuer")
 			info.SecretLabels = map[string]string{"a": "b", "c": "bar42"}
+			info.Annotations = map[string]string{
+				source.AnnotDNSRecordProviderType: "dummy-type",
+				source.AnnotDNSRecordSecretRef:    "dummy",
+			}
 			return info
 		}))))
 })

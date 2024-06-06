@@ -95,6 +95,19 @@ rules:
   - update
   - create
   - watch
+{{- if .Values.configuration.useDnsrecords }}
+- apiGroups:
+  - extensions.gardener.cloud
+  resources:
+  - dnsrecords
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+  - create
+  - delete
+{{- else }}
 - apiGroups:
   - dns.gardener.cloud
   resources:
@@ -106,3 +119,4 @@ rules:
   - watch
   - create
   - delete
+{{- end }}

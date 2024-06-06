@@ -16,7 +16,7 @@ func requireFinalizer(src resources.Object, cluster resources.Cluster) bool {
 	return src.GetCluster() != cluster
 }
 
-// ExtractSecretLabels extracts label key value map from annotation
+// ExtractSecretLabels extracts label key value map from annotation.
 func ExtractSecretLabels(objData resources.ObjectData) (secretLabels map[string]string) {
 	if labels, ok := resources.GetAnnotation(objData, AnnotCertSecretLabels); ok {
 		secretLabels = map[string]string{}
@@ -26,6 +26,19 @@ func ExtractSecretLabels(objData resources.ObjectData) (secretLabels map[string]
 			if len(items) == 2 {
 				secretLabels[items[0]] = items[1]
 			}
+		}
+	}
+	return
+}
+
+// CopyDNSRecordsAnnotations extracts DNSRecord related annotations.
+func CopyDNSRecordsAnnotations(data resources.ObjectData) (annotations map[string]string) {
+	for _, annotKey := range []string{AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef} {
+		if value := data.GetAnnotations()[annotKey]; value != "" {
+			if annotations == nil {
+				annotations = map[string]string{}
+			}
+			annotations[annotKey] = value
 		}
 	}
 	return

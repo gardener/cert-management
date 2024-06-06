@@ -71,14 +71,23 @@ spec:
         {{- if .Values.configuration.cpuprofile }}
         - --cpuprofile={{ .Values.configuration.cpuprofile }}
         {{- end }}
+        {{- if .Values.configuration.defaultEcdsaPrivateKeySize }}
+        - --default-ecdsa-private-key-size={{ .Values.configuration.defaultEcdsaPrivateKeySize }}
+        {{- end }}
         {{- if .Values.configuration.defaultIssuer }}
         - --default-issuer={{ .Values.configuration.defaultIssuer }}
         {{- end }}
         {{- if .Values.configuration.defaultIssuerDomainRanges }}
         - --default-issuer-domain-ranges={{ .Values.configuration.defaultIssuerDomainRanges }}
         {{- end }}
+        {{- if .Values.configuration.defaultPrivateKeyAlgorithm }}
+        - --default-private-key-algorithm={{ .Values.configuration.defaultPrivateKeyAlgorithm }}
+        {{- end }}
         {{- if .Values.configuration.defaultRequestsPerDayQuota }}
         - --default-requests-per-day-quota={{ .Values.configuration.defaultRequestsPerDayQuota }}
+        {{- end }}
+        {{- if .Values.configuration.defaultRsaPrivateKeySize }}
+        - --default-rsa-private-key-size={{ .Values.configuration.defaultRsaPrivateKeySize }}
         {{- end }}
         {{- if .Values.configuration.defaultPoolResyncPeriod }}
         - --default.pool.resync-period={{ .Values.configuration.defaultPoolResyncPeriod }}
@@ -115,6 +124,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.gracePeriod }}
         - --grace-period={{ .Values.configuration.gracePeriod }}
+        {{- end }}
+        {{- if .Values.configuration.httproutesPoolSize }}
+        - --httproutes.pool.size={{ .Values.configuration.httproutesPoolSize }}
         {{- end }}
         {{- if .Values.configuration.ingressCertCertClass }}
         - --ingress-cert.cert-class={{ .Values.configuration.ingressCertCertClass }}
@@ -158,14 +170,23 @@ spec:
         {{- if .Values.configuration.issuerCertClass }}
         - --issuer.cert-class={{ .Values.configuration.issuerCertClass }}
         {{- end }}
+        {{- if .Values.configuration.issuerDefaultEcdsaPrivateKeySize }}
+        - --issuer.default-ecdsa-private-key-size={{ .Values.configuration.issuerDefaultEcdsaPrivateKeySize }}
+        {{- end }}
         {{- if .Values.configuration.issuerDefaultIssuer }}
         - --issuer.default-issuer={{ .Values.configuration.issuerDefaultIssuer }}
         {{- end }}
         {{- if .Values.configuration.issuerDefaultIssuerDomainRanges }}
         - --issuer.default-issuer-domain-ranges={{ .Values.configuration.issuerDefaultIssuerDomainRanges }}
         {{- end }}
+        {{- if .Values.configuration.issuerDefaultPrivateKeyAlgorithm }}
+        - --issuer.default-private-key-algorithm={{ .Values.configuration.issuerDefaultPrivateKeyAlgorithm }}
+        {{- end }}
         {{- if .Values.configuration.issuerDefaultRequestsPerDayQuota }}
         - --issuer.default-requests-per-day-quota={{ .Values.configuration.issuerDefaultRequestsPerDayQuota }}
+        {{- end }}
+        {{- if .Values.configuration.issuerDefaultRsaPrivateKeySize }}
+        - --issuer.default-rsa-private-key-size={{ .Values.configuration.issuerDefaultRsaPrivateKeySize }}
         {{- end }}
         {{- if .Values.configuration.issuerDefaultPoolResyncPeriod }}
         - --issuer.default.pool.resync-period={{ .Values.configuration.issuerDefaultPoolResyncPeriod }}
@@ -215,8 +236,74 @@ spec:
         {{- if .Values.configuration.issuerSecretsPoolSize }}
         - --issuer.secrets.pool.size={{ .Values.configuration.issuerSecretsPoolSize }}
         {{- end }}
+        {{- if .Values.configuration.issuerUseDnsrecords }}
+        - --issuer.use-dnsrecords={{ .Values.configuration.issuerUseDnsrecords }}
+        {{- end }}
         {{- if .Values.configuration.issuersPoolSize }}
         - --issuers.pool.size={{ .Values.configuration.issuersPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsCertClass }}
+        - --istio-gateways-dns.cert-class={{ .Values.configuration.istioGatewaysDnsCertClass }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsCertTargetClass }}
+        - --istio-gateways-dns.cert-target-class={{ .Values.configuration.istioGatewaysDnsCertTargetClass }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsDefaultPoolResyncPeriod }}
+        - --istio-gateways-dns.default.pool.resync-period={{ .Values.configuration.istioGatewaysDnsDefaultPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsDefaultPoolSize }}
+        - --istio-gateways-dns.default.pool.size={{ .Values.configuration.istioGatewaysDnsDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsPoolResyncPeriod }}
+        - --istio-gateways-dns.pool.resync-period={{ .Values.configuration.istioGatewaysDnsPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsPoolSize }}
+        - --istio-gateways-dns.pool.size={{ .Values.configuration.istioGatewaysDnsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsTargetNamePrefix }}
+        - --istio-gateways-dns.target-name-prefix={{ .Values.configuration.istioGatewaysDnsTargetNamePrefix }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsTargetNamespace }}
+        - --istio-gateways-dns.target-namespace={{ .Values.configuration.istioGatewaysDnsTargetNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsTargetsPoolSize }}
+        - --istio-gateways-dns.targets.pool.size={{ .Values.configuration.istioGatewaysDnsTargetsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsTargetsourcesPoolSize }}
+        - --istio-gateways-dns.targetsources.pool.size={{ .Values.configuration.istioGatewaysDnsTargetsourcesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.istioGatewaysDnsVirtualservicesPoolSize }}
+        - --istio-gateways-dns.virtualservices.pool.size={{ .Values.configuration.istioGatewaysDnsVirtualservicesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsCertClass }}
+        - --k8s-gateways-dns.cert-class={{ .Values.configuration.k8sGatewaysDnsCertClass }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsCertTargetClass }}
+        - --k8s-gateways-dns.cert-target-class={{ .Values.configuration.k8sGatewaysDnsCertTargetClass }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsDefaultPoolResyncPeriod }}
+        - --k8s-gateways-dns.default.pool.resync-period={{ .Values.configuration.k8sGatewaysDnsDefaultPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsDefaultPoolSize }}
+        - --k8s-gateways-dns.default.pool.size={{ .Values.configuration.k8sGatewaysDnsDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsHttproutesPoolSize }}
+        - --k8s-gateways-dns.httproutes.pool.size={{ .Values.configuration.k8sGatewaysDnsHttproutesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsPoolResyncPeriod }}
+        - --k8s-gateways-dns.pool.resync-period={{ .Values.configuration.k8sGatewaysDnsPoolResyncPeriod }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsPoolSize }}
+        - --k8s-gateways-dns.pool.size={{ .Values.configuration.k8sGatewaysDnsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsTargetNamePrefix }}
+        - --k8s-gateways-dns.target-name-prefix={{ .Values.configuration.k8sGatewaysDnsTargetNamePrefix }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsTargetNamespace }}
+        - --k8s-gateways-dns.target-namespace={{ .Values.configuration.k8sGatewaysDnsTargetNamespace }}
+        {{- end }}
+        {{- if .Values.configuration.k8sGatewaysDnsTargetsPoolSize }}
+        - --k8s-gateways-dns.targets.pool.size={{ .Values.configuration.k8sGatewaysDnsTargetsPoolSize }}
         {{- end }}
         {{- if .Values.configuration.kubeconfig }}
         - --kubeconfig={{ .Values.configuration.kubeconfig }}
@@ -353,8 +440,23 @@ spec:
         {{- if .Values.configuration.targetsPoolSize }}
         - --targets.pool.size={{ .Values.configuration.targetsPoolSize }}
         {{- end }}
+        {{- if .Values.configuration.targetsourcesPoolSize }}
+        - --targetsources.pool.size={{ .Values.configuration.targetsourcesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.useDnsrecords }}
+        - --use-dnsrecords={{ .Values.configuration.useDnsrecords }}
+        {{- end }}
         {{- if .Values.configuration.version }}
         - --version={{ .Values.configuration.version }}
+        {{- end }}
+        {{- if .Values.configuration.virtualservicesPoolSize }}
+        - --virtualservices.pool.size={{ .Values.configuration.virtualservicesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.watchGatewaysCrdsDefaultPoolSize }}
+        - --watch-gateways-crds.default.pool.size={{ .Values.configuration.watchGatewaysCrdsDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.watchGatewaysCrdsPoolSize }}
+        - --watch-gateways-crds.pool.size={{ .Values.configuration.watchGatewaysCrdsPoolSize }}
         {{- end }}
         ### end generated configuration
         {{- range $idx, $flag := .Values.additionalConfiguration }}

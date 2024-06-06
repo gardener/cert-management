@@ -8,6 +8,9 @@ metadata:
   annotations:
     # class annotation only needed if cert-controller-manager is started with --cert-class=myclass
     #cert.gardener.cloud/class: myclass
+    # annotations needed when using DNSRecords
+    #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
+    #cert.gardener.cloud/dnsrecord-secret-ref: myns/mysecret
   name: cert-simple
   namespace: default
 spec:

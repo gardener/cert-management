@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/utils/gardener"
 	"github.com/go-acme/lego/v4/certificate"
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
@@ -118,6 +120,7 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	if dnsOwnerID != "" {
 		reconciler.dnsOwnerID = &dnsOwnerID
 	}
+	reconciler.useDNSRecords, _ = c.GetBoolOption(core.OptUseDNSRecords)
 	reconciler.cascadeDelete, _ = c.GetBoolOption(core.OptCascadeDelete)
 
 	renewalWindow, err := c.GetDurationOption(core.OptRenewalWindow)
@@ -157,6 +160,7 @@ type certReconciler struct {
 	dnsNamespace           *string
 	dnsClass               *string
 	dnsOwnerID             *string
+	useDNSRecords          bool
 	precheckNameservers    []string
 	additionalWait         time.Duration
 	propagationTimeout     time.Duration
@@ -171,7 +175,11 @@ type certReconciler struct {
 }
 
 func (r *certReconciler) Start() {
-	r.cleanupOrphanDNSEntriesFromOldChallenges()
+	if !r.useDNSRecords {
+		r.cleanupOrphanDNSEntriesFromOldChallenges()
+	} else {
+		r.cleanupOrphanDNSRecordsFromOldChallenges()
+	}
 
 	r.cleanupOrphanOutdatedCertificateSecrets()
 	r.garbageCollectorTicker = time.NewTicker(7 * 24 * time.Hour)
@@ -459,6 +467,12 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		}
 		if r.dnsNamespace != nil {
 			dnsSettings.Namespace = *r.dnsNamespace
+		}
+		if r.useDNSRecords {
+			dnsSettings.DNSRecordSettings, err = createDNSRecordSettings(cert)
+			if err != nil {
+				return r.failed(logctx, obj, api.StateError, err)
+			}
 		}
 	}
 	targetDNSClass := ""
@@ -1192,6 +1206,47 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() {
 	logger.Infof("issuer: cleanup: %d orphan DNS entries deleted", count)
 }
 
+func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() {
+	// find orphan dnsentries from DNSChallenges and try to delete them
+	// should only happen if cert-manager is terminated during running DNS challenge(s)
+
+	recordsResource, err := r.dnsCluster.Resources().GetByExample(&extensionsv1alpha.DNSRecord{})
+	if err != nil {
+		logger.Warnf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %s", err)
+		return
+	}
+	var objects []resources.Object
+	if r.dnsNamespace != nil {
+		objects, err = recordsResource.Namespace(*r.dnsNamespace).List(metav1.ListOptions{})
+	} else {
+		objects, err = recordsResource.List(metav1.ListOptions{})
+	}
+	if err != nil {
+		logger.Warnf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %s", err)
+		return
+	}
+	count := 0
+	for _, obj := range objects {
+		challenge, _ := resources.GetAnnotation(obj.Data(), source.AnnotACMEDNSChallenge)
+		if challenge != "" {
+			if resources.SetAnnotation(obj.Data(), gardener.ConfirmationDeletion, "true") {
+				if _, err := recordsResource.Update(obj.Data()); err != nil {
+					logger.Warnf("issuer: annotating DNSRecord %s/%s failed: %w", obj.GetNamespace(), obj.GetName(), err)
+					continue
+				}
+			}
+
+			err = recordsResource.Delete(obj.Data())
+			if err != nil {
+				logger.Warnf("issuer: deleting DNSRecord %s/%s failed with: %s", obj.GetNamespace(), obj.GetName(), err)
+				continue
+			}
+			count++
+		}
+	}
+	logger.Infof("issuer: cleanup: %d orphan DNSRecords deleted", count)
+}
+
 // cleanupOrphanOutdatedCertificateSecrets performs a garbage collection of orphan secrets.
 // A certificate secret is deleted if it is not referenced by a certificate custom resource and
 // if its TLS certificate is not valid since at least 14 days.
@@ -1259,4 +1314,28 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 
 	logger.Infof("issuer: cleanup-secrets: %d/%d orphan outdated certificate secrets deleted (%d total, %d backups, %d revoked)",
 		deleted, outdated, len(secrets), backup, revoked)
+}
+
+func createDNSRecordSettings(cert *api.Certificate) (*legobridge.DNSRecordSettings, error) {
+	typ := cert.Annotations[source.AnnotDNSRecordProviderType]
+	if typ == "" {
+		return nil, fmt.Errorf("missing annotation %s for creating DNSRecord", source.AnnotDNSRecordProviderType)
+	}
+	ref := cert.Annotations[source.AnnotDNSRecordSecretRef]
+	if ref == "" {
+		return nil, fmt.Errorf("missing annotation %s for creating DNSRecord", source.AnnotDNSRecordSecretRef)
+	}
+	parts := strings.SplitN(ref, "/", 2)
+	var secretRef corev1.SecretReference
+	if len(parts) == 1 {
+		secretRef.Namespace = cert.Namespace
+		secretRef.Name = parts[0]
+	} else {
+		secretRef.Namespace = parts[0]
+		secretRef.Name = parts[1]
+	}
+	return &legobridge.DNSRecordSettings{
+		Type:      typ,
+		SecretRef: secretRef,
+	}, nil
 }

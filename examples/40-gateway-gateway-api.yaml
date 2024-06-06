@@ -11,6 +11,9 @@ metadata:
     #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
     #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+    # annotations needed when using DNSRecords
+    #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
+    #cert.gardener.cloud/dnsrecord-secret-ref: myns/mysecret
   name: my-gateway
   namespace: default
 spec:

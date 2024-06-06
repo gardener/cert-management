@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gardener/controller-manager-library/pkg/utils"
+	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -26,6 +26,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/gardener/controller-manager-library/pkg/utils"
 
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 
@@ -57,7 +58,7 @@ func init() {
 	cluster.Configure(
 		ctrl.DNSCluster,
 		"dns",
-		"cluster for writing challenge DNS entries",
+		"cluster for writing challenge DNSEntries or DNSRecords",
 	).MustRegister()
 
 	mappings.ForControllerGroup(ctrl.ControllerGroupCert).
@@ -71,6 +72,7 @@ func init() {
 	utils.Must(resources.Register(corev1.SchemeBuilder))
 	utils.Must(resources.Register(dnsapi.SchemeBuilder))
 	utils.Must(resources.Register(v1alpha1.SchemeBuilder))
+	utils.Must(resources.Register(extensionsv1alpha.SchemeBuilder))
 	utils.Must(resources.Register(coordinationv1.SchemeBuilder))
 	utils.Must(resources.Register(istionetworkingv1alpha3.SchemeBuilder))
 	utils.Must(resources.Register(istionetworkingv1beta1.SchemeBuilder))
@@ -80,11 +82,6 @@ func init() {
 	utils.Must(resources.Register(gatewayapisv1.SchemeBuilder))
 }
 
-func migrateExtensionsIngress(c controllermanager.Configuration) controllermanager.Configuration {
-	return c.GlobalGroupKindMigrations(resources.NewGroupKind("extensions", "Ingress"),
-		resources.NewGroupKind("networking.k8s.io", "Ingress"))
-}
-
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "version" {
 		fmt.Println(version)
@@ -92,5 +89,5 @@ func main() {
 	}
 	// set LEGO_DISABLE_CNAME_SUPPORT=true as we have our own logic for FollowCNAME
 	os.Setenv("LEGO_DISABLE_CNAME_SUPPORT", "true")
-	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing", migrateExtensionsIngress)
+	controllermanager.Start("cert-controller-manager", "Certificate controller manager", "nothing")
 }
