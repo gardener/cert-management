@@ -2,8 +2,6 @@ module github.com/gardener/cert-management
 
 go 1.22.0
 
-toolchain go1.22.2
-
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
