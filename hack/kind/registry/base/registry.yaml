@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: registry
+        image: eu.gcr.io/gardener-project/3rd/registry:2.8.3
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: registry
+          containerPort: 5001
+        env:
+        - name: REGISTRY_HTTP_ADDR
+          value: :5001
+        volumeMounts:
+        - name: cache
+          mountPath: /var/lib/registry
+      hostNetwork: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        operator: Exists
+      volumes:
+      - name: cache
+        hostPath:
+          path: /var/local-registry
+          type: DirectoryOrCreate

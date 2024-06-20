@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    dns.gardener.cloud/dnsnames: dns.certman.kind
+  labels:
+    app.kubernetes.io/instance: knot-dns
+    app.kubernetes.io/name: knot-dns
+  name: knot-dns
+  namespace: certman-support
+spec:
+  ports:
+    - name: dns-tcp
+      port: 53
+      protocol: TCP
+      targetPort: 53
+      nodePort: 30053
+    - name: dns-udp
+      port: 53
+      protocol: UDP
+      targetPort: 53
+      nodePort: 30053
+  selector:
+    app.kubernetes.io/instance: knot-dns
+    app.kubernetes.io/name: knot-dns
+  type: NodePort

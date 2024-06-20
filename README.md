@@ -1156,4 +1156,4 @@ Here are the two most frequent ones.
 
 ## Development
 
-For development it is recommended to use the issuer-staging
+For development please see [Development documentation](docs/development/getting-started.md)

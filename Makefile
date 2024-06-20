@@ -4,6 +4,8 @@
 
 ENSURE_CONTROLLER_MANAGER_LIB_MOD := $(shell go get github.com/gardener/controller-manager-library@$$(go list -m -f "{{.Version}}" github.com/gardener/controller-manager-library))
 CONTROLLER_MANAGER_LIB_HACK_DIR   := $(shell go list -m -f "{{.Dir}}" github.com/gardener/controller-manager-library)/hack
+ENSURE_GARDENER_MOD               := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
+GARDENER_HACK_DIR                 := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
 REGISTRY                          := europe-docker.pkg.dev/gardener-project/public
 EXECUTABLE                        := cert-controller-manager
 REPO_ROOT                         := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -17,7 +19,7 @@ IMAGE_TAG                         := $(VERSION)
 #########################################
 
 TOOLS_DIR := hack/tools
-include $(CONTROLLER_MANAGER_LIB_HACK_DIR)/tools.mk
+include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: tidy
 tidy:
@@ -67,3 +69,22 @@ generate: $(VGOPATH) $(CONTROLLER_GEN)
 .PHONY: docker-images
 docker-images:
 	@docker build -t $(CERT_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(CERT_IMAGE_REPOSITORY):latest -f Dockerfile --target cert-controller-manager .
+
+.PHONY: kind-up ## create kind cluster with knot-dns and pebble
+kind-up: $(KIND) $(HELM)
+	@hack/kind/kind-create-cluster.sh
+	@hack/kind/knot-dns/knot-dns-up.sh
+	@hack/kind/pebble/pebble-up.sh
+	@hack/kind/dns-controller-manager/dns-controller-manager-up.sh
+
+.PHONY: kind-down
+kind-down: $(KIND)
+	@hack/kind/kind-delete-cluster.sh
+
+.PHONY: local-issuer-up
+local-issuer-up:
+	@hack/kind/local-issuer/local-issuer-up.sh
+
+.PHONY: local-issuer-down
+local-issuer-down:
+	@hack/kind/local-issuer/local-issuer-down.sh
