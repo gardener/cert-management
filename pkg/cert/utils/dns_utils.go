@@ -46,7 +46,7 @@ func getNameservers(path string, defaults []string) []string {
 // CreateWrapPreCheckOption creates lego DNS ChallengeOption for custom Precheck function,
 // checking the DNS propagation of the DNS challenge TXT record.
 func CreateWrapPreCheckOption(nameservers []string) dns01.ChallengeOption {
-	return dns01.WrapPreCheck(func(domain, fqdn, value string, check dns01.PreCheckFunc) (b bool, err error) {
+	return dns01.WrapPreCheck(func(_, fqdn, value string, _ dns01.PreCheckFunc) (b bool, err error) {
 		return CheckDNSPropagation(nameservers, fqdn, value)
 	})
 }
@@ -54,7 +54,7 @@ func CreateWrapPreCheckOption(nameservers []string) dns01.ChallengeOption {
 // NoPropagationCheckOption creates lego DNS ChallengeOption for custom Precheck function,
 // performing no DNS propagation check of the DNS challenge TXT record at all.
 func NoPropagationCheckOption() dns01.ChallengeOption {
-	return dns01.WrapPreCheck(func(domain, fqdn, value string, check dns01.PreCheckFunc) (b bool, err error) {
+	return dns01.WrapPreCheck(func(_, _, _ string, _ dns01.PreCheckFunc) (b bool, err error) {
 		return true, nil
 	})
 }

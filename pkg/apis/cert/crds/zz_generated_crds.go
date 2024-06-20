@@ -19,7 +19,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: certificaterevocations.cert.gardener.cloud
 spec:
   group: cert.gardener.cloud
@@ -65,14 +65,19 @@ spec:
         description: CertificateRevocation is the certificate revocation custom resource.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -95,10 +100,9 @@ spec:
                 - namespace
                 type: object
               qualifyingDate:
-                description: QualifyingDate specifies that any certificate with the
-                  same DNS names like the given 'certificateRef' should be revoked
-                  if it is valid before this date. If not specified, it will be filled
-                  with the current time.
+                description: |-
+                  QualifyingDate specifies that any certificate with the same DNS names like the given 'certificateRef' should be revoked
+                  if it is valid before this date. If not specified, it will be filled with the current time.
                 format: date-time
                 type: string
               renew:
@@ -303,7 +307,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: certificates.cert.gardener.cloud
 spec:
   group: cert.gardener.cloud
@@ -349,14 +353,19 @@ spec:
         description: Certificate is the certificate CR.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -413,16 +422,16 @@ spec:
                       in the ` + "`" + `spec.secretName` + "`" + `/` + "`" + `spec.secretRef` + "`" + ` Secret resource.
                     properties:
                       create:
-                        description: Create enables JKS keystore creation for the
-                          Certificate. If true, a file named ` + "`" + `keystore.jks` + "`" + ` will be
-                          created in the target Secret resource, encrypted using the
-                          password stored in ` + "`" + `passwordSecretRef` + "`" + `. The keystore file
-                          will only be updated upon re-issuance.
+                        description: |-
+                          Create enables JKS keystore creation for the Certificate.
+                          If true, a file named ` + "`" + `keystore.jks` + "`" + ` will be created in the target
+                          Secret resource, encrypted using the password stored in ` + "`" + `passwordSecretRef` + "`" + `.
+                          The keystore file will only be updated upon re-issuance.
                         type: boolean
                       passwordSecretRef:
-                        description: PasswordSecretRef is a reference to a key in
-                          a Secret resource containing the password used to encrypt
-                          the JKS keystore.
+                        description: |-
+                          PasswordSecretRef is a reference to a key in a Secret resource
+                          containing the password used to encrypt the JKS keystore.
                         properties:
                           key:
                             description: Key of the entry in the Secret resource's
@@ -444,16 +453,16 @@ spec:
                       in the ` + "`" + `spec.secretName` + "`" + `/` + "`" + `spec.secretRef` + "`" + ` Secret resource.
                     properties:
                       create:
-                        description: Create enables PKCS12 keystore creation for the
-                          Certificate. If true, a file named ` + "`" + `keystore.p12` + "`" + ` will be
-                          created in the target Secret resource, encrypted using the
-                          password stored in ` + "`" + `passwordSecretRef` + "`" + `. The keystore file
-                          will only be updated upon re-issuance.
+                        description: |-
+                          Create enables PKCS12 keystore creation for the Certificate.
+                          If true, a file named ` + "`" + `keystore.p12` + "`" + ` will be created in the target
+                          Secret resource, encrypted using the password stored in ` + "`" + `passwordSecretRef` + "`" + `.
+                          The keystore file will only be updated upon re-issuance.
                         type: boolean
                       passwordSecretRef:
-                        description: PasswordSecretRef is a reference to a key in
-                          a Secret resource containing the password used to encrypt
-                          the PKCS12 keystore.
+                        description: |-
+                          PasswordSecretRef is a reference to a key in a Secret resource
+                          containing the password used to encrypt the PKCS12 keystore.
                         properties:
                           key:
                             description: Key of the entry in the Secret resource's
@@ -482,23 +491,28 @@ spec:
                   and size.
                 properties:
                   algorithm:
-                    description: "Algorithm is the private key algorithm of the corresponding
-                      private key for this certificate. \n If provided, allowed values
-                      are either ` + "`" + `RSA` + "`" + ` or ` + "`" + `ECDSA` + "`" + `. If ` + "`" + `algorithm` + "`" + ` is specified and
-                      ` + "`" + `size` + "`" + ` is not provided, deployment specific default values will
-                      be used."
+                    description: |-
+                      Algorithm is the private key algorithm of the corresponding private key
+                      for this certificate.
+
+
+                      If provided, allowed values are either ` + "`" + `RSA` + "`" + ` or ` + "`" + `ECDSA` + "`" + `.
+                      If ` + "`" + `algorithm` + "`" + ` is specified and ` + "`" + `size` + "`" + ` is not provided,
+                      deployment specific default values will be used.
                     enum:
                     - RSA
                     - ECDSA
                     type: string
                   size:
-                    description: "Size is the key bit size of the corresponding private
-                      key for this certificate. \n If ` + "`" + `algorithm` + "`" + ` is set to ` + "`" + `RSA` + "`" + `,
-                      valid values are ` + "`" + `2048` + "`" + `, ` + "`" + `3072` + "`" + ` or ` + "`" + `4096` + "`" + `, and will default
-                      to a deployment specific value if not specified. If ` + "`" + `algorithm` + "`" + `
-                      is set to ` + "`" + `ECDSA` + "`" + `, valid values are ` + "`" + `256` + "`" + ` or ` + "`" + `384` + "`" + `, and will
-                      default to a deployment specific value if not specified. No
-                      other values are allowed."
+                    description: |-
+                      Size is the key bit size of the corresponding private key for this certificate.
+
+
+                      If ` + "`" + `algorithm` + "`" + ` is set to ` + "`" + `RSA` + "`" + `, valid values are ` + "`" + `2048` + "`" + `, ` + "`" + `3072` + "`" + ` or ` + "`" + `4096` + "`" + `,
+                      and will default to a deployment specific value if not specified.
+                      If ` + "`" + `algorithm` + "`" + ` is set to ` + "`" + `ECDSA` + "`" + `, valid values are ` + "`" + `256` + "`" + ` or ` + "`" + `384` + "`" + `,
+                      and will default to a deployment specific value if not specified.
+                      No other values are allowed.
                     enum:
                     - 256
                     - 384
@@ -563,46 +577,47 @@ spec:
                 description: CommonName is the current CN.
                 type: string
               conditions:
-                description: List of status conditions to indicate the status of certificates.
+                description: |-
+                  List of status conditions to indicate the status of certificates.
                   Known condition types are ` + "`" + `Ready` + "`" + `.
                 items:
                   description: "Condition contains details for one aspect of the current
-                    state of this API Resource. --- This struct is intended for direct
-                    use as an array at the field path .status.conditions.  For example,
-                    \n type FooStatus struct{ // Represents the observations of a
-                    foo's current state. // Known .status.conditions.type are: \"Available\",
-                    \"Progressing\", and \"Degraded\" // +patchMergeKey=type // +patchStrategy=merge
-                    // +listType=map // +listMapKey=type Conditions []metav1.Condition
-                    ` + "`" + `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
-                    protobuf:\"bytes,1,rep,name=conditions\"` + "`" + ` \n // other fields }"
+                    state of this API Resource.\n---\nThis struct is intended for
+                    direct use as an array at the field path .status.conditions.  For
+                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
+                    observations of a foo's current state.\n\t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
+                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
+                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition ` + "`" + `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` + "`" + `\n\n\n\t
+                    \   // other fields\n\t}"
                   properties:
                     lastTransitionTime:
-                      description: lastTransitionTime is the last time the condition
-                        transitioned from one status to another. This should be when
-                        the underlying condition changed.  If that is not known, then
-                        using the time when the API field changed is acceptable.
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
-                      description: message is a human readable message indicating
-                        details about the transition. This may be an empty string.
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
                       maxLength: 32768
                       type: string
                     observedGeneration:
-                      description: observedGeneration represents the .metadata.generation
-                        that the condition was set based upon. For instance, if .metadata.generation
-                        is currently 12, but the .status.conditions[x].observedGeneration
-                        is 9, the condition is out of date with respect to the current
-                        state of the instance.
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
                       format: int64
                       minimum: 0
                       type: integer
                     reason:
-                      description: reason contains a programmatic identifier indicating
-                        the reason for the condition's last transition. Producers
-                        of specific condition types may define expected values and
-                        meanings for this field, and whether the values are considered
-                        a guaranteed API. The value should be a CamelCase string.
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
                         This field may not be empty.
                       maxLength: 1024
                       minLength: 1
@@ -616,11 +631,12 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                        --- Many .condition.type values are consistent across resources
-                        like Available, but because arbitrary conditions can be useful
-                        (see .node.status.conditions), the ability to deconflict is
-                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        ---
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
+                        useful (see .node.status.conditions), the ability to deconflict is important.
+                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
@@ -644,8 +660,9 @@ spec:
                 description: IssuerRef is the used issuer.
                 properties:
                   cluster:
-                    description: Cluster is the cluster name of the issuer ('default'
-                      or 'target'). optional because of backwards compatibility
+                    description: |-
+                      Cluster is the cluster name of the issuer ('default' or 'target').
+                      optional because of backwards compatibility
                     type: string
                   name:
                     description: Name is the name of the issuer.
@@ -691,7 +708,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.13.0
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: issuers.cert.gardener.cloud
 spec:
   group: cert.gardener.cloud
@@ -734,14 +751,19 @@ spec:
         description: Issuer is the issuer CR.
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -784,10 +806,11 @@ spec:
                           Account is bound to.
                         type: string
                       keySecretRef:
-                        description: keySecretRef is the secret ref to the Secret
-                          which holds the symmetric MAC key of the External Account
-                          Binding with data key 'hmacKey'. The secret key stored in
-                          the Secret **must** be un-padded, base64 URL encoded data.
+                        description: |-
+                          keySecretRef is the secret ref to the
+                          Secret which holds the symmetric MAC key of the External Account Binding with data key 'hmacKey'.
+                          The secret key stored in the Secret **must** be un-padded, base64 URL
+                          encoded data.
                         properties:
                           name:
                             description: name is unique within a namespace to reference
@@ -804,9 +827,9 @@ spec:
                     - keySecretRef
                     type: object
                   precheckNameservers:
-                    description: PrecheckNameservers overwrites the default precheck
-                      nameservers used for checking DNS propagation. Format ` + "`" + `host` + "`" + `
-                      or ` + "`" + `host:port` + "`" + `, e.g. "8.8.8.8" same as "8.8.8.8:53" or "google-public-dns-a.google.com:53".
+                    description: |-
+                      PrecheckNameservers overwrites the default precheck nameservers used for checking DNS propagation.
+                      Format ` + "`" + `host` + "`" + ` or ` + "`" + `host:port` + "`" + `, e.g. "8.8.8.8" same as "8.8.8.8:53" or "google-public-dns-a.google.com:53".
                     items:
                       type: string
                     type: array
@@ -828,9 +851,10 @@ spec:
                     description: Server is the URL of the ACME server.
                     type: string
                   skipDNSChallengeValidation:
-                    description: SkipDNSChallengeValidation marks that this issuer
-                      does not validate DNS challenges. In this case no DNS entries/records
-                      are created for a DNS Challenge and DNS propagation is not checked.
+                    description: |-
+                      SkipDNSChallengeValidation marks that this issuer does not validate DNS challenges.
+                      In this case no DNS entries/records are created for a DNS Challenge and DNS propagation
+                      is not checked.
                     type: boolean
                 required:
                 - email
