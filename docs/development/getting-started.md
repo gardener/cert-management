@@ -12,7 +12,7 @@ You find the kubeconfig at `$PWD/cert-management/dev/kind-kubeconfig.yaml`
 
 This starts a kind cluster with 
 - an ACME server (here the Let's Encrypt [Pebble](https://github.com/letsencrypt/pebble), a minimal ACME test server)
-- an authoritative DNS server (here Knot DNS)
+- an authoritative DNS server (here [Knot DNS](https://github.com/CZ-NIC/knot))
 - the dns-controller-manager from [gardener/external-dns-management](https://github.com/gardener/external-dns-management)
 
 The pebble server is mapped to localhost:5443 on your local machine.

@@ -8,6 +8,7 @@ set -o errexit
 set -o pipefail
 
 PEBBLE_IMAGE=ghcr.io/letsencrypt/pebble:latest
+PEBBLE_CERTIFICATE_VALIDITY=${PEBBLE_CERTIFICATE_VALIDITY:-7776000} # default validity 90 days
 
 source $(dirname ${0})/../common.sh /..
 
@@ -62,7 +63,8 @@ data:
           "certificate": "/etc/pebble/cert/tls.crt",
           "privateKey": "/etc/pebble/cert/tls.key",
           "listenAddress": ":8443",
-          "managementListenAddress": ":8444"
+          "managementListenAddress": ":8444",
+          "certificateValidityPeriod": $PEBBLE_CERTIFICATE_VALIDITY
        }
     }
 ---
