@@ -16,10 +16,18 @@ create_certificate() {
   # generate certificate for ACME server
   current_dir=$PWD
   cd /tmp
-  go run `go env GOROOT`/src/crypto/tls/generate_cert.go --host=acme.certman-support.cluster.local,acme.certman-support,acme,localhost --ecdsa-curve=P256
+  go run `go env GOROOT`/src/crypto/tls/generate_cert.go --host=acme.certman-support.svc.cluster.local,acme.certman-support.svc,acme,localhost --ecdsa-curve=P256
   cd $current_dir
+  mv /tmp/cert.pem ${SOURCE_PATH}/dev/pebble-cert.pem
+  mv /tmp/key.pem ${SOURCE_PATH}/dev/pebble-key.pem
+}
 
-  cat  << EOF | kubectl apply -f -
+kubectl get ns certman-support  >/dev/null 2>&1 || kubectl create ns certman-support
+if [ ! -f ${SOURCE_PATH}/dev/pebble-cert.pem ]; then
+  create_certificate
+fi
+
+cat  << EOF | kubectl apply -f -
 apiVersion: v1
 kind: Secret
 metadata:
@@ -29,26 +37,9 @@ metadata:
     app.kubernetes.io/name: pebble
 type: kubernetes.io/tls
 data:
-  tls.crt: $(cat /tmp/cert.pem | base64 -w0)
-  tls.key: $(cat /tmp/key.pem | base64 -w0)
+  tls.crt: $(cat ${SOURCE_PATH}/dev/pebble-cert.pem | base64 -w0)
+  tls.key: $(cat ${SOURCE_PATH}/dev/pebble-key.pem | base64 -w0)
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: pebble-cacert
-  namespace: default
-data:
-  bundle.crt: $(cat /tmp/cert.pem | base64 -w0)
-type: Opaque
-EOF
-
-  cp /tmp/cert.pem ${SOURCE_PATH}/dev/pebble-cert.pem
-}
-
-kubectl get ns certman-support  >/dev/null 2>&1 || kubectl create ns certman-support
-kubectl -n certman-support get secret pebble-cert >/dev/null 2>&1 || create_certificate
-
-cat  << EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:

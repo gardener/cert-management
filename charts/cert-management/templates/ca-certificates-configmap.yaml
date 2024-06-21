@@ -1,0 +1,15 @@
+---
+{{- if .Values.configuration.caCertificates }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cert-management.fullname" . }}-ca-certificates
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "cert-management.chart" . }}
+    app.kubernetes.io/name: {{ include "cert-management.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  certs.pem: {{- toYaml .Values.configuration.caCertificates | indent 2 }}
+{{- end}}

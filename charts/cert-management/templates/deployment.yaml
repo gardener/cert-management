@@ -462,6 +462,13 @@ spec:
         {{- range $idx, $flag := .Values.additionalConfiguration }}
         - {{ $flag }}
         {{- end }}
+        {{- if .Values.configuration.caCertificates }}
+        env:
+          - name: LEGO_CA_SYSTEM_CERT_POOL
+            value: "true"
+          - name: LEGO_CA_CERTIFICATES
+            value: /var/run/cert-manager/certs/certs.pem
+        {{- end }}
         {{- if .Values.configuration.serverPortHttp }}
         ports:
         - containerPort: {{ .Values.configuration.serverPortHttp }}
@@ -476,6 +483,12 @@ spec:
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
+        {{- if .Values.configuration.caCertificates }}
+        volumeMounts:
+        - name: ca-certificates
+          mountPath: /var/run/cert-manager/certs
+          readOnly: true
+        {{- end }}
       serviceAccountName: {{ include "cert-management.fullname" . }}
       {{- if .Values.priorityClassName }}
       priorityClassName: {{ .Values.priorityClassName }}
@@ -484,11 +497,17 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-    {{- with .Values.affinity }}
+      {{- with .Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
+      {{- end }}
+      {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
-    {{- end }}
+      {{- end }}
+      {{- if .Values.configuration.caCertificates }}
+      volumes:
+      - name: ca-certificates
+        configMap:
+          name: {{ include "cert-management.fullname" . }}-ca-certificates
+      {{- end }}

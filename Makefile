@@ -88,3 +88,23 @@ local-issuer-up:
 .PHONY: local-issuer-down
 local-issuer-down:
 	@hack/kind/local-issuer/local-issuer-down.sh
+
+.PHONY: kind-issuer-up
+kind-issuer-up:
+	@hack/kind/certman/issuer-up.sh
+
+.PHONY: kind-issuer-down
+kind-issuer-down:
+	@hack/kind/certman/issuer-down.sh
+
+.PHONY: skaffold-run
+skaffold-run: $(SKAFFOLD)
+	@hack/kind/skaffold-run.sh
+
+.PHONY: certman-up
+certman-up: $(SKAFFOLD) $(HELM) kind-issuer-up skaffold-run
+
+.PHONY: certman-down
+certman-down:
+	@hack/kind/certman/issuer-down.sh
+	@hack/kind/certman/certman-down.sh

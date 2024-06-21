@@ -78,6 +78,64 @@ NAME      COMMON NAME            ISSUER         STATUS   AGE
 example   example.certman.kind   local-issuer   Ready    40s
 ```
 
+## Deploying cert-controller-manager in the KinD cluster
+
+Alternatively to running the cert-controller-manager on your local machine, it can be deployed
+in the KinD cluster with
+
+```bash
+make certman-up
+```
+
+This command will build a container image and deploy it in the default namespace.
+Additionally, a suitable issuer `kind-issuer` is created and configured to use
+the ACME server and DNS server running on the kind cluster.
+
+```bash
+kubectl get deploy
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+cert-controller-manager   1/1     1            1           20m
+```
+
+### Test if your setup is working
+
+
+You can check if the issuer has been reconciled successfully:
+```bash
+$ kubectl get issuer kind-issuer
+NAME          SERVER                                               EMAIL                    STATUS   TYPE   AGE
+kind-issuer   https://acme.certman-support.svc.cluster.local/dir   some.user@certman.kind   Ready    acme   17m
+```
+
+You can add a sample certificate for any subdomains of `certman.kind` with
+```bash
+cat << EOF | kubectl apply -f -
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: example
+  namespace: default
+spec:
+  commonName: example.certman.kind
+  secretRef:
+    name: example
+EOF
+```
+
+Check the certificate status, after a few seconds you should see
+```
+$ kubectl get cert example
+NAME      COMMON NAME            ISSUER        STATUS   AGE
+example   example.certman.kind   kind-issuer   Ready    8m50s
+```
+
+### Removing the cert-controller-manager deployment
+To remove the deployment and issuer, use
+
+```bash
+make certman-down
+```
+
 ## Deletion of KinD Cluster
 
 ```bash
