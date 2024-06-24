@@ -6,4 +6,5 @@ set -o pipefail
 source "$(dirname ${0})/common.sh" ''
 
 touch "$SOURCE_PATH/dev/manifests.yaml"
-skaffold run
+touch "$SOURCE_PATH/dev/manifests-dnsrecords.yaml"
+skaffold run "$@"

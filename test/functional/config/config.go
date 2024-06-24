@@ -62,6 +62,7 @@ type IssuerConfig struct {
 	Type                       string                  `json:"type"`
 	AutoRegistration           bool                    `json:"autoRegistration"`
 	Server                     string                  `json:"server,omitempty"`
+	PrecheckNameservers        []string                `json:"precheckNameservers,omitempty"`
 	Email                      string                  `json:"email,omitempty"`
 	ExternalAccountBinding     *ExternalAccountBinding `json:"externalAccountBinding,omitempty"`
 	SkipDNSChallengeValidation bool                    `json:"skipDNSChallengeValidation,omitempty"`

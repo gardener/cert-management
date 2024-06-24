@@ -101,6 +101,10 @@ kind-issuer-down:
 skaffold-run: $(SKAFFOLD)
 	@hack/kind/skaffold-run.sh
 
+.PHONY: skaffold-run-dnsrecords
+skaffold-run-dnsrecords: $(SKAFFOLD)
+	@hack/kind/skaffold-run.sh -p dnsrecords
+
 .PHONY: certman-up
 certman-up: $(SKAFFOLD) $(HELM) kind-issuer-up skaffold-run
 
@@ -108,3 +112,20 @@ certman-up: $(SKAFFOLD) $(HELM) kind-issuer-up skaffold-run
 certman-down:
 	@hack/kind/certman/issuer-down.sh
 	@hack/kind/certman/certman-down.sh
+
+.PHONY: certman-dnsrecords-up
+certman-dnsrecords-up: $(SKAFFOLD) $(HELM) kind-issuer-up skaffold-run-dnsrecords
+
+.PHONY: certman-dnsrecords-down
+certman-dnsrecords-down:
+	@hack/kind/certman/issuer-down.sh
+	@hack/kind/certman/certman-down.sh
+
+.PHONY: test-functional-local
+test-functional-local: $(GINKGO)
+	@hack/kind/test-functional-local.sh
+
+.PHONY: test-functional-local-dnsrecords
+test-functional-local-dnsrecords: $(GINKGO)
+	@USE_DNSRECORDS=true hack/kind/test-functional-local.sh
+

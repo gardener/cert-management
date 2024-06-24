@@ -44,6 +44,10 @@ spec:
 {{if not .PrivateKey }}
     autoRegistration: {{.AutoRegistration}}
 {{end}}
+    precheckNameservers:
+{{range .PrecheckNameservers }}
+    - {{.}}
+{{end}}
     privateKeySecretRef:
       name: {{.Name}}-secret
       namespace: {{.Namespace}}
@@ -84,17 +88,17 @@ data:
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
 metadata:
-  name: cert1
+  name: cert1-dnsrecords
   namespace: {{.Namespace}}
   annotations:
     cert.gardener.cloud/dnsrecord-provider-type: dummy-type
     cert.gardener.cloud/dnsrecord-secret-ref: dummy-ref
 spec:
-  commonName: cert1.{{.Domain}}
+  commonName: cert1.dnsrecords.{{.Domain}}
   dnsNames:
-  - cert1a.{{.Domain}}
-  - cert1b.{{.Domain}}
-  secretName: cert1-secret
+  - cert1a.dnsrecords.{{.Domain}}
+  - cert1b.dnsrecords.{{.Domain}}
+  secretName: cert1-dnsrecords-secret
   issuerRef:
     name: {{.Name}}
 `
@@ -136,7 +140,7 @@ func functestdnsrecords(cfg *config.Config, iss *config.IssuerConfig) {
 			err = u.AwaitIssuerReady(iss.Name)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			cert1Name := entryName(iss, "1")
+			cert1Name := entryName(iss, "1-dnsrecords")
 			err = u.AwaitCertReady(cert1Name)
 			Ω(err).ShouldNot(HaveOccurred())
 
@@ -144,7 +148,7 @@ func functestdnsrecords(cfg *config.Config, iss *config.IssuerConfig) {
 			Ω(err).ShouldNot(HaveOccurred())
 
 			Ω(itemMap).Should(MatchKeys(IgnoreExtras, Keys{
-				entryName(iss, "1"): MatchKeys(IgnoreExtras, Keys{
+				cert1Name: MatchKeys(IgnoreExtras, Keys{
 					"metadata": MatchKeys(IgnoreExtras, Keys{
 						"labels": MatchKeys(IgnoreExtras, Keys{
 							"cert.gardener.cloud/hash": HavePrefix(""),
@@ -152,13 +156,13 @@ func functestdnsrecords(cfg *config.Config, iss *config.IssuerConfig) {
 					}),
 					"spec": MatchKeys(IgnoreExtras, Keys{
 						"secretRef": MatchKeys(IgnoreExtras, Keys{
-							"name":      HavePrefix(entryName(iss, "1") + "-"),
+							"name":      HavePrefix(cert1Name + "-"),
 							"namespace": Equal(iss.Namespace),
 						}),
 					}),
 					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert1")),
-						"dnsNames":       And(HaveLen(2), ContainElement(dnsName(iss, "cert1a")), ContainElement(dnsName(iss, "cert1b"))),
+						"commonName":     Equal(dnsName(iss, "cert1.dnsrecords")),
+						"dnsNames":       And(HaveLen(2), ContainElement(dnsName(iss, "cert1a.dnsrecords")), ContainElement(dnsName(iss, "cert1b.dnsrecords"))),
 						"state":          Equal("Ready"),
 						"expirationDate": HavePrefix("20"),
 					}),

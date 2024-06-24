@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+issuers:
+- name: functest-kind
+  type: acme
+  autoRegistration: true
+  server: https://acme.certman-support.svc.cluster.local/dir
+  email: some.user@mydomain.com
+  precheckNameservers:
+  - 10.96.0.10:53

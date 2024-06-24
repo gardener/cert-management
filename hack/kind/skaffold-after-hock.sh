@@ -14,3 +14,12 @@ helm template charts/cert-management -n default \
     --set configuration.defaultIssuer=kind-issuer \
     --set configuration.caCertificates="$(cat dev/pebble-cert.pem)" \
     > dev/manifests.yaml
+
+helm template charts/cert-management -n default \
+    --set createCRDs.issuers=true \
+    --set createCRDs.certificates=true \
+    --set image.tag=$SKAFFOLD_IMAGE_TAG \
+    --set configuration.defaultIssuer=kind-issuer \
+    --set configuration.caCertificates="$(cat dev/pebble-cert.pem)" \
+    --set configuration.useDnsrecords=true \
+    > dev/manifests-dnsrecords.yaml

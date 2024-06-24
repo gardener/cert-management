@@ -37,6 +37,10 @@ spec:
 {{if not .PrivateKey }}
     autoRegistration: {{.AutoRegistration}}
 {{end}}
+    precheckNameservers:
+{{range .PrecheckNameservers }}
+    - {{.}}
+{{end}}
     privateKeySecretRef:
       name: {{.Name}}-secret
       namespace: {{.Namespace}}

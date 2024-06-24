@@ -20,3 +20,12 @@ manifests:
   - dev/manifests.yaml
 deploy:
   kubectl: {}
+profiles:
+  - name: dnsrecords
+    patches:
+      - op: replace
+        path: /manifests/rawYaml/0
+        value: dev/manifests-dnsrecords.yaml
+      - op: add
+        path: /manifests/rawYaml/-
+        value: test/functional/resources/10-crd-extensions.gardener.cloud_dnsrecords.yaml
