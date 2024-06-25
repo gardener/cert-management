@@ -28,6 +28,8 @@ cert-management:
         image: golang:1.22.1
       test:
         image: golang:1.22.1
+      e2etests:
+        image: europe-docker.pkg.dev/gardener-project/releases/ci-infra/golang-test:1.22
 
   jobs:
     head-update:
