@@ -129,3 +129,5 @@ test-functional-local: $(GINKGO)
 test-functional-local-dnsrecords: $(GINKGO)
 	@USE_DNSRECORDS=true hack/kind/test-functional-local.sh
 
+.PHONY: test-e2e-local
+test-e2e-local: kind-up certman-up test-functional-local certman-dnsrecords-up test-functional-local-dnsrecords
