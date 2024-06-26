@@ -39,8 +39,20 @@ func CreateDefaultTestUtils() *TestUtils {
 	}
 }
 
+func (u *TestUtils) KubectlPlain(cmdline string) (string, error) {
+	return u.runKubeCtl(cmdline)
+}
+
 func (u *TestUtils) KubectlGetAllIssuers() (string, error) {
 	output, err := u.runKubeCtl("get issuer -oyaml")
+	if err != nil {
+		return "", err
+	}
+	return output, nil
+}
+
+func (u *TestUtils) KubectlGetAllCertificatesPlain() (string, error) {
+	output, err := u.runKubeCtl("get cert -oyaml")
 	if err != nil {
 		return "", err
 	}
