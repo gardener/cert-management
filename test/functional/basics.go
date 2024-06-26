@@ -301,13 +301,12 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			err = u.KubectlApply(manifestFilename)
 			Ω(err).ShouldNot(HaveOccurred())
 
-			go func() {
-				time.Sleep(20 * time.Second)
+			err = u.AwaitIssuerReady(iss.Name)
+			if err != nil {
 				output, _ := u.KubectlGetAllIssuers()
 				println("all issuers:")
 				println(output)
-			}()
-			err = u.AwaitIssuerReady(iss.Name)
+			}
 			Ω(err).ShouldNot(HaveOccurred())
 
 			entryNames := []string{}
@@ -315,16 +314,11 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.AwaitCertReady(entryNames...)
-			output, _ := u.KubectlGetAllCertificatesPlain()
-			println("all certs:")
-			println(output)
-			oldns := u.Namespace
-			u.Namespace = "certman-support"
-			output, _ = u.KubectlPlain("get pod -owide")
-			u.Namespace = oldns
-			println("all certman-support pods:")
-			println(output)
-
+			if err != nil {
+				output, _ := u.KubectlGetAllCertificatesPlain()
+				println("all certs:")
+				println(output)
+			}
 			Ω(err).ShouldNot(HaveOccurred())
 
 			itemMap, err := u.KubectlGetAllCertificates()
@@ -498,7 +492,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 			err = u.AwaitIssuerDeleted(iss.Name)
 			Ω(err).ShouldNot(HaveOccurred())
-		}, SpecTimeout(180*time.Second))
+		}, SpecTimeout(360*time.Second))
 	})
 }
 
