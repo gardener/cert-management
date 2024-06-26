@@ -10,6 +10,8 @@ build:
     - image: local-skaffold/cert-controller-manager
       docker:
         dockerfile: Dockerfile
+        cacheFrom:
+        - local-skaffold/cert-controller-manager
       hooks:
         after:
         - command: [ "sh", "-c", "hack/kind/skaffold-after-hock.sh" ]
