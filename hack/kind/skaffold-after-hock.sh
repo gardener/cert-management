@@ -10,6 +10,7 @@ set -o pipefail
 helm template charts/cert-management -n default \
     --set createCRDs.issuers=true \
     --set createCRDs.certificates=true \
+    --set image.repository=local-skaffold/cert-controller-manager \
     --set image.tag=$SKAFFOLD_IMAGE_TAG \
     --set configuration.defaultIssuer=kind-issuer \
     --set configuration.caCertificates="$(cat dev/pebble-cert.pem)" \
@@ -18,6 +19,7 @@ helm template charts/cert-management -n default \
 helm template charts/cert-management -n default \
     --set createCRDs.issuers=true \
     --set createCRDs.certificates=true \
+    --set image.repository=local-skaffold/cert-controller-manager \
     --set image.tag=$SKAFFOLD_IMAGE_TAG \
     --set configuration.defaultIssuer=kind-issuer \
     --set configuration.caCertificates="$(cat dev/pebble-cert.pem)" \
