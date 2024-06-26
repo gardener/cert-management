@@ -1,0 +1,6 @@
+i# See the OWNERS docs at https://go.k8s.io/owners
+
+reviewers:
+- cert-management-reviewers
+approvers:
+- cert-management-approvers
