@@ -301,6 +301,12 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			err = u.KubectlApply(manifestFilename)
 			Ω(err).ShouldNot(HaveOccurred())
 
+			go func() {
+				time.Sleep(20 * time.Second)
+				output, _ := u.KubectlGetAllCertificates()
+				println("all issuers:")
+				println(output)
+			}()
 			err = u.AwaitIssuerReady(iss.Name)
 			Ω(err).ShouldNot(HaveOccurred())
 
