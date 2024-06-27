@@ -88,6 +88,8 @@ spec:
           args:
             - -config
             - /etc/pebble/config/pebble-config.json
+            - --dnsserver
+            - 10.96.0.10:53
           env:
             ## ref: https://github.com/letsencrypt/pebble#testing-at-full-speed
             - name: PEBBLE_VA_NOSLEEP
