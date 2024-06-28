@@ -6,12 +6,12 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/cert-manager/cert-manager v1.11.0
-	github.com/gardener/controller-manager-library v0.2.1-0.20240319084608-80ef8dceee73
-	github.com/gardener/external-dns-management v0.18.4
+	github.com/gardener/controller-manager-library v0.2.1-0.20240610092456-2d1cdc3e6f13
+	github.com/gardener/external-dns-management v0.18.7
 	github.com/gardener/gardener v1.94.0
 	github.com/go-acme/lego/v4 v4.17.4
 	github.com/miekg/dns v1.1.59
-	github.com/onsi/ginkgo/v2 v2.17.3
+	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.4.0
 	github.com/prometheus/client_golang v1.18.0
@@ -20,14 +20,14 @@ require (
 	golang.org/x/net v0.26.0
 	istio.io/api v1.22.0
 	istio.io/client-go v1.22.0
-	k8s.io/api v0.29.4
-	k8s.io/apiextensions-apiserver v0.29.4
-	k8s.io/apimachinery v0.29.4
-	k8s.io/client-go v0.29.4
-	k8s.io/code-generator v0.29.4
+	k8s.io/api v0.29.5
+	k8s.io/apiextensions-apiserver v0.29.5
+	k8s.io/apimachinery v0.29.5
+	k8s.io/client-go v0.29.5
+	k8s.io/code-generator v0.29.5
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
 	k8s.io/utils v0.0.0-20240423183400-0849a56e8f22
-	sigs.k8s.io/controller-runtime v0.17.3
+	sigs.k8s.io/controller-runtime v0.17.5
 	sigs.k8s.io/gateway-api v1.0.0
 	sigs.k8s.io/kind v0.20.0
 	software.sslmate.com/src/go-pkcs12 v0.4.0
@@ -127,7 +127,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.14.4 // indirect
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.1.1 // indirect
-	k8s.io/component-base v0.29.4 // indirect
+	k8s.io/component-base v0.29.5 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
