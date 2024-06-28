@@ -407,6 +407,12 @@ spec:
                   is used if CNAME record for DNS01 challange domain ` + "`" + `_acme-challenge.<domain>` + "`" + `
                   is set.
                 type: boolean
+              isCA:
+                description: |-
+                  IsCA value is used to set the ` + "`" + `isCA` + "`" + ` field on the certificate request.
+                  Note that the issuer may choose to ignore the requested isCA value, just
+                  like any other requested attribute.
+                type: boolean
               issuerRef:
                 description: IssuerRef is the reference of the issuer to use.
                 properties:
@@ -875,6 +881,9 @@ spec:
                 description: RequestsPerDayQuota is the maximum number of certificate
                   requests per days allowed for this issuer
                 type: integer
+              selfSigned:
+                description: SelfSigned is the self signed specific spec.
+                type: object
             type: object
           status:
             description: IssuerStatus is the status of the issuer.
@@ -903,8 +912,8 @@ spec:
                 description: State is either empty, 'Pending', 'Error', or 'Ready'.
                 type: string
               type:
-                description: Type is the issuer type. Currently only 'acme' and 'ca'
-                  are supported.
+                description: Type is the issuer type. Currently only 'acme', 'ca'
+                  and 'selfSigned' are supported.
                 type: string
             required:
             - state

@@ -15,6 +15,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
 )
 
@@ -83,4 +84,18 @@ func LookupSerialNumber(res resources.Interface, ref *corev1.SecretReference) (s
 		return "", err
 	}
 	return SerialNumberToString(cert.SerialNumber, false), nil
+}
+
+func multipleIssuerTypes(issuer *api.Issuer) bool {
+	count := 0
+	if issuer.Spec.SelfSigned != nil {
+		count++
+	}
+	if issuer.Spec.ACME != nil {
+		count++
+	}
+	if issuer.Spec.CA != nil {
+		count++
+	}
+	return count > 1
 }
