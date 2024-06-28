@@ -37,6 +37,10 @@ spec:
 {{if not .PrivateKey }}
     autoRegistration: {{.AutoRegistration}}
 {{end}}
+    precheckNameservers:
+{{range .PrecheckNameservers }}
+    - {{.}}
+{{end}}
     privateKeySecretRef:
       name: {{.Name}}-secret
       namespace: {{.Namespace}}
@@ -298,6 +302,11 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			Ω(err).ShouldNot(HaveOccurred())
 
 			err = u.AwaitIssuerReady(iss.Name)
+			if err != nil {
+				output, _ := u.KubectlGetAllIssuers()
+				println("all issuers:")
+				println(output)
+			}
 			Ω(err).ShouldNot(HaveOccurred())
 
 			entryNames := []string{}
@@ -305,6 +314,11 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.AwaitCertReady(entryNames...)
+			if err != nil {
+				output, _ := u.KubectlGetAllCertificatesPlain()
+				println("all certs:")
+				println(output)
+			}
 			Ω(err).ShouldNot(HaveOccurred())
 
 			itemMap, err := u.KubectlGetAllCertificates()
@@ -478,7 +492,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 			err = u.AwaitIssuerDeleted(iss.Name)
 			Ω(err).ShouldNot(HaveOccurred())
-		}, SpecTimeout(180*time.Second))
+		}, SpecTimeout(360*time.Second))
 	})
 }
 

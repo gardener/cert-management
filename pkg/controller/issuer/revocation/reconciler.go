@@ -206,7 +206,7 @@ func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext,
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("find all old secrets failed: %w", err))
 	}
 
-	return r.updateStatusAndDelay(logctx, obj, 1*time.Second, func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
+	return r.updateStatusAndDelay(logctx, obj, 1*time.Second, func(_ logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
 		msg := "looking up all certificates to process"
 		mod, status := r.prepareUpdateStatus(obj, api.StatePending, &msg)
 		status.Secrets = &api.SecretStatuses{Processing: secretRefs}
@@ -272,7 +272,7 @@ func (r *revokeReconciler) collectCertificateRefsAndRepeat(logctx logger.LogCont
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("no certificates found to process"))
 	}
 
-	return r.updateStatusAndDelay(logctx, obj, 1*time.Second, func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
+	return r.updateStatusAndDelay(logctx, obj, 1*time.Second, func(_ logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
 		format := "found %d certificates to process"
 		if shouldRenewBeforeRevoke {
 			format = "renewing %d certificates"
@@ -330,7 +330,7 @@ func (r *revokeReconciler) checkRenewalReadyAndRepeat(logctx logger.LogContext, 
 		}
 	}
 
-	return r.updateStatusAndDelay(logctx, obj, 15*time.Second, func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
+	return r.updateStatusAndDelay(logctx, obj, 15*time.Second, func(_ logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
 		msg := fmt.Sprintf("renewing certificate for %d certificate objects", len(stillToBeRenewed))
 		if len(stillToBeRenewed) == 0 {
 			msg = "revoking old certificate"
@@ -381,7 +381,7 @@ func (r *revokeReconciler) checkRevokedAndRepeat(logctx logger.LogContext, obj r
 	if len(stillPending) == 0 {
 		delay = 500 * time.Millisecond
 	}
-	return r.updateStatusAndDelay(logctx, obj, delay, func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
+	return r.updateStatusAndDelay(logctx, obj, delay, func(_ logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
 		mod, status := r.prepareUpdateStatus(obj, api.StatePending, revocation.Status.Message)
 		if len(stillPending) != len(revocation.Status.Objects.Processing) {
 			status.Objects.Processing = stillPending
@@ -492,7 +492,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		}
 	}
 
-	return r.updateStatusAndDelay(logctx, obj, 1*time.Second, func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
+	return r.updateStatusAndDelay(logctx, obj, 1*time.Second, func(_ logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
 		mod, status := r.prepareUpdateStatus(obj, api.StatePending, &msg)
 		status.Secrets.Processing = []api.CertificateSecretRef{}
 		status.Secrets.Revoked = revokedSecrets
@@ -505,7 +505,7 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 func (r *revokeReconciler) finishRevocation(logctx logger.LogContext, obj resources.Object, shouldRenewBeforeRevoke bool) reconcile.Status {
 	revocation := obj.Data().(*api.CertificateRevocation)
 
-	return r.updateStatusAndDelay(logctx, obj, 0, func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
+	return r.updateStatusAndDelay(logctx, obj, 0, func(_ logger.LogContext, obj resources.Object) (*resources.ModificationState, error) {
 		state := api.StateRevocationApplied
 		msg := "certificate(s) revoked"
 		if shouldRenewBeforeRevoke {

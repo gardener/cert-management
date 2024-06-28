@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+resources:
+- ../base
+
+patches:
+- patch: |
+    - op: replace
+      path: /metadata/name
+      value: docker-io
+    - op: replace
+      path: /spec/template/spec/containers/0/env
+      value:
+      - name: REGISTRY_PROXY_REMOTEURL
+        value: https://registry-1.docker.io
+      - name: REGISTRY_HTTP_ADDR
+        value: :5009
+    - op: replace
+      path: /spec/template/spec/containers/0/ports/0/containerPort
+      value: 5009
+    - op: replace
+      path: /spec/template/spec/volumes/0/hostPath/path
+      value: /var/local-registry/docker
+  target:
+    group: apps
+    kind: Deployment
+    name: registry
+labels:
+- includeSelectors: true
+  pairs:
+    upstream: k8s

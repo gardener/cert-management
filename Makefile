@@ -4,6 +4,8 @@
 
 ENSURE_CONTROLLER_MANAGER_LIB_MOD := $(shell go get github.com/gardener/controller-manager-library@$$(go list -m -f "{{.Version}}" github.com/gardener/controller-manager-library))
 CONTROLLER_MANAGER_LIB_HACK_DIR   := $(shell go list -m -f "{{.Dir}}" github.com/gardener/controller-manager-library)/hack
+ENSURE_GARDENER_MOD               := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
+GARDENER_HACK_DIR                 := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
 REGISTRY                          := europe-docker.pkg.dev/gardener-project/public
 EXECUTABLE                        := cert-controller-manager
 REPO_ROOT                         := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -17,7 +19,7 @@ IMAGE_TAG                         := $(VERSION)
 #########################################
 
 TOOLS_DIR := hack/tools
-include $(CONTROLLER_MANAGER_LIB_HACK_DIR)/tools.mk
+include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: tidy
 tidy:
@@ -25,7 +27,7 @@ tidy:
 
 .PHONY: check
 check: format $(GOIMPORTS) $(GOLANGCI_LINT)
-	@TOOLS_BIN_DIR="$(TOOLS_DIR)/bin" bash $(CONTROLLER_MANAGER_LIB_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
+	@TOOLS_BIN_DIR="$(TOOLS_BIN_DIR)" bash $(CONTROLLER_MANAGER_LIB_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@echo "Running go vet..."
 	@go vet ./cmd/... ./pkg/... ./test/...
 
@@ -67,3 +69,65 @@ generate: $(VGOPATH) $(CONTROLLER_GEN)
 .PHONY: docker-images
 docker-images:
 	@docker build -t $(CERT_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(CERT_IMAGE_REPOSITORY):latest -f Dockerfile --target cert-controller-manager .
+
+.PHONY: kind-up ## create kind cluster with knot-dns and pebble
+kind-up: $(KIND) $(HELM)
+	@hack/kind/kind-create-cluster.sh
+	@hack/kind/knot-dns/knot-dns-up.sh
+	@hack/kind/pebble/pebble-up.sh
+	@hack/kind/dns-controller-manager/dns-controller-manager-up.sh
+
+.PHONY: kind-down
+kind-down: $(KIND)
+	@hack/kind/kind-delete-cluster.sh
+
+.PHONY: local-issuer-up
+local-issuer-up:
+	@hack/kind/local-issuer/local-issuer-up.sh
+
+.PHONY: local-issuer-down
+local-issuer-down:
+	@hack/kind/local-issuer/local-issuer-down.sh
+
+.PHONY: kind-issuer-up
+kind-issuer-up:
+	@hack/kind/certman/issuer-up.sh
+
+.PHONY: kind-issuer-down
+kind-issuer-down:
+	@hack/kind/certman/issuer-down.sh
+
+.PHONY: skaffold-run
+skaffold-run: $(SKAFFOLD)
+	@hack/kind/skaffold-run.sh
+
+.PHONY: skaffold-run-dnsrecords
+skaffold-run-dnsrecords: $(SKAFFOLD)
+	@hack/kind/skaffold-run.sh -p dnsrecords
+
+.PHONY: certman-up
+certman-up: $(SKAFFOLD) $(HELM) kind-issuer-up skaffold-run
+
+.PHONY: certman-down
+certman-down:
+	@hack/kind/certman/issuer-down.sh
+	@hack/kind/certman/certman-down.sh
+
+.PHONY: certman-dnsrecords-up
+certman-dnsrecords-up: $(SKAFFOLD) $(HELM) kind-issuer-up skaffold-run-dnsrecords
+
+.PHONY: certman-dnsrecords-down
+certman-dnsrecords-down:
+	@hack/kind/certman/issuer-down.sh
+	@hack/kind/certman/certman-down.sh
+
+.PHONY: test-functional-local
+test-functional-local: $(GINKGO)
+	@hack/kind/test-functional-local.sh
+
+.PHONY: test-functional-local-dnsrecords
+test-functional-local-dnsrecords: $(GINKGO)
+	@USE_DNSRECORDS=true hack/kind/test-functional-local.sh
+
+.PHONY: test-e2e-local
+test-e2e-local: kind-up certman-up test-functional-local certman-dnsrecords-up test-functional-local-dnsrecords

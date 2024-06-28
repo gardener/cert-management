@@ -1,0 +1,31 @@
+apiVersion: skaffold/v4beta9
+kind: Config
+metadata:
+  name: cert-management
+build:
+  local:
+    useBuildkit: true
+    push: false
+  artifacts:
+    - image: local-skaffold/cert-controller-manager
+      docker:
+        dockerfile: Dockerfile
+        cacheFrom:
+        - local-skaffold/cert-controller-manager
+      hooks:
+        after:
+        - command: [ "sh", "-c", "hack/kind/skaffold-after-hock.sh" ]
+manifests:
+  rawYaml:
+  - dev/manifests.yaml
+deploy:
+  kubectl: {}
+profiles:
+  - name: dnsrecords
+    patches:
+      - op: replace
+        path: /manifests/rawYaml/0
+        value: dev/manifests-dnsrecords.yaml
+      - op: add
+        path: /manifests/rawYaml/-
+        value: test/functional/resources/10-crd-extensions.gardener.cloud_dnsrecords.yaml
