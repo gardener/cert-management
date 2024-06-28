@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/gardener/gardener/pkg/utils/gardener"
 	"github.com/go-acme/lego/v4/certificate"
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
@@ -1229,7 +1229,7 @@ func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() {
 	for _, obj := range objects {
 		challenge, _ := resources.GetAnnotation(obj.Data(), source.AnnotACMEDNSChallenge)
 		if challenge != "" {
-			if resources.SetAnnotation(obj.Data(), gardener.ConfirmationDeletion, "true") {
+			if resources.SetAnnotation(obj.Data(), v1beta1constants.ConfirmationDeletion, "true") {
 				if _, err := recordsResource.Update(obj.Data()); err != nil {
 					logger.Warnf("issuer: annotating DNSRecord %s/%s failed: %w", obj.GetNamespace(), obj.GetName(), err)
 					continue

@@ -11,7 +11,7 @@ SOURCE_PATH="$(readlink -f "$(dirname ${0})/..")"
 rm -rf "$SOURCE_PATH/pkg/client/cert"
 
 # setup virtual GOPATH
-source "$CONTROLLER_MANAGER_LIB_HACK_DIR"/vgopath-setup.sh
+source "$GARDENER_HACK_DIR"/vgopath-setup.sh
 
 CODE_GEN_DIR=$(go list -m -f '{{.Dir}}' k8s.io/code-generator)
 

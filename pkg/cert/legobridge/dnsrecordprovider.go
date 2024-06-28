@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
-	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	"github.com/gardener/gardener/pkg/utils/gardener"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"k8s.io/utils/ptr"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -113,7 +113,7 @@ func (p *dnsRecordProvider) cleanup(log logger.LogContext, domain string) error 
 	if _, err := p.dnsrecordResources.GetInto1(entry); err != nil {
 		return fmt.Errorf("getting DNSRecord %s/%s failed: %w", entry.Namespace, entry.Name, err)
 	}
-	if resources.SetAnnotation(entry, gardener.ConfirmationDeletion, "true") {
+	if resources.SetAnnotation(entry, v1beta1constants.ConfirmationDeletion, "true") {
 		if _, err := p.dnsrecordResources.Update(entry); err != nil {
 			return fmt.Errorf("annotating DNSRecord %s/%s failed: %w", entry.Namespace, entry.Name, err)
 		}
@@ -139,7 +139,7 @@ func (p *dnsRecordProvider) checkDNSResourceReady(domain string, _ []string) boo
 	}
 	entry = obj.Data().(*extensionsv1alpha.DNSRecord)
 	p.entries[domain] = entry
-	return entry.Status.LastOperation != nil && entry.Status.LastOperation.State == v1beta1.LastOperationStateSucceeded &&
+	return entry.Status.LastOperation != nil && entry.Status.LastOperation.State == gardencorev1beta1.LastOperationStateSucceeded &&
 		entry.Generation == entry.Status.ObservedGeneration
 }
 
@@ -150,7 +150,7 @@ func (p *dnsRecordProvider) failedDNSResourceReadyMessage(final bool) string {
 			switch {
 			case entry.Status.LastOperation == nil:
 				errs = append(errs, fmt.Errorf("no provider found to apply DNSRecord for %s", key))
-			case entry.Status.LastOperation.State == v1beta1.LastOperationStateSucceeded:
+			case entry.Status.LastOperation.State == gardencorev1beta1.LastOperationStateSucceeded:
 				continue
 			case entry.Status.LastOperation.Description != "":
 				errs = append(errs, fmt.Errorf("DNS entry for %s has state %s (%s)", key, entry.Status.LastOperation.State, entry.Status.LastOperation.Description))
