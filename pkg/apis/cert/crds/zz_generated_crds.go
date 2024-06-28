@@ -387,6 +387,15 @@ spec:
                 items:
                   type: string
                 type: array
+              duration:
+                description: |-
+                  Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
+                  ACME issuer may choose to ignore the requested duration, just like any other
+                  requested attribute.
+                  If unset, this defaults to 90 days (2160h).
+                  Must be greater than twice of the renewal window
+                  Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
+                type: string
               ensureRenewedAfter:
                 description: EnsureRenewedAfter specifies a time stamp in the past.
                   Renewing is only triggered if certificate notBefore date is before
@@ -397,6 +406,12 @@ spec:
                 description: FollowCNAME if true delegated domain for DNS01 challenge
                   is used if CNAME record for DNS01 challange domain ` + "`" + `_acme-challenge.<domain>` + "`" + `
                   is set.
+                type: boolean
+              isCA:
+                description: |-
+                  IsCA value is used to set the ` + "`" + `isCA` + "`" + ` field on the certificate request.
+                  Note that the issuer may choose to ignore the requested isCA value, just
+                  like any other requested attribute.
                 type: boolean
               issuerRef:
                 description: IssuerRef is the reference of the issuer to use.
@@ -881,6 +896,9 @@ spec:
                 description: RequestsPerDayQuota is the maximum number of certificate
                   requests per days allowed for this issuer
                 type: integer
+              selfSigned:
+                description: SelfSigned is the self signed specific spec.
+                type: object
             type: object
           status:
             description: IssuerStatus is the status of the issuer.
@@ -909,8 +927,8 @@ spec:
                 description: State is either empty, 'Pending', 'Error', or 'Ready'.
                 type: string
               type:
-                description: Type is the issuer type. Currently only 'acme' and 'ca'
-                  are supported.
+                description: Type is the issuer type. Currently only 'acme', 'ca'
+                  and 'selfSigned' are supported.
                 type: string
             required:
             - state

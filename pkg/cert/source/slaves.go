@@ -7,11 +7,10 @@
 package source
 
 import (
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile/reconcilers"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 // SlaveReconcilerType creates a slaveReconciler.
