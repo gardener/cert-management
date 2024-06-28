@@ -63,6 +63,8 @@ type ObtainInput struct {
 	PreferredChain string
 	// KeyType represents the algo and size to use for the private key (only used if CSR is not set).
 	KeyType certcrypto.KeyType
+	// Duration is the lifetime of the certificate
+	Duration time.Duration
 }
 
 // DNSControllerSettings are the settings for the DNSController.

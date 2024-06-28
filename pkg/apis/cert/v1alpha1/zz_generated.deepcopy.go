@@ -453,6 +453,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = new(CertificatePrivateKey)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Duration != nil {
+		in, out := &in.Duration, &out.Duration
+		*out = new(metav1.Duration)
+		**out = **in
+	}
 	return
 }
 

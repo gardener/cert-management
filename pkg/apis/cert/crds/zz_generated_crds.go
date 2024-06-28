@@ -387,6 +387,15 @@ spec:
                 items:
                   type: string
                 type: array
+              duration:
+                description: |-
+                  Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
+                  ACME issuer may choose to ignore the requested duration, just like any other
+                  requested attribute.
+                  If unset, this defaults to 90 days (2160h).
+                  Must be greater than twice of the renewal window
+                  Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
+                type: string
               ensureRenewedAfter:
                 description: EnsureRenewedAfter specifies a time stamp in the past.
                   Renewing is only triggered if certificate notBefore date is before

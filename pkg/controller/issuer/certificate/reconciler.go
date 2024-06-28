@@ -643,6 +643,17 @@ func (r *certReconciler) checkDomainRangeRestriction(issuerDomains *api.DNSSelec
 	return nil
 }
 
+func (r *certReconciler) getDuration(cert *api.Certificate) (time.Duration, error) {
+	duration := legobridge.DefaultCertDuration
+	if cert.Spec.Duration != nil {
+		duration = cert.Spec.Duration.Duration
+		if duration < 2*r.renewalWindow {
+			return 0, fmt.Errorf("self signed certificate duration must be greater than %v", 2*r.renewalWindow)
+		}
+	}
+	return duration, nil
+}
+
 func (r *certReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev1.Secret, error) {
 	secretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
 	secret := &corev1.Secret{}
