@@ -9,10 +9,9 @@ package service
 import (
 	"fmt"
 
-	api "k8s.io/api/core/v1"
-
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	api "k8s.io/api/core/v1"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
 )

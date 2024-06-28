@@ -11,16 +11,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gardener/controller-manager-library/pkg/logger"
+	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/go-acme/lego/v4/challenge"
+	"github.com/go-acme/lego/v4/challenge/dns01"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
-
-	"github.com/go-acme/lego/v4/challenge"
-	"github.com/go-acme/lego/v4/challenge/dns01"
-
-	"github.com/gardener/controller-manager-library/pkg/logger"
-	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
 // ProviderWithCount is an extended Provider interface.

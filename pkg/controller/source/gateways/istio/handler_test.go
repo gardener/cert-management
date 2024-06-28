@@ -7,7 +7,6 @@ package istio
 import (
 	"fmt"
 
-	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
+	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 )
 
 var _ = Describe("Istio Gateway Handler", func() {

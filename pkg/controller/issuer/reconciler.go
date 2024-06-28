@@ -9,6 +9,10 @@ package issuer
 import (
 	"fmt"
 
+	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
+	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
+	"github.com/gardener/controller-manager-library/pkg/logger"
+	"github.com/gardener/controller-manager-library/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -20,15 +24,11 @@ import (
 	"github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 	"github.com/gardener/cert-management/pkg/controller/issuer/revocation"
-
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
-	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
-	"github.com/gardener/controller-manager-library/pkg/logger"
-	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/gardener/cert-management/pkg/controller/issuer/selfSigned"
 )
 
 func newCompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
-	handler, err := core.NewCompoundHandler(c, acme.NewACMEIssuerHandler, ca.NewCAIssuerHandler)
+	handler, err := core.NewCompoundHandler(c, acme.NewACMEIssuerHandler, ca.NewCAIssuerHandler, selfSigned.NewSelfSignedIssuerHandler)
 	if err != nil {
 		return nil, err
 	}

@@ -9,10 +9,11 @@ package metrics
 import (
 	"strconv"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/server"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 func init() {

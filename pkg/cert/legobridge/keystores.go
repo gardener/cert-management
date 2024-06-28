@@ -14,11 +14,12 @@ import (
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	corev1 "k8s.io/api/core/v1"
 	pkcs12 "software.sslmate.com/src/go-pkcs12"
+
+	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 const (

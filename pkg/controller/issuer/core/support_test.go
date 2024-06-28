@@ -8,7 +8,6 @@ package core
 
 import (
 	"github.com/Masterminds/semver/v3"
-	certutils "github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
@@ -17,6 +16,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	certutils "github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 const (

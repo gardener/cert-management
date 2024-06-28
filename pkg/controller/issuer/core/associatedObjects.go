@@ -9,8 +9,9 @@ package core
 import (
 	"sync"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 // NewAssociatedObjects creates an AssociatedObjects
