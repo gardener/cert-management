@@ -662,6 +662,8 @@ k8s.io/kube-aggregator v0.29.4/go.mod h1:zBfe4iXXmw5HinNgN0JoAu5rpXdyCUvRfG99+FV
 k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6/go.mod h1:UuqjUnNftUyPE5H64/qeyjQoUZhGpeFDVdxjTeEVN2o=
 k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 h1:aVUu9fTY98ivBPKR9Y5w/AuzbMm96cd3YHRTU83I780=
 k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00/go.mod h1:AsvuZPBlUDVuCdzJ87iajxtXuR9oktsTctW/R9wwouA=
+k8s.io/kube-openapi v0.0.0-20240620174524-b456828f718b h1:Q9xmGWBvOGd8UJyccgpYlLosk/JlfP3xQLNkQlHJeXw=
+k8s.io/kube-openapi v0.0.0-20240620174524-b456828f718b/go.mod h1:UxDHUPsUwTOOxSU+oXURfFBcAS6JwiRXTYqYwfuGowc=
 k8s.io/kubelet v0.29.4 h1:6fTt4sTd5xqTtIhVoS7PkiFUBevQsyu3ZmENVvwY62M=
 k8s.io/kubelet v0.29.4/go.mod h1:lAu6Z17pxKwgM+9hsgGkqFjYTOhbc0dnZ6GNnlbjYW0=
 k8s.io/metrics v0.29.4 h1:06sZ63/Kt9HEb5GP/1y6xbHDz6XkxnHpu949UdXfoXQ=
