@@ -18,7 +18,7 @@ require (
 	golang.org/x/crypto v0.24.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
 	golang.org/x/net v0.26.0
-	istio.io/api v1.22.1
+	istio.io/api v1.22.2
 	istio.io/client-go v1.22.0
 	k8s.io/api v0.29.5
 	k8s.io/apiextensions-apiserver v0.29.5
