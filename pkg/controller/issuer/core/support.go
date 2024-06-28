@@ -371,6 +371,12 @@ func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj 
 	return reconcile.Succeeded(logger)
 }
 
+func (s *Support) SucceedSelfSignedIssuer(logger logger.LogContext, obj resources.Object, itype *string, statusType *string) reconcile.Status {
+	modificationState, _ := s.prepareUpdateStatus(obj, api.StateReady, itype, nil)
+	s.updateStatus(modificationState)
+	return reconcile.Succeeded(logger)
+}
+
 func updateTypeStatus(mod *resources.ModificationState, status **runtime.RawExtension, regRaw []byte) {
 	changedRegistration := false
 	if *status == nil || (*status).Raw == nil {
@@ -857,4 +863,18 @@ func (s *Support) toObjectNameSet(keyset utils.IssuerKeySet) resources.ObjectNam
 		nameset.Add(resources.NewObjectName(namespace, key.Name()))
 	}
 	return nameset
+}
+
+func (s *Support) MultipleIssuerTypes(issuer *api.Issuer) bool {
+	count := 0
+	if issuer.Spec.SelfSigned != nil {
+		count++
+	}
+	if issuer.Spec.ACME != nil {
+		count++
+	}
+	if issuer.Spec.CA != nil {
+		count++
+	}
+	return count > 1
 }

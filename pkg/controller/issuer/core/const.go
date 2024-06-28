@@ -11,6 +11,8 @@ const (
 	ACMEType = "acme"
 	// CAType is the type name for CA.
 	CAType = "ca"
+	// SelfSignedTypeis the type name for SelfSigned
+	SelfSignedType = "selfsigned"
 )
 
 const (

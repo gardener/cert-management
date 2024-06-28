@@ -243,7 +243,11 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 	}
 
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, &cert.Spec)
-	if r.support.GetIssuerSecretHash(issuerKey) == "" {
+	issuer, err := r.support.LoadIssuer(issuerKey)
+	if err != nil {
+		return r.failed(logctx, obj, api.StateError, err)
+	}
+	if r.support.GetIssuerSecretHash(issuerKey) == "" && issuer.Spec.SelfSigned == nil {
 		// issuer not reconciled yet
 		logctx.Infof("waiting for reconciliation of issuer %s", issuerKey)
 		return reconcile.Delay(logctx, nil)
@@ -385,14 +389,17 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 		return r.failed(logctx, obj, api.StateError, err)
 	}
 
-	if issuer.Spec.ACME != nil && issuer.Spec.CA != nil {
-		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid issuer spec: only ACME or CA can be set, but not both"))
+	if r.support.MultipleIssuerTypes(issuer) {
+		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid issuer spec: either ACME, CA or selfSigned can be set"))
 	}
 	if issuer.Spec.ACME != nil {
 		return r.obtainCertificateAndPendingACME(logctx, obj, renew, cert, issuerKey, issuer)
 	}
 	if issuer.Spec.CA != nil {
 		return r.obtainCertificateCA(logctx, obj, renew, cert, issuerKey, issuer)
+	}
+	if issuer.Spec.SelfSigned != nil {
+		return r.obtainCertificateSelfSigned(logctx, obj, renew, cert, issuerKey, issuer)
 	}
 	return r.failed(logctx, obj, api.StateError, fmt.Errorf("incomplete issuer spec (ACME or CA section must be provided)"))
 }
@@ -547,6 +554,60 @@ func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer
 	}
 
 	return CAKeyPair, nil
+}
+
+func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, obj resources.Object,
+	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
+	//	CAKeyPair, err := r.restoreCA(issuerKey, issuer)
+	//	if err != nil {
+	//		return r.failed(logctx, obj, api.StateError, err)
+	//	}
+
+	err := r.validateDomainsAndCsr(&cert.Spec, nil, issuerKey)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
+
+	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
+		// reuse found certificate
+		issuerInfo := utils.NewCAIssuerInfo(issuerKey)
+		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
+		if err != nil {
+			return r.failed(logctx, obj, api.StateError, err)
+		}
+		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
+	}
+
+	//	objectName := obj.ObjectName()
+	//	sublogctx := logctx.NewContext("callback", cert.Name)
+	//	callback := func(output *legobridge.ObtainOutput) {
+	//		r.pendingRequests.Remove(objectName)
+	//		r.pendingResults.Add(objectName, output)
+	//		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectName.Namespace(), objectName.Name())
+	//		err := r.support.EnqueueKey(key)
+	//		if err != nil {
+	//			sublogctx.Warnf("Enqueue %s failed with %s", objectName, err.Error())
+	//		}
+	//	}
+
+	//	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
+	//		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
+	//		Callback: callback, Renew: renew}
+	//
+	//	err = r.obtainer.Obtain(input)
+	//	if err != nil {
+	//		var concurrentObtainError *legobridge.ConcurrentObtainError
+	//		switch {
+	//		case errors.As(err, &concurrentObtainError):
+	//			return r.delay(logctx, obj, api.StatePending, err)
+	//		default:
+	//			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
+	//		}
+	//	}
+	//	r.pendingRequests.Add(objectName)
+
+	msg := "certificate requested, waiting for creation by CA"
+	return r.pending(logctx, obj, msg)
 }
 
 func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resources.Object,
