@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
-	github.com/cert-manager/cert-manager v1.11.0
+	github.com/cert-manager/cert-manager v1.15.1
 	github.com/gardener/controller-manager-library v0.2.1-0.20240610092456-2d1cdc3e6f13
 	github.com/gardener/external-dns-management v0.18.7
 	github.com/gardener/gardener v1.97.0
