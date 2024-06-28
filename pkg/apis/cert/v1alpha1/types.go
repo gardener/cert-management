@@ -85,6 +85,11 @@ type CertificateSpec struct {
 	// Private key options. These include the key algorithm and size.
 	// +optional
 	PrivateKey *CertificatePrivateKey `json:"privateKey,omitempty"`
+	// IsCA value is used to set the `isCA` field on the certificate request.
+	// Note that the issuer may choose to ignore the requested isCA value, just
+	// like any other requested attribute.
+	// +optional
+	IsCA *bool `json:"isCA,omitempty"`
 }
 
 // IssuerRef is the reference of the issuer by name.
@@ -398,6 +403,9 @@ type IssuerSpec struct {
 	// CA is the CA specific spec.
 	// +optional
 	CA *CASpec `json:"ca,omitempty"`
+	// SelfSigned is the self signed specific spec.
+	// +optional
+	SelfSigned *SelfSignedSpec `json:"selfSigned,omitempty"`
 	// RequestsPerDayQuota is the maximum number of certificate requests per days allowed for this issuer
 	// +optional
 	RequestsPerDayQuota *int `json:"requestsPerDayQuota,omitempty"`
@@ -467,6 +475,10 @@ type CASpec struct {
 	PrivateKeySecretRef *corev1.SecretReference `json:"privateKeySecretRef,omitempty"`
 }
 
+// SelfSignedSpec is the self signed specific spec.
+type SelfSignedSpec struct {
+}
+
 // IssuerStatus is the status of the issuer.
 type IssuerStatus struct {
 	// ObservedGeneration is the observed generation of the spec.
@@ -476,7 +488,7 @@ type IssuerStatus struct {
 	// Message is the status or error message.
 	// +optional
 	Message *string `json:"message,omitempty"`
-	// Type is the issuer type. Currently only 'acme' and 'ca' are supported.
+	// Type is the issuer type. Currently only 'acme', 'ca' and 'selfSigned' are supported.
 	// +optional
 	Type *string `json:"type"`
 	// ACME is the ACME specific status.
