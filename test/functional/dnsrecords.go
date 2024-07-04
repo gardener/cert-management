@@ -110,11 +110,17 @@ func init() {
 	addIssuerTests(functestdnsrecords)
 }
 
+func useDNSRecords() bool {
+	return os.Getenv("USE_DNSRECORDS") == "true"
+}
+
 func functestdnsrecords(cfg *config.Config, iss *config.IssuerConfig) {
 	_ = Describe("basics-"+iss.Name, Ordered, func() {
 		var cancelFuncTranslator context.CancelFunc
 		BeforeAll(func() {
-			cancelFuncTranslator = startDNSRecordToDNSEntryTranslator("default", cfg.DNSKubeConfig)
+			if useDNSRecords() {
+				cancelFuncTranslator = startDNSRecordToDNSEntryTranslator("default", cfg.DNSKubeConfig)
+			}
 		})
 		AfterAll(func() {
 			if cancelFuncTranslator != nil {
@@ -122,7 +128,7 @@ func functestdnsrecords(cfg *config.Config, iss *config.IssuerConfig) {
 			}
 		})
 		It("should work with "+iss.Name, func(_ context.Context) {
-			if os.Getenv("USE_DNSRECORDS") != "true" {
+			if !useDNSRecords() {
 				Skip("skipping as not using DNSRecords")
 			}
 			manifestFilename, err := iss.CreateTempManifest("Manifest", dnsrecordsTemplate)
