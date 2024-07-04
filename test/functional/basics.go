@@ -9,7 +9,6 @@ package functional
 import (
 	"context"
 	"crypto/x509"
-	"os"
 	"time"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -286,7 +285,7 @@ func init() {
 func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 	_ = Describe("basics-"+iss.Name, func() {
 		It("should work with "+iss.Name, func(_ context.Context) {
-			if os.Getenv("USE_DNSRECORDS") == "true" {
+			if useDNSRecords() {
 				Skip("skipping for DNSRecords")
 			}
 			manifestFilename, err := iss.CreateTempManifest("Manifest", basicTemplate)
