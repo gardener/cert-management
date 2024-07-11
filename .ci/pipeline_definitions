@@ -22,12 +22,10 @@ cert-management:
 
     steps:
       build:
-        image: golang:1.22.1
+        image: golang:1.22.5
         output_dir: binary
       check:
-        image: golang:1.22.1
-      test:
-        image: golang:1.22.1
+        image: golang:1.22.5
 
   jobs:
     head-update:
