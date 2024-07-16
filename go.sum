@@ -61,6 +61,8 @@ github.com/gardener/gardener v1.98.0 h1:tu9ntrn6+rpJw8wscr8+TbDYr2pgQem9KbFw80nI
 github.com/gardener/gardener v1.98.0/go.mod h1:EfvKbBF53a52Wz16/Qe8hhpTZTaJ/P+CRWRr35BVVq0=
 github.com/gardener/gardener v1.99.0 h1:kT3asSPO1aVnNGmuGEZb46C5fC2pPaTTLAuGc2fH1nY=
 github.com/gardener/gardener v1.99.0/go.mod h1:XboPwJptOg9ZfXTjuohGk7X8kxnF0o88gJnz6Ed7Vqc=
+github.com/gardener/gardener v1.99.1 h1:c/wVXYgt4j7eHCMwxpQPPpaLXt1BY/IPYStfCtNsR8Q=
+github.com/gardener/gardener v1.99.1/go.mod h1:XboPwJptOg9ZfXTjuohGk7X8kxnF0o88gJnz6Ed7Vqc=
 github.com/gardener/hvpa-controller/api v0.15.0 h1:igsalL5Z6kFMn1+Kv1Eq0cRjYW+4oBA1aEY/yDO2QtI=
 github.com/gardener/hvpa-controller/api v0.15.0/go.mod h1:fqb4wNrQLESDKpm7ppXyCM2Gvx96wRlLL35aH0ge07U=
 github.com/gardener/machine-controller-manager v0.53.0 h1:g2O0F7nEYZ9LjyPY6Gew8+q0n+rU88deexNq5k8CKks=
