@@ -23,7 +23,7 @@ require (
 	k8s.io/api v0.29.6
 	k8s.io/apiextensions-apiserver v0.29.6
 	k8s.io/apimachinery v0.29.6
-	k8s.io/client-go v0.29.6
+	k8s.io/client-go v0.30.3
 	k8s.io/code-generator v0.29.6
 	k8s.io/kube-openapi v0.0.0-20240103051144-eec4567ac022
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
