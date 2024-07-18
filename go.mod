@@ -19,7 +19,7 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
 	golang.org/x/net v0.27.0
 	istio.io/api v1.22.3
-	istio.io/client-go v1.22.0
+	istio.io/client-go v1.22.3
 	k8s.io/api v0.29.6
 	k8s.io/apiextensions-apiserver v0.29.6
 	k8s.io/apimachinery v0.29.6
