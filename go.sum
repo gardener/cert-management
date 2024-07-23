@@ -57,6 +57,8 @@ github.com/gardener/external-dns-management v0.18.7 h1:w3giAUwqTyO4Q5YRz9s8E0pIg
 github.com/gardener/external-dns-management v0.18.7/go.mod h1:s8O/Weu6s6hBMpNPV99PNId4HebXuwy3Xs7bGWTn9Ts=
 github.com/gardener/external-dns-management v0.19.0 h1:R1qUjeqirCS+EV7DF99HL6SWtRLSuVohbMnkhJHmINc=
 github.com/gardener/external-dns-management v0.19.0/go.mod h1:s8O/Weu6s6hBMpNPV99PNId4HebXuwy3Xs7bGWTn9Ts=
+github.com/gardener/external-dns-management v0.20.0 h1:cAOBszTucFRqclbcPJgel9U05w/uFJ9sMIWW8kY6/34=
+github.com/gardener/external-dns-management v0.20.0/go.mod h1:J7CRy91tRSEtZmxbiaPUFrmFxPKw4vF1ZmGUNrKKY6c=
 github.com/gardener/gardener v1.98.0 h1:tu9ntrn6+rpJw8wscr8+TbDYr2pgQem9KbFw80nIXP8=
 github.com/gardener/gardener v1.98.0/go.mod h1:EfvKbBF53a52Wz16/Qe8hhpTZTaJ/P+CRWRr35BVVq0=
 github.com/gardener/gardener v1.99.0 h1:kT3asSPO1aVnNGmuGEZb46C5fC2pPaTTLAuGc2fH1nY=
