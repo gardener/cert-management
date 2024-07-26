@@ -402,9 +402,7 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 		var certificates *certificate.Resource
 		var err error
 
-		if input.CSR == nil {
-			certificates, err = newCASignedCertFromInput(input)
-		}
+		certificates, err = newCASignedCertFromInput(input)
 		output := &ObtainOutput{
 			Certificates: certificates,
 			IssuerInfo:   utils.NewCAIssuerInfo(input.IssuerKey),
@@ -513,7 +511,13 @@ func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 // newCASignedCertFromInput returns a new Certificate signed by a CA.
 // An x509.CertificateRequest is created from scratch based on and ObtainInput object
 func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) {
-	csr, err := createCertReq(input)
+	var csr *x509.CertificateRequest
+	var err error
+	if input.CSR == nil {
+		csr, err = createCertReq(input)
+	} else {
+		csr, err = extractCertificateRequest(input.CSR)
+	}
 	if err != nil {
 		return nil, err
 	}
