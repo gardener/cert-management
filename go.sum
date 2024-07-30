@@ -57,6 +57,8 @@ github.com/gardener/etcd-druid v0.22.3 h1:WRUSIlTG/HX7G/cGRzMyU7wIEmIKjp4On6PL/P
 github.com/gardener/etcd-druid v0.22.3/go.mod h1:FROhfVKyWBo4krlPe3R6FIhJRmOmijEWBdEeUP0CJjE=
 github.com/gardener/external-dns-management v0.19.0 h1:R1qUjeqirCS+EV7DF99HL6SWtRLSuVohbMnkhJHmINc=
 github.com/gardener/external-dns-management v0.19.0/go.mod h1:s8O/Weu6s6hBMpNPV99PNId4HebXuwy3Xs7bGWTn9Ts=
+github.com/gardener/external-dns-management v0.20.1 h1:ik7Rs/jvaA77yQuPx+z+jIZl4fVv0zDxVFPF/MkjOzs=
+github.com/gardener/external-dns-management v0.20.1/go.mod h1:J7CRy91tRSEtZmxbiaPUFrmFxPKw4vF1ZmGUNrKKY6c=
 github.com/gardener/gardener v1.100.0 h1:vN8LH7nW8GZUOReaj4DuIUTCLEI+5AeYVPx/J/xo8gM=
 github.com/gardener/gardener v1.100.0/go.mod h1:OzCK5XFSNma6u1xUDYDpwbgJwmpo9WVVEu/pR21sarM=
 github.com/gardener/hvpa-controller/api v0.15.0 h1:igsalL5Z6kFMn1+Kv1Eq0cRjYW+4oBA1aEY/yDO2QtI=
