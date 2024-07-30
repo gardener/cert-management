@@ -12,7 +12,7 @@ require (
 	github.com/go-acme/lego/v4 v4.17.4
 	github.com/miekg/dns v1.1.61
 	github.com/onsi/ginkgo/v2 v2.19.1
-	github.com/onsi/gomega v1.34.0
+	github.com/onsi/gomega v1.34.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.19.1
 	golang.org/x/crypto v0.25.0
