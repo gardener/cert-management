@@ -6,5 +6,6 @@ tmp/
 /local/
 /cmd/cert-controller-manager/cert-controller-manager
 /cert-controller-manager
+/certman2
 .vscode/
 .kubeconfig-kind-integration

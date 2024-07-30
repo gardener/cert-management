@@ -24,10 +24,42 @@ export GO111MODULE=off
 rm -rf "${SOURCE_PATH}/pkg/client/cert"
 PROJECT_ROOT=$(dirname $0)/..
 
-bash "${CODE_GEN_DIR}"/generate-internal-groups.sh \
-  "deepcopy,client,informer,lister" \
-  github.com/gardener/cert-management/pkg/client/cert \
-  "" \
-  github.com/gardener/cert-management/pkg/apis \
-  "cert:v1alpha1" \
-  --go-header-file "${SOURCE_PATH}/hack/LICENSE_BOILERPLATE.txt"
+# Componentconfig for installer
+
+certmanager_config_groups() {
+  echo "Generating API groups for pkg/certman2/apis/config"
+
+  bash "${CODE_GEN_DIR}/generate-internal-groups.sh" \
+    deepcopy,defaulter \
+    github.com/gardener/cert-management/pkg/client/componentconfig \
+    github.com/gardener/cert-management/pkg/certman2/apis \
+    github.com/gardener/cert-management/pkg/certman2/apis \
+    "config:v1alpha1" \
+    -h "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt"
+
+  bash "${CODE_GEN_DIR}/generate-internal-groups.sh" \
+    conversion \
+    github.com/gardener/cert-management/pkg/client/componentconfig \
+    github.com/gardener/cert-management/pkg/certman2/apis \
+    github.com/gardener/cert-management/pkg/certman2/apis \
+    "config:v1alpha1" \
+    --extra-peer-dirs=k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime,k8s.io/component-base/config,k8s.io/component-base/config/v1alpha1 \
+    -h "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt"
+}
+export -f certmanager_config_groups
+
+certmanager_group() {
+  echo "Generating API groups for pkg/apis"
+
+  bash "${CODE_GEN_DIR}"/generate-internal-groups.sh \
+    "deepcopy,client,informer,lister" \
+    github.com/gardener/cert-management/pkg/client/cert \
+    "" \
+    github.com/gardener/cert-management/pkg/apis \
+    "cert:v1alpha1" \
+    --go-header-file "${SOURCE_PATH}/hack/LICENSE_BOILERPLATE.txt"
+}
+export -f certmanager_group
+
+certmanager_group
+certmanager_config_groups
