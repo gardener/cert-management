@@ -1,4 +1,4 @@
-package issuer
+package certificate
 
 import (
 	"k8s.io/utils/clock"
@@ -12,7 +12,7 @@ import (
 )
 
 // ControllerName is the name of this controller.
-const ControllerName = "issuer"
+const ControllerName = "certificate"
 
 // AddToManager adds Reconciler to the given manager.
 func (r *Reconciler) AddToManager(mgr manager.Manager) error {
@@ -23,16 +23,12 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 	if r.Recorder == nil {
 		r.Recorder = mgr.GetEventRecorderFor(ControllerName + "-controller")
 	}
-	if r.IssuerNamespace == "" {
-		// TODO
-		r.IssuerNamespace = "default"
-	}
 
 	return builder.
 		ControllerManagedBy(mgr).
 		Named(ControllerName).
 		For(
-			&v1alpha1.Issuer{},
+			&v1alpha1.Certificate{},
 			builder.WithPredicates(Predicate()), // TODO check predicate
 		).
 		WithOptions(controller.Options{
@@ -41,13 +37,13 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		Complete(r)
 }
 
-// Predicate returns the predicate to be considered for the Issuer resource.
+// Predicate returns the predicate to be considered for the Certificate resource.
 func Predicate() predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
 			// TODO
-			issuer, ok := e.Object.(*v1alpha1.Issuer)
-			if !ok || issuer == nil {
+			certificate, ok := e.Object.(*v1alpha1.Certificate)
+			if !ok || certificate == nil {
 				return false
 			}
 			return true
@@ -55,12 +51,12 @@ func Predicate() predicate.Predicate {
 
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			// TODO
-			issuerOld, ok := e.ObjectOld.(*v1alpha1.Issuer)
-			if !ok || issuerOld == nil {
+			certificateOld, ok := e.ObjectOld.(*v1alpha1.Certificate)
+			if !ok || certificateOld == nil {
 				return false
 			}
-			issuerlandscapeNew, ok := e.ObjectNew.(*v1alpha1.Issuer)
-			if !ok || issuerlandscapeNew == nil {
+			certificateNew, ok := e.ObjectNew.(*v1alpha1.Certificate)
+			if !ok || certificateNew == nil {
 				return false
 			}
 			return true
@@ -68,8 +64,8 @@ func Predicate() predicate.Predicate {
 
 		DeleteFunc: func(e event.DeleteEvent) bool {
 			// TODO
-			issuer, ok := e.Object.(*v1alpha1.Issuer)
-			if !ok || issuer == nil {
+			certificate, ok := e.Object.(*v1alpha1.Certificate)
+			if !ok || certificate == nil {
 				return false
 			}
 			return true

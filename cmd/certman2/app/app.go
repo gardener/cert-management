@@ -2,12 +2,15 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	goruntime "runtime"
 	"strconv"
+	"syscall"
 	"time"
 
 	cmdutils "github.com/gardener/gardener/cmd/utils"
@@ -15,24 +18,23 @@ import (
 	"github.com/gardener/gardener/pkg/controllerutils/routes"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/utils/ptr"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 	controllerconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
 	configv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/config/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	"github.com/gardener/cert-management/pkg/certman2/controller/issuer"
 )
 
 // Name is the name of the Cert Controller-Manager.
@@ -43,6 +45,7 @@ var configDecoder runtime.Decoder
 func init() {
 	configScheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(
+		config.AddToScheme,
 		configv1alpha1.AddToScheme,
 	)
 	utilruntime.Must(schemeBuilder.AddToScheme(configScheme))
@@ -129,12 +132,19 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 
 	log.Info("Getting rest config")
 	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
-		cfg.CertManagerClientConnection.Kubeconfig = kubeconfig
+		cfg.PrimaryClientConnection.Kubeconfig = kubeconfig
 	}
 
-	restConfig, err := kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.CertManagerClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
+	primaryRestConfig, err := kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.PrimaryClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
 	if err != nil {
 		return err
+	}
+	secondaryRestConfig := primaryRestConfig
+	if cfg.SecondaryClientConnection.Kubeconfig != "" {
+		secondaryRestConfig, err = kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.SecondaryClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	var extraHandlers map[string]http.Handler
@@ -145,18 +155,16 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 		}
 	}
 
-	log.Info("Setting up manager")
-	mgr, err := manager.New(restConfig, manager.Options{
-		Logger:                  log,
+	log.Info("Setting up primary manager")
+	primaryManager, err := manager.New(primaryRestConfig, manager.Options{
+		Logger:                  log.WithName("primary"),
 		Scheme:                  certmanclient.ClusterScheme,
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
 
 		HealthProbeBindAddress: net.JoinHostPort(cfg.Server.HealthProbes.BindAddress, strconv.Itoa(cfg.Server.HealthProbes.Port)),
 		Metrics: metricsserver.Options{
-			BindAddress:   net.JoinHostPort(cfg.Server.Metrics.BindAddress, strconv.Itoa(cfg.Server.Metrics.Port)),
-			ExtraHandlers: extraHandlers,
+			BindAddress: "0", // disable default metrics server
 		},
-
 		LeaderElection:                cfg.LeaderElection.LeaderElect,
 		LeaderElectionResourceLock:    cfg.LeaderElection.ResourceLock,
 		LeaderElectionID:              cfg.LeaderElection.ResourceName,
@@ -172,85 +180,141 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 	if err != nil {
 		return err
 	}
+	log.Info("Setting up secondary manager")
+	secondaryManager, err := manager.New(secondaryRestConfig, manager.Options{
+		Logger:                  log.WithName("secondary"),
+		Scheme:                  certmanclient.ClusterScheme,
+		GracefulShutdownTimeout: ptr.To(5 * time.Second),
 
-	log.Info("Setting up health check endpoints")
-	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		HealthProbeBindAddress: net.JoinHostPort(cfg.Server.HealthProbes.BindAddress, strconv.Itoa(cfg.Server.HealthProbes.Port+1)),
+		Metrics: metricsserver.Options{
+			BindAddress: "0", // disable default metrics server
+		},
+		LeaderElection: false,
+		Controller: controllerconfig.Controller{
+			RecoverPanic: ptr.To(true),
+		},
+	})
+	if err != nil {
 		return err
 	}
-	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
+
+	if err := primaryManager.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return err
+	}
+	if err := primaryManager.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(primaryManager.GetCache())); err != nil {
+		return err
+	}
+	if err := secondaryManager.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return err
+	}
+	if err := secondaryManager.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(primaryManager.GetCache())); err != nil {
 		return err
 	}
 
-	scheme := mgr.GetScheme()
-	if err := vpaautoscalingv1.AddToScheme(scheme); err != nil {
-		return fmt.Errorf("could not update manager scheme: %w", err)
+	if err := primaryManager.Add(&primaryRunner{
+		mgr: primaryManager,
+		cfg: cfg,
+	}); err != nil {
+		return err
 	}
-
-	if err := mgr.Add(&runner{
-		mgr: mgr,
+	if err := secondaryManager.Add(&secondaryRunner{
+		mgr: secondaryManager,
 		cfg: cfg,
 	}); err != nil {
 		return err
 	}
 
-	log.Info("Starting manager")
-	return mgr.Start(ctx)
+	metricsAddr := net.JoinHostPort(cfg.Server.Metrics.BindAddress, strconv.Itoa(cfg.Server.Metrics.Port))
+	managers := map[string]manager.Manager{"primary": primaryManager, "secondary": secondaryManager}
+	return o.startManagers(ctx, log, metricsAddr, extraHandlers, managers)
 }
 
-// runner implements the Controller-Runtime's Runnable interface and is used to add further controllers
-// while the manager already has been started.
-type runner struct {
-	mgr manager.Manager
-	cfg *config.CertManagerConfiguration
-}
-
-func (r *runner) Start(ctx context.Context) error {
-	log := r.mgr.GetLogger()
-
-	waitForSyncCtx, waitForSyncCancel := context.WithTimeout(ctx, 5*time.Second)
-	defer waitForSyncCancel()
-
-	log.Info("Waiting for cache to be synced")
-	if !r.mgr.GetCache().WaitForCacheSync(waitForSyncCtx) {
-		return fmt.Errorf("failed waiting for cache to be synced")
-	}
-
-	clusterAccess, err := r.createClusterAccess()
-	if err != nil {
-		return fmt.Errorf("failed creating cluster access: %w", err)
-	}
-
-	log.Info("Adding controllers to manager")
-	return addControllers(r.mgr, clusterAccess, r.cfg)
-}
-
-// TODO handle multi-cluster support
-func (r *runner) createClusterAccess() (*certmanclient.ClusterAccess, error) {
-	mainClientSet, err := kubernetes.NewWithConfig(
-		kubernetes.WithRESTConfig(r.mgr.GetConfig()),
-		kubernetes.WithRuntimeAPIReader(r.mgr.GetAPIReader()),
-		kubernetes.WithRuntimeClient(r.mgr.GetClient()),
-		kubernetes.WithClientConnectionOptions(r.cfg.CertManagerClientConnection.ClientConnectionConfiguration),
-		kubernetes.WithRuntimeCache(r.mgr.GetCache()),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating main clientset: %w", err)
-	}
-
-	return certmanclient.NewClusterAccess(r.mgr.GetLogger(), mainClientSet, nil, nil), nil
-}
-
-// addControllers adds the Controller-Manager controllers to the given manager.
-func addControllers(
-	mgr controllerruntime.Manager,
-	clusterAccess *certmanclient.ClusterAccess,
-	cfg *config.CertManagerConfiguration,
+func (o *options) startManagers(
+	cmdCtx context.Context,
+	log logr.Logger,
+	metricsAddr string,
+	extraHandlers map[string]http.Handler,
+	managers map[string]manager.Manager,
 ) error {
-	if err := (&issuer.Reconciler{
-		Config: *cfg,
-	}).AddToManager(mgr, clusterAccess); err != nil {
-		return fmt.Errorf("failed adding Issuer controller: %w", err)
+	log.Info("Starting primary and issuer manager")
+
+	// Create a context that is cancelled on SIGINT or SIGTERM
+	ctx, cancel := context.WithCancel(cmdCtx)
+	defer cancel()
+
+	// Set up signal handling for graceful shutdown
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	results := make(chan error, len(managers)+1)
+	mux := http.NewServeMux()
+	handler := promhttp.HandlerFor(metrics.Registry, promhttp.HandlerOpts{
+		ErrorHandling: promhttp.HTTPErrorOnError,
+	})
+	mux.Handle("/metrics", handler)
+	for path, extraHandler := range extraHandlers {
+		mux.Handle(path, extraHandler)
 	}
 
-	return nil
+	log.Info("starting metrics server")
+	srv := newServer(mux)
+	idleConnsClosed := make(chan struct{})
+	go func() {
+		<-ctx.Done()
+		log.Info("Shutting down metrics server with timeout of 10 seconds")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			// Error from closing listeners, or context timeout
+			log.Error(err, "error shutting down the HTTP server")
+		}
+		close(idleConnsClosed)
+	}()
+
+	log.Info("Serving metrics server", "bindAddress", metricsAddr)
+	go func() {
+		var err error
+		if ln, err2 := net.Listen("tcp", metricsAddr); err2 != nil {
+			err = fmt.Errorf("unable to listen at %s: %w", metricsAddr, err2)
+			cancel()
+		} else if err2 = srv.Serve(ln); err2 != nil && err2 != http.ErrServerClosed {
+			err = fmt.Errorf("unable to start metrics server: %w", err)
+			cancel()
+		}
+		results <- err
+	}()
+
+	// Start each manager in its own goroutine
+	for name, mgr := range managers {
+		go func(mgr manager.Manager) {
+			var err error
+			if err2 := mgr.Start(ctx); err2 != nil {
+				err = fmt.Errorf("manager %s failed: %w", name, err2)
+				cancel() // cancel all other managers on error
+			}
+			results <- err
+		}(mgr)
+	}
+
+	// Wait for a signal
+	<-signals
+	log.Info("Received shutdown signal")
+	cancel() // signal all managers to shut down
+
+	var errs []error
+	for err := range results {
+		errs = append(errs, err)
+	}
+	log.Info("All managers stopped")
+	return errors.Join(errs...)
+}
+
+func newServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		MaxHeaderBytes:    1 << 20,
+		IdleTimeout:       90 * time.Second, // matches http.DefaultTransport keep-alive timeout
+		ReadHeaderTimeout: 32 * time.Second,
+	}
 }

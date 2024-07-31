@@ -1,4 +1,4 @@
-package issuer_test
+package certificate_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestLandscape(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Issuer Controller Suite")
+	RunSpecs(t, "Certiificate Controller Suite")
 }
