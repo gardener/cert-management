@@ -14,7 +14,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetDefaults_CertManagerConfiguration sets defaults for the configuration of the Gardener installer.
+// SetDefaults_CertManagerConfiguration sets defaults for the configuration of the Gardener cert-manager.
 func SetDefaults_CertManagerConfiguration(obj *CertManagerConfiguration) {
 	if obj.LogLevel == "" {
 		obj.LogLevel = logger.InfoLevel
@@ -22,13 +22,39 @@ func SetDefaults_CertManagerConfiguration(obj *CertManagerConfiguration) {
 	if obj.LogFormat == "" {
 		obj.LogFormat = logger.FormatJSON
 	}
-	if obj.CertManagerClientConnection == nil {
-		obj.CertManagerClientConnection = &CertManagerClientConnection{}
+	if obj.PrimaryClientConnection == nil {
+		obj.PrimaryClientConnection = &PrimaryClientConnection{}
+	}
+	if obj.SecondaryClientConnection == nil {
+		obj.SecondaryClientConnection = &SecondaryClientConnection{}
+	}
+	if obj.DNSClientConnection == nil {
+		obj.DNSClientConnection = &DNSClientConnection{}
 	}
 }
 
-// SetDefaults_CertManagerClientConnection sets defaults for the garden client connection.
-func SetDefaults_CertManagerClientConnection(obj *CertManagerClientConnection) {
+// SetDefaults_PrimaryClientConnection sets defaults for the primary client connection.
+func SetDefaults_PrimaryClientConnection(obj *PrimaryClientConnection) {
+	if obj.QPS == 0.0 {
+		obj.QPS = 100.0
+	}
+	if obj.Burst == 0 {
+		obj.Burst = 130
+	}
+}
+
+// SetDefaults_SecondaryClientConnection sets defaults for the secondary client connection.
+func SetDefaults_SecondaryClientConnection(obj *SecondaryClientConnection) {
+	if obj.QPS == 0.0 {
+		obj.QPS = 100.0
+	}
+	if obj.Burst == 0 {
+		obj.Burst = 130
+	}
+}
+
+// SetDefaults_DNSClientConnection sets defaults for the primary client connection.
+func SetDefaults_DNSClientConnection(obj *DNSClientConnection) {
 	if obj.QPS == 0.0 {
 		obj.QPS = 100.0
 	}
@@ -68,7 +94,7 @@ func SetDefaults_ServerConfiguration(obj *ServerConfiguration) {
 		obj.Metrics = &Server{}
 	}
 	if obj.Metrics.Port == 0 {
-		obj.Metrics.Port = 2752
+		obj.Metrics.Port = 2753
 	}
 }
 
