@@ -522,12 +522,12 @@ func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) 
 	if err != nil {
 		return nil, err
 	}
-	return newCASignedCertFromCertReq(csr, input.CAKeyPair)
+	return newCASignedCertFromCertReq(csr, input.CAKeyPair, input.Duration)
 }
 
 // newCASignedCertFromCertReq returns a new Certificate signed by a CA based on
 // an x509.CertificateRequest and a CA key pair. A private key will be generated.
-func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyPair) (*certificate.Resource, error) {
+func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyPair, duration time.Duration) (*certificate.Resource, error) {
 	pubKeySize := pubKeySize(csr.PublicKey)
 	if pubKeySize == 0 {
 		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
@@ -536,7 +536,7 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyP
 	if err != nil {
 		return nil, err
 	}
-	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair)
+	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair, duration)
 }
 
 // RevokeCertificate revokes a certificate

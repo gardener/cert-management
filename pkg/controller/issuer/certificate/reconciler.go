@@ -554,7 +554,14 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
 	}
-
+	duration, err := r.getDuration(cert)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
+	err = r.validateCertDuration(duration, CAKeyPair)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
 	err = r.validateDomainsAndCsr(&cert.Spec, nil, issuerKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
@@ -584,7 +591,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		Callback: callback, Renew: renew}
+		Callback: callback, Renew: renew, Duration: duration}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
@@ -648,10 +655,19 @@ func (r *certReconciler) getDuration(cert *api.Certificate) (time.Duration, erro
 	if cert.Spec.Duration != nil {
 		duration = cert.Spec.Duration.Duration
 		if duration < 2*r.renewalWindow {
-			return 0, fmt.Errorf("self signed certificate duration must be greater than %v", 2*r.renewalWindow)
+			return 0, fmt.Errorf("certificate duration must be greater than %v", 2*r.renewalWindow)
 		}
 	}
 	return duration, nil
+}
+
+func (r *certReconciler) validateCertDuration(duration time.Duration, caKeyPair *legobridge.TLSKeyPair) error {
+	caNotAfter := caKeyPair.Cert.NotAfter
+	now := time.Now()
+	if now.Add(duration).After(caNotAfter) {
+		return fmt.Errorf("certificate lifetime (%v) is longer than the lifetime of the CA certificate (%v)", now.Add(duration), caNotAfter)
+	}
+	return nil
 }
 
 func (r *certReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev1.Secret, error) {
