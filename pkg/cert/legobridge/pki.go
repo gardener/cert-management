@@ -62,12 +62,12 @@ const (
 )
 
 // issueSignedCert does all the Certificate Issuing.
-func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Signer, privKeyPEM []byte, signerKeyPair *TLSKeyPair) (*certificate.Resource, error) {
+func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Signer, privKeyPEM []byte, signerKeyPair *TLSKeyPair, duration time.Duration) (*certificate.Resource, error) {
 	csrPEM, err := generateCSRPEM(csr, privKey)
 	if err != nil {
 		return nil, err
 	}
-	crt, err := generateCertFromCSR(csrPEM, DefaultCertDuration, isCA)
+	crt, err := generateCertFromCSR(csrPEM, duration, isCA)
 	if err != nil {
 		return nil, err
 	}
