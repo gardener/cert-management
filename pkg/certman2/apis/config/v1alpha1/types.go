@@ -7,12 +7,22 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CertManagerConfiguration defines the configuration for the Gardener installer.
+// CertManagerConfiguration defines the configuration for the Gardener cert-manager.
 type CertManagerConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
-	// CertManagerClientConnection specifies the kubeconfig file and the client connection settings for the proxy server to
-	// use when communicating with the kube-apiserver of any cluster.
-	CertManagerClientConnection *CertManagerClientConnection `json:"certManagerClientConnection,omitempty"`
+	// PrimaryClientConnection specifies the kubeconfig file and the client connection settings for primary
+	// cluster containing the certificate and source resources the cert-manager should work on.
+	PrimaryClientConnection *PrimaryClientConnection `json:"primaryClientConnection,omitempty"`
+	// SecondaryClientConnection contains client connection configurations
+	// for the cluster containing the provided issuers.
+	// If not set, the primary cluster is used.
+	// +optional
+	SecondaryClientConnection *SecondaryClientConnection `json:"secondaryClientConnection,omitempty"`
+	// DNSClientConnection contains client connection configurations
+	// for the cluster used to manage DNS resources for DNS challenges.
+	// If not set, the secondary cluster is used.
+	// +optional
+	DNSClientConnection *DNSClientConnection `json:"dnsClientConnection,omitempty"`
 	// LeaderElection defines the configuration of leader election client.
 	LeaderElection componentbaseconfigv1alpha1.LeaderElectionConfiguration `json:"leaderElection"`
 	// LogLevel is the level/severity for the logs. Must be one of [info,debug,error].
@@ -28,9 +38,21 @@ type CertManagerConfiguration struct {
 	Controllers ControllerConfiguration `json:"controllers"`
 }
 
-// CertManagerClientConnection contains client connection configurations
-// used when communicating with the kube-apiserver of any cluster.
-type CertManagerClientConnection struct {
+// PrimaryClientConnection contains client connection configurations
+// for the primary cluster (certificates and source resources).
+type PrimaryClientConnection struct {
+	componentbaseconfigv1alpha1.ClientConnectionConfiguration
+}
+
+// SecondaryClientConnection contains client connection configurations
+// for the cluster containing the provided issuers.
+type SecondaryClientConnection struct {
+	componentbaseconfigv1alpha1.ClientConnectionConfiguration
+}
+
+// DNSClientConnection contains client connection configurations
+// for the cluster used to manage DNS resources for DNS challenges.
+type DNSClientConnection struct {
 	componentbaseconfigv1alpha1.ClientConnectionConfiguration
 }
 
@@ -72,7 +94,7 @@ type IssuerControllerConfig struct {
 
 const (
 	// DefaultLockObjectNamespace is the default lock namespace for leader election.
-	DefaultLockObjectNamespace = "cert-manager"
+	DefaultLockObjectNamespace = "kube-system"
 	// DefaultLockObjectName is the default lock name for leader election.
 	DefaultLockObjectName = "gardener-cert-manager-leader-election"
 )

@@ -24,7 +24,7 @@ export GO111MODULE=off
 rm -rf "${SOURCE_PATH}/pkg/client/cert"
 PROJECT_ROOT=$(dirname $0)/..
 
-# Componentconfig for installer
+# Componentconfig for cert-manager
 
 certmanager_config_groups() {
   echo "Generating API groups for pkg/certman2/apis/config"

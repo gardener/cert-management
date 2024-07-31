@@ -23,8 +23,14 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_CertManagerConfiguration(in *CertManagerConfiguration) {
 	SetDefaults_CertManagerConfiguration(in)
-	if in.CertManagerClientConnection != nil {
-		SetDefaults_CertManagerClientConnection(in.CertManagerClientConnection)
+	if in.PrimaryClientConnection != nil {
+		SetDefaults_PrimaryClientConnection(in.PrimaryClientConnection)
+	}
+	if in.SecondaryClientConnection != nil {
+		SetDefaults_SecondaryClientConnection(in.SecondaryClientConnection)
+	}
+	if in.DNSClientConnection != nil {
+		SetDefaults_DNSClientConnection(in.DNSClientConnection)
 	}
 	SetDefaults_LeaderElectionConfiguration(&in.LeaderElection)
 	SetDefaults_ServerConfiguration(&in.Server)

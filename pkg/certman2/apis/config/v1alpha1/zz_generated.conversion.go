@@ -27,16 +27,6 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
-	if err := s.AddGeneratedConversionFunc((*CertManagerClientConnection)(nil), (*config.CertManagerClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1alpha1_CertManagerClientConnection_To_config_CertManagerClientConnection(a.(*CertManagerClientConnection), b.(*config.CertManagerClientConnection), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*config.CertManagerClientConnection)(nil), (*CertManagerClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_config_CertManagerClientConnection_To_v1alpha1_CertManagerClientConnection(a.(*config.CertManagerClientConnection), b.(*CertManagerClientConnection), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*CertManagerConfiguration)(nil), (*config.CertManagerConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_CertManagerConfiguration_To_config_CertManagerConfiguration(a.(*CertManagerConfiguration), b.(*config.CertManagerConfiguration), scope)
 	}); err != nil {
@@ -57,6 +47,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*DNSClientConnection)(nil), (*config.DNSClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(a.(*DNSClientConnection), b.(*config.DNSClientConnection), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*config.DNSClientConnection)(nil), (*DNSClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(a.(*config.DNSClientConnection), b.(*DNSClientConnection), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*IssuerControllerConfig)(nil), (*config.IssuerControllerConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfig(a.(*IssuerControllerConfig), b.(*config.IssuerControllerConfig), scope)
 	}); err != nil {
@@ -64,6 +64,26 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*config.IssuerControllerConfig)(nil), (*IssuerControllerConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig(a.(*config.IssuerControllerConfig), b.(*IssuerControllerConfig), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*PrimaryClientConnection)(nil), (*config.PrimaryClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_PrimaryClientConnection_To_config_PrimaryClientConnection(a.(*PrimaryClientConnection), b.(*config.PrimaryClientConnection), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*config.PrimaryClientConnection)(nil), (*PrimaryClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_config_PrimaryClientConnection_To_v1alpha1_PrimaryClientConnection(a.(*config.PrimaryClientConnection), b.(*PrimaryClientConnection), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*SecondaryClientConnection)(nil), (*config.SecondaryClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha1_SecondaryClientConnection_To_config_SecondaryClientConnection(a.(*SecondaryClientConnection), b.(*config.SecondaryClientConnection), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*config.SecondaryClientConnection)(nil), (*SecondaryClientConnection)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_config_SecondaryClientConnection_To_v1alpha1_SecondaryClientConnection(a.(*config.SecondaryClientConnection), b.(*SecondaryClientConnection), scope)
 	}); err != nil {
 		return err
 	}
@@ -90,39 +110,33 @@ func RegisterConversions(s *runtime.Scheme) error {
 	return nil
 }
 
-func autoConvert_v1alpha1_CertManagerClientConnection_To_config_CertManagerClientConnection(in *CertManagerClientConnection, out *config.CertManagerClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1alpha1_CertManagerClientConnection_To_config_CertManagerClientConnection is an autogenerated conversion function.
-func Convert_v1alpha1_CertManagerClientConnection_To_config_CertManagerClientConnection(in *CertManagerClientConnection, out *config.CertManagerClientConnection, s conversion.Scope) error {
-	return autoConvert_v1alpha1_CertManagerClientConnection_To_config_CertManagerClientConnection(in, out, s)
-}
-
-func autoConvert_config_CertManagerClientConnection_To_v1alpha1_CertManagerClientConnection(in *config.CertManagerClientConnection, out *CertManagerClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_config_ClientConnectionConfiguration_To_v1alpha1_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_config_CertManagerClientConnection_To_v1alpha1_CertManagerClientConnection is an autogenerated conversion function.
-func Convert_config_CertManagerClientConnection_To_v1alpha1_CertManagerClientConnection(in *config.CertManagerClientConnection, out *CertManagerClientConnection, s conversion.Scope) error {
-	return autoConvert_config_CertManagerClientConnection_To_v1alpha1_CertManagerClientConnection(in, out, s)
-}
-
 func autoConvert_v1alpha1_CertManagerConfiguration_To_config_CertManagerConfiguration(in *CertManagerConfiguration, out *config.CertManagerConfiguration, s conversion.Scope) error {
-	if in.CertManagerClientConnection != nil {
-		in, out := &in.CertManagerClientConnection, &out.CertManagerClientConnection
-		*out = new(config.CertManagerClientConnection)
-		if err := Convert_v1alpha1_CertManagerClientConnection_To_config_CertManagerClientConnection(*in, *out, s); err != nil {
+	if in.PrimaryClientConnection != nil {
+		in, out := &in.PrimaryClientConnection, &out.PrimaryClientConnection
+		*out = new(config.PrimaryClientConnection)
+		if err := Convert_v1alpha1_PrimaryClientConnection_To_config_PrimaryClientConnection(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
-		out.CertManagerClientConnection = nil
+		out.PrimaryClientConnection = nil
+	}
+	if in.SecondaryClientConnection != nil {
+		in, out := &in.SecondaryClientConnection, &out.SecondaryClientConnection
+		*out = new(config.SecondaryClientConnection)
+		if err := Convert_v1alpha1_SecondaryClientConnection_To_config_SecondaryClientConnection(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SecondaryClientConnection = nil
+	}
+	if in.DNSClientConnection != nil {
+		in, out := &in.DNSClientConnection, &out.DNSClientConnection
+		*out = new(config.DNSClientConnection)
+		if err := Convert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DNSClientConnection = nil
 	}
 	if err := configv1alpha1.Convert_v1alpha1_LeaderElectionConfiguration_To_config_LeaderElectionConfiguration(&in.LeaderElection, &out.LeaderElection, s); err != nil {
 		return err
@@ -153,14 +167,32 @@ func Convert_v1alpha1_CertManagerConfiguration_To_config_CertManagerConfiguratio
 }
 
 func autoConvert_config_CertManagerConfiguration_To_v1alpha1_CertManagerConfiguration(in *config.CertManagerConfiguration, out *CertManagerConfiguration, s conversion.Scope) error {
-	if in.CertManagerClientConnection != nil {
-		in, out := &in.CertManagerClientConnection, &out.CertManagerClientConnection
-		*out = new(CertManagerClientConnection)
-		if err := Convert_config_CertManagerClientConnection_To_v1alpha1_CertManagerClientConnection(*in, *out, s); err != nil {
+	if in.PrimaryClientConnection != nil {
+		in, out := &in.PrimaryClientConnection, &out.PrimaryClientConnection
+		*out = new(PrimaryClientConnection)
+		if err := Convert_config_PrimaryClientConnection_To_v1alpha1_PrimaryClientConnection(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
-		out.CertManagerClientConnection = nil
+		out.PrimaryClientConnection = nil
+	}
+	if in.SecondaryClientConnection != nil {
+		in, out := &in.SecondaryClientConnection, &out.SecondaryClientConnection
+		*out = new(SecondaryClientConnection)
+		if err := Convert_config_SecondaryClientConnection_To_v1alpha1_SecondaryClientConnection(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.SecondaryClientConnection = nil
+	}
+	if in.DNSClientConnection != nil {
+		in, out := &in.DNSClientConnection, &out.DNSClientConnection
+		*out = new(DNSClientConnection)
+		if err := Convert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.DNSClientConnection = nil
 	}
 	if err := configv1alpha1.Convert_config_LeaderElectionConfiguration_To_v1alpha1_LeaderElectionConfiguration(&in.LeaderElection, &out.LeaderElection, s); err != nil {
 		return err
@@ -214,6 +246,30 @@ func Convert_config_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(
 	return autoConvert_config_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in, out, s)
 }
 
+func autoConvert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(in *DNSClientConnection, out *config.DNSClientConnection, s conversion.Scope) error {
+	if err := configv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection is an autogenerated conversion function.
+func Convert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(in *DNSClientConnection, out *config.DNSClientConnection, s conversion.Scope) error {
+	return autoConvert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(in, out, s)
+}
+
+func autoConvert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(in *config.DNSClientConnection, out *DNSClientConnection, s conversion.Scope) error {
+	if err := configv1alpha1.Convert_config_ClientConnectionConfiguration_To_v1alpha1_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection is an autogenerated conversion function.
+func Convert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(in *config.DNSClientConnection, out *DNSClientConnection, s conversion.Scope) error {
+	return autoConvert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(in, out, s)
+}
+
 func autoConvert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfig(in *IssuerControllerConfig, out *config.IssuerControllerConfig, s conversion.Scope) error {
 	out.ConcurrentSyncs = (*int)(unsafe.Pointer(in.ConcurrentSyncs))
 	out.SyncPeriod = (*v1.Duration)(unsafe.Pointer(in.SyncPeriod))
@@ -234,6 +290,54 @@ func autoConvert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfi
 // Convert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig is an autogenerated conversion function.
 func Convert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig(in *config.IssuerControllerConfig, out *IssuerControllerConfig, s conversion.Scope) error {
 	return autoConvert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig(in, out, s)
+}
+
+func autoConvert_v1alpha1_PrimaryClientConnection_To_config_PrimaryClientConnection(in *PrimaryClientConnection, out *config.PrimaryClientConnection, s conversion.Scope) error {
+	if err := configv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha1_PrimaryClientConnection_To_config_PrimaryClientConnection is an autogenerated conversion function.
+func Convert_v1alpha1_PrimaryClientConnection_To_config_PrimaryClientConnection(in *PrimaryClientConnection, out *config.PrimaryClientConnection, s conversion.Scope) error {
+	return autoConvert_v1alpha1_PrimaryClientConnection_To_config_PrimaryClientConnection(in, out, s)
+}
+
+func autoConvert_config_PrimaryClientConnection_To_v1alpha1_PrimaryClientConnection(in *config.PrimaryClientConnection, out *PrimaryClientConnection, s conversion.Scope) error {
+	if err := configv1alpha1.Convert_config_ClientConnectionConfiguration_To_v1alpha1_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_config_PrimaryClientConnection_To_v1alpha1_PrimaryClientConnection is an autogenerated conversion function.
+func Convert_config_PrimaryClientConnection_To_v1alpha1_PrimaryClientConnection(in *config.PrimaryClientConnection, out *PrimaryClientConnection, s conversion.Scope) error {
+	return autoConvert_config_PrimaryClientConnection_To_v1alpha1_PrimaryClientConnection(in, out, s)
+}
+
+func autoConvert_v1alpha1_SecondaryClientConnection_To_config_SecondaryClientConnection(in *SecondaryClientConnection, out *config.SecondaryClientConnection, s conversion.Scope) error {
+	if err := configv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha1_SecondaryClientConnection_To_config_SecondaryClientConnection is an autogenerated conversion function.
+func Convert_v1alpha1_SecondaryClientConnection_To_config_SecondaryClientConnection(in *SecondaryClientConnection, out *config.SecondaryClientConnection, s conversion.Scope) error {
+	return autoConvert_v1alpha1_SecondaryClientConnection_To_config_SecondaryClientConnection(in, out, s)
+}
+
+func autoConvert_config_SecondaryClientConnection_To_v1alpha1_SecondaryClientConnection(in *config.SecondaryClientConnection, out *SecondaryClientConnection, s conversion.Scope) error {
+	if err := configv1alpha1.Convert_config_ClientConnectionConfiguration_To_v1alpha1_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_config_SecondaryClientConnection_To_v1alpha1_SecondaryClientConnection is an autogenerated conversion function.
+func Convert_config_SecondaryClientConnection_To_v1alpha1_SecondaryClientConnection(in *config.SecondaryClientConnection, out *SecondaryClientConnection, s conversion.Scope) error {
+	return autoConvert_config_SecondaryClientConnection_To_v1alpha1_SecondaryClientConnection(in, out, s)
 }
 
 func autoConvert_v1alpha1_Server_To_config_Server(in *Server, out *config.Server, s conversion.Scope) error {

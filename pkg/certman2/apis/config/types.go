@@ -10,11 +10,18 @@ import (
 // CertManagerConfiguration defines the configuration for the Gardener cert-manager.
 type CertManagerConfiguration struct {
 	metav1.TypeMeta
-	// CertManagerClientConnection specifies the kubeconfig file and the client connection settings for the proxy server to
-	// use when communicating with the kube-apiserver of any cluster.
-	CertManagerClientConnection *CertManagerClientConnection
-	// LeaderElection defines the configuration of leader election client.
-	LeaderElection componentbaseconfig.LeaderElectionConfiguration
+	// PrimaryClientConnection specifies the kubeconfig file and the client connection settings for primary
+	// cluster containing the certificate and source resources the cert-manager should work on.
+	PrimaryClientConnection *PrimaryClientConnection
+	// SecondaryClientConnection contains client connection configurations
+	// for the cluster containing the provided issuers.
+	// If not set, the primary cluster is used.
+	SecondaryClientConnection *SecondaryClientConnection
+	// DNSClientConnection contains client connection configurations
+	// for the cluster used to manage DNS resources for DNS challenges.
+	// If not set, the secondary cluster is used.
+	DNSClientConnection *DNSClientConnection
+	LeaderElection      componentbaseconfig.LeaderElectionConfiguration
 	// LogLevel is the level/severity for the logs. Must be one of [info,debug,error].
 	LogLevel string
 	// LogFormat is the output format for the logs. Must be one of [text,json].
@@ -27,9 +34,21 @@ type CertManagerConfiguration struct {
 	Controllers ControllerConfiguration
 }
 
-// CertManagerClientConnection contains client connection configurations
-// used when communicating with the kube-apiserver of any cluster.
-type CertManagerClientConnection struct {
+// PrimaryClientConnection contains client connection configurations
+// for the primary cluster (certificates and source resources).
+type PrimaryClientConnection struct {
+	componentbaseconfig.ClientConnectionConfiguration
+}
+
+// SecondaryClientConnection contains client connection configurations
+// for the cluster containing the provided issuers.
+type SecondaryClientConnection struct {
+	componentbaseconfig.ClientConnectionConfiguration
+}
+
+// DNSClientConnection contains client connection configurations
+// for the cluster used to manage DNS resources for DNS challenges.
+type DNSClientConnection struct {
 	componentbaseconfig.ClientConnectionConfiguration
 }
 

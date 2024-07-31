@@ -1,4 +1,4 @@
-package issuer
+package certificate
 
 import (
 	"context"
@@ -15,21 +15,20 @@ import (
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
 )
 
-// Reconciler is a reconciler for provided Issuer resources.
+// Reconciler is a reconciler for provided Certificate resources.
 type Reconciler struct {
-	Client          client.Client
-	Clock           clock.Clock
-	IssuerNamespace string
-	Recorder        record.EventRecorder
-	Config          config.CertManagerConfiguration
+	Client   client.Client
+	Clock    clock.Clock
+	Recorder record.EventRecorder
+	Config   config.CertManagerConfiguration
 }
 
-// Reconcile reconciles Issuer resources.
+// Reconcile reconciles Certificate resources.
 func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log := logf.FromContext(ctx).WithName(ControllerName)
 
-	issuer := &v1alpha1.Issuer{}
-	if err := r.Client.Get(ctx, req.NamespacedName, issuer); err != nil {
+	cert := &v1alpha1.Certificate{}
+	if err := r.Client.Get(ctx, req.NamespacedName, cert); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.V(1).Info("Object is gone, stop reconciling")
 			return reconcile.Result{}, nil
@@ -37,9 +36,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	if issuer.DeletionTimestamp != nil {
-		return r.delete(ctx, log, issuer)
+	if cert.DeletionTimestamp != nil {
+		return r.delete(ctx, log, cert)
 	} else {
-		return r.reconcile(ctx, log, issuer)
+		return r.reconcile(ctx, log, cert)
 	}
 }

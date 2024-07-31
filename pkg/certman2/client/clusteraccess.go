@@ -3,13 +3,14 @@ package client
 import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ClusterAccess contains clients for various connected Kubernetes clusters.
 type ClusterAccess struct {
-	mainClientSet   kubernetes.Interface
-	issuerClientSet kubernetes.Interface
-	dnsClientSet    kubernetes.Interface
+	mainClient   client.Client
+	issuerClient client.Client
+	dnsClient    client.Client
 }
 
 // NewClusterAccess returns a new instance of ClusterAccess for all clusters.
@@ -27,23 +28,23 @@ func NewClusterAccess(log logr.Logger, main, issuer, dns kubernetes.Interface) *
 	}
 
 	return &ClusterAccess{
-		mainClientSet:   main,
-		issuerClientSet: issuer,
-		dnsClientSet:    dns,
+		mainClient:   main.Client(),
+		issuerClient: issuer.Client(),
+		dnsClient:    dns.Client(),
 	}
 }
 
-// MainClientSet returns client set for the main cluster containing certificate and source resources.
-func (a *ClusterAccess) MainClientSet() kubernetes.Interface {
-	return a.mainClientSet
+// MainClient returns client for the main cluster containing certificate and source resources.
+func (a *ClusterAccess) MainClient() client.Client {
+	return a.mainClient
 }
 
-// IssuerClientSet returns client set for the cluster containing provided issuers.
-func (a *ClusterAccess) IssuerClientSet() kubernetes.Interface {
-	return a.issuerClientSet
+// IssuerClient returns client for the cluster containing provided issuers.
+func (a *ClusterAccess) IssuerClient() client.Client {
+	return a.issuerClient
 }
 
-// DNSClientSet returns client set for the cluster used for DNSEntries or DNSRecords.
-func (a *ClusterAccess) DNSClientSet() kubernetes.Interface {
-	return a.dnsClientSet
+// DNSClient returns client for the cluster used for DNSEntries or DNSRecords.
+func (a *ClusterAccess) DNSClient() client.Client {
+	return a.dnsClient
 }

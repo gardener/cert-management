@@ -31,7 +31,7 @@ var _ = Describe("Defaults", func() {
 			Expect(obj.Server.HealthProbes.BindAddress).To(BeEmpty())
 			Expect(obj.Server.HealthProbes.Port).To(Equal(2751))
 			Expect(obj.Server.Metrics.BindAddress).To(BeEmpty())
-			Expect(obj.Server.Metrics.Port).To(Equal(2752))
+			Expect(obj.Server.Metrics.Port).To(Equal(2753))
 		})
 
 		It("should not overwrite custom settings", func() {
@@ -68,15 +68,35 @@ var _ = Describe("Defaults", func() {
 				// ContentType fields will be defaulted by client constructors / controller-runtime based on whether a
 				// given APIGroup supports protobuf or not. defaults must not touch these, otherwise the integelligent
 				// logic will be overwritten
-				Expect(obj.CertManagerClientConnection.ContentType).To(BeEmpty())
-				Expect(obj.CertManagerClientConnection.AcceptContentTypes).To(BeEmpty())
+				Expect(obj.PrimaryClientConnection.ContentType).To(BeEmpty())
+				Expect(obj.PrimaryClientConnection.AcceptContentTypes).To(BeEmpty())
 			})
 
-			It("should correctly default CertManagerClientConnection", func() {
+			It("should correctly default PrimaryClientConnection", func() {
 				SetObjectDefaults_CertManagerConfiguration(obj)
 
-				Expect(obj.CertManagerClientConnection).NotTo(BeNil())
-				Expect(obj.CertManagerClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
+				Expect(obj.PrimaryClientConnection).NotTo(BeNil())
+				Expect(obj.PrimaryClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
+					QPS:   100.0,
+					Burst: 130,
+				}))
+			})
+
+			It("should correctly default SecondaryClientConnection", func() {
+				SetObjectDefaults_CertManagerConfiguration(obj)
+
+				Expect(obj.SecondaryClientConnection).NotTo(BeNil())
+				Expect(obj.SecondaryClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
+					QPS:   100.0,
+					Burst: 130,
+				}))
+			})
+
+			It("should correctly default DNSClientConnection", func() {
+				SetObjectDefaults_CertManagerConfiguration(obj)
+
+				Expect(obj.DNSClientConnection).NotTo(BeNil())
+				Expect(obj.DNSClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
 					QPS:   100.0,
 					Burst: 130,
 				}))
