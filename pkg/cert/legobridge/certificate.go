@@ -165,6 +165,7 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
 		PrivateKey:                     privateKey,
+		NotAfter:                       time.Now().Add(input.Duration),
 	}
 	return client.Certificate.Obtain(request)
 }
@@ -281,6 +282,7 @@ func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certific
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
+		NotAfter:                       time.Now().Add(input.Duration),
 	})
 }
 
