@@ -7,10 +7,8 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	goruntime "runtime"
 	"strconv"
-	"syscall"
 	"time"
 
 	cmdutils "github.com/gardener/gardener/cmd/utils"
@@ -231,7 +229,7 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 }
 
 func (o *options) startManagers(
-	cmdCtx context.Context,
+	appCtx context.Context,
 	log logr.Logger,
 	metricsAddr string,
 	extraHandlers map[string]http.Handler,
@@ -239,15 +237,11 @@ func (o *options) startManagers(
 ) error {
 	log.Info("Starting primary and issuer manager")
 
-	// Create a context that is cancelled on SIGINT or SIGTERM
-	ctx, cancel := context.WithCancel(cmdCtx)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Set up signal handling for graceful shutdown
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
-	results := make(chan error, len(managers)+1)
+	routines := len(managers) + 1
+	results := make(chan error, routines)
 	mux := http.NewServeMux()
 	handler := promhttp.HandlerFor(metrics.Registry, promhttp.HandlerOpts{
 		ErrorHandling: promhttp.HTTPErrorOnError,
@@ -282,6 +276,7 @@ func (o *options) startManagers(
 			err = fmt.Errorf("unable to start metrics server: %w", err)
 			cancel()
 		}
+		<-idleConnsClosed
 		results <- err
 	}()
 
@@ -297,13 +292,13 @@ func (o *options) startManagers(
 		}(mgr)
 	}
 
-	// Wait for a signal
-	<-signals
+	<-appCtx.Done()
 	log.Info("Received shutdown signal")
 	cancel() // signal all managers to shut down
 
 	var errs []error
-	for err := range results {
+	for range routines {
+		err := <-results
 		errs = append(errs, err)
 	}
 	log.Info("All managers stopped")
