@@ -402,7 +402,10 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
 	}
-
+	duration, err := r.getDuration(cert)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
 	err = r.validateDomainsAndCsr(&cert.Spec, issuer.Spec.ACME.Domains, issuerKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
@@ -501,6 +504,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
 		PreferredChain:                 preferredChain,
 		KeyType:                        keyType,
+		Duration:                       duration,
 	}
 
 	err = r.obtainer.Obtain(input)
