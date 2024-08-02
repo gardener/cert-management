@@ -144,13 +144,17 @@ var _ = Describe("Defaults", func() {
 					Expect(obj.ConcurrentSyncs).To(PointTo(Equal(1)))
 					Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
 					Expect(obj.Namespace).To(Equal("default"))
+					Expect(obj.DefaultRequestsPerDayQuota).To(Equal(10000))
+					Expect(obj.DefaultIssuerName).To(Equal("default-issuer"))
 				})
 
 				It("should not overwrite existing values", func() {
 					obj := &IssuerControllerConfig{
-						ConcurrentSyncs: ptr.To(5),
-						SyncPeriod:      &metav1.Duration{Duration: time.Second},
-						Namespace:       "foo",
+						ConcurrentSyncs:            ptr.To(5),
+						SyncPeriod:                 &metav1.Duration{Duration: time.Second},
+						Namespace:                  "foo",
+						DefaultIssuerName:          "foo-issuer",
+						DefaultRequestsPerDayQuota: 10,
 					}
 
 					SetDefaults_IssuerControllerConfig(obj)
@@ -158,6 +162,8 @@ var _ = Describe("Defaults", func() {
 					Expect(obj.ConcurrentSyncs).To(PointTo(Equal(5)))
 					Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Second})))
 					Expect(obj.Namespace).To(Equal("foo"))
+					Expect(obj.DefaultRequestsPerDayQuota).To(Equal(10))
+					Expect(obj.DefaultIssuerName).To(Equal("foo-issuer"))
 				})
 			})
 		})

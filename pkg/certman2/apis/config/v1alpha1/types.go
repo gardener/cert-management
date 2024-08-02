@@ -92,6 +92,10 @@ type IssuerControllerConfig struct {
 	SyncPeriod *metav1.Duration `json:"syncPeriod,omitempty"`
 	// Namespace is the namespace on the secondary cluster containing the provided issuers.
 	Namespace string `json:"namespace"`
+	// DefaultIssuerName is the name of the provided default issuer
+	DefaultIssuerName string `json:"defaultIssuerName"`
+	// DefaultRequestsPerDayQuota defines the maximum requests per day for ACME issuers
+	DefaultRequestsPerDayQuota int `json:"defaultRequestsPerDayQuota"`
 }
 
 const (

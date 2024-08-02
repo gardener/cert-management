@@ -9,7 +9,7 @@ package core
 import (
 	"sync"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 )
 
 // NewIssuerDNSSelections creates an IssuerDNSSelections

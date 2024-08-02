@@ -274,6 +274,8 @@ func autoConvert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfi
 	out.ConcurrentSyncs = (*int)(unsafe.Pointer(in.ConcurrentSyncs))
 	out.SyncPeriod = (*v1.Duration)(unsafe.Pointer(in.SyncPeriod))
 	out.Namespace = in.Namespace
+	out.DefaultIssuerName = in.DefaultIssuerName
+	out.DefaultRequestsPerDayQuota = in.DefaultRequestsPerDayQuota
 	return nil
 }
 
@@ -286,6 +288,8 @@ func autoConvert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfi
 	out.ConcurrentSyncs = (*int)(unsafe.Pointer(in.ConcurrentSyncs))
 	out.SyncPeriod = (*v1.Duration)(unsafe.Pointer(in.SyncPeriod))
 	out.Namespace = in.Namespace
+	out.DefaultIssuerName = in.DefaultIssuerName
+	out.DefaultRequestsPerDayQuota = in.DefaultRequestsPerDayQuota
 	return nil
 }
 

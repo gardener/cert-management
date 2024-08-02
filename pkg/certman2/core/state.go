@@ -7,7 +7,7 @@
 package core
 
 import (
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
