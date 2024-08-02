@@ -106,4 +106,7 @@ func SetDefaults_IssuerControllerConfig(obj *IssuerControllerConfig) {
 	if obj.SyncPeriod == nil {
 		obj.SyncPeriod = &metav1.Duration{Duration: time.Hour}
 	}
+	if obj.Namespace == "" {
+		obj.Namespace = "default"
+	}
 }

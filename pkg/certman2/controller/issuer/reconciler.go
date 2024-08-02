@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
@@ -17,11 +18,12 @@ import (
 
 // Reconciler is a reconciler for provided Issuer resources.
 type Reconciler struct {
-	Client          client.Client
-	Clock           clock.Clock
-	IssuerNamespace string
-	Recorder        record.EventRecorder
-	Config          config.CertManagerConfiguration
+	Client   client.Client
+	Clock    clock.Clock
+	Recorder record.EventRecorder
+	Config   config.CertManagerConfiguration
+
+	handlers []IssuerHandler
 }
 
 // Reconcile reconciles Issuer resources.
@@ -37,9 +39,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	if issuer.DeletionTimestamp != nil {
-		return r.delete(ctx, log, issuer)
-	} else {
-		return r.reconcile(ctx, log, issuer)
+	for _, h := range r.handlers {
+		if h.CanReconcile(issuer) {
+			if issuer.DeletionTimestamp != nil {
+				return h.Delete(ctx, log, issuer)
+			} else {
+				return h.Reconcile(ctx, log, issuer)
+			}
+		}
 	}
+	return reconcile.Result{}, fmt.Errorf("unsupported issuer spec")
+}
+
+// IssuerHandler can reconcile issuers.
+type IssuerHandler interface {
+	Type() string
+	CanReconcile(issuer *v1alpha1.Issuer) bool
+	Reconcile(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error)
+	Delete(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error)
 }

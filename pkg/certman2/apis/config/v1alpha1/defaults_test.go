@@ -113,7 +113,7 @@ var _ = Describe("Defaults", func() {
 				Expect(obj.LeaderElection.RenewDeadline).To(Equal(metav1.Duration{Duration: 10 * time.Second}))
 				Expect(obj.LeaderElection.RetryPeriod).To(Equal(metav1.Duration{Duration: 2 * time.Second}))
 				Expect(obj.LeaderElection.ResourceLock).To(Equal("leases"))
-				Expect(obj.LeaderElection.ResourceNamespace).To(Equal("cert-manager"))
+				Expect(obj.LeaderElection.ResourceNamespace).To(Equal("kube-system"))
 				Expect(obj.LeaderElection.ResourceName).To(Equal("gardener-cert-manager-leader-election"))
 			})
 
@@ -143,18 +143,21 @@ var _ = Describe("Defaults", func() {
 
 					Expect(obj.ConcurrentSyncs).To(PointTo(Equal(1)))
 					Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Hour})))
+					Expect(obj.Namespace).To(Equal("default"))
 				})
 
 				It("should not overwrite existing values", func() {
 					obj := &IssuerControllerConfig{
 						ConcurrentSyncs: ptr.To(5),
 						SyncPeriod:      &metav1.Duration{Duration: time.Second},
+						Namespace:       "foo",
 					}
 
 					SetDefaults_IssuerControllerConfig(obj)
 
 					Expect(obj.ConcurrentSyncs).To(PointTo(Equal(5)))
 					Expect(obj.SyncPeriod).To(PointTo(Equal(metav1.Duration{Duration: time.Second})))
+					Expect(obj.Namespace).To(Equal("foo"))
 				})
 			})
 		})
