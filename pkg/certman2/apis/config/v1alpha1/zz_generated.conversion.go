@@ -273,6 +273,7 @@ func Convert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(in *conf
 func autoConvert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfig(in *IssuerControllerConfig, out *config.IssuerControllerConfig, s conversion.Scope) error {
 	out.ConcurrentSyncs = (*int)(unsafe.Pointer(in.ConcurrentSyncs))
 	out.SyncPeriod = (*v1.Duration)(unsafe.Pointer(in.SyncPeriod))
+	out.Namespace = in.Namespace
 	return nil
 }
 
@@ -284,6 +285,7 @@ func Convert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfig(in
 func autoConvert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig(in *config.IssuerControllerConfig, out *IssuerControllerConfig, s conversion.Scope) error {
 	out.ConcurrentSyncs = (*int)(unsafe.Pointer(in.ConcurrentSyncs))
 	out.SyncPeriod = (*v1.Duration)(unsafe.Pointer(in.SyncPeriod))
+	out.Namespace = in.Namespace
 	return nil
 }
 

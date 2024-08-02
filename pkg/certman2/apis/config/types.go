@@ -82,4 +82,6 @@ type IssuerControllerConfig struct {
 	ConcurrentSyncs *int
 	// SyncPeriod is the duration how often the controller performs its reconciliation.
 	SyncPeriod *metav1.Duration
+	// Namespace is the namespace on the secondary cluster containing the provided issuers.
+	Namespace string
 }
