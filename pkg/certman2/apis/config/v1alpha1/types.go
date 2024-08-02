@@ -90,6 +90,8 @@ type IssuerControllerConfig struct {
 	// SyncPeriod is the duration how often the controller performs its reconciliation.
 	// +optional
 	SyncPeriod *metav1.Duration `json:"syncPeriod,omitempty"`
+	// Namespace is the namespace on the secondary cluster containing the provided issuers.
+	Namespace string `json:"namespace"`
 }
 
 const (
