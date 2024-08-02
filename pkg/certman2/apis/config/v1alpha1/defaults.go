@@ -109,4 +109,10 @@ func SetDefaults_IssuerControllerConfig(obj *IssuerControllerConfig) {
 	if obj.Namespace == "" {
 		obj.Namespace = "default"
 	}
+	if obj.DefaultIssuerName == "" {
+		obj.DefaultIssuerName = "default-issuer"
+	}
+	if obj.DefaultRequestsPerDayQuota == 0 {
+		obj.DefaultRequestsPerDayQuota = 10000
+	}
 }
