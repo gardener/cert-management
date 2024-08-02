@@ -130,6 +130,7 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 
 	log.Info("Getting rest config")
 	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
+		log.Info("Using kubeconfig from environment variable KUBECONFIG", "KUBECONFIG", kubeconfig)
 		cfg.PrimaryClientConnection.Kubeconfig = kubeconfig
 	}
 

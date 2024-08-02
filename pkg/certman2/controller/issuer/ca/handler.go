@@ -18,8 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
@@ -59,32 +59,26 @@ func (r *caIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issuer
 
 	var secret *corev1.Secret
 	if ca.PrivateKeySecretRef != nil {
-		secret := &corev1.Secret{}
+		secret = &corev1.Secret{}
 		if err := r.client.Get(ctx, core.ObjectKeyFromSecretReference(ca.PrivateKeySecretRef), secret); err != nil {
 			return r.failedCARetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
 		}
 		hash := r.support.CalcSecretHash(secret)
 		r.support.RememberIssuerSecret(issuerKey, ca.PrivateKeySecretRef, hash)
 	}
-	if secret != nil && issuer.Status.CA != nil && issuer.Status.CA.Raw != nil {
-		_, err := validateSecretCA(secret)
+	if secret != nil {
+		caInfoRaw, err := validateSecretCA(secret)
 		if err != nil {
 			return r.failedCA(ctx, issuer, v1alpha1.StateError, err)
 		}
-		return r.succeededAndTriggerCertificates(ctx, issuer, issuer.Status.CA.Raw)
-	} else if secret != nil {
-		CAInfoRaw, err := validateSecretCA(secret)
-		if err != nil {
-			return r.failedCA(ctx, issuer, v1alpha1.StateError, err)
-		}
-		return r.succeededAndTriggerCertificates(ctx, issuer, CAInfoRaw)
+		return r.succeededAndTriggerCertificates(ctx, issuer, caInfoRaw)
 	} else {
 		return r.failedCA(ctx, issuer, v1alpha1.StateError, fmt.Errorf("`SecretRef` not provided"))
 	}
 }
 
 func (r *caIssuerHandler) Delete(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
-	issuerKey := core.NewIssuerKey(client.ObjectKeyFromObject(issuer), r.secondary)
+	issuerKey := r.issuerKey(issuer)
 	r.support.RemoveIssuer(issuerKey)
 	log.Info("deleted")
 	return reconcile.Result{}, nil
@@ -146,64 +140,6 @@ func (r *caIssuerHandler) updateStatusSucceeded(ctx context.Context, issuer *v1a
 	issuer.Status.CA = &runtime.RawExtension{Raw: caInfoRaw}
 	return r.client.Status().Patch(ctx, issuer, patch)
 }
-
-/*
-func (s *Support) prepareUpdateStatus(obj resources.Object, state string, itype *string, msg *string) (*resources.ModificationState, *api.IssuerStatus) {
-	issuer := obj.Data().(*api.Issuer)
-	status := &issuer.Status
-
-	mod := resources.NewModificationState(obj)
-	mod.AssureStringPtrPtr(&status.Message, msg)
-	mod.AssureStringPtrPtr(&status.Type, itype)
-	mod.AssureStringValue(&status.State, state)
-	mod.AssureInt64Value(&status.ObservedGeneration, obj.GetGeneration())
-	mod.AssureIntValue(&status.RequestsPerDayQuota, s.RememberIssuerQuotas(obj.ClusterKey(), issuer.Spec.RequestsPerDayQuota))
-
-	return mod, status
-}
-
-
-func (s *Support) updateStatus(mod *resources.ModificationState) {
-	err := mod.UpdateStatus()
-	if err != nil {
-		logger.Warnf("updating status failed with: %s", err)
-	}
-}
-
-// Failed handles failed.
-func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state string, itype *string, err error, retry bool) reconcile.Status {
-	msg := err.Error()
-
-	mod, _ := s.prepareUpdateStatus(obj, state, itype, &msg)
-	s.updateStatus(mod)
-
-	if retry {
-		return reconcile.Delay(logger, err)
-	}
-	return reconcile.Failed(logger, err)
-}
-
-// SucceededAndTriggerCertificates handles succeeded and trigger certificates.
-func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj resources.Object, itype *string, regRaw []byte) reconcile.Status {
-	s.RememberIssuerQuotas(obj.ClusterKey(), obj.Data().(*api.Issuer).Spec.RequestsPerDayQuota)
-
-	s.reportAllCertificateMetrics()
-	s.triggerCertificates(logger, s.ToIssuerKey(obj.ClusterKey()))
-
-	mod, status := s.prepareUpdateStatus(obj, api.StateReady, itype, nil)
-	if itype != nil {
-		switch *itype {
-		case ACMEType:
-			updateTypeStatus(mod, &status.ACME, regRaw)
-		case CAType:
-			updateTypeStatus(mod, &status.CA, regRaw)
-		}
-	}
-	s.updateStatus(mod)
-
-	return reconcile.Succeeded(logger)
-}
-*/
 
 func validateSecretCA(secret *corev1.Secret) ([]byte, error) {
 	// Validate correct type

@@ -3,8 +3,8 @@ package issuer
 import (
 	"context"
 	"fmt"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 
-	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
@@ -23,7 +23,7 @@ type Reconciler struct {
 	Recorder record.EventRecorder
 	Config   config.CertManagerConfiguration
 
-	handlers []IssuerHandler
+	handlers []core.IssuerHandler
 }
 
 // Reconcile reconciles Issuer resources.
@@ -49,12 +49,4 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		}
 	}
 	return reconcile.Result{}, fmt.Errorf("unsupported issuer spec")
-}
-
-// IssuerHandler can reconcile issuers.
-type IssuerHandler interface {
-	Type() string
-	CanReconcile(issuer *v1alpha1.Issuer) bool
-	Reconcile(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error)
-	Delete(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error)
 }

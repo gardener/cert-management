@@ -17,7 +17,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 )
 
 func TestRobustRemember(t *testing.T) {
@@ -47,12 +47,12 @@ func TestRobustRemember(t *testing.T) {
 		changed := false
 		switch entry.command {
 		case "add":
-			issuer := &api.Issuer{
+			issuer := &v1alpha1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      entry.issuerName,
 					Namespace: "default",
 				},
-				Spec: api.IssuerSpec{ACME: &api.ACMESpec{}},
+				Spec: v1alpha1.IssuerSpec{ACME: &v1alpha1.ACMESpec{}},
 			}
 			if entry.secretName != "" {
 				issuer.Spec.ACME.PrivateKeySecretRef = &v1.SecretReference{
