@@ -38,107 +38,103 @@ type caIssuerHandler struct {
 	secondary bool
 }
 
-func (r *caIssuerHandler) Type() string {
+func (h *caIssuerHandler) Type() string {
 	return core.CAType
 }
 
-func (r *caIssuerHandler) CanReconcile(issuer *v1alpha1.Issuer) bool {
+func (h *caIssuerHandler) CanReconcile(issuer *v1alpha1.Issuer) bool {
 	return issuer != nil && issuer.Spec.CA != nil
 }
 
-func (r *caIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
+func (h *caIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
 	log.Info("reconciling")
 
 	ca := issuer.Spec.CA
-	if ca == nil {
-		return r.failedCA(ctx, issuer, v1alpha1.StateError, fmt.Errorf("missing CA spec"))
-	}
-
-	issuerKey := r.issuerKey(issuer)
-	r.support.RememberIssuerSecret(issuerKey, ca.PrivateKeySecretRef, "")
+	issuerKey := h.issuerKey(issuer)
+	h.support.RememberIssuerSecret(issuerKey, ca.PrivateKeySecretRef, "")
 
 	var secret *corev1.Secret
 	if ca.PrivateKeySecretRef != nil {
 		secret = &corev1.Secret{}
-		if err := r.client.Get(ctx, core.ObjectKeyFromSecretReference(ca.PrivateKeySecretRef), secret); err != nil {
-			return r.failedCARetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
+		if err := h.client.Get(ctx, core.ObjectKeyFromSecretReference(ca.PrivateKeySecretRef), secret); err != nil {
+			return h.failedCARetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
 		}
-		hash := r.support.CalcSecretHash(secret)
-		r.support.RememberIssuerSecret(issuerKey, ca.PrivateKeySecretRef, hash)
+		hash := h.support.CalcSecretHash(secret)
+		h.support.RememberIssuerSecret(issuerKey, ca.PrivateKeySecretRef, hash)
 	}
 	if secret != nil {
 		caInfoRaw, err := validateSecretCA(secret)
 		if err != nil {
-			return r.failedCA(ctx, issuer, v1alpha1.StateError, err)
+			return h.failedCA(ctx, issuer, v1alpha1.StateError, err)
 		}
-		return r.succeededAndTriggerCertificates(ctx, issuer, caInfoRaw)
+		return h.succeededAndTriggerCertificates(ctx, issuer, caInfoRaw)
 	} else {
-		return r.failedCA(ctx, issuer, v1alpha1.StateError, fmt.Errorf("`SecretRef` not provided"))
+		return h.failedCA(ctx, issuer, v1alpha1.StateError, fmt.Errorf("`SecretRef` not provided"))
 	}
 }
 
-func (r *caIssuerHandler) Delete(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
-	issuerKey := r.issuerKey(issuer)
-	r.support.RemoveIssuer(issuerKey)
+func (h *caIssuerHandler) Delete(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
+	issuerKey := h.issuerKey(issuer)
+	h.support.RemoveIssuer(issuerKey)
 	log.Info("deleted")
 	return reconcile.Result{}, nil
 }
 
-func (r *caIssuerHandler) failedCA(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
-	if err2 := r.updateStatusFailed(ctx, issuer, state, err); err2 != nil {
+func (h *caIssuerHandler) failedCA(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
+	if err2 := h.updateStatusFailed(ctx, issuer, state, err); err2 != nil {
 		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
 }
 
-func (r *caIssuerHandler) failedCARetry(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
-	if err2 := r.updateStatusFailed(ctx, issuer, state, err); err != nil {
+func (h *caIssuerHandler) failedCARetry(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
+	if err2 := h.updateStatusFailed(ctx, issuer, state, err); err != nil {
 		return reconcile.Result{}, errors.Join(err, err2)
 	}
 
 	return reconcile.Result{}, err
 }
 
-func (r *caIssuerHandler) issuerKey(issuer *v1alpha1.Issuer) core.IssuerKey {
-	return core.NewIssuerKey(client.ObjectKeyFromObject(issuer), r.secondary)
+func (h *caIssuerHandler) issuerKey(issuer *v1alpha1.Issuer) core.IssuerKey {
+	return core.NewIssuerKey(client.ObjectKeyFromObject(issuer), h.secondary)
 }
 
-func (r *caIssuerHandler) succeededAndTriggerCertificates(ctx context.Context, issuer *v1alpha1.Issuer, caInfoRaw []byte) (reconcile.Result, error) {
+func (h *caIssuerHandler) succeededAndTriggerCertificates(ctx context.Context, issuer *v1alpha1.Issuer, caInfoRaw []byte) (reconcile.Result, error) {
 	// TODO
 	/*
 		s.reportAllCertificateMetrics()
 		s.triggerCertificates(logger, s.ToIssuerKey(obj.ClusterKey()))
 	*/
-	if err := r.updateStatusSucceeded(ctx, issuer, caInfoRaw); err != nil {
+	if err := h.updateStatusSucceeded(ctx, issuer, caInfoRaw); err != nil {
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
 }
 
-func (r *caIssuerHandler) updateStatusFailed(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) error {
+func (h *caIssuerHandler) updateStatusFailed(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) error {
 	patch := client.MergeFrom(issuer.DeepCopy())
 	issuer.Status.Message = ptr.To(err.Error())
 	issuer.Status.Type = ptr.To(core.CAType)
 	issuer.Status.State = state
 	issuer.Status.ObservedGeneration = issuer.Generation
-	issuer.Status.RequestsPerDayQuota = r.support.RememberIssuerQuotas(r.issuerKey(issuer), issuer.Spec.RequestsPerDayQuota)
+	issuer.Status.RequestsPerDayQuota = h.support.RememberIssuerQuotas(h.issuerKey(issuer), issuer.Spec.RequestsPerDayQuota)
 	issuer.Status.ACME = nil
 	issuer.Status.CA = nil
 
-	return r.client.Status().Patch(ctx, issuer, patch)
+	return h.client.Status().Patch(ctx, issuer, patch)
 }
 
-func (r *caIssuerHandler) updateStatusSucceeded(ctx context.Context, issuer *v1alpha1.Issuer, caInfoRaw []byte) error {
+func (h *caIssuerHandler) updateStatusSucceeded(ctx context.Context, issuer *v1alpha1.Issuer, caInfoRaw []byte) error {
 	patch := client.MergeFrom(issuer.DeepCopy())
 	issuer.Status.Message = nil
 	issuer.Status.Type = ptr.To(core.CAType)
 	issuer.Status.State = v1alpha1.StateReady
 	issuer.Status.ObservedGeneration = issuer.Generation
-	issuer.Status.RequestsPerDayQuota = r.support.RememberIssuerQuotas(r.issuerKey(issuer), issuer.Spec.RequestsPerDayQuota)
+	issuer.Status.RequestsPerDayQuota = h.support.RememberIssuerQuotas(h.issuerKey(issuer), issuer.Spec.RequestsPerDayQuota)
 	issuer.Status.ACME = nil
 	issuer.Status.CA = &runtime.RawExtension{Raw: caInfoRaw}
-	return r.client.Status().Patch(ctx, issuer, patch)
+	return h.client.Status().Patch(ctx, issuer, patch)
 }
 
 func validateSecretCA(secret *corev1.Secret) ([]byte, error) {

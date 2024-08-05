@@ -47,13 +47,16 @@ type IssuerHandler interface {
 }
 
 // NewHandlerSupport creates the shared Support object
-func NewHandlerSupport(defaultIssuer IssuerKey, issuerNamespace string, defaultRequestsPerDayQuota int) (*Support, error) {
+func NewHandlerSupport(defaultIssuerName string, issuerNamespace string, defaultRequestsPerDayQuota int) (*Support, error) {
 	state := newState()
 	s := &Support{
 		state:                      state,
 		defaultRequestsPerDayQuota: defaultRequestsPerDayQuota,
 		issuerNamespace:            issuerNamespace,
-		defaultIssuer:              defaultIssuer,
+		defaultIssuer: NewIssuerKey(client.ObjectKey{
+			Namespace: issuerNamespace,
+			Name:      defaultIssuerName,
+		}, true),
 	}
 	return s, nil
 }

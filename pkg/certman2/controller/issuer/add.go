@@ -25,10 +25,10 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		r.Recorder = mgr.GetEventRecorderFor(ControllerName + "-controller")
 	}
 
-	support, err := core.NewHandlerSupport(core.NewIssuerKey(client.ObjectKey{
-		Namespace: r.Config.Controllers.Issuer.Namespace,
-		Name:      r.Config.Controllers.Issuer.DefaultIssuerName,
-	}, true), r.Config.Controllers.Issuer.Namespace, r.Config.Controllers.Issuer.DefaultRequestsPerDayQuota)
+	support, err := core.NewHandlerSupport(
+		r.Config.Controllers.Issuer.DefaultIssuerName,
+		r.Config.Controllers.Issuer.Namespace,
+		r.Config.Controllers.Issuer.DefaultRequestsPerDayQuota)
 	caIssuerHandler, err := ca.NewCAIssuerHandler(r.Client, support, true)
 	if err != nil {
 		return err
