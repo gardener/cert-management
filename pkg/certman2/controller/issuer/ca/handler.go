@@ -84,7 +84,6 @@ func (h *caIssuerHandler) failedCA(ctx context.Context, issuer *v1alpha1.Issuer,
 	if err2 := h.updateStatusFailed(ctx, issuer, state, err); err2 != nil {
 		return reconcile.Result{}, err
 	}
-
 	return reconcile.Result{}, nil
 }
 
@@ -92,7 +91,6 @@ func (h *caIssuerHandler) failedCARetry(ctx context.Context, issuer *v1alpha1.Is
 	if err2 := h.updateStatusFailed(ctx, issuer, state, err); err != nil {
 		return reconcile.Result{}, errors.Join(err, err2)
 	}
-
 	return reconcile.Result{}, err
 }
 

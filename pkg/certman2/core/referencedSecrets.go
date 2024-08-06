@@ -42,7 +42,7 @@ func (rs *ReferencedSecrets) RememberIssuerSecret(issuerKey IssuerKey, secretRef
 	if secretRef == nil {
 		return rs.removeIssuer(issuerKey)
 	}
-	secretKey := NewSecretKey(client.ObjectKey{Namespace: secretRef.Namespace, Name: secretRef.Name}, issuerKey.IsFromSecondaryCluster())
+	secretKey := NewSecretKey(client.ObjectKey{Namespace: secretRef.Namespace, Name: secretRef.Name}, issuerKey.Secondary())
 	return rs.updateIssuerSecret(issuerKey, secretKey, hash)
 }
 

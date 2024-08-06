@@ -236,7 +236,7 @@ func (o *options) startManagers(
 	extraHandlers map[string]http.Handler,
 	managers map[string]manager.Manager,
 ) error {
-	log.Info("Starting primary and issuer manager")
+	log.Info("Starting primary and secondary manager")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

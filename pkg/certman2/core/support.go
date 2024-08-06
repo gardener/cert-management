@@ -10,18 +10,16 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
-	"sort"
-	"strings"
-	"time"
-
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sort"
+	"time"
 
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 )
 
@@ -145,7 +143,7 @@ func (s *Support) FindIssuerKeyByName(namespace, issuerName string) *IssuerKey {
 	for _, key := range s.state.KnownIssuers() {
 		if key.ObjectKey.Name == issuerName {
 			fit := -1
-			if key.IsFromSecondaryCluster() {
+			if key.Secondary() {
 				fit = 1
 			} else if key.ObjectKey.Namespace == namespace {
 				fit = 2
@@ -183,31 +181,6 @@ func (s *Support) RememberIssuerSecret(issuerKey IssuerKey, secretRef *corev1.Se
 	s.state.RememberIssuerSecret(issuerKey, secretRef, hash)
 }
 
-// RememberAltIssuerSecret stores issuer secret ref pair for migration from v0.7.x
-// This method is only needed for a bugfix for migrating v0.7.x to v0.8.x an can be deleted after v0.9.0
-func (s *Support) RememberAltIssuerSecret(issuerKey IssuerKey, secretRef *corev1.SecretReference, secret *corev1.Secret, email string) {
-	if secret == nil || secret.Data == nil {
-		return
-	}
-	if _, ok := secret.Data[legobridge.KeyPrivateKey]; !ok {
-		return
-	}
-
-	s2 := &corev1.Secret{
-		Data: map[string][]byte{},
-	}
-	if _, ok := secret.Data["email"]; ok {
-		// drop email
-		s2.Data[legobridge.KeyPrivateKey] = []byte(strings.TrimSpace(string(secret.Data[legobridge.KeyPrivateKey])) + "\n")
-	} else {
-		// add email
-		s2.Data[legobridge.KeyPrivateKey] = []byte(strings.TrimSpace(string(secret.Data[legobridge.KeyPrivateKey])))
-		s2.Data["email"] = []byte(email)
-	}
-	altHash := s.CalcSecretHash(s2)
-	s.state.RememberAltIssuerSecret(issuerKey, secretRef, altHash)
-}
-
 // RememberIssuerEABSecret stores issuer EAB secret ref pair.
 func (s *Support) RememberIssuerEABSecret(issuerKey IssuerKey, secretRef *corev1.SecretReference, hash string) {
 	s.state.RememberIssuerEABSecret(issuerKey, secretRef, hash)
@@ -232,12 +205,6 @@ func (s *Support) TryAcceptCertificateRequest(issuer IssuerKey) (bool, int) {
 // GetIssuerSecretHash returns the issuer secret hash code
 func (s *Support) GetIssuerSecretHash(issuer IssuerKey) string {
 	return s.state.GetIssuerSecretHash(issuer)
-}
-
-// GetAltIssuerSecretHash returns the issuer alternative secret hash code
-// This method is only needed for a bugfix for migrating v0.7.x to v0.8.x an can be deleted after v0.9.0
-func (s *Support) GetAltIssuerSecretHash(issuer IssuerKey) string {
-	return s.state.GetAltIssuerSecretHash(issuer)
 }
 
 // RemoveIssuer removes an issuer
@@ -267,7 +234,35 @@ func (s *Support) CalcSecretHash(secret *corev1.Secret) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-// SetCertRenewalOverdue sets a certificate object as renewal overdue
+// LoadEABHmacKey reads the external account binding MAC key from the referenced secret
+func (s *Support) LoadEABHmacKey(issuerKey IssuerKey, acme *v1alpha1.ACMESpec, client client.Client, ctx context.Context) (string, string, error) {
+	eab := acme.ExternalAccountBinding
+	if eab == nil {
+		return "", "", nil
+	}
+	if eab.KeyID == "" {
+		return "", "", fmt.Errorf("missing keyID for external account binding in ACME spec")
+	}
+	if eab.KeySecretRef == nil {
+		return "", "", fmt.Errorf("missing secret ref in issuer for external account binding")
+	}
+
+	secret := &corev1.Secret{}
+	if err := client.Get(ctx, ObjectKeyFromSecretReference(eab.KeySecretRef), secret); err != nil {
+		return "", "", fmt.Errorf("fetching issuer EAB secret failed: %w", err)
+	}
+	hash := s.CalcSecretHash(secret)
+	s.RememberIssuerEABSecret(issuerKey, eab.KeySecretRef, hash)
+
+	hmacEncoded, ok := secret.Data[legobridge.KeyHmacKey]
+	if !ok {
+		return "", "", fmt.Errorf("Key %s not found in EAB secret %s/%s", legobridge.KeyHmacKey,
+			eab.KeySecretRef.Namespace, eab.KeySecretRef.Name)
+	}
+
+	return eab.KeyID, string(hmacEncoded), nil
+} // SetCertRenewalOverdue sets a certificate object as renewal overdue
+
 func (s *Support) SetCertRenewalOverdue(certName client.ObjectKey) {
 	if s.state.AddRenewalOverdue(certName) {
 		s.reportRenewalOverdueCount()
@@ -318,4 +313,12 @@ func (s *Support) reportRevokedCount() {
 // AddIssuerDomains remembers the DNS selection for an ACME issuer
 func (s *Support) AddIssuerDomains(issuerKey IssuerKey, sel *v1alpha1.DNSSelection) {
 	s.state.AddIssuerDomains(issuerKey, sel)
+}
+
+// NormalizeNamespace returns the namespace or "default" for an empty input.
+func NormalizeNamespace(namespace string) string {
+	if namespace != "" {
+		return namespace
+	}
+	return "default"
 }
