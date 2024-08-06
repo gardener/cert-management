@@ -57,14 +57,15 @@ var _ = Describe("Handler", func() {
 					PrivateKeySecretRef: &corev1.SecretReference{
 						Name:      "issuer-ca-secret",
 						Namespace: "default",
-					}},
+					},
+				},
 			},
 		}
 
 		err = fakeClient.Create(ctx, caIssuer)
 		Expect(err).NotTo(HaveOccurred())
 
-		certPEM, certPrivKeyPEM, err := newSelfSignedCertInPEMFormat(x509.RSA, 2048)
+		certPEM, certPrivKeyPEM, err := NewSelfSignedCertInPEMFormat(x509.RSA, 2048)
 		secretData := map[string][]byte{"tls.crt": certPEM, "tls.key": certPrivKeyPEM}
 		secret := corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -111,7 +112,7 @@ var _ = Describe("Handler", func() {
 })
 
 // TODO replace with existing method if SelfSigned certificate feature is merged: https://github.com/gardener/cert-management/pull/228
-func newSelfSignedCertInPEMFormat(algo x509.PublicKeyAlgorithm, algoSize int) ([]byte, []byte, error) {
+func NewSelfSignedCertInPEMFormat(algo x509.PublicKeyAlgorithm, algoSize int) ([]byte, []byte, error) {
 	certPrivateKey, certPrivateKeyPEM, err := generateKey(algo, algoSize)
 	if err != nil {
 		return nil, nil, err

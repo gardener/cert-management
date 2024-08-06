@@ -2,6 +2,7 @@ package issuer
 
 import (
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/acme"
 	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/ca"
 	"github.com/gardener/cert-management/pkg/certman2/core"
 	"k8s.io/utils/clock"
@@ -29,11 +30,18 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		r.Config.Controllers.Issuer.DefaultIssuerName,
 		r.Config.Controllers.Issuer.Namespace,
 		r.Config.Controllers.Issuer.DefaultRequestsPerDayQuota)
+
 	caIssuerHandler, err := ca.NewCAIssuerHandler(r.Client, support, true)
 	if err != nil {
 		return err
 	}
 	r.handlers = []core.IssuerHandler{caIssuerHandler}
+
+	acmeIssuerHandler, err := acme.NewACMEIssuerHandler(r.Client, support, true)
+	if err != nil {
+		return err
+	}
+	r.handlers = append(r.handlers, acmeIssuerHandler)
 
 	return builder.
 		ControllerManagedBy(mgr).
