@@ -43,7 +43,7 @@ type ObtainInput struct {
 	// DNSSettings are the settings for the DNSController.
 	DNSSettings *DNSControllerSettings
 	// IssuerKey is a cluster-aware key of the issuer to use.
-	IssuerKey utils.IssuerKey
+	IssuerKey utils.IssuerKeyItf
 	// CommonName is the CN.
 	CommonName *string
 	// DNSNames are optional domain names.
