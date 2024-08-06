@@ -45,7 +45,7 @@ func newDelegatingProvider(
 	settings DNSControllerSettings,
 	certificateName resources.ObjectName,
 	targetClass string,
-	issuerKey utils.IssuerKey,
+	issuerKey utils.IssuerKeyItf,
 ) (ProviderWithCount, error) {
 	n := atomic.AddUint32(&serial, 1)
 	var internalPrvdr internalProvider
@@ -68,7 +68,7 @@ func newDelegatingProvider(
 type delegatingProvider struct {
 	logger      logger.LogContext
 	settings    DNSControllerSettings
-	issuerKey   utils.IssuerKey
+	issuerKey   utils.IssuerKeyItf
 	count       int32
 	presenting  map[string][]string
 	initialWait bool

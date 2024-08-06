@@ -16,11 +16,20 @@ import (
 type Cluster int
 
 const (
-	// ClusterDefault is the default cluster
+	// ClusterDefault is the default cluster (= secondary)
 	ClusterDefault Cluster = iota
-	// ClusterTarget is the target cluster
+	// ClusterTarget is the target cluster (= primary)
 	ClusterTarget
 )
+
+// IssuerKeyItf abstracts IssuerKey to simplify code reuse.
+type IssuerKeyItf interface {
+	Name() string
+	Namespace() string
+	Cluster() Cluster
+	Secondary() bool
+	String() string
+}
 
 // IssuerKey provides cluster, name and namespace of an issuer
 type IssuerKey struct {
@@ -64,6 +73,11 @@ func (k IssuerKey) NamespaceOrDefault(def string) string {
 // Cluster returns the issuer cluster
 func (k IssuerKey) Cluster() Cluster {
 	return k.cluster
+}
+
+// Secondary returns true if it is a provided issuer from the default cluster ("secondary" cluster in the new wording).
+func (k IssuerKey) Secondary() bool {
+	return k.cluster == ClusterDefault
 }
 
 // ClusterName returns the cluster name

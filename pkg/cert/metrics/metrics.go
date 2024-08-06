@@ -101,12 +101,12 @@ var (
 )
 
 // AddACMEAccountRegistration increments the ACMEAccountRegistrations counter.
-func AddACMEAccountRegistration(issuerKey utils.IssuerKey, uri, email string) {
+func AddACMEAccountRegistration(issuerKey utils.IssuerKeyItf, uri, email string) {
 	ACMEAccountRegistrations.WithLabelValues(uri, email, issuerKey.String()).Set(1)
 }
 
 // AddACMEOrder increments the ACMETotalOrders counter.
-func AddACMEOrder(issuerKey utils.IssuerKey, success bool, count int, renew bool) {
+func AddACMEOrder(issuerKey utils.IssuerKeyItf, success bool, count int, renew bool) {
 	if count > 0 {
 		name := issuerKey.String()
 		ACMETotalOrders.WithLabelValues(name, strconv.FormatBool(success), strconv.FormatInt(int64(count), 10), strconv.FormatBool(renew)).Inc()
@@ -114,23 +114,23 @@ func AddACMEOrder(issuerKey utils.IssuerKey, success bool, count int, renew bool
 }
 
 // AddActiveACMEDNSChallenge increments the ACMEActiveDNSChallenges gauge.
-func AddActiveACMEDNSChallenge(issuerKey utils.IssuerKey) {
+func AddActiveACMEDNSChallenge(issuerKey utils.IssuerKeyItf) {
 	name := issuerKey.String()
 	ACMEActiveDNSChallenges.WithLabelValues(name).Inc()
 }
 
 // RemoveActiveACMEDNSChallenge decrements the ACMEActiveDNSChallenges gauge.
-func RemoveActiveACMEDNSChallenge(issuerKey utils.IssuerKey) {
+func RemoveActiveACMEDNSChallenge(issuerKey utils.IssuerKeyItf) {
 	ACMEActiveDNSChallenges.WithLabelValues(issuerKey.String()).Dec()
 }
 
 // ReportCertEntries sets the CertEntries gauge
-func ReportCertEntries(issuertype string, issuerKey utils.IssuerKey, count int) {
+func ReportCertEntries(issuertype string, issuerKey utils.IssuerKeyItf, count int) {
 	CertEntries.WithLabelValues(issuertype, issuerKey.String()).Set(float64(count))
 }
 
 // DeleteCertEntries deletes a CertEntries gauge entry.
-func DeleteCertEntries(issuertype string, issuerKey utils.IssuerKey) {
+func DeleteCertEntries(issuertype string, issuerKey utils.IssuerKeyItf) {
 	CertEntries.DeleteLabelValues(issuertype, issuerKey.String())
 }
 
