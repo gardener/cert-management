@@ -15,7 +15,6 @@ import (
 
 type state struct {
 	secrets      ReferencedSecrets
-	altSecrets   ReferencedSecrets
 	eabSecrets   ReferencedSecrets
 	certificates AssociatedObjects
 	quotas       Quotas
@@ -25,7 +24,7 @@ type state struct {
 }
 
 func newState() *state {
-	return &state{secrets: *NewReferencedSecrets(), altSecrets: *NewReferencedSecrets(), eabSecrets: *NewReferencedSecrets(),
+	return &state{secrets: *NewReferencedSecrets(), eabSecrets: *NewReferencedSecrets(),
 		certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
 		selections:   *NewIssuerDNSSelections(),
 		overdueCerts: *newObjectKeySet(), revokedCerts: *newObjectKeySet()}
@@ -43,7 +42,6 @@ func (s *state) RemoveIssuer(key IssuerKey) bool {
 	s.certificates.RemoveByIssuer(key)
 	s.quotas.RemoveIssuer(key)
 	s.eabSecrets.RemoveIssuer(key)
-	s.altSecrets.RemoveIssuer(key)
 	s.selections.Remove(key)
 	return s.secrets.RemoveIssuer(key)
 }
@@ -88,18 +86,6 @@ func (s *state) RememberIssuerSecret(issuer IssuerKey, secretRef *v1.SecretRefer
 
 func (s *state) GetIssuerSecretHash(issuerKey IssuerKey) string {
 	return s.secrets.GetIssuerSecretHash(issuerKey)
-}
-
-// RememberAltIssuerSecret for migration
-// This method is only needed for a bugfix for migrating v0.7.x to v0.8.x an can be deleted after v0.9.0
-func (s *state) RememberAltIssuerSecret(issuer IssuerKey, secretRef *v1.SecretReference, hash string) {
-	s.altSecrets.RememberIssuerSecret(issuer, secretRef, hash)
-}
-
-// GetAltIssuerSecretHash for migration
-// This method is only needed for a bugfix for migrating v0.7.x to v0.8.x an can be deleted after v0.9.0
-func (s *state) GetAltIssuerSecretHash(issuerKey IssuerKey) string {
-	return s.altSecrets.GetIssuerSecretHash(issuerKey)
 }
 
 func (s *state) IssuerNamesForEABSecret(secretKey SecretKey) sets.Set[IssuerKey] {
