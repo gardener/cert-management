@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.14.7
 	github.com/gardener/controller-manager-library v0.2.1-0.20240610092456-2d1cdc3e6f13
 	github.com/gardener/external-dns-management v0.20.1
-	github.com/gardener/gardener v1.100.0
+	github.com/gardener/gardener v1.101.0
 	github.com/go-acme/lego/v4 v4.17.4
 	github.com/miekg/dns v1.1.61
 	github.com/onsi/ginkgo/v2 v2.20.0
@@ -48,7 +48,7 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.3 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.6 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
@@ -95,7 +95,7 @@ require (
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
