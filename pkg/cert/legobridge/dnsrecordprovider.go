@@ -11,15 +11,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
-	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	"k8s.io/utils/ptr"
-
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/external-dns-management/pkg/dns"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"k8s.io/utils/ptr"
+
+	"github.com/gardener/cert-management/pkg/cert/source"
 )
 
 func newDNSRecordProvider(settings DNSControllerSettings) (internalProvider, error) {

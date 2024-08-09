@@ -14,18 +14,17 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
-	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/go-acme/lego/v4/certcrypto"
-	"k8s.io/utils/ptr"
-
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 // TLSCAKey is the secret data key for the CA key.
@@ -64,6 +63,10 @@ type ObtainInput struct {
 	PreferredChain string
 	// KeyType represents the algo and size to use for the private key (only used if CSR is not set).
 	KeyType certcrypto.KeyType
+	// IsCA is used to request a self-signed certificate
+	IsCA bool
+	// Duration is the lifetime of the certificate
+	Duration time.Duration
 }
 
 // DNSControllerSettings are the settings for the DNSController.
@@ -110,6 +113,8 @@ type ObtainOutput struct {
 	CSR []byte
 	// KeyType is the copy from the input.
 	KeyType certcrypto.KeyType
+	// IsCA is used to request a self-signed certificate
+	IsCA bool
 	// Err contains the obtain request error.
 	Err error
 }
@@ -160,6 +165,7 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
 		PrivateKey:                     privateKey,
+		NotAfter:                       time.Now().Add(input.Duration),
 	}
 	return client.Certificate.Obtain(request)
 }
@@ -276,6 +282,7 @@ func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certific
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
+		NotAfter:                       time.Now().Add(input.Duration),
 	})
 }
 
@@ -316,8 +323,10 @@ func (o *obtainer) Obtain(input ObtainInput) error {
 		return o.ObtainACME(input)
 	case input.CAKeyPair != nil:
 		return o.ObtainFromCA(input)
+	case input.IsCA:
+		return o.ObtainFromSelfSigned(input)
 	default:
-		return fmt.Errorf("Certificate obtention not valid, neither ACME or CA values were provided")
+		return fmt.Errorf("Certificate obtention not valid, neither ACME, CA  or selfSigned values were provided")
 	}
 }
 
@@ -466,6 +475,79 @@ func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
 	return san, nil
 }
 
+// ObtainFromSelfSigned starts the creation of a selfsigned certificate
+func (o *obtainer) ObtainFromSelfSigned(input ObtainInput) error {
+	go func() {
+		certificates, err := newSelfSignedCertFromInput(input)
+		output := &ObtainOutput{
+			Certificates: certificates,
+			IssuerInfo:   utils.NewSelfSignedIssuerInfo(input.IssuerKey),
+			CommonName:   input.CommonName,
+			DNSNames:     input.DNSNames,
+			KeyType:      input.KeyType,
+			IsCA:         input.IsCA,
+			CSR:          input.CSR,
+			Err:          err,
+		}
+		input.Callback(output)
+	}()
+	return nil
+}
+
+func newSelfSignedCertFromInput(input ObtainInput) (certificates *certificate.Resource, err error) {
+	var certPEM, privKeyPEM []byte
+	if input.CSR != nil {
+		certPEM, privKeyPEM, err = newSelfSignedCertFromCSRinPEMFormat(input)
+	} else {
+		certPrivateKey := FromKeyType(input.KeyType)
+		var algo x509.PublicKeyAlgorithm
+		switch *certPrivateKey.Algorithm {
+		case api.RSAKeyAlgorithm:
+			algo = x509.RSA
+		case api.ECDSAKeyAlgorithm:
+			algo = x509.ECDSA
+		}
+		certPEM, privKeyPEM, err = newSelfSignedCertInPEMFormat(input, algo, int(*certPrivateKey.Size))
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &certificate.Resource{
+		PrivateKey:        privKeyPEM,
+		Certificate:       certPEM,
+		IssuerCertificate: certPEM,
+	}, nil
+}
+
+func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) ([]byte, []byte, error) {
+	csr, err := extractCertificateRequest(input.CSR)
+	if err != nil {
+		return nil, nil, err
+	}
+	pubKeySize := pubKeySize(csr.PublicKey)
+	if pubKeySize == 0 {
+		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
+	}
+	certPrivateKey, certPrivateKeyPEM, err := generateKey(csr.PublicKeyAlgorithm, pubKeySize)
+	if err != nil {
+		return nil, nil, err
+	}
+	csrPEM, err := generateCSRPEM(csr, certPrivateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	crt, err := generateCertFromCSR(csrPEM, input.Duration, true)
+	if err != nil {
+		return nil, nil, err
+	}
+	crtPEM, err := signCert(crt, crt, certPrivateKey.Public(), certPrivateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return crtPEM, certPrivateKeyPEM, nil
+}
+
 // CertificatesToSecretData converts a certificate resource to secret data.
 func CertificatesToSecretData(certificates *certificate.Resource) map[string][]byte {
 	data := map[string][]byte{}
@@ -521,12 +603,12 @@ func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) 
 	if err != nil {
 		return nil, err
 	}
-	return newCASignedCertFromCertReq(csr, input.CAKeyPair)
+	return newCASignedCertFromCertReq(csr, input.CAKeyPair, input.Duration)
 }
 
 // newCASignedCertFromCertReq returns a new Certificate signed by a CA based on
 // an x509.CertificateRequest and a CA key pair. A private key will be generated.
-func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyPair) (*certificate.Resource, error) {
+func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyPair, duration time.Duration) (*certificate.Resource, error) {
 	pubKeySize := pubKeySize(csr.PublicKey)
 	if pubKeySize == 0 {
 		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
@@ -535,7 +617,7 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyP
 	if err != nil {
 		return nil, err
 	}
-	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair)
+	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair, duration)
 }
 
 // RevokeCertificate revokes a certificate

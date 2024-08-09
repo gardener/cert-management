@@ -9,11 +9,10 @@ package ca
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	corev1 "k8s.io/api/core/v1"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"

@@ -32,8 +32,8 @@ check: format $(GOIMPORTS) $(GOLANGCI_LINT)
 	@go vet ./cmd/... ./pkg/... ./test/...
 
 .PHONY: format
-format:
-	@go fmt ./cmd/... ./pkg/... ./test/...
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
+	@./hack/format.sh ./cmd ./pkg ./test
 
 .PHONY: build
 build:

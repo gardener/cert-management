@@ -12,10 +12,6 @@ import (
 	"strings"
 	"time"
 
-	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/ptr"
-
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile/reconcilers"
@@ -23,6 +19,9 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/resources/abstract"
 	"github.com/gardener/controller-manager-library/pkg/utils"
+	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
