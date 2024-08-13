@@ -10,7 +10,7 @@ require (
 	github.com/gardener/external-dns-management v0.20.1
 	github.com/gardener/gardener v1.101.0
 	github.com/go-acme/lego/v4 v4.17.4
-	github.com/miekg/dns v1.1.61
+	github.com/miekg/dns v1.1.62
 	github.com/onsi/ginkgo/v2 v2.20.0
 	github.com/onsi/gomega v1.34.1
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
