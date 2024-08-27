@@ -217,9 +217,14 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 	}); err != nil {
 		return err
 	}
+	waitForLeaderElection := make(chan struct{})
+	if err := primaryManager.Add(&awaitLeaderElection{waitForLeaderElection: waitForLeaderElection}); err != nil {
+		return err
+	}
 	if err := secondaryManager.Add(&secondaryRunner{
-		mgr: secondaryManager,
-		cfg: cfg,
+		mgr:                   secondaryManager,
+		cfg:                   cfg,
+		waitForLeaderElection: waitForLeaderElection,
 	}); err != nil {
 		return err
 	}
@@ -287,21 +292,27 @@ func (o *options) startManagers(
 			var err error
 			if err2 := mgr.Start(ctx); err2 != nil {
 				err = fmt.Errorf("manager %s failed: %w", name, err2)
-				cancel() // cancel all other managers on error
 			}
+			cancel() // cancel all other managers
 			results <- err
 		}(mgr)
 	}
 
-	<-appCtx.Done()
-	log.Info("Received shutdown signal")
-	cancel() // signal all managers to shut down
-
 	var errs []error
-	for range routines {
-		err := <-results
-		errs = append(errs, err)
+	shuttingDown := false
+	for len(errs) < routines {
+		select {
+		case <-appCtx.Done():
+			if !shuttingDown {
+				log.Info("Received shutdown signal")
+				cancel() // signal all managers to shut down
+				shuttingDown = true
+			}
+		case err := <-results:
+			errs = append(errs, err)
+		}
 	}
+
 	log.Info("All managers stopped")
 	return errors.Join(errs...)
 }
