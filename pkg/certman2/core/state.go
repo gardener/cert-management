@@ -24,10 +24,12 @@ type state struct {
 }
 
 func newState() *state {
-	return &state{secrets: *NewReferencedSecrets(), eabSecrets: *NewReferencedSecrets(),
+	return &state{
+		secrets: *NewReferencedSecrets(), eabSecrets: *NewReferencedSecrets(),
 		certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
 		selections:   *NewIssuerDNSSelections(),
-		overdueCerts: *newObjectKeySet(), revokedCerts: *newObjectKeySet()}
+		overdueCerts: *newObjectKeySet(), revokedCerts: *newObjectKeySet(),
+	}
 }
 
 func (s *state) AddIssuerDomains(key IssuerKey, sel *v1alpha1.DNSSelection) {

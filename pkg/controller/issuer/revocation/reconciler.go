@@ -177,7 +177,8 @@ func (r *revokeReconciler) Deleted(logctx logger.LogContext, _ resources.Cluster
 }
 
 func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext, obj resources.Object,
-	certSecretRef *corev1.SecretReference, issuerKey utils.IssuerKey) reconcile.Status {
+	certSecretRef *corev1.SecretReference, issuerKey utils.IssuerKey,
+) reconcile.Status {
 	revocation := obj.Data().(*api.CertificateRevocation)
 	if certSecretRef == nil {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("missing secret refernce of certificate"))
@@ -214,7 +215,8 @@ func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext,
 }
 
 func (r *revokeReconciler) collectCertificateRefsAndRepeat(logctx logger.LogContext, obj resources.Object, hashKey string,
-	shouldRenewBeforeRevoke bool) reconcile.Status {
+	shouldRenewBeforeRevoke bool,
+) reconcile.Status {
 	revocation := obj.Data().(*api.CertificateRevocation)
 	selector, err := createLabelCertificateHashKeySelector(hashKey)
 	if err != nil {
@@ -413,7 +415,8 @@ func (r *revokeReconciler) hasCertSecretRevocationFailed(secretsStatuses *api.Se
 
 func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext, obj resources.Object,
 	issuerKey utils.IssuerKey, issuer *api.Issuer,
-	hashKey string, shouldRenewBeforeRevoke bool) reconcile.Status {
+	hashKey string, shouldRenewBeforeRevoke bool,
+) reconcile.Status {
 	revocation := obj.Data().(*api.CertificateRevocation)
 
 	if len(revocation.Status.Secrets.Processing) == 0 {
@@ -587,7 +590,8 @@ func (r *revokeReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev
 }
 
 func (r *revokeReconciler) updateStatusAndDelay(logctx logger.LogContext, obj resources.Object, delay time.Duration,
-	statusUpdater func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error)) reconcile.Status {
+	statusUpdater func(logctx logger.LogContext, obj resources.Object) (*resources.ModificationState, error),
+) reconcile.Status {
 	mod, err := statusUpdater(logctx, obj)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("statusUpdater: %w", err))

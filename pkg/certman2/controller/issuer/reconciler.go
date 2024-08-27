@@ -3,7 +3,6 @@ package issuer
 import (
 	"context"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/certman2/core"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 // Reconciler is a reconciler for provided Issuer resources.

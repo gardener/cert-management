@@ -73,7 +73,7 @@ func (h *caIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issuer
 	}
 }
 
-func (h *caIssuerHandler) Delete(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
+func (h *caIssuerHandler) Delete(_ context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
 	issuerKey := h.issuerKey(issuer)
 	h.support.RemoveIssuer(issuerKey)
 	log.Info("deleted")

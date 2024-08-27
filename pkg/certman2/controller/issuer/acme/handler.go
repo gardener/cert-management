@@ -10,12 +10,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gardener/controller-manager-library/pkg/logger"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -23,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
@@ -49,7 +49,7 @@ func (h *acmeIssuerHandler) CanReconcile(issuer *v1alpha1.Issuer) bool {
 	return issuer != nil && issuer.Spec.ACME != nil
 }
 
-func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
+func (h *acmeIssuerHandler) Reconcile(ctx context.Context, _ logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
 	logger.Infof("reconciling")
 	issuerKey := h.issuerKey(issuer)
 	acme := issuer.Spec.ACME
@@ -79,7 +79,7 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 		secretHash = h.support.CalcSecretHash(secret)
 		h.support.RememberIssuerSecret(issuerKey, acme.PrivateKeySecretRef, secretHash)
 	}
-	eabKeyID, eabHmacKey, err := h.support.LoadEABHmacKey(issuerKey, acme, h.client, ctx)
+	eabKeyID, eabHmacKey, err := h.support.LoadEABHmacKey(ctx, h.client, issuerKey, acme)
 	if err != nil {
 		return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("loading EAB secret failed: %w", err))
 	}
@@ -144,7 +144,7 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 	}
 }
 
-func (h *acmeIssuerHandler) Delete(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
+func (h *acmeIssuerHandler) Delete(_ context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
 	issuerKey := h.issuerKey(issuer)
 	h.support.RemoveIssuer(issuerKey)
 	log.Info("deleted")

@@ -123,8 +123,10 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 		if err != nil {
 			continue
 		}
-		currentState.CertStates[secretName] = &CertState{Spec: crt.Spec,
-			State: crt.Status.State, Message: crt.Status.Message, CreationTimestamp: crt.CreationTimestamp}
+		currentState.CertStates[secretName] = &CertState{
+			Spec:  crt.Spec,
+			State: crt.Status.State, Message: crt.Status.Message, CreationTimestamp: crt.CreationTimestamp,
+		}
 	}
 
 	info, feedback, err := r.getCertsInfo(logger, obj, r.source)
