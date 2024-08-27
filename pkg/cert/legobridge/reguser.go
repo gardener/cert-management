@@ -78,7 +78,8 @@ func (u *RegistrationUser) NewConfig(caDirURL string) *lego.Config {
 
 // NewRegistrationUserFromEmail generates a private key and requests a new registration for the user.
 func NewRegistrationUserFromEmail(issuerKey utils.IssuerKeyItf,
-	email string, caDirURL string, secretData map[string][]byte, eabKeyID, eabHmacKey string) (*RegistrationUser, error) {
+	email string, caDirURL string, secretData map[string][]byte, eabKeyID, eabHmacKey string,
+) (*RegistrationUser, error) {
 	privateKey, err := ExtractOrGeneratePrivateKey(secretData)
 	if err != nil {
 		return nil, err
@@ -106,7 +107,8 @@ func ExtractOrGeneratePrivateKey(secretData map[string][]byte) (crypto.PrivateKe
 
 // NewRegistrationUserFromEmailAndPrivateKey requests a user registration.
 func NewRegistrationUserFromEmailAndPrivateKey(issuerKey utils.IssuerKeyItf,
-	email string, caDirURL string, privateKey crypto.PrivateKey, eabKid, eabHmacKey string) (*RegistrationUser, error) {
+	email string, caDirURL string, privateKey crypto.PrivateKey, eabKid, eabHmacKey string,
+) (*RegistrationUser, error) {
 	user := &RegistrationUser{email: email, key: privateKey, caDirURL: caDirURL, eabKeyID: eabKid, eabHmacKey: eabHmacKey}
 	config := user.NewConfig(caDirURL)
 
@@ -156,7 +158,8 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 
 // RegistrationUserFromSecretData restores a RegistrationUser from a secret data map.
 func RegistrationUserFromSecretData(issuerKey utils.IssuerKeyItf,
-	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string) (*RegistrationUser, error) {
+	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string,
+) (*RegistrationUser, error) {
 	privkeyBytes, ok := data[KeyPrivateKey]
 	if !ok {
 		return nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
@@ -175,6 +178,8 @@ func RegistrationUserFromSecretData(issuerKey utils.IssuerKeyItf,
 		return nil, fmt.Errorf("unmarshalling registration with unexpected empty URI")
 	}
 	metrics.AddACMEAccountRegistration(issuerKey, reg.URI, email)
-	return &RegistrationUser{email: email, registration: reg, caDirURL: caDirURL, key: privateKey,
-		eabKeyID: eabKeyID, eabHmacKey: eabHmacKey}, nil
+	return &RegistrationUser{
+		email: email, registration: reg, caDirURL: caDirURL, key: privateKey,
+		eabKeyID: eabKeyID, eabHmacKey: eabHmacKey,
+	}, nil
 }

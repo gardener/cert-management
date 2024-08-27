@@ -398,7 +398,8 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 }
 
 func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContext, obj resources.Object,
-	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
+	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer,
+) reconcile.Status {
 	reguser, err := r.support.RestoreRegUser(issuerKey, issuer)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
@@ -550,7 +551,8 @@ func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer
 }
 
 func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resources.Object,
-	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
+	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer,
+) reconcile.Status {
 	CAKeyPair, err := r.restoreCA(issuerKey, issuer)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
@@ -583,9 +585,11 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		}
 	}
 
-	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
+	input := legobridge.ObtainInput{
+		CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		Callback: callback, Renew: renew}
+		Callback: callback, Renew: renew,
+	}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
@@ -859,7 +863,8 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 }
 
 func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo utils.IssuerInfo,
-	objectMeta metav1.ObjectMeta, secretRef *corev1.SecretReference, specHash string, spec *api.CertificateSpec) (*corev1.SecretReference, error) {
+	objectMeta metav1.ObjectMeta, secretRef *corev1.SecretReference, specHash string, spec *api.CertificateSpec,
+) (*corev1.SecretReference, error) {
 	ns := core.NormalizeNamespace(objectMeta.Namespace)
 	specSecretRef, _ := r.determineSecretRef(ns, spec)
 	if specSecretRef != nil && secretRef.Name == specSecretRef.Name &&
@@ -879,7 +884,8 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo utils.IssuerInfo, objectMeta metav1.ObjectMeta,
 	certificates *certificate.Resource, specHash string, specSecretRef *corev1.SecretReference,
 	requestedAt *time.Time, keystores *api.CertificateKeystores,
-	secretLabels map[string]string) (*corev1.SecretReference, error) {
+	secretLabels map[string]string,
+) (*corev1.SecretReference, error) {
 	secret := &corev1.Secret{
 		Type: corev1.SecretTypeTLS,
 	}
@@ -953,7 +959,8 @@ func (r *certReconciler) updateKeystoresIfSpecChanged(logctx logger.LogContext, 
 }
 
 func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, obj resources.Object,
-	secretRef *corev1.SecretReference, specHash string, notAfter *time.Time) reconcile.Status {
+	secretRef *corev1.SecretReference, specHash string, notAfter *time.Time,
+) reconcile.Status {
 	crt := obj.Data().(*api.Certificate)
 	crt.Spec.SecretRef = secretRef
 	if crt.Labels == nil {
@@ -1047,7 +1054,8 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 }
 
 func (r *certReconciler) updateReadyCondition(mod *resources.ModificationState, oldConditions []metav1.Condition,
-	state string, msg *string, observedGeneration int64) []metav1.Condition {
+	state string, msg *string, observedGeneration int64,
+) []metav1.Condition {
 	if state == "" {
 		// ignore intermediate state
 		return oldConditions

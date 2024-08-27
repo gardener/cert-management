@@ -11,9 +11,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
-	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	"github.com/gardener/cert-management/pkg/certman2/core"
+
 	"github.com/go-acme/lego/v4/registration"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,8 +19,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 var _ = Describe("Handler", func() {
@@ -94,17 +95,20 @@ var _ = Describe("Handler", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(acmeIssuer.Status.State).To(Equal("Ready"))
 					raw := acmeIssuer.Status.ACME // "body":{"contact":["mailto:some.user@mydomain.com"],"status":"valid"},"secretHash":"xxx","uri":"https://acme-staging-v02.api.letsencrypt.org/acme/acct/xxx"
-					var wrappedReg = wrappedRegistration{}
+					wrappedReg := wrappedRegistration{}
 					err = json.Unmarshal(raw.Raw, &wrappedReg)
+					Expect(err).NotTo(HaveOccurred())
 					Expect(wrappedReg.Resource.Body.Status).To(Equal("valid"))
 					Expect(wrappedReg.Resource.Body.Contact[0]).To(Equal("mailto:some.user@mydomain.com"))
-					Expect(wrappedReg.SecretHash).ToNot(Equal(""))
+					Expect(wrappedReg.SecretHash).ToNot(BeNil())
+					Expect(*wrappedReg.SecretHash).ToNot(Equal(""))
 				})
 			})
 		})
 		Context("with existing private key secret", func() {
 			BeforeEach(func() {
 				_, certPrivateKeyPEM, err := generateKey(x509.ECDSA, 256)
+				Expect(err).NotTo(HaveOccurred())
 				secretData := map[string][]byte{"email": []byte("some.user@mydomain.com"), "privateKey": certPrivateKeyPEM}
 				secret := corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
@@ -122,12 +126,13 @@ var _ = Describe("Handler", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(acmeIssuer.Status.State).To(Equal("Ready"))
 				raw := acmeIssuer.Status.ACME // "body":{"contact":["mailto:some.user@mydomain.com"],"status":"valid"},"secretHash":"xxx","uri":"https://acme-staging-v02.api.letsencrypt.org/acme/acct/xxx"
-				var wrappedReg = wrappedRegistration{}
+				wrappedReg := wrappedRegistration{}
 				err = json.Unmarshal(raw.Raw, &wrappedReg)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(wrappedReg.Resource.Body.Status).To(Equal("valid"))
 				Expect(wrappedReg.Resource.Body.Contact[0]).To(Equal("mailto:some.user@mydomain.com"))
-				Expect(wrappedReg.SecretHash).ToNot(Equal(""))
+				Expect(wrappedReg.SecretHash).ToNot(BeNil())
+				Expect(*wrappedReg.SecretHash).ToNot(Equal(""))
 			})
 			It("should reuse existing registration", func() {
 				// first reconcile
@@ -136,7 +141,7 @@ var _ = Describe("Handler", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(acmeIssuer.Status.State).To(Equal("Ready"))
 				raw := acmeIssuer.Status.ACME // "body":{"contact":["mailto:some.user@mydomain.com"],"status":"valid"},"secretHash":"xxx","uri":"https://acme-staging-v02.api.letsencrypt.org/acme/acct/xxx"
-				var wrappedReg = wrappedRegistration{}
+				wrappedReg := wrappedRegistration{}
 				err = json.Unmarshal(raw.Raw, &wrappedReg)
 				Expect(err).ToNot(HaveOccurred())
 				oldUri := wrappedReg.Resource.URI

@@ -75,7 +75,7 @@ var _ = Describe("Istio Gateway Handler", func() {
 		allVirtualServices = []*istionetworkingv1.VirtualService{vsvc1, vsvc2, vsvc3}
 	)
 
-	var _ = DescribeTable("GetCertsInfo",
+	_ = DescribeTable("GetCertsInfo",
 		func(sources map[string]*corev1.LoadBalancerStatus, gateway *istionetworkingv1.Gateway, virtualServices []*istionetworkingv1.VirtualService, expectedMap map[string]source.CertInfo) {
 			lister := &testResourceLister{sources: sources, virtualServices: virtualServices}
 			state := newState()

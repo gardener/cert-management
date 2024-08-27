@@ -10,17 +10,18 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"sort"
+	"time"
+
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sort"
-	"time"
 
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 )
 
 // RecoverableError is a recoverable error, i.e. reconcile after same backoff may help
@@ -80,14 +81,14 @@ func (s *Support) RemoveCertificate(certObjName client.ObjectKey) {
 	s.state.RemoveCertAssoc(certObjName)
 	s.ClearCertRenewalOverdue(certObjName)
 	s.ClearCertRevoked(certObjName)
-	//s.reportCertificateExpiresRemoved(certObjName.Namespace(), certObjName.Name()) // TODO
+	s.reportCertificateExpiresRemoved(certObjName.Namespace, certObjName.Name)
 	s.reportAllCertificateMetrics()
 }
 
 func (s *Support) reportCertificateMetrics(issuerKey IssuerKey) {
 	count := s.state.CertificateCountForIssuer(issuerKey)
 	_ = count
-	// metrics.ReportCertEntries("acme", issuerKey, count) // TODO
+	metrics.ReportCertEntries("acme", issuerKey, count)
 }
 
 func (s *Support) reportAllCertificateMetrics() {
@@ -111,14 +112,14 @@ func (s *Support) reportCertificateExpiresRemoved(namespace, name string) {
 }
 
 func (s *Support) calcAssocObjectNames(cert *v1alpha1.Certificate) (client.ObjectKey, IssuerKey) {
-	issuerKey := s.IssuerKeyFromCertSpec(cert.Namespace, &cert.Spec)
+	issuerKey := s.IssuerKeyFromCertSpec(&cert.Spec)
 	return client.ObjectKeyFromObject(cert), issuerKey
 }
 
-// IssuerClusterObjectKey returns either the specified issuer or it tries to find a matching issuer by
+// IssuerKeyFromCertSpec returns either the specified issuer or it tries to find a matching issuer by
 // matching domains.
 // It tries to find the issuer first on the target cluster, then on the default cluster
-func (s *Support) IssuerKeyFromCertSpec(namespace string, spec *v1alpha1.CertificateSpec) IssuerKey {
+func (s *Support) IssuerKeyFromCertSpec(spec *v1alpha1.CertificateSpec) IssuerKey {
 	if spec.IssuerRef == nil {
 		return s.defaultIssuer
 	}
@@ -210,7 +211,7 @@ func (s *Support) GetIssuerSecretHash(issuer IssuerKey) string {
 // RemoveIssuer removes an issuer
 func (s *Support) RemoveIssuer(issuerKey IssuerKey) bool {
 	b := s.state.RemoveIssuer(issuerKey)
-	//metrics.DeleteCertEntries("acme", issuerKey)  // TODO
+	metrics.DeleteCertEntries("acme", issuerKey)
 	return b
 }
 
@@ -235,7 +236,7 @@ func (s *Support) CalcSecretHash(secret *corev1.Secret) string {
 }
 
 // LoadEABHmacKey reads the external account binding MAC key from the referenced secret
-func (s *Support) LoadEABHmacKey(issuerKey IssuerKey, acme *v1alpha1.ACMESpec, client client.Client, ctx context.Context) (string, string, error) {
+func (s *Support) LoadEABHmacKey(ctx context.Context, client client.Client, issuerKey IssuerKey, acme *v1alpha1.ACMESpec) (string, string, error) {
 	eab := acme.ExternalAccountBinding
 	if eab == nil {
 		return "", "", nil
@@ -261,8 +262,9 @@ func (s *Support) LoadEABHmacKey(issuerKey IssuerKey, acme *v1alpha1.ACMESpec, c
 	}
 
 	return eab.KeyID, string(hmacEncoded), nil
-} // SetCertRenewalOverdue sets a certificate object as renewal overdue
+}
 
+// SetCertRenewalOverdue sets a certificate object as renewal overdue
 func (s *Support) SetCertRenewalOverdue(certName client.ObjectKey) {
 	if s.state.AddRenewalOverdue(certName) {
 		s.reportRenewalOverdueCount()

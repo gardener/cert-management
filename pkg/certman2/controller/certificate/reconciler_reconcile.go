@@ -19,5 +19,7 @@ func (r *Reconciler) reconcile(
 	error,
 ) {
 	log.Info("reconcile certificate")
+	_ = ctx
+	_ = landscape
 	return reconcile.Result{}, fmt.Errorf("not yet supported")
 }

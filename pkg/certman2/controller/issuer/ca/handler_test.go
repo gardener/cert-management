@@ -11,10 +11,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
-	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	"github.com/gardener/cert-management/pkg/certman2/core"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"math/big"
 	"time"
 
@@ -22,10 +18,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 var _ = Describe("Handler", func() {
@@ -66,6 +65,7 @@ var _ = Describe("Handler", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		certPEM, certPrivKeyPEM, err := NewSelfSignedCertInPEMFormat(x509.RSA, 2048)
+		Expect(err).NotTo(HaveOccurred())
 		secretData := map[string][]byte{"tls.crt": certPEM, "tls.key": certPrivKeyPEM}
 		secret := corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{

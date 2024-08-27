@@ -64,7 +64,7 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 		}
 	)
 
-	var _ = DescribeTable("GetCertsInfo",
+	_ = DescribeTable("GetCertsInfo",
 		func(gateway *gatewayapisv1.Gateway, httpRoutes []*gatewayapisv1.HTTPRoute, expectedMap map[string]source.CertInfo) {
 			handler, err := newGatewaySourceWithRouteLister(&testRouteLister{routes: httpRoutes}, newState())
 			Expect(err).To(Succeed())

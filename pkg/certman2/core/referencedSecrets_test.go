@@ -12,10 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 )
@@ -50,13 +49,13 @@ func TestRobustRemember(t *testing.T) {
 			issuer := &v1alpha1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      entry.issuerName,
-					Namespace: "default",
+					Namespace: "test",
 				},
 				Spec: v1alpha1.IssuerSpec{ACME: &v1alpha1.ACMESpec{}},
 			}
 			if entry.secretName != "" {
 				issuer.Spec.ACME.PrivateKeySecretRef = &v1.SecretReference{
-					Namespace: "default",
+					Namespace: "test",
 					Name:      entry.secretName,
 				}
 			}

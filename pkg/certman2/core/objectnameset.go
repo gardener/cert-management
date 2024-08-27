@@ -60,7 +60,7 @@ func (s *objectKeySet) String() string {
 	defer s.lock.Unlock()
 
 	array := s.UnsortedList()
-	sort.Slice(s, func(i, j int) bool {
+	sort.Slice(array, func(i, j int) bool {
 		if array[i].Namespace < array[j].Namespace {
 			return true
 		} else if array[i].Namespace > array[j].Namespace {

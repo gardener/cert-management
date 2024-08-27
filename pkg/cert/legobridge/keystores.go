@@ -76,7 +76,8 @@ func updateKeystoresToSecret(secretResources resources.Interface, secret *corev1
 // updateJKSKeystore updates `keystore.jks` and `truststore.jks` data entries to the secret or removes them
 // if not requested anymore
 func updateJKSKeystore(secretResources resources.Interface, secret *corev1.Secret, jksKeystore *certv1alpha1.JKSKeystore,
-	keepExisting bool, modified *bool) error {
+	keepExisting bool, modified *bool,
+) error {
 	if jksKeystore == nil || !jksKeystore.Create {
 		update(secret, JKSTruststoreKey, nil, modified)
 		update(secret, JKSSecretKey, nil, modified)
@@ -117,7 +118,8 @@ func updateJKSKeystore(secretResources resources.Interface, secret *corev1.Secre
 // updatePKCS12Keystore updates `keystore.p12` and `truststore.p12` data entries to the secret or removes them
 // if not requested anymore
 func updatePKCS12Keystore(secretResources resources.Interface, secret *corev1.Secret, pkcs12Keystore *certv1alpha1.PKCS12Keystore,
-	keepExisting bool, modified *bool) error {
+	keepExisting bool, modified *bool,
+) error {
 	if pkcs12Keystore == nil || !pkcs12Keystore.Create {
 		update(secret, PKCS12TruststoreKey, nil, modified)
 		update(secret, PKCS12SecretKey, nil, modified)
@@ -220,7 +222,7 @@ func encodePKCS12Truststore(password []byte, caPem []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	var cas = []*x509.Certificate{ca}
+	cas := []*x509.Certificate{ca}
 	return pkcs12.EncodeTrustStore(rand.Reader, cas, string(password))
 }
 
@@ -268,7 +270,8 @@ func encodeJKSKeystore(password []byte, rawKey []byte, certPem []byte, caPem []b
 			Certificate: jks.Certificate{
 				Type:    "X509",
 				Content: ca.Raw,
-			}},
+			},
+		},
 		); err != nil {
 			return nil, err
 		}
@@ -293,7 +296,8 @@ func encodeJKSTruststore(password []byte, caPem []byte) ([]byte, error) {
 		Certificate: jks.Certificate{
 			Type:    "X509",
 			Content: ca.Raw,
-		}},
+		},
+	},
 	); err != nil {
 		return nil, err
 	}

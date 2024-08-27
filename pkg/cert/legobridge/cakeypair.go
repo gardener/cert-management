@@ -57,7 +57,7 @@ func (c *TLSKeyPair) RawCertInfo() ([]byte, error) {
 
 	certSubject := c.Cert.Subject
 	serialNumber := strings.ToUpper(fmt.Sprintf("%x", c.Cert.SerialNumber))
-	var raw = struct {
+	raw := struct {
 		NotBefore, NotAfter time.Time
 		Subject             subject
 	}{

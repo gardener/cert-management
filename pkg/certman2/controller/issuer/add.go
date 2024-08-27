@@ -30,6 +30,9 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		r.Config.Controllers.Issuer.DefaultIssuerName,
 		r.Config.Controllers.Issuer.Namespace,
 		r.Config.Controllers.Issuer.DefaultRequestsPerDayQuota)
+	if err != nil {
+		return err
+	}
 
 	caIssuerHandler, err := ca.NewCAIssuerHandler(r.Client, support, true)
 	if err != nil {
