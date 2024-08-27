@@ -9,5 +9,5 @@ import (
 
 func TestLandscape(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Certiificate Controller Suite")
+	RunSpecs(t, "Certificate Controller Suite")
 }

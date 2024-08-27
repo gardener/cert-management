@@ -12,20 +12,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// IssuerKey provides object key and cluster of an issuer
+// IssuerKey provides object key and cluster of an issuer.
 type IssuerKey struct {
 	client.ObjectKey
 	secondary bool
 }
 
+// Name provides issuer name.
 func (k IssuerKey) Name() string {
 	return k.ObjectKey.Name
 }
 
+// Namespace provides issuer namespace.
 func (k IssuerKey) Namespace() string {
 	return k.ObjectKey.Namespace
 }
 
+// Cluster provides cluster (from CML).
 func (k IssuerKey) Cluster() utils.Cluster {
 	if k.secondary {
 		return utils.ClusterDefault
@@ -68,6 +71,7 @@ func (k SecretKey) IsFromSecondaryCluster() bool {
 	return k.secondary
 }
 
+// ObjectKeyFromSecretReference returns an ObjectKey for a secret reference.
 func ObjectKeyFromSecretReference(secretRef *corev1.SecretReference) client.ObjectKey {
 	return client.ObjectKey{Namespace: secretRef.Namespace, Name: secretRef.Name}
 }

@@ -247,7 +247,8 @@ func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
 
 // WriteIssuerSecretFromRegistrationUser writes an issuer secret
 func (s *Support) WriteIssuerSecretFromRegistrationUser(issuerKey utils.IssuerKey, issuerUID types.UID, reguser *legobridge.RegistrationUser,
-	secretRef *corev1.SecretReference) (*corev1.SecretReference, *corev1.Secret, error) {
+	secretRef *corev1.SecretReference,
+) (*corev1.SecretReference, *corev1.Secret, error) {
 	var err error
 
 	secret := &corev1.Secret{}
@@ -278,7 +279,8 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuerKey utils.IssuerKe
 
 // UpdateIssuerSecret updates an issuer secret
 func (s *Support) UpdateIssuerSecret(issuerKey utils.IssuerKey, reguser *legobridge.RegistrationUser,
-	secret *corev1.Secret) error {
+	secret *corev1.Secret,
+) error {
 	var err error
 	secret.Data, err = reguser.ToSecretData()
 	if err != nil {
