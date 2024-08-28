@@ -22,34 +22,40 @@ func SetDefaults_CertManagerConfiguration(obj *CertManagerConfiguration) {
 	if obj.LogFormat == "" {
 		obj.LogFormat = logger.FormatJSON
 	}
-	if obj.PrimaryClientConnection == nil {
-		obj.PrimaryClientConnection = &PrimaryClientConnection{}
+	if obj.ClientConnection == nil {
+		obj.ClientConnection = &ClientConnection{}
 	}
-	if obj.SecondaryClientConnection == nil {
-		obj.SecondaryClientConnection = &SecondaryClientConnection{}
+	if obj.ControlPlaneClientConnection == nil {
+		obj.ControlPlaneClientConnection = &ControlPlaneClientConnection{}
 	}
 	if obj.DNSClientConnection == nil {
 		obj.DNSClientConnection = &DNSClientConnection{}
 	}
 }
 
-// SetDefaults_PrimaryClientConnection sets defaults for the primary client connection.
-func SetDefaults_PrimaryClientConnection(obj *PrimaryClientConnection) {
+// SetDefaults_ClientConnection sets defaults for the primary client connection.
+func SetDefaults_ClientConnection(obj *ClientConnection) {
 	if obj.QPS == 0.0 {
 		obj.QPS = 100.0
 	}
 	if obj.Burst == 0 {
 		obj.Burst = 130
+	}
+	if obj.CacheResyncPeriod == nil {
+		obj.CacheResyncPeriod = &metav1.Duration{Duration: time.Hour}
 	}
 }
 
-// SetDefaults_SecondaryClientConnection sets defaults for the secondary client connection.
-func SetDefaults_SecondaryClientConnection(obj *SecondaryClientConnection) {
+// SetDefaults_ControlPlaneClientConnection sets defaults for the secondary client connection.
+func SetDefaults_ControlPlaneClientConnection(obj *ControlPlaneClientConnection) {
 	if obj.QPS == 0.0 {
 		obj.QPS = 100.0
 	}
 	if obj.Burst == 0 {
 		obj.Burst = 130
+	}
+	if obj.CacheResyncPeriod == nil {
+		obj.CacheResyncPeriod = &metav1.Duration{Duration: time.Hour}
 	}
 }
 

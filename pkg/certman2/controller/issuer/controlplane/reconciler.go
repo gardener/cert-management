@@ -1,4 +1,10 @@
-package issuer
+/*
+ * SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package controlplane
 
 import (
 	"context"
@@ -41,6 +47,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	for _, h := range r.handlers {
 		if h.CanReconcile(issuer) {
+			log = log.WithName(h.Type())
 			if issuer.DeletionTimestamp != nil {
 				return h.Delete(ctx, log, issuer)
 			} else {

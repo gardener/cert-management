@@ -68,28 +68,30 @@ var _ = Describe("Defaults", func() {
 				// ContentType fields will be defaulted by client constructors / controller-runtime based on whether a
 				// given APIGroup supports protobuf or not. defaults must not touch these, otherwise the integelligent
 				// logic will be overwritten
-				Expect(obj.PrimaryClientConnection.ContentType).To(BeEmpty())
-				Expect(obj.PrimaryClientConnection.AcceptContentTypes).To(BeEmpty())
+				Expect(obj.ClientConnection.ContentType).To(BeEmpty())
+				Expect(obj.ClientConnection.AcceptContentTypes).To(BeEmpty())
 			})
 
-			It("should correctly default PrimaryClientConnection", func() {
+			It("should correctly default ClientConnection", func() {
 				SetObjectDefaults_CertManagerConfiguration(obj)
 
-				Expect(obj.PrimaryClientConnection).NotTo(BeNil())
-				Expect(obj.PrimaryClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
+				Expect(obj.ClientConnection).NotTo(BeNil())
+				Expect(obj.ClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
 					QPS:   100.0,
 					Burst: 130,
 				}))
+				Expect(obj.ClientConnection.CacheResyncPeriod).To(Equal(&metav1.Duration{Duration: time.Hour}))
 			})
 
-			It("should correctly default SecondaryClientConnection", func() {
+			It("should correctly default ControlPlaneClientConnection", func() {
 				SetObjectDefaults_CertManagerConfiguration(obj)
 
-				Expect(obj.SecondaryClientConnection).NotTo(BeNil())
-				Expect(obj.SecondaryClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
+				Expect(obj.ControlPlaneClientConnection).NotTo(BeNil())
+				Expect(obj.ControlPlaneClientConnection.ClientConnectionConfiguration).To(Equal(componentbaseconfigv1alpha1.ClientConnectionConfiguration{
 					QPS:   100.0,
 					Burst: 130,
 				}))
+				Expect(obj.ControlPlaneClientConnection.CacheResyncPeriod).To(Equal(&metav1.Duration{Duration: time.Hour}))
 			})
 
 			It("should correctly default DNSClientConnection", func() {
