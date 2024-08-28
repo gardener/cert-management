@@ -11,15 +11,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
@@ -49,8 +47,8 @@ func (h *acmeIssuerHandler) CanReconcile(issuer *v1alpha1.Issuer) bool {
 	return issuer != nil && issuer.Spec.ACME != nil
 }
 
-func (h *acmeIssuerHandler) Reconcile(ctx context.Context, _ logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
-	logger.Infof("reconciling")
+func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer) (reconcile.Result, error) {
+	log.Info("reconciling")
 	issuerKey := h.issuerKey(issuer)
 	acme := issuer.Spec.ACME
 
@@ -74,7 +72,7 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, _ logr.Logger, issuer
 				return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
 			}
 			secret = nil
-			logger.Info("spec.acme.privateKeySecretRef not existing, creating new account")
+			log.Info("spec.acme.privateKeySecretRef not existing, creating new account")
 		}
 		secretHash = h.support.CalcSecretHash(secret)
 		h.support.RememberIssuerSecret(issuerKey, acme.PrivateKeySecretRef, secretHash)

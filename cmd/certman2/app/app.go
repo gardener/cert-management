@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -16,23 +15,28 @@ import (
 	"github.com/gardener/gardener/pkg/controllerutils/routes"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/go-logr/logr"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/component-base/version/verflag"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	controllerconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
 	configv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/config/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
+	"github.com/gardener/cert-management/pkg/certman2/controller/certificate"
+	issuercontrolplane "github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane"
 )
 
 // Name is the name of the Cert Controller-Manager.
@@ -131,16 +135,17 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 	log.Info("Getting rest config")
 	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
 		log.Info("Using kubeconfig from environment variable KUBECONFIG", "KUBECONFIG", kubeconfig)
-		cfg.PrimaryClientConnection.Kubeconfig = kubeconfig
+		cfg.ClientConnection.Kubeconfig = kubeconfig
 	}
 
-	primaryRestConfig, err := kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.PrimaryClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
+	restConfig, err := kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.ClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
 	if err != nil {
 		return err
 	}
-	secondaryRestConfig := primaryRestConfig
-	if cfg.SecondaryClientConnection.Kubeconfig != "" {
-		secondaryRestConfig, err = kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.SecondaryClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
+	controlPlaneRestConfig := restConfig
+	if cfg.ControlPlaneClientConnection.Kubeconfig != "" {
+		log.Info("Using control plane kubeconfig", "kubeconfig", cfg.ControlPlaneClientConnection.Kubeconfig)
+		controlPlaneRestConfig, err = kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.ControlPlaneClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
 		if err != nil {
 			return err
 		}
@@ -154,16 +159,21 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 		}
 	}
 
-	log.Info("Setting up primary manager")
-	primaryManager, err := manager.New(primaryRestConfig, manager.Options{
-		Logger:                  log.WithName("primary"),
+	log.Info("Setting up manager")
+	mgr, err := manager.New(restConfig, manager.Options{
+		Logger:                  log,
 		Scheme:                  certmanclient.ClusterScheme,
 		GracefulShutdownTimeout: ptr.To(5 * time.Second),
+		Cache: cache.Options{
+			SyncPeriod: &cfg.ClientConnection.CacheResyncPeriod.Duration,
+		},
 
 		HealthProbeBindAddress: net.JoinHostPort(cfg.Server.HealthProbes.BindAddress, strconv.Itoa(cfg.Server.HealthProbes.Port)),
 		Metrics: metricsserver.Options{
-			BindAddress: "0", // disable default metrics server
+			BindAddress:   net.JoinHostPort(cfg.Server.Metrics.BindAddress, strconv.Itoa(cfg.Server.Metrics.Port)),
+			ExtraHandlers: extraHandlers,
 		},
+
 		LeaderElection:                cfg.LeaderElection.LeaderElect,
 		LeaderElectionResourceLock:    cfg.LeaderElection.ResourceLock,
 		LeaderElectionID:              cfg.LeaderElection.ResourceName,
@@ -179,149 +189,60 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 	if err != nil {
 		return err
 	}
-	log.Info("Setting up secondary manager")
-	secondaryManager, err := manager.New(secondaryRestConfig, manager.Options{
-		Logger:                  log.WithName("secondary"),
-		Scheme:                  certmanclient.ClusterScheme,
-		GracefulShutdownTimeout: ptr.To(5 * time.Second),
+	var controlPlaneCluster cluster.Cluster = mgr
+	if controlPlaneRestConfig != restConfig {
+		log.Info("Setting up cluster object for target")
+		controlPlaneCluster, err = cluster.New(controlPlaneRestConfig, func(opts *cluster.Options) {
+			opts.Scheme = certmanclient.ClusterScheme
+			opts.Logger = log
 
-		HealthProbeBindAddress: net.JoinHostPort(cfg.Server.HealthProbes.BindAddress, strconv.Itoa(cfg.Server.HealthProbes.Port+1)),
-		Metrics: metricsserver.Options{
-			BindAddress: "0", // disable default metrics server
-		},
-		LeaderElection: false,
-		Controller: controllerconfig.Controller{
-			RecoverPanic: ptr.To(true),
-		},
-	})
-	if err != nil {
-		return err
-	}
+			// use dynamic rest mapper for secondary cluster, which will automatically rediscover resources on NoMatchErrors
+			// but is rate-limited to not issue to many discovery calls (rate-limit shared across all reconciliations)
+			opts.MapperProvider = apiutil.NewDynamicRESTMapper
 
-	if err := primaryManager.AddHealthzCheck("ping", healthz.Ping); err != nil {
-		return err
-	}
-	if err := primaryManager.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(primaryManager.GetCache())); err != nil {
-		return err
-	}
-	if err := secondaryManager.AddHealthzCheck("ping", healthz.Ping); err != nil {
-		return err
-	}
-	if err := secondaryManager.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(primaryManager.GetCache())); err != nil {
-		return err
-	}
+			opts.Cache.DefaultNamespaces = map[string]cache.Config{cfg.Controllers.Issuer.Namespace: {}}
+			opts.Cache.SyncPeriod = &cfg.ControlPlaneClientConnection.CacheResyncPeriod.Duration
 
-	if err := primaryManager.Add(&primaryRunner{
-		mgr: primaryManager,
-		cfg: cfg,
-	}); err != nil {
-		return err
-	}
-	waitForLeaderElection := make(chan struct{})
-	if err := primaryManager.Add(&awaitLeaderElection{waitForLeaderElection: waitForLeaderElection}); err != nil {
-		return err
-	}
-	if err := secondaryManager.Add(&secondaryRunner{
-		mgr:                   secondaryManager,
-		cfg:                   cfg,
-		waitForLeaderElection: waitForLeaderElection,
-	}); err != nil {
-		return err
-	}
-
-	metricsAddr := net.JoinHostPort(cfg.Server.Metrics.BindAddress, strconv.Itoa(cfg.Server.Metrics.Port))
-	managers := map[string]manager.Manager{"primary": primaryManager, "secondary": secondaryManager}
-	return o.startManagers(ctx, log, metricsAddr, extraHandlers, managers)
-}
-
-func (o *options) startManagers(
-	appCtx context.Context,
-	log logr.Logger,
-	metricsAddr string,
-	extraHandlers map[string]http.Handler,
-	managers map[string]manager.Manager,
-) error {
-	log.Info("Starting primary and secondary manager")
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	routines := len(managers) + 1
-	results := make(chan error, routines)
-	mux := http.NewServeMux()
-	handler := promhttp.HandlerFor(metrics.Registry, promhttp.HandlerOpts{
-		ErrorHandling: promhttp.HTTPErrorOnError,
-	})
-	mux.Handle("/metrics", handler)
-	for path, extraHandler := range extraHandlers {
-		mux.Handle(path, extraHandler)
-	}
-
-	log.Info("starting metrics server")
-	srv := newServer(mux)
-	idleConnsClosed := make(chan struct{})
-	go func() {
-		<-ctx.Done()
-		log.Info("Shutting down metrics server with timeout of 10 seconds")
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := srv.Shutdown(ctx); err != nil {
-			// Error from closing listeners, or context timeout
-			log.Error(err, "error shutting down the HTTP server")
-		}
-		close(idleConnsClosed)
-	}()
-
-	log.Info("Serving metrics server", "bindAddress", metricsAddr)
-	go func() {
-		var err error
-		if ln, err2 := net.Listen("tcp", metricsAddr); err2 != nil {
-			err = fmt.Errorf("unable to listen at %s: %w", metricsAddr, err2)
-			cancel()
-		} else if err2 = srv.Serve(ln); err2 != nil && err2 != http.ErrServerClosed {
-			err = fmt.Errorf("unable to start metrics server: %w", err)
-			cancel()
-		}
-		<-idleConnsClosed
-		results <- err
-	}()
-
-	// Start each manager in its own goroutine
-	for name, mgr := range managers {
-		go func(mgr manager.Manager) {
-			var err error
-			if err2 := mgr.Start(ctx); err2 != nil {
-				err = fmt.Errorf("manager %s failed: %w", name, err2)
+			opts.Client.Cache = &client.CacheOptions{
+				DisableFor: []client.Object{
+					&corev1.Event{},
+				},
 			}
-			cancel() // cancel all other managers
-			results <- err
-		}(mgr)
-	}
+		})
+		if err != nil {
+			return fmt.Errorf("could not instantiate control plane cluster: %w", err)
+		}
 
-	var errs []error
-	shuttingDown := false
-	for len(errs) < routines {
-		select {
-		case <-appCtx.Done():
-			if !shuttingDown {
-				log.Info("Received shutdown signal")
-				cancel() // signal all managers to shut down
-				shuttingDown = true
-			}
-		case err := <-results:
-			errs = append(errs, err)
+		log.Info("Setting up ready check for control plane informer sync")
+		if err := mgr.AddReadyzCheck("control-plane-informer-sync", gardenerhealthz.NewCacheSyncHealthz(controlPlaneCluster.GetCache())); err != nil {
+			return err
+		}
+
+		log.Info("Adding control plane cluster to manager")
+		if err := mgr.Add(controlPlaneCluster); err != nil {
+			return fmt.Errorf("failed adding control plane cluster to manager: %w", err)
 		}
 	}
 
-	log.Info("All managers stopped")
-	return errors.Join(errs...)
-}
-
-func newServer(handler http.Handler) *http.Server {
-	return &http.Server{
-		Handler:           handler,
-		MaxHeaderBytes:    1 << 20,
-		IdleTimeout:       90 * time.Second, // matches http.DefaultTransport keep-alive timeout
-		ReadHeaderTimeout: 32 * time.Second,
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return err
 	}
+	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
+		return err
+	}
+
+	log.Info("Adding controllers to manager")
+	if err := (&certificate.Reconciler{
+		Config: *cfg,
+	}).AddToManager(mgr); err != nil {
+		return fmt.Errorf("failed adding Certificate controller: %w", err)
+	}
+	if err := (&issuercontrolplane.Reconciler{
+		Config: *cfg,
+	}).AddToManager(mgr, controlPlaneCluster); err != nil {
+		return fmt.Errorf("failed adding control plane Issuer controller: %w", err)
+	}
+
+	log.Info("Starting manager")
+	return mgr.Start(ctx)
 }

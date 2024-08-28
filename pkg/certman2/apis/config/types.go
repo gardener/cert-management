@@ -10,13 +10,13 @@ import (
 // CertManagerConfiguration defines the configuration for the Gardener cert-manager.
 type CertManagerConfiguration struct {
 	metav1.TypeMeta
-	// PrimaryClientConnection specifies the kubeconfig file and the client connection settings for primary
+	// ClientConnection specifies the kubeconfig file and the client connection settings for primary
 	// cluster containing the certificate and source resources the cert-manager should work on.
-	PrimaryClientConnection *PrimaryClientConnection
-	// SecondaryClientConnection contains client connection configurations
+	ClientConnection *ClientConnection
+	// ControlPlaneClientConnection contains client connection configurations
 	// for the cluster containing the provided issuers.
 	// If not set, the primary cluster is used.
-	SecondaryClientConnection *SecondaryClientConnection
+	ControlPlaneClientConnection *ControlPlaneClientConnection
 	// DNSClientConnection contains client connection configurations
 	// for the cluster used to manage DNS resources for DNS challenges.
 	// If not set, the secondary cluster is used.
@@ -34,16 +34,20 @@ type CertManagerConfiguration struct {
 	Controllers ControllerConfiguration
 }
 
-// PrimaryClientConnection contains client connection configurations
+// ClientConnection contains client connection configurations
 // for the primary cluster (certificates and source resources).
-type PrimaryClientConnection struct {
+type ClientConnection struct {
 	componentbaseconfig.ClientConnectionConfiguration
+	// CacheResyncPeriod specifies the duration how often the cache for the cluster is resynced.
+	CacheResyncPeriod *metav1.Duration
 }
 
-// SecondaryClientConnection contains client connection configurations
+// ControlPlaneClientConnection contains client connection configurations
 // for the cluster containing the provided issuers.
-type SecondaryClientConnection struct {
+type ControlPlaneClientConnection struct {
 	componentbaseconfig.ClientConnectionConfiguration
+	// CacheResyncPeriod specifies the duration how often the cache for the cluster is resynced.
+	CacheResyncPeriod *metav1.Duration
 }
 
 // DNSClientConnection contains client connection configurations

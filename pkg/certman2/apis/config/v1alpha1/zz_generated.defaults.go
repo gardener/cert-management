@@ -23,11 +23,11 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_CertManagerConfiguration(in *CertManagerConfiguration) {
 	SetDefaults_CertManagerConfiguration(in)
-	if in.PrimaryClientConnection != nil {
-		SetDefaults_PrimaryClientConnection(in.PrimaryClientConnection)
+	if in.ClientConnection != nil {
+		SetDefaults_ClientConnection(in.ClientConnection)
 	}
-	if in.SecondaryClientConnection != nil {
-		SetDefaults_SecondaryClientConnection(in.SecondaryClientConnection)
+	if in.ControlPlaneClientConnection != nil {
+		SetDefaults_ControlPlaneClientConnection(in.ControlPlaneClientConnection)
 	}
 	if in.DNSClientConnection != nil {
 		SetDefaults_DNSClientConnection(in.DNSClientConnection)
