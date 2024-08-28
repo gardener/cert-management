@@ -10,17 +10,17 @@ import (
 // CertManagerConfiguration defines the configuration for the Gardener cert-manager.
 type CertManagerConfiguration struct {
 	metav1.TypeMeta `json:",inline"`
-	// PrimaryClientConnection specifies the kubeconfig file and the client connection settings for primary
+	// ClientConnection specifies the kubeconfig file and the client connection settings for primary
 	// cluster containing the certificate and source resources the cert-manager should work on.
-	PrimaryClientConnection *PrimaryClientConnection `json:"primaryClientConnection,omitempty"`
-	// SecondaryClientConnection contains client connection configurations
+	ClientConnection *ClientConnection `json:"clientConnection,omitempty"`
+	// ControlPlaneClientConnection contains client connection configurations
 	// for the cluster containing the provided issuers.
 	// If not set, the primary cluster is used.
 	// +optional
-	SecondaryClientConnection *SecondaryClientConnection `json:"secondaryClientConnection,omitempty"`
+	ControlPlaneClientConnection *ControlPlaneClientConnection `json:"controlPlaneClientConnection,omitempty"`
 	// DNSClientConnection contains client connection configurations
 	// for the cluster used to manage DNS resources for DNS challenges.
-	// If not set, the secondary cluster is used.
+	// If not set, the control plane cluster is used.
 	// +optional
 	DNSClientConnection *DNSClientConnection `json:"dnsClientConnection,omitempty"`
 	// LeaderElection defines the configuration of leader election client.
@@ -38,16 +38,20 @@ type CertManagerConfiguration struct {
 	Controllers ControllerConfiguration `json:"controllers"`
 }
 
-// PrimaryClientConnection contains client connection configurations
+// ClientConnection contains client connection configurations
 // for the primary cluster (certificates and source resources).
-type PrimaryClientConnection struct {
+type ClientConnection struct {
 	componentbaseconfigv1alpha1.ClientConnectionConfiguration
+	// CacheResyncPeriod specifies the duration how often the cache for the cluster is resynced.
+	CacheResyncPeriod *metav1.Duration `json:"cacheResyncPeriod"`
 }
 
-// SecondaryClientConnection contains client connection configurations
+// ControlPlaneClientConnection contains client connection configurations
 // for the cluster containing the provided issuers.
-type SecondaryClientConnection struct {
+type ControlPlaneClientConnection struct {
 	componentbaseconfigv1alpha1.ClientConnectionConfiguration
+	// CacheResyncPeriod specifies the duration how often the cache for the cluster is resynced.
+	CacheResyncPeriod *metav1.Duration `json:"cacheResyncPeriod"`
 }
 
 // DNSClientConnection contains client connection configurations

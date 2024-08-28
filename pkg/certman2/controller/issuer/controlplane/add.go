@@ -1,4 +1,10 @@
-package issuer
+/*
+ * SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package controlplane
 
 import (
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
@@ -8,17 +14,20 @@ import (
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // ControllerName is the name of this controller.
-const ControllerName = "issuer"
+const ControllerName = "issuer-controlplane"
 
 // AddToManager adds Reconciler to the given manager.
-func (r *Reconciler) AddToManager(mgr manager.Manager) error {
-	r.Client = mgr.GetClient()
+func (r *Reconciler) AddToManager(mgr manager.Manager, controlPlaneCluster cluster.Cluster) error {
+	r.Client = controlPlaneCluster.GetClient()
 	if r.Clock == nil {
 		r.Clock = clock.RealClock{}
 	}
@@ -49,12 +58,13 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 	return builder.
 		ControllerManagedBy(mgr).
 		Named(ControllerName).
-		For(
-			&v1alpha1.Issuer{},
+		WatchesRawSource(
+			source.Kind(controlPlaneCluster.GetCache(), &v1alpha1.Issuer{}),
+			&handler.EnqueueRequestForObject{},
+			builder.WithPredicates(predicate.NewPredicateFuncs(func(obj client.Object) bool {
+				return obj.GetNamespace() == r.Config.Controllers.Issuer.Namespace
+			})),
 		).
-		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
-			return obj.GetNamespace() == r.Config.Controllers.Issuer.Namespace
-		})).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 1,
 		}).
