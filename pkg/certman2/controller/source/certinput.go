@@ -11,12 +11,10 @@ import (
 	"strconv"
 	"strings"
 
+	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 )
 
 // CertInput contains basic certificate data.
@@ -46,60 +44,69 @@ func GetCertSourceSpecForService(log logr.Logger, service *corev1.Service) (Cert
 		return nil, fmt.Errorf("empty secret name annotation %q", AnnotSecretname)
 	}
 
-	annotatedDomains, _ := GetDomainsFromAnnotations(service, true)
+	annotatedDomains, _ := getDomainsFromAnnotations(service.Annotations, true)
 	if annotatedDomains == nil {
 		return nil, fmt.Errorf("no valid domain name annotations found for service %q", service.Name)
 	}
 
+	certInput := augmentFromCommonAnnotations(service.Annotations, CertInput{
+		SecretNamespace: service.Namespace,
+		SecretName:      secretName,
+		Domains:         annotatedDomains,
+	})
+	return CertInputMap{secretName: certInput}, nil
+}
+
+func augmentFromCommonAnnotations(annotations map[string]string, certInput CertInput) CertInput {
+	if len(annotations) == 0 {
+		return certInput
+	}
+
 	var issuer *string
-	annotatedIssuer, ok := service.Annotations[AnnotIssuer]
+	annotatedIssuer, ok := annotations[AnnotIssuer]
 	if ok {
 		issuer = &annotatedIssuer
 	}
 
 	followCNAME := false
-	if value, ok := service.Annotations[AnnotFollowCNAME]; ok {
+	if value, ok := annotations[AnnotFollowCNAME]; ok {
 		followCNAME, _ = strconv.ParseBool(value)
 	}
-	preferredChain, _ := service.Annotations[AnnotPreferredChain]
+	preferredChain, _ := annotations[AnnotPreferredChain]
 
-	algorithm, _ := service.Annotations[AnnotPrivateKeyAlgorithm]
+	algorithm, _ := annotations[AnnotPrivateKeyAlgorithm]
 	keySize := 0
-	if keySizeStr, ok := service.Annotations[AnnotPrivateKeySize]; ok {
+	if keySizeStr, ok := annotations[AnnotPrivateKeySize]; ok {
 		if value, err := strconv.Atoi(keySizeStr); err == nil {
 			keySize = value
 		}
 	}
 
-	return CertInputMap{secretName: CertInput{
-		SecretNamespace:     service.Namespace,
-		SecretName:          secretName,
-		Domains:             annotatedDomains,
-		IssuerName:          issuer,
-		FollowCNAME:         followCNAME,
-		SecretLabels:        ExtractSecretLabels(service),
-		PreferredChain:      preferredChain,
-		PrivateKeyAlgorithm: algorithm,
-		PrivateKeySize:      keySize,
-		Annotations:         CopyAnnotations(service, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef),
-	}}, nil
+	certInput.FollowCNAME = followCNAME
+	certInput.IssuerName = issuer
+	certInput.PreferredChain = preferredChain
+	certInput.PrivateKeyAlgorithm = algorithm
+	certInput.PrivateKeySize = keySize
+	certInput.SecretLabels = extractSecretLabels(annotations)
+	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
+	return certInput
 }
 
-// GetDomainsFromAnnotations gets includes annotated DNS names (DNS names from annotation "cert.gardener.cloud/dnsnames"
+// getDomainsFromAnnotations gets includes annotated DNS names (DNS names from annotation "cert.gardener.cloud/dnsnames"
 // or alternatively "dns.gardener.cloud/dnsnames") and the optional common name.
 // The common name is added to the returned domain list
-func GetDomainsFromAnnotations(obj client.Object, forService bool) (annotatedDomains []string, cn string) {
-	a, ok := obj.GetAnnotations()[AnnotCertDNSNames]
+func getDomainsFromAnnotations(annotations map[string]string, forService bool) (annotatedDomains []string, cn string) {
+	a, ok := annotations[AnnotCertDNSNames]
 	if !ok {
 		if forService {
-			a, ok = obj.GetAnnotations()[AnnotDnsnames]
+			a, ok = annotations[AnnotDnsnames]
 			if a == "*" || a == "all" {
 				a = ""
 				ok = false
 			}
 		}
 		if !ok {
-			cn, ok = obj.GetAnnotations()[AnnotCommonName]
+			cn, ok = annotations[AnnotCommonName]
 			if !ok {
 				return nil, ""
 			}
@@ -109,7 +116,7 @@ func GetDomainsFromAnnotations(obj client.Object, forService bool) (annotatedDom
 		}
 	}
 
-	cn, _ = obj.GetAnnotations()[AnnotCommonName]
+	cn, _ = annotations[AnnotCommonName]
 	cn = strings.TrimSpace(cn)
 	annotatedDomains = []string{}
 	if cn != "" {
@@ -124,9 +131,8 @@ func GetDomainsFromAnnotations(obj client.Object, forService bool) (annotatedDom
 	return annotatedDomains, cn
 }
 
-// ExtractSecretLabels extracts label key value map from annotation.
-func ExtractSecretLabels(obj client.Object) (secretLabels map[string]string) {
-	if labels, ok := obj.GetAnnotations()[AnnotCertSecretLabels]; ok {
+func extractSecretLabels(annotations map[string]string) (secretLabels map[string]string) {
+	if labels, ok := annotations[AnnotCertSecretLabels]; ok {
 		secretLabels = map[string]string{}
 		for _, pair := range strings.Split(labels, ",") {
 			pair = strings.TrimSpace(pair)
@@ -139,14 +145,14 @@ func ExtractSecretLabels(obj client.Object) (secretLabels map[string]string) {
 	return
 }
 
-// CopyAnnotations extracts DNSRecord related annotations.
-func CopyAnnotations(obj client.Object, keys ...string) (annotations map[string]string) {
+// copyAnnotations extracts DNSRecord related annotations.
+func copyAnnotations(annotations map[string]string, keys ...string) (result map[string]string) {
 	for _, annotKey := range keys {
-		if value := obj.GetAnnotations()[annotKey]; value != "" {
-			if annotations == nil {
-				annotations = map[string]string{}
+		if value := annotations[annotKey]; value != "" {
+			if result == nil {
+				result = map[string]string{}
 			}
-			annotations[annotKey] = value
+			result[annotKey] = value
 		}
 	}
 	return
