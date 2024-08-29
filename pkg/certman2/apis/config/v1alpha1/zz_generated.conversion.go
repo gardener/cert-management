@@ -158,6 +158,7 @@ func autoConvert_v1alpha1_CertManagerConfiguration_To_config_CertManagerConfigur
 	if err := Convert_v1alpha1_ControllerConfiguration_To_config_ControllerConfiguration(&in.Controllers, &out.Controllers, s); err != nil {
 		return err
 	}
+	out.Class = in.Class
 	return nil
 }
 
@@ -214,6 +215,7 @@ func autoConvert_config_CertManagerConfiguration_To_v1alpha1_CertManagerConfigur
 	if err := Convert_config_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(&in.Controllers, &out.Controllers, s); err != nil {
 		return err
 	}
+	out.Class = in.Class
 	return nil
 }
 
