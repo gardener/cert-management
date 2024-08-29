@@ -1,8 +1,8 @@
-package service
+package ingress
 
 import (
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
-	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -11,7 +11,7 @@ import (
 )
 
 // ControllerName is the name of this controller.
-const ControllerName = "service-source"
+const ControllerName = "ingress-source"
 
 // AddToManager adds Reconciler to the given manager.
 func (r *Reconciler) AddToManager(mgr manager.Manager) error {
@@ -25,7 +25,7 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		ControllerManagedBy(mgr).
 		Named(ControllerName).
 		For(
-			&corev1.Service{},
+			&networkingv1.Ingress{},
 			builder.WithPredicates(Predicate(r.Class)),
 		).
 		WithOptions(controller.Options{
@@ -38,42 +38,42 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 func Predicate(class string) predicate.Predicate {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
-			service, ok := e.Object.(*corev1.Service)
-			if !ok || service == nil {
+			ingress, ok := e.Object.(*networkingv1.Ingress)
+			if !ok || ingress == nil {
 				return false
 			}
-			return isRelevant(service, class)
+			return isRelevant(ingress, class)
 		},
 
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			serviceOld, ok := e.ObjectOld.(*corev1.Service)
-			if !ok || serviceOld == nil {
+			ingressOld, ok := e.ObjectOld.(*networkingv1.Ingress)
+			if !ok || ingressOld == nil {
 				return false
 			}
-			serviceNew, ok := e.ObjectNew.(*corev1.Service)
-			if !ok || serviceNew == nil {
+			ingressNew, ok := e.ObjectNew.(*networkingv1.Ingress)
+			if !ok || ingressNew == nil {
 				return false
 			}
-			return isRelevant(serviceOld, class) || isRelevant(serviceNew, class)
+			return isRelevant(ingressOld, class) || isRelevant(ingressNew, class)
 		},
 
 		DeleteFunc: func(e event.DeleteEvent) bool {
-			service, ok := e.Object.(*corev1.Service)
-			if !ok || service == nil {
+			ingress, ok := e.Object.(*networkingv1.Ingress)
+			if !ok || ingress == nil {
 				return false
 			}
-			return isRelevant(service, class)
+			return isRelevant(ingress, class)
 		},
 
 		GenericFunc: func(event.GenericEvent) bool { return false },
 	}
 }
 
-func isRelevant(svc *corev1.Service, class string) bool {
-	if svc.Spec.Type != corev1.ServiceTypeLoadBalancer || !source.EquivalentClass(svc.Annotations[source.AnnotClass], class) {
+func isRelevant(ingress *networkingv1.Ingress, class string) bool {
+	if !source.EquivalentClass(ingress.Annotations[source.AnnotClass], class) {
 		return false
 	}
-	if _, ok := svc.Annotations[source.AnnotSecretname]; !ok {
+	if ingress.Annotations[source.AnnotationPurposeKey] != source.AnnotationPurposeValueManaged {
 		return false
 	}
 	return true
