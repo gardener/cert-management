@@ -32,6 +32,9 @@ type CertManagerConfiguration struct {
 	Debugging *componentbaseconfig.DebuggingConfiguration
 	// Controllers defines the configuration of the controllers.
 	Controllers ControllerConfiguration
+	// Class is the "cert.gardener.cloud/class" the cert-controller-manager is responsible for.
+	// If not set, the default class "gardencert" is used.
+	Class string
 }
 
 // ClientConnection contains client connection configurations

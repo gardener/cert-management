@@ -5,6 +5,9 @@ import (
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 )
 
+// DefaultClass is the default cert-class
+const DefaultClass = "gardencert"
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CertManagerConfiguration defines the configuration for the Gardener cert-manager.
@@ -36,6 +39,9 @@ type CertManagerConfiguration struct {
 	Debugging *componentbaseconfigv1alpha1.DebuggingConfiguration `json:"debugging,omitempty"`
 	// Controllers defines the configuration of the controllers.
 	Controllers ControllerConfiguration `json:"controllers"`
+	// Class is the "cert.gardener.cloud/class" the cert-controller-manager is responsible for.
+	// Empty class is equivalent to default class "gardencert".
+	Class string `json:"class"`
 }
 
 // ClientConnection contains client connection configurations

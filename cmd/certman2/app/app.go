@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/service"
 	cmdutils "github.com/gardener/gardener/cmd/utils"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/controllerutils/routes"
@@ -236,6 +237,11 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 		Config: *cfg,
 	}).AddToManager(mgr); err != nil {
 		return fmt.Errorf("failed adding Certificate controller: %w", err)
+	}
+	if err := (&service.Reconciler{
+		Class: cfg.Class,
+	}).AddToManager(mgr); err != nil {
+		return fmt.Errorf("failed adding source Service controller: %w", err)
 	}
 	if err := (&issuercontrolplane.Reconciler{
 		Config: *cfg,
