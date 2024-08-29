@@ -47,6 +47,10 @@ const (
 	AnnotDNSRecordProviderType = "cert.gardener.cloud/dnsrecord-provider-type"
 	// AnnotDNSRecordSecretRef is the annotation for providing the secret ref for DNS records.
 	AnnotDNSRecordSecretRef = "cert.gardener.cloud/dnsrecord-secret-ref"
+	// AnnotationPurposeKey is the annotation key for the purpose
+	AnnotationPurposeKey = "cert.gardener.cloud/purpose"
+	// AnnotationPurposeValueManaged is the managed value for the purpose annotation
+	AnnotationPurposeValueManaged = "managed"
 
 	// DefaultClass is the default cert-class
 	DefaultClass = configv1alpha1.DefaultClass

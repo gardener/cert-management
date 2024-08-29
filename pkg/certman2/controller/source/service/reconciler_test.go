@@ -189,6 +189,7 @@ var _ = Describe("Reconciler", func() {
 			svc.Annotations[source.AnnotPreferredChain] = "my-chain"
 			svc.Annotations[source.AnnotPrivateKeyAlgorithm] = "ECDSA"
 			svc.Annotations[source.AnnotPrivateKeySize] = "384"
+			cert.Spec.SecretName = ptr.To("foo-secret")
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			test(&certmanv1alpha1.CertificateSpec{
 				CommonName:   nil,
