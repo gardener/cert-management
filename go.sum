@@ -53,12 +53,16 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/gardener/controller-manager-library v0.2.1-0.20240610092456-2d1cdc3e6f13 h1:hmJwTmqLBGEPtVDW5tEZiW432m9/zb7BnBo4oZCTmaw=
 github.com/gardener/controller-manager-library v0.2.1-0.20240610092456-2d1cdc3e6f13/go.mod h1:hszuZW/ht2BkGWQZKKejZfgF8H83mp7XMVdo8i1LJzo=
+github.com/gardener/controller-manager-library v0.2.1-0.20240816122604-33f686e858cc h1:G/mTdYdrGbOWdi2uzlNxPEZWAQblKfdpDGve5Wg9wk8=
+github.com/gardener/controller-manager-library v0.2.1-0.20240816122604-33f686e858cc/go.mod h1:f8YBvgQ0yC7wCUm5OZUJjT57ngJYh8u9nExmKquvAyg=
 github.com/gardener/etcd-druid v0.22.3 h1:WRUSIlTG/HX7G/cGRzMyU7wIEmIKjp4On6PL/P6NbWI=
 github.com/gardener/etcd-druid v0.22.3/go.mod h1:FROhfVKyWBo4krlPe3R6FIhJRmOmijEWBdEeUP0CJjE=
 github.com/gardener/external-dns-management v0.19.0 h1:R1qUjeqirCS+EV7DF99HL6SWtRLSuVohbMnkhJHmINc=
 github.com/gardener/external-dns-management v0.19.0/go.mod h1:s8O/Weu6s6hBMpNPV99PNId4HebXuwy3Xs7bGWTn9Ts=
 github.com/gardener/external-dns-management v0.20.1 h1:ik7Rs/jvaA77yQuPx+z+jIZl4fVv0zDxVFPF/MkjOzs=
 github.com/gardener/external-dns-management v0.20.1/go.mod h1:J7CRy91tRSEtZmxbiaPUFrmFxPKw4vF1ZmGUNrKKY6c=
+github.com/gardener/external-dns-management v0.21.0 h1:khcNIOsiazGEdpDCt1LV+amd7ejiivrm65JuIi3tC6s=
+github.com/gardener/external-dns-management v0.21.0/go.mod h1:B9zkqy/DEEN2bEmbdhYaY784+NzB5R5SC7+nGQA5DBg=
 github.com/gardener/gardener v1.100.0 h1:vN8LH7nW8GZUOReaj4DuIUTCLEI+5AeYVPx/J/xo8gM=
 github.com/gardener/gardener v1.100.0/go.mod h1:OzCK5XFSNma6u1xUDYDpwbgJwmpo9WVVEu/pR21sarM=
 github.com/gardener/gardener v1.101.0 h1:ZWpRfhl6IIq3VfpanUnYaP2LSeeDcBY+sxesVFQT55U=
