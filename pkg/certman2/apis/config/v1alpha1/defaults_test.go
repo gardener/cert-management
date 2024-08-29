@@ -27,6 +27,7 @@ var _ = Describe("Defaults", func() {
 
 			Expect(obj.LogLevel).To(Equal(logger.InfoLevel))
 			Expect(obj.LogFormat).To(Equal(logger.FormatJSON))
+			Expect(obj.Class).To(Equal(DefaultClass))
 
 			Expect(obj.Server.HealthProbes.BindAddress).To(BeEmpty())
 			Expect(obj.Server.HealthProbes.Port).To(Equal(2751))

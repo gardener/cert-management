@@ -31,6 +31,9 @@ func SetDefaults_CertManagerConfiguration(obj *CertManagerConfiguration) {
 	if obj.DNSClientConnection == nil {
 		obj.DNSClientConnection = &DNSClientConnection{}
 	}
+	if obj.Class == "" {
+		obj.Class = DefaultClass
+	}
 }
 
 // SetDefaults_ClientConnection sets defaults for the primary client connection.
