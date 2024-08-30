@@ -51,7 +51,7 @@ cert-management:
             - repository: europe-docker.pkg.dev/gardener-project/releases
         publish:
           helmcharts:
-          - *ert-management
+          - *cert-management
 
     pull-request:
       traits:
@@ -60,7 +60,7 @@ cert-management:
           preprocess: inject-commit-hash
         publish:
           helmcharts:
-          - *ert-management
+          - *cert-management
 
     release:
       traits:
