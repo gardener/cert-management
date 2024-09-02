@@ -277,6 +277,7 @@ var _ = Describe("Reconciler", func() {
 					CommonName: ptr.To("host2.example.com"),
 					SecretRef:  &corev1.SecretReference{Name: "host2-secret", Namespace: "test"},
 				})
+			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateCreated ")
 
 			ingress.Spec.TLS = []networkingv1.IngressTLS{
 				{
@@ -300,7 +301,7 @@ var _ = Describe("Reconciler", func() {
 					SecretRef:  &corev1.SecretReference{Name: "host3-secret", Namespace: "test"},
 				},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateCreated ", "Normal CertificateDeleted ", "Normal CertificateUpdated ", "Normal CertificateCreated ")
+			assertEvents(fakeRecorder.Events, "Normal CertificateDeleted ", "Normal CertificateUpdated ", "Normal CertificateCreated ")
 		})
 
 		It("should delete certificate object if ingress TLS is dropped", func() {
