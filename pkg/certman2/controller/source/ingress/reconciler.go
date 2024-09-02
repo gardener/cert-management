@@ -34,7 +34,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	if ingress.DeletionTimestamp != nil || ingress.Annotations[source.AnnotationPurposeKey] != source.AnnotationPurposeValueManaged {
+	if ingress.Annotations[source.AnnotationPurposeKey] != source.AnnotationPurposeValueManaged {
 		return r.DoDelete(ctx, log, ingress)
 	} else {
 		return r.reconcile(ctx, log, ingress)

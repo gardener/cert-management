@@ -26,7 +26,7 @@ func (r *Reconciler) reconcile(
 	var certInputMap source.CertInputMap
 	if isRelevant(ingress, r.Class) {
 		var err error
-		certInputMap, err = r.getCertificateInputMap(log, ingress)
+		certInputMap, err = r.getCertificateInputMap(ctx, log, ingress)
 		if err != nil {
 			r.Recorder.Eventf(ingress, corev1.EventTypeWarning, "Invalid", "%s", err)
 			return reconcile.Result{}, err
@@ -36,8 +36,8 @@ func (r *Reconciler) reconcile(
 	return r.DoReconcile(ctx, log, ingress, certInputMap)
 }
 
-func (r *Reconciler) getCertificateInputMap(log logr.Logger, ingress *networkingv1.Ingress) (source.CertInputMap, error) {
-	return source.GetCertInputByCollector(log, ingress, func(obj client.Object) ([]*source.TLSData, error) {
+func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger, ingress *networkingv1.Ingress) (source.CertInputMap, error) {
+	return source.GetCertInputByCollector(ctx, log, ingress, func(_ context.Context, obj client.Object) ([]*source.TLSData, error) {
 		data, ok := obj.(*networkingv1.Ingress)
 		if !ok {
 			return nil, fmt.Errorf("unexpected ingress type: %t", obj)
