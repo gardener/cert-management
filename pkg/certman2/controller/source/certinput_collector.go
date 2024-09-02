@@ -7,6 +7,7 @@
 package source
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
@@ -15,7 +16,7 @@ import (
 )
 
 // TLSDataCollector collects TLS secret names for hosts.
-type TLSDataCollector func(obj client.Object) ([]*TLSData, error)
+type TLSDataCollector func(ctx context.Context, obj client.Object) ([]*TLSData, error)
 
 // TLSData contains the collection results: secret name and host list.
 type TLSData struct {
@@ -25,14 +26,14 @@ type TLSData struct {
 }
 
 // GetCertInputByCollector collects data from annotations and from the resources needed for creating certificates.
-func GetCertInputByCollector(log logr.Logger, obj client.Object, tlsDataCollector TLSDataCollector) (CertInputMap, error) {
+func GetCertInputByCollector(ctx context.Context, log logr.Logger, obj client.Object, tlsDataCollector TLSDataCollector) (CertInputMap, error) {
 	inputMap := CertInputMap{}
 
 	if obj.GetAnnotations()[AnnotationPurposeKey] != AnnotationPurposeValueManaged {
 		return nil, nil
 	}
 
-	tlsDataArray, err := tlsDataCollector(obj)
+	tlsDataArray, err := tlsDataCollector(ctx, obj)
 	if err != nil {
 		return inputMap, err
 	}

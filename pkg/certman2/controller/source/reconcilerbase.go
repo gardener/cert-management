@@ -36,7 +36,7 @@ type ReconcilerBase struct {
 // DoReconcile reconciles for given object and certInput.
 func (r *ReconcilerBase) DoReconcile(ctx context.Context, log logr.Logger, obj client.Object, certInputMap CertInputMap) (reconcile.Result, error) {
 	newCerts := map[string]*certmanv1alpha1.Certificate{}
-	ownedCerts, err := r.getExistingOwnedCertificates(ctx, obj)
+	ownedCerts, err := r.getExistingOwnedCertificates(ctx, client.ObjectKeyFromObject(obj))
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -98,7 +98,7 @@ func (r *ReconcilerBase) createOrUpdateCert(ctx context.Context, log logr.Logger
 func (r *ReconcilerBase) DoDelete(ctx context.Context, log logr.Logger, obj client.Object) (reconcile.Result, error) {
 	log.Info("deleting")
 
-	ownedCerts, err := r.getExistingOwnedCertificates(ctx, obj)
+	ownedCerts, err := r.getExistingOwnedCertificates(ctx, client.ObjectKeyFromObject(obj))
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -110,17 +110,17 @@ func (r *ReconcilerBase) DoDelete(ctx context.Context, log logr.Logger, obj clie
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcilerBase) getExistingOwnedCertificates(ctx context.Context, obj client.Object) ([]certmanv1alpha1.Certificate, error) {
+func (r *ReconcilerBase) getExistingOwnedCertificates(ctx context.Context, key client.ObjectKey) ([]certmanv1alpha1.Certificate, error) {
 	candidates := &certmanv1alpha1.CertificateList{}
-	if err := r.Client.List(ctx, candidates, client.InNamespace(obj.GetNamespace())); err != nil {
-		return nil, fmt.Errorf("failed to list owned certificates for %s %s: %w", r.GVK.Kind, client.ObjectKeyFromObject(obj), err)
+	if err := r.Client.List(ctx, candidates, client.InNamespace(key.Namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list owned certificates for %s %s: %w", r.GVK.Kind, key, err)
 	}
 
 	var ownedCerts []certmanv1alpha1.Certificate
 outer:
 	for _, candidate := range candidates.Items {
 		for _, owner := range candidate.GetOwnerReferences() {
-			if owner.Name == obj.GetName() && owner.Kind == r.GVK.Kind && owner.APIVersion == r.GVK.GroupVersion().String() {
+			if owner.Name == key.Name && owner.Kind == r.GVK.Kind && owner.APIVersion == r.GVK.GroupVersion().String() {
 				ownedCerts = append(ownedCerts, candidate)
 				continue outer
 			}

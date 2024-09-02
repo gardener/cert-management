@@ -10,6 +10,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/gateways_crd_watchdog"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/ingress"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/istio_gateway"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/service"
 	cmdutils "github.com/gardener/gardener/cmd/utils"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -232,6 +236,12 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 		return err
 	}
 
+	log.Info("Checking relevant gateway CRDs")
+	crdState, err := gateways_crd_watchdog.CheckGatewayCRDs(ctx, restConfig)
+	if err != nil {
+		return fmt.Errorf("failed to check for relevant gateways CRDs: %w", err)
+	}
+
 	log.Info("Adding controllers to manager")
 	if err := (&certificate.Reconciler{
 		Config: *cfg,
@@ -239,10 +249,39 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 		return fmt.Errorf("failed adding Certificate controller: %w", err)
 	}
 	if err := (&service.Reconciler{
-		Class: cfg.Class,
+		ReconcilerBase: source.ReconcilerBase{
+			Class: cfg.Class,
+		},
 	}).AddToManager(mgr); err != nil {
 		return fmt.Errorf("failed adding source Service controller: %w", err)
 	}
+	if err := (&ingress.Reconciler{
+		ReconcilerBase: source.ReconcilerBase{
+			Class: cfg.Class,
+		},
+	}).AddToManager(mgr); err != nil {
+		return fmt.Errorf("failed adding source Ingress controller: %w", err)
+	}
+	if err := (&gateways_crd_watchdog.Reconciler{
+		CheckGatewayCRDsState: *crdState,
+	}).AddToManager(mgr); err != nil {
+		return fmt.Errorf("failed adding gateway CRD watchdog controller: %w", err)
+	}
+	if version := crdState.IstioGatewayVersion(); version != istio_gateway.VersionNone {
+		if err := (&istio_gateway.Reconciler{
+			ReconcilerBase: source.ReconcilerBase{
+				Class: cfg.Class,
+			},
+			ActiveVersion: version,
+		}).AddToManager(mgr); err != nil {
+			return fmt.Errorf("failed adding source istio-gateway controller: %w", err)
+		}
+	}
+	/*
+		if version := crdState.KubernetesGatewayVersion(); version != xxx.VersionNone {
+
+		}
+	*/
 	if err := (&issuercontrolplane.Reconciler{
 		Config: *cfg,
 	}).AddToManager(mgr, controlPlaneCluster); err != nil {
