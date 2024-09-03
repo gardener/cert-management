@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.14.7
 	github.com/gardener/controller-manager-library v0.2.1-0.20240816122604-33f686e858cc
 	github.com/gardener/external-dns-management v0.21.1
-	github.com/gardener/gardener v1.102.0
+	github.com/gardener/gardener v1.102.1
 	github.com/go-acme/lego/v4 v4.18.0
 	github.com/miekg/dns v1.1.62
 	github.com/onsi/ginkgo/v2 v2.20.2
