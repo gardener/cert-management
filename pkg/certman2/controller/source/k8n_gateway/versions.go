@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package istio_gateway
+package k8s_gateway
 
 import (
-	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
-	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 // Version is the version of the istio gateway.
@@ -20,14 +20,14 @@ type Version string
 const (
 	VersionV1       Version = "v1"
 	VersionV1beta1  Version = "v1beta1"
-	VersionV1alpha3 Version = "v1alpha3"
+	VersionV1alpha2 Version = "v1alpha2"
 	VersionNone     Version = "<not deployed>"
 )
 
 // GetPreferredVersion retrieves the preferred version from the custom resource definition.
 func GetPreferredVersion(crd *apiextensionsv1.CustomResourceDefinition) Version {
 	var preferredVersion = VersionNone
-	if crd.GetName() != "gateways.networking.istio.io" {
+	if crd.GetName() != "gateways.gateway.networking.k8s.io" {
 		return preferredVersion
 	}
 
@@ -35,19 +35,19 @@ func GetPreferredVersion(crd *apiextensionsv1.CustomResourceDefinition) Version 
 		if !v.Served {
 			continue
 		}
-		var igv Version
+		var k8sv Version
 		switch v.Name {
 		case "v1":
-			igv = VersionV1
+			k8sv = VersionV1
 		case "v1beta1":
-			igv = VersionV1beta1
-		case "v1alpha3":
-			igv = VersionV1alpha3
+			k8sv = VersionV1beta1
+		case "v1alpha2":
+			k8sv = VersionV1alpha2
 		default:
 			continue
 		}
-		if preferredVersion == VersionNone || preferredVersion > igv {
-			preferredVersion = igv
+		if preferredVersion == VersionNone || preferredVersion > k8sv {
+			preferredVersion = k8sv
 		}
 	}
 	return preferredVersion
@@ -56,37 +56,37 @@ func GetPreferredVersion(crd *apiextensionsv1.CustomResourceDefinition) Version 
 func newGateway(version Version) client.Object {
 	switch version {
 	case VersionV1:
-		return &istionetworkingv1.Gateway{}
+		return &gatewayapisv1.Gateway{}
 	case VersionV1beta1:
-		return &istionetworkingv1beta1.Gateway{}
-	case VersionV1alpha3:
-		return &istionetworkingv1alpha3.Gateway{}
+		return &gatewayapisv1beta1.Gateway{}
+	case VersionV1alpha2:
+		return &gatewayapisv1alpha2.Gateway{}
 	default:
 		return nil
 	}
 }
 
-func newVirtualService(version Version) client.Object {
+func newHTTPRoute(version Version) client.Object {
 	switch version {
 	case VersionV1:
-		return &istionetworkingv1.VirtualService{}
+		return &gatewayapisv1.HTTPRoute{}
 	case VersionV1beta1:
-		return &istionetworkingv1beta1.VirtualService{}
-	case VersionV1alpha3:
-		return &istionetworkingv1alpha3.VirtualService{}
+		return &gatewayapisv1beta1.HTTPRoute{}
+	case VersionV1alpha2:
+		return &gatewayapisv1alpha2.HTTPRoute{}
 	default:
 		return nil
 	}
 }
 
-func newVirtualServiceList(version Version) client.ObjectList {
+func newHTTPRouteList(version Version) client.ObjectList {
 	switch version {
 	case VersionV1:
-		return &istionetworkingv1.VirtualServiceList{}
+		return &gatewayapisv1.HTTPRouteList{}
 	case VersionV1beta1:
-		return &istionetworkingv1beta1.VirtualServiceList{}
-	case VersionV1alpha3:
-		return &istionetworkingv1alpha3.VirtualServiceList{}
+		return &gatewayapisv1beta1.HTTPRouteList{}
+	case VersionV1alpha2:
+		return &gatewayapisv1alpha2.HTTPRouteList{}
 	default:
 		return nil
 	}

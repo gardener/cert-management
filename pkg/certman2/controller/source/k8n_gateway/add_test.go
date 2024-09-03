@@ -1,15 +1,15 @@
-package istio_gateway
+package k8s_gateway
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
-	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 )
@@ -67,7 +67,7 @@ func createAddTestFunc[T client.Object](obj T) func() {
 }
 
 var _ = Describe("Add", func() {
-	Describe("#Predicate-v1", createAddTestFunc(&istionetworkingv1.Gateway{}))
-	Describe("#Predicate-v1beta1", createAddTestFunc(&istionetworkingv1beta1.Gateway{}))
-	Describe("#Predicate-v1alpha3", createAddTestFunc(&istionetworkingv1alpha3.Gateway{}))
+	Describe("#Predicate-v1", createAddTestFunc(&gatewayapisv1.Gateway{}))
+	Describe("#Predicate-v1beta1", createAddTestFunc(&gatewayapisv1beta1.Gateway{}))
+	Describe("#Predicate-v1alpha2", createAddTestFunc(&gatewayapisv1alpha2.Gateway{}))
 })
