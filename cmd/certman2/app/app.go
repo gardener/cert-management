@@ -14,6 +14,7 @@ import (
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/gateways_crd_watchdog"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/ingress"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/istio_gateway"
+	k8s_gateway "github.com/gardener/cert-management/pkg/certman2/controller/source/k8n_gateway"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/service"
 	cmdutils "github.com/gardener/gardener/cmd/utils"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -277,11 +278,16 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 			return fmt.Errorf("failed adding source istio-gateway controller: %w", err)
 		}
 	}
-	/*
-		if version := crdState.KubernetesGatewayVersion(); version != xxx.VersionNone {
-
+	if version := crdState.KubernetesGatewayVersion(); version != k8s_gateway.VersionNone {
+		if err := (&k8s_gateway.Reconciler{
+			ReconcilerBase: source.ReconcilerBase{
+				Class: cfg.Class,
+			},
+			ActiveVersion: version,
+		}).AddToManager(mgr); err != nil {
+			return fmt.Errorf("failed adding source k8s-gateway controller: %w", err)
 		}
-	*/
+	}
 	if err := (&issuercontrolplane.Reconciler{
 		Config: *cfg,
 	}).AddToManager(mgr, controlPlaneCluster); err != nil {

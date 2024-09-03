@@ -1,4 +1,4 @@
-package istio_gateway
+package k8s_gateway
 
 import (
 	"context"
@@ -8,12 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	networkingv1 "istio.io/api/networking/v1"
-	networkingv1alpha3 "istio.io/api/networking/v1alpha3"
-	networkingv1beta1 "istio.io/api/networking/v1beta1"
-	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
-	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -23,6 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
@@ -74,7 +71,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 							Expect(cert.Name).To(ContainSubstring("foo-gateway-"))
 							Expect(cert.OwnerReferences).To(HaveLen(1))
 							Expect(cert.OwnerReferences[0]).To(MatchFields(IgnoreExtras, Fields{
-								"APIVersion": Equal("networking.istio.io/" + string(version)),
+								"APIVersion": Equal("gateway.networking.k8s.io/" + string(version)),
 								"Kind":       Equal("Gateway"),
 								"Name":       Equal("foo"),
 								"Controller": PointTo(BeTrue()),
@@ -117,13 +114,15 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
 				source.AnnotDnsnames:        "*",
 			})
-			modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
-				return []*networkingv1.Server{
+			modifyListeners(gateway, func(servers []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+				return []gatewayapisv1.Listener{
 					{
-						Hosts: []string{"host1.example.com"},
-						Tls: &networkingv1.ServerTLSSettings{
-							Mode:           networkingv1.ServerTLSSettings_SIMPLE,
-							CredentialName: "host1-secret",
+						Hostname: ptr.To[gatewayapisv1.Hostname]("host1.example.com"),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.GatewayTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{
+								{Name: "host1-secret"},
+							},
 						},
 					},
 				}
@@ -134,7 +133,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 					Namespace: "test",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion:         "networking.istio.io/" + string(version),
+							APIVersion:         "gateway.networking.k8s.io/" + string(version),
 							Kind:               "Gateway",
 							Name:               "foo",
 							UID:                "123-456",
@@ -161,18 +160,18 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 
 			It("should drop certificate object if no TLS set", func() {
 				Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
-				modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
-					servers[0].Tls = nil
-					return servers
+				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+					listeners[0].TLS = nil
+					return listeners
 				})
 				test(nil)
 				testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
 			})
 
-			It("should create invalid certificate if no hosts are set", func() {
-				modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
-					servers[0].Hosts = nil
-					return servers
+			It("should create invalid certificate if no hostname is set", func() {
+				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+					listeners[0].Hostname = nil
+					return listeners
 				})
 				test(&certmanv1alpha1.CertificateSpec{
 					SecretRef: &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
@@ -270,20 +269,24 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			})
 
 			It("should create multiple certificates for multiple TLS", func() {
-				modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
-					return []*networkingv1.Server{
+				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+					return []gatewayapisv1.Listener{
 						{
-							Hosts: []string{"host1.example.com", "host1-alt.example.com"},
-							Tls: &networkingv1.ServerTLSSettings{
-								Mode:           networkingv1.ServerTLSSettings_SIMPLE,
-								CredentialName: "host1-secret",
+							Hostname: ptr.To[gatewayapisv1.Hostname]("host1.example.com"),
+							Protocol: gatewayapisv1.HTTPSProtocolType,
+							TLS: &gatewayapisv1.GatewayTLSConfig{
+								CertificateRefs: []gatewayapisv1.SecretObjectReference{
+									{Name: "host1-secret"},
+								},
 							},
 						},
 						{
-							Hosts: []string{"host2.example.com"},
-							Tls: &networkingv1.ServerTLSSettings{
-								Mode:           networkingv1.ServerTLSSettings_SIMPLE,
-								CredentialName: "host2-secret",
+							Hostname: ptr.To[gatewayapisv1.Hostname]("host2.example.com"),
+							Protocol: gatewayapisv1.HTTPSProtocolType,
+							TLS: &gatewayapisv1.GatewayTLSConfig{
+								CertificateRefs: []gatewayapisv1.SecretObjectReference{
+									{Name: "host2-secret"},
+								},
 							},
 						},
 					}
@@ -291,7 +294,6 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				testMulti(
 					&certmanv1alpha1.CertificateSpec{
 						CommonName: ptr.To("host1.example.com"),
-						DNSNames:   []string{"host1-alt.example.com"},
 						SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 					},
 					&certmanv1alpha1.CertificateSpec{
@@ -300,22 +302,20 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 					})
 				testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateCreated ")
 
-				modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
-					servers[0].Hosts = []string{"host1.example.com", "host1.other.example.com"}
-					servers[1] = &networkingv1.Server{
-						Hosts: []string{"host3.example.com"},
-						Tls: &networkingv1.ServerTLSSettings{
-							Mode:           networkingv1.ServerTLSSettings_SIMPLE,
-							CredentialName: "host3-secret",
+				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+					listeners[0].Hostname = ptr.To[gatewayapisv1.Hostname]("host1b.example.com")
+					listeners[1].Hostname = ptr.To[gatewayapisv1.Hostname]("host3.example.com")
+					listeners[1].TLS = &gatewayapisv1.GatewayTLSConfig{
+						CertificateRefs: []gatewayapisv1.SecretObjectReference{
+							{Name: "host3-secret"},
 						},
 					}
-					return servers
+					return listeners
 				})
 				Expect(fakeClient.Update(ctx, gateway)).NotTo(HaveOccurred())
 				testWithoutCreation([]*certmanv1alpha1.CertificateSpec{
 					{
-						CommonName: ptr.To("host1.example.com"),
-						DNSNames:   []string{"host1.other.example.com"},
+						CommonName: ptr.To("host1b.example.com"),
 						SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 					},
 					{
@@ -331,9 +331,9 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 					CommonName: ptr.To("host1.example.com"),
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				})
-				modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
-					servers[0].Tls = nil
-					return servers
+				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+					listeners[0].TLS = nil
+					return listeners
 				})
 				Expect(fakeClient.Update(ctx, gateway)).NotTo(HaveOccurred())
 				testWithoutCreation(nil)
@@ -346,17 +346,17 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 var (
 	_ = Describe("Reconciler-v1", createReconcilerTestFunc(newGateway(VersionV1), VersionV1))
 	_ = Describe("Reconciler-v1beta1", createReconcilerTestFunc(newGateway(VersionV1beta1), VersionV1beta1))
-	_ = Describe("Reconciler-v1alpha3", createReconcilerTestFunc(newGateway(VersionV1alpha3), VersionV1alpha3))
+	_ = Describe("Reconciler-v1alpha2", createReconcilerTestFunc(newGateway(VersionV1alpha2), VersionV1alpha2))
 )
 
-func modifyServers(gateway client.Object, modifier func(servers []*networkingv1.Server) []*networkingv1.Server) {
+func modifyListeners(gateway client.Object, modifier func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener) {
 	switch g := gateway.(type) {
-	case *istionetworkingv1.Gateway:
-		g.Spec.Servers = modifier(g.Spec.Servers)
-	case *istionetworkingv1beta1.Gateway:
-		var input []*networkingv1.Server
-		if len(g.Spec.Servers) > 0 {
-			data, err := json.Marshal(g.Spec.Servers)
+	case *gatewayapisv1.Gateway:
+		g.Spec.Listeners = modifier(g.Spec.Listeners)
+	case *gatewayapisv1beta1.Gateway:
+		var input []gatewayapisv1.Listener
+		if len(g.Spec.Listeners) > 0 {
+			data, err := json.Marshal(g.Spec.Listeners)
 			Expect(err).NotTo(HaveOccurred())
 			err = json.Unmarshal(data, &input)
 			Expect(err).NotTo(HaveOccurred())
@@ -365,17 +365,17 @@ func modifyServers(gateway client.Object, modifier func(servers []*networkingv1.
 		if len(output) > 0 {
 			data, err := json.Marshal(output)
 			Expect(err).NotTo(HaveOccurred())
-			var tmp []*networkingv1beta1.Server
+			var tmp []gatewayapisv1beta1.Listener
 			err = json.Unmarshal(data, &tmp)
 			Expect(err).NotTo(HaveOccurred())
-			g.Spec.Servers = tmp
+			g.Spec.Listeners = tmp
 		} else {
-			g.Spec.Servers = nil
+			g.Spec.Listeners = nil
 		}
-	case *istionetworkingv1alpha3.Gateway:
-		var input []*networkingv1.Server
-		if len(g.Spec.Servers) > 0 {
-			data, err := json.Marshal(g.Spec.Servers)
+	case *gatewayapisv1alpha2.Gateway:
+		var input []gatewayapisv1.Listener
+		if len(g.Spec.Listeners) > 0 {
+			data, err := json.Marshal(g.Spec.Listeners)
 			Expect(err).NotTo(HaveOccurred())
 			err = json.Unmarshal(data, &input)
 			Expect(err).NotTo(HaveOccurred())
@@ -384,12 +384,12 @@ func modifyServers(gateway client.Object, modifier func(servers []*networkingv1.
 		if len(output) > 0 {
 			data, err := json.Marshal(output)
 			Expect(err).NotTo(HaveOccurred())
-			var tmp []*networkingv1alpha3.Server
+			var tmp []gatewayapisv1alpha2.Listener
 			err = json.Unmarshal(data, &tmp)
 			Expect(err).NotTo(HaveOccurred())
-			g.Spec.Servers = tmp
+			g.Spec.Listeners = tmp
 		} else {
-			g.Spec.Servers = nil
+			g.Spec.Listeners = nil
 		}
 	default:
 		Fail("unexpected type")

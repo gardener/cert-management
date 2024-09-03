@@ -6,6 +6,7 @@ import (
 
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/istio_gateway"
+	k8s_gateway "github.com/gardener/cert-management/pkg/certman2/controller/source/k8n_gateway"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
@@ -35,8 +36,9 @@ var relevantCRDs = []string{
 }
 
 type CheckGatewayCRDsState struct {
-	relevantCRDDeployed map[string]bool
-	istioGatewayVersion istio_gateway.Version
+	relevantCRDDeployed      map[string]bool
+	istioGatewayVersion      istio_gateway.Version
+	kubernetesGatewayVersion k8s_gateway.Version
 }
 
 // CheckGatewayCRDs checks for relevant gateway custom resource definition deployments.
@@ -67,7 +69,7 @@ func CheckGatewayCRDs(ctx context.Context, restConfig *rest.Config) (*CheckGatew
 			case istioGatewaysCRD:
 				state.istioGatewayVersion = istio_gateway.GetPreferredVersion(&crd)
 			case k8nGatewaysCRD:
-				// TODO
+				state.kubernetesGatewayVersion = k8s_gateway.GetPreferredVersion(&crd)
 			}
 		}
 	}
@@ -79,10 +81,9 @@ func (s *CheckGatewayCRDsState) IstioGatewayVersion() istio_gateway.Version {
 	return s.istioGatewayVersion
 }
 
-// KubernetesGatewayVersion returns Kubernetes gateway version to watch.
-func (s *CheckGatewayCRDsState) KubernetesGatewayVersion() int32 {
-	// TODO
-	return -1
+// KubernetesGatewayVersion returns Kubernetes Gateway API gateway version to watch.
+func (s *CheckGatewayCRDsState) KubernetesGatewayVersion() k8s_gateway.Version {
+	return s.kubernetesGatewayVersion
 }
 
 // AddToManager adds Reconciler to the given manager.

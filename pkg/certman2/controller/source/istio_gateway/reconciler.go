@@ -26,7 +26,7 @@ type Reconciler struct {
 }
 
 func (r *Reconciler) Complete() {
-	r.GVK = schema.GroupVersionKind{Group: "networking.istio.io", Version: string(r.ActiveVersion), Kind: "Gateway"}
+	r.GVK = schema.GroupVersionKind{Group: istionetworkingv1.GroupName, Version: string(r.ActiveVersion), Kind: "Gateway"}
 }
 
 // Reconcile reconciles Gateway resources.
