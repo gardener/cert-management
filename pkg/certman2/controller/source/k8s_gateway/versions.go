@@ -7,7 +7,10 @@
 package k8s_gateway
 
 import (
+	"strings"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -21,36 +24,28 @@ const (
 	VersionV1       Version = "v1"
 	VersionV1beta1  Version = "v1beta1"
 	VersionV1alpha2 Version = "v1alpha2"
-	VersionNone     Version = "<not deployed>"
+	VersionNone     Version = ""
 )
 
 // GetPreferredVersion retrieves the preferred version from the custom resource definition.
 func GetPreferredVersion(crd *apiextensionsv1.CustomResourceDefinition) Version {
-	var preferredVersion = VersionNone
-	if crd.GetName() != "gateways.gateway.networking.k8s.io" {
-		return preferredVersion
+	if !strings.HasSuffix(crd.GetName(), "gateway.networking.k8s.io") {
+		return VersionNone
 	}
 
+	versions := sets.Set[string]{}
 	for _, v := range crd.Spec.Versions {
 		if !v.Served {
 			continue
 		}
-		var k8sv Version
-		switch v.Name {
-		case "v1":
-			k8sv = VersionV1
-		case "v1beta1":
-			k8sv = VersionV1beta1
-		case "v1alpha2":
-			k8sv = VersionV1alpha2
-		default:
-			continue
-		}
-		if preferredVersion == VersionNone || preferredVersion > k8sv {
-			preferredVersion = k8sv
+		versions.Insert(v.Name)
+	}
+	for _, vv := range []Version{VersionV1, VersionV1beta1, VersionV1alpha2} {
+		if versions.Has(string(vv)) {
+			return vv
 		}
 	}
-	return preferredVersion
+	return VersionNone
 }
 
 func newGateway(version Version) client.Object {

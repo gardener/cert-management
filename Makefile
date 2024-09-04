@@ -155,6 +155,10 @@ certman-dnsrecords-down:
 	@hack/kind/certman/issuer-down.sh
 	@hack/kind/certman/certman-down.sh
 
+.PHONY: test-integration
+test-integration: $(GINKGO) $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
+	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/certman2/integration/...
+
 .PHONY: test-functional-local
 test-functional-local: $(GINKGO)
 	@hack/kind/test-functional-local.sh
