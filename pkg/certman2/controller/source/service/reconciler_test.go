@@ -3,10 +3,9 @@ package service_test
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -127,26 +126,26 @@ var _ = Describe("Reconciler", func() {
 				CommonName: ptr.To("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
 		})
 
 		It("should drop certificate object if secretname not set", func() {
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			delete(svc.Annotations, source.AnnotSecretname)
 			test(nil)
-			assertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
 		})
 
 		It("should fail if no domain name set", func() {
 			delete(svc.Annotations, source.AnnotDnsnames)
 			test(nil, "no valid domain name annotations found")
-			assertEvents(fakeRecorder.Events, "Warning Invalid ")
+			testutils.AssertEvents(fakeRecorder.Events, "Warning Invalid ")
 		})
 
 		It("should fail if dnsnames are set to '*'", func() {
 			svc.Annotations[source.AnnotDnsnames] = "*"
 			test(nil, "no valid domain name annotations found")
-			assertEvents(fakeRecorder.Events, "Warning Invalid ")
+			testutils.AssertEvents(fakeRecorder.Events, "Warning Invalid ")
 		})
 
 		It("should succeed if '*' dnsnames is overwritten by common name", func() {
@@ -156,7 +155,7 @@ var _ = Describe("Reconciler", func() {
 				CommonName: ptr.To("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated")
 		})
 
 		It("should create correct certificate object if domain name with cert annotation", func() {
@@ -209,7 +208,7 @@ var _ = Describe("Reconciler", func() {
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).NotTo(HaveOccurred())
 			Expect(cert.Annotations).To(Equal(map[string]string{source.AnnotClass: "gardencert", source.AnnotDNSRecordProviderType: "local", source.AnnotDNSRecordSecretRef: "my-provider-ns/my-provider-secret"}))
-			assertEvents(fakeRecorder.Events, "Normal CertificateUpdated ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateUpdated ")
 		})
 
 		It("should keep certificate object and drop obsolete ones", func() {
@@ -232,7 +231,7 @@ var _ = Describe("Reconciler", func() {
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert2), &certmanv1alpha1.Certificate{})).NotTo(HaveOccurred())
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert3), &certmanv1alpha1.Certificate{})).NotTo(HaveOccurred())
-			assertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
 		})
 
 		It("should delete certificate object if type is changed", func() {
@@ -243,31 +242,7 @@ var _ = Describe("Reconciler", func() {
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
 			Expect(fakeClient.Update(ctx, svc)).NotTo(HaveOccurred())
 			testWithoutCreation(nil)
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateDeleted ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateDeleted ")
 		})
 	})
 })
-
-func assertEvents(actual <-chan string, expected ...string) {
-	c := time.After(1 * time.Second)
-	for _, e := range expected {
-		select {
-		case a := <-actual:
-			if !strings.HasPrefix(a, e) {
-				Expect(a).To(ContainSubstring(e))
-				return
-			}
-		case <-c:
-			Fail(fmt.Sprintf("Expected event %q, got nothing", e))
-			// continue iterating to print all expected events
-		}
-	}
-	for {
-		select {
-		case a := <-actual:
-			Fail(fmt.Sprintf("Unexpected event: %q", a))
-		default:
-			return // No more events, as expected.
-		}
-	}
-}
