@@ -3,10 +3,9 @@ package ingress_test
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -150,14 +149,14 @@ var _ = Describe("Reconciler", func() {
 				CommonName: ptr.To("host1.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
 		})
 
 		It("should drop certificate object if no TLS set", func() {
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			ingress.Spec.TLS = nil
 			test(nil)
-			assertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
 		})
 
 		It("should create invalid certificate if no hosts are set", func() {
@@ -165,7 +164,7 @@ var _ = Describe("Reconciler", func() {
 			test(&certmanv1alpha1.CertificateSpec{
 				SecretRef: &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
 		})
 
 		It("should succeed if '*' dnsnames is overwritten by cert dnsnames", func() {
@@ -175,7 +174,7 @@ var _ = Describe("Reconciler", func() {
 				DNSNames:   []string{"foo-alt.cert.example.com"},
 				SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
 		})
 
 		It("should create correct certificate object  with common name", func() {
@@ -186,7 +185,7 @@ var _ = Describe("Reconciler", func() {
 				DNSNames:   []string{"host1.example.com"},
 				SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated")
 		})
 
 		It("should create correct certificate object if common name with cert annotation", func() {
@@ -230,7 +229,7 @@ var _ = Describe("Reconciler", func() {
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).NotTo(HaveOccurred())
 			Expect(cert.Annotations).To(Equal(map[string]string{source.AnnotClass: "gardencert", source.AnnotDNSRecordProviderType: "local", source.AnnotDNSRecordSecretRef: "my-provider-ns/my-provider-secret"}))
-			assertEvents(fakeRecorder.Events, "Normal CertificateUpdated ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateUpdated ")
 		})
 
 		It("should keep certificate object and drop obsolete ones", func() {
@@ -253,7 +252,7 @@ var _ = Describe("Reconciler", func() {
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert2), &certmanv1alpha1.Certificate{})).NotTo(HaveOccurred())
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert3), &certmanv1alpha1.Certificate{})).NotTo(HaveOccurred())
-			assertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
 		})
 
 		It("should create multiple certificates for multiple TLS", func() {
@@ -277,7 +276,7 @@ var _ = Describe("Reconciler", func() {
 					CommonName: ptr.To("host2.example.com"),
 					SecretRef:  &corev1.SecretReference{Name: "host2-secret", Namespace: "test"},
 				})
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateCreated ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateCreated ")
 
 			ingress.Spec.TLS = []networkingv1.IngressTLS{
 				{
@@ -301,7 +300,7 @@ var _ = Describe("Reconciler", func() {
 					SecretRef:  &corev1.SecretReference{Name: "host3-secret", Namespace: "test"},
 				},
 			})
-			assertEvents(fakeRecorder.Events, "Normal CertificateDeleted ", "Normal CertificateUpdated ", "Normal CertificateCreated ")
+			testutils.AssertUnorderedEvents(fakeRecorder.Events, "Normal CertificateDeleted ", "Normal CertificateUpdated ", "Normal CertificateCreated ")
 		})
 
 		It("should delete certificate object if ingress TLS is dropped", func() {
@@ -312,31 +311,7 @@ var _ = Describe("Reconciler", func() {
 			ingress.Spec.TLS = nil
 			Expect(fakeClient.Update(ctx, ingress)).NotTo(HaveOccurred())
 			testWithoutCreation(nil)
-			assertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateDeleted ")
+			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateDeleted ")
 		})
 	})
 })
-
-func assertEvents(actual <-chan string, expected ...string) {
-	c := time.After(1 * time.Second)
-	for _, e := range expected {
-		select {
-		case a := <-actual:
-			if !strings.HasPrefix(a, e) {
-				Expect(a).To(ContainSubstring(e))
-				return
-			}
-		case <-c:
-			Fail(fmt.Sprintf("Expected event %q, got nothing", e))
-			// continue iterating to print all expected events
-		}
-	}
-	for {
-		select {
-		case a := <-actual:
-			Fail(fmt.Sprintf("Unexpected event: %q", a))
-		default:
-			return // No more events, as expected.
-		}
-	}
-}
