@@ -1,6 +1,8 @@
 module github.com/gardener/cert-management
 
-go 1.22.5
+go 1.23.0
+
+toolchain go1.23.1
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
@@ -8,7 +10,7 @@ require (
 	github.com/cert-manager/cert-manager v1.14.7
 	github.com/gardener/controller-manager-library v0.2.1-0.20240816122604-33f686e858cc
 	github.com/gardener/external-dns-management v0.21.1
-	github.com/gardener/gardener v1.102.0
+	github.com/gardener/gardener v1.103.0
 	github.com/go-acme/lego/v4 v4.18.0
 	github.com/miekg/dns v1.1.62
 	github.com/onsi/ginkgo/v2 v2.20.2
@@ -81,7 +83,7 @@ require (
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.55.0 // indirect
+	github.com/prometheus/common v0.58.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -89,9 +91,9 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948 // indirect
 	golang.org/x/mod v0.20.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
+	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/term v0.24.0 // indirect
