@@ -20,11 +20,11 @@ require (
 	golang.org/x/crypto v0.27.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
 	golang.org/x/net v0.29.0
-	istio.io/api v1.22.4
+	istio.io/api v1.23.1
 	istio.io/client-go v1.22.3
-	k8s.io/api v0.29.8
+	k8s.io/api v0.30.0
 	k8s.io/apiextensions-apiserver v0.29.8
-	k8s.io/apimachinery v0.29.8
+	k8s.io/apimachinery v0.30.0
 	k8s.io/client-go v0.29.8
 	k8s.io/code-generator v0.29.8
 	k8s.io/kube-openapi v0.0.0-20240808142205-8e686545bdb8
@@ -101,7 +101,7 @@ require (
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
