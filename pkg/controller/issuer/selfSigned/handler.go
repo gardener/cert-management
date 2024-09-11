@@ -8,6 +8,7 @@ package selfSigned
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -45,5 +46,8 @@ func (h *selfSignedIssuerHandler) Reconcile(logger logger.LogContext, obj resour
 	if selfSigned == nil {
 		return h.support.Failed(logger, obj, api.StateError, &selfSignedType, fmt.Errorf("missing selfSigned spec"), false)
 	}
+	maxInt := math.MaxInt64
+	issuer.Spec.RequestsPerDayQuota = &maxInt
+
 	return h.support.SucceedSelfSignedIssuer(logger, obj, &selfSignedType)
 }
