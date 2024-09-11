@@ -66,7 +66,7 @@ type ObtainInput struct {
 	// IsCA is used to request a self-signed certificate
 	IsCA bool
 	// Duration is the lifetime of the certificate
-	Duration time.Duration
+	Duration *time.Duration
 }
 
 // DNSControllerSettings are the settings for the DNSController.
@@ -165,7 +165,6 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
 		PrivateKey:                     privateKey,
-		NotAfter:                       time.Now().Add(input.Duration),
 	}
 	return client.Certificate.Obtain(request)
 }
@@ -282,7 +281,6 @@ func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certific
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
-		NotAfter:                       time.Now().Add(input.Duration),
 	})
 }
 
