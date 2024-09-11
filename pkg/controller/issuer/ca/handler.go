@@ -8,6 +8,7 @@ package ca
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -47,6 +48,9 @@ func (r *caIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Obje
 	if ca == nil {
 		return r.failedCA(logger, obj, api.StateError, fmt.Errorf("missing CA spec"))
 	}
+
+	maxInt := math.MaxInt64
+	issuer.Spec.RequestsPerDayQuota = &maxInt
 
 	r.support.RememberIssuerSecret(obj.ClusterKey(), ca.PrivateKeySecretRef, "")
 
