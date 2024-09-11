@@ -64,7 +64,7 @@ type ObtainInput struct {
 	// KeyType represents the algo and size to use for the private key (only used if CSR is not set).
 	KeyType certcrypto.KeyType
 	// Duration is the lifetime of the certificate
-	Duration time.Duration
+	Duration *time.Duration
 }
 
 // DNSControllerSettings are the settings for the DNSController.
@@ -161,7 +161,6 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
 		PrivateKey:                     privateKey,
-		NotAfter:                       time.Now().Add(input.Duration),
 	}
 	return client.Certificate.Obtain(request)
 }
@@ -278,7 +277,6 @@ func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certific
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
-		NotAfter:                       time.Now().Add(input.Duration),
 	})
 }
 
@@ -529,7 +527,7 @@ func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) 
 
 // newCASignedCertFromCertReq returns a new Certificate signed by a CA based on
 // an x509.CertificateRequest and a CA key pair. A private key will be generated.
-func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyPair, duration time.Duration) (*certificate.Resource, error) {
+func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyPair, duration *time.Duration) (*certificate.Resource, error) {
 	pubKeySize := pubKeySize(csr.PublicKey)
 	if pubKeySize == 0 {
 		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
