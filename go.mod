@@ -22,7 +22,7 @@ require (
 	golang.org/x/net v0.29.0
 	istio.io/api v1.22.4
 	istio.io/client-go v1.22.3
-	k8s.io/api v0.29.8
+	k8s.io/api v0.31.1
 	k8s.io/apiextensions-apiserver v0.29.8
 	k8s.io/apimachinery v0.29.8
 	k8s.io/client-go v0.29.8
