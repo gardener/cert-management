@@ -24,9 +24,9 @@ require (
 	istio.io/client-go v1.22.3
 	k8s.io/api v0.29.8
 	k8s.io/apiextensions-apiserver v0.29.8
-	k8s.io/apimachinery v0.29.8
+	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.29.8
-	k8s.io/code-generator v0.29.8
+	k8s.io/code-generator v0.31.1
 	k8s.io/kube-openapi v0.0.0-20240808142205-8e686545bdb8
 	k8s.io/utils v0.0.0-20240902221715-702e33fdd3c3
 	sigs.k8s.io/controller-runtime v0.17.6
@@ -49,6 +49,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.3 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.6 // indirect
@@ -89,6 +90,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948 // indirect
