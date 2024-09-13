@@ -221,7 +221,7 @@ func (h *acmeIssuerHandler) WriteIssuerSecretFromRegistrationUser(
 		secret.SetGenerateName(issuerKey.Name() + "-")
 		secret.SetNamespace(core.NormalizeNamespace(issuerKey.Namespace()))
 	}
-	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: v1alpha1.Version, Kind: v1alpha1.IssuerKind, Name: issuerKey.Name(), UID: issuer.UID}})
+	secret.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: v1alpha1.GroupName + "/" + v1alpha1.Version, Kind: v1alpha1.IssuerKind, Name: issuerKey.Name(), UID: issuer.UID}})
 	secret.Data, err = reguser.ToSecretData()
 	if err != nil {
 		return nil, nil, err
