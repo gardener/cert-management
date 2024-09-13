@@ -14,6 +14,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
@@ -49,8 +50,7 @@ func (r *caIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Obje
 		return r.failedCA(logger, obj, api.StateError, fmt.Errorf("missing CA spec"))
 	}
 
-	maxInt := math.MaxInt64
-	issuer.Spec.RequestsPerDayQuota = &maxInt
+	issuer.Spec.RequestsPerDayQuota = ptr.To(math.MaxInt64)
 
 	r.support.RememberIssuerSecret(obj.ClusterKey(), ca.PrivateKeySecretRef, "")
 
