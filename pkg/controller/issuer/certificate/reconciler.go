@@ -562,8 +562,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 	if duration == nil {
-		defaultDuration := 2 * legobridge.DefaultCertDuration
-		duration = &defaultDuration
+		duration = ptr.To(2 * legobridge.DefaultCertDuration)
 	}
 	err = r.validateCertDuration(duration, CAKeyPair)
 	if err != nil {
