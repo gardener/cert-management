@@ -564,15 +564,14 @@ func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer
 func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, obj resources.Object,
 	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey) reconcile.Status {
 	if cert.Spec.IsCA == nil || !*cert.Spec.IsCA {
-		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("self signed certificates must set spec.isCA: true"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("self signed certificates must set 'spec.isCA: true'"))
 	}
 	duration, err := r.getDuration(cert)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 	if duration == nil {
-		defaultDuration := legobridge.DefaultCertDuration
-		duration = &defaultDuration
+		duration = ptr.To(legobridge.DefaultCertDuration)
 	}
 	err = r.validateDomainsAndCsr(&cert.Spec, nil, issuerKey)
 	if err != nil {
@@ -630,7 +629,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resources.Object,
 	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
 	if cert.Spec.IsCA != nil {
-		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("isCA cannot be set for CA certificate"))
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("isCA cannot be set for a certificate with issuer of type 'ca'"))
 	}
 	CAKeyPair, err := r.restoreCA(issuerKey, issuer)
 	if err != nil {

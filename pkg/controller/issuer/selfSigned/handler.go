@@ -13,6 +13,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
@@ -46,8 +47,7 @@ func (h *selfSignedIssuerHandler) Reconcile(logger logger.LogContext, obj resour
 	if selfSigned == nil {
 		return h.support.Failed(logger, obj, api.StateError, &selfSignedType, fmt.Errorf("missing selfSigned spec"), false)
 	}
-	maxInt := math.MaxInt64
-	issuer.Spec.RequestsPerDayQuota = &maxInt
+	issuer.Spec.RequestsPerDayQuota = ptr.To(math.MaxInt64)
 
 	return h.support.SucceedSelfSignedIssuer(logger, obj, &selfSignedType)
 }
