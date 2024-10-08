@@ -16,7 +16,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
-	github.com/prometheus/client_golang v1.20.3
+	github.com/prometheus/client_golang v1.20.4
 	golang.org/x/crypto v0.28.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
 	golang.org/x/net v0.29.0
