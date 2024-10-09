@@ -95,8 +95,8 @@ func defaultKeySize(algo x509.PublicKeyAlgorithm) int {
 	return ECCurve521
 }
 
-// generateKey generates a crypto.Signer key and its PEM encoded format.
-func generateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte, error) {
+// GenerateKey generates a crypto.Signer key and its PEM encoded format.
+func GenerateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte, error) {
 	var key crypto.Signer
 	var err error
 

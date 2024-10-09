@@ -633,7 +633,7 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyP
 	if pubKeySize == 0 {
 		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
 	}
-	privKey, privKeyPEM, err := generateKey(csr.PublicKeyAlgorithm, pubKeySize)
+	privKey, privKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize)
 	if err != nil {
 		return nil, err
 	}
