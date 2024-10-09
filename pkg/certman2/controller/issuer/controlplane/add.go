@@ -7,19 +7,22 @@
 package controlplane
 
 import (
+	"context"
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/acme"
 	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/ca"
 	"github.com/gardener/cert-management/pkg/certman2/core"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // ControllerName is the name of this controller.
@@ -58,12 +61,28 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, controlPlaneCluster clust
 	return builder.
 		ControllerManagedBy(mgr).
 		Named(ControllerName).
-		WatchesRawSource(
-			source.Kind(controlPlaneCluster.GetCache(), &v1alpha1.Issuer{}),
-			&handler.EnqueueRequestForObject{},
+		For(
+			&v1alpha1.Issuer{},
 			builder.WithPredicates(predicate.NewPredicateFuncs(func(obj client.Object) bool {
 				return obj.GetNamespace() == r.Config.Controllers.Issuer.Namespace
 			})),
+		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []reconcile.Request {
+				return r.issuersToReconcileOnSecretChanges(ctx, secret)
+			}),
+			builder.WithPredicates(predicate.Funcs{
+				CreateFunc: func(e event.CreateEvent) bool {
+					return false
+				},
+				DeleteFunc: func(e event.DeleteEvent) bool {
+					return false
+				},
+				GenericFunc: func(e event.GenericEvent) bool {
+					return e.Object.GetNamespace() == r.Config.Controllers.Issuer.Namespace
+				},
+			}),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 1,
