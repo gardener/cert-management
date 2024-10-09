@@ -143,11 +143,13 @@ is already in place. The operator must request/provide by its own means a CA
 or an intermediate CA. This is mainly used for **on-premises** and
 **airgapped** environements.
 
-It can also be used for **developement** or **testing** purproses. In this case
-a Self-signed Certificate Authority can be created by following the section below.
+To create a self-signed certificate a dedicated issuer of type [selfSigned](#selfsigned) should be used. 
 
-_Create a Self-signed Certificate Authority (optional)_
+It is also possible to manually create a self-signed certificate using the CA issuer
+<details>
+  <summary>Manual steps</summary>
 
+Create a Self-signed Certificate Authority
 ```bash
 ▶ openssl genrsa -out CA-key.pem 4096
 ▶ export CONFIG="
@@ -244,6 +246,66 @@ Some details about the CA can be found in the status of the issuer.
   "type": "ca"
 }
 ```
+</details>
+
+### SelfSigned
+This issuer is meant to be used when you want to create a fully managed self-signed certificate.
+
+Configure your shoot to allow custom issuers in the shoot cluster. By default, issuers are created in the control plane of your cluster.
+```yaml
+kind: Shoot
+...
+spec:
+  extensions:
+  - type: shoot-cert-service
+    providerConfig:
+      apiVersion: service.cert.extensions.gardener.cloud/v1alpha1
+      kind: CertConfig
+      shootIssuers:
+        enabled: true # if true, allows to specify issuers in the shoot cluster
+...
+```
+
+Create and deploy a self-signed issuer in your shoot cluster ([examples/20-issuer-selfsigned.yaml](./examples/20-issuer-selfsigned.yaml)) 
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: issuer-selfsigned
+  namespace: default
+spec:
+  selfSigned: {}
+
+```
+
+Create a certificate ([examples/30-cert-selfsigned.yaml](./examples/30-cert-selfsigned.yaml)).
+Please note that `spec.isCA` must be set to `true` to create a self-signed certificate. The duration (life-time) of the certificate
+as well as the private key algorithm and key size may be specified. Duration value must be in units accepted by Go `time.ParseDuration`
+([see here](https://golang.org/pkg/time/#ParseDurationThe)), and it must be greater than 720h (30 days).
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-selfsigned
+  namespace: default
+spec:
+  commonName: cert1.mydomain.com
+  isCA: true
+  # optional: default is 90 days (2160h). Must be greater 30 days (720h)
+  # duration: 720h1m
+  # optional defaults to RSA 2048
+  #privateKey:
+  #  algorithm: ECDSA
+  #  size: 384
+  issuerRef:
+    name: issuer-selfsigned
+    namespace: default  # must be specified when issuer runs in shoot!
+  # optional: secret where the certificate should be stored
+  #secretRef:
+  #  name: cert-selfsigned-foo
+  #  namespace: default
+```
+
 
 ## Requesting a Certificate
 

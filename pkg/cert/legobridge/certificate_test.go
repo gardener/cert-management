@@ -7,12 +7,12 @@
 package legobridge
 
 import (
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-
 	"github.com/go-acme/lego/v4/certcrypto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
+
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 var _ = DescribeTable("KeyType conversion",

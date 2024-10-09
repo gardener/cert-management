@@ -10,9 +10,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+
+	"github.com/gardener/cert-management/pkg/cert/source"
 )
 
 const (

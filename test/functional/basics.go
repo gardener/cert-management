@@ -11,15 +11,15 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	"github.com/gardener/cert-management/test/functional/config"
-
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/test/functional/config"
 )
 
 var basicTemplate = `
