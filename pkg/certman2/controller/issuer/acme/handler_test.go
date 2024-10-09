@@ -4,8 +4,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
@@ -21,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
 	"github.com/gardener/cert-management/pkg/certman2/core"
@@ -107,7 +106,7 @@ var _ = Describe("Handler", func() {
 		})
 		Context("with existing private key secret", func() {
 			BeforeEach(func() {
-				_, certPrivateKeyPEM, err := generateKey(x509.ECDSA, 256)
+				_, certPrivateKeyPEM, err := legobridge.GenerateKey(x509.ECDSA, 256)
 				Expect(err).NotTo(HaveOccurred())
 				secretData := map[string][]byte{"email": []byte("some.user@mydomain.com"), "privateKey": certPrivateKeyPEM}
 				secret := corev1.Secret{
@@ -170,60 +169,6 @@ var _ = Describe("Handler", func() {
 		})
 	})
 })
-
-func generateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte, error) {
-	// RSAMinSize is the minimum size for an RSA key
-	const (
-		RSAMinSize int = 2048
-		RSAMaxSize int = 8192
-		ECCurve256 int = 256
-		ECCurve384 int = 384
-		ECCurve521 int = 521
-	)
-
-	var key crypto.Signer
-	var err error
-
-	switch algo {
-	case x509.RSA:
-		if size < RSAMinSize {
-			return nil, nil, fmt.Errorf("RSA key is too weak")
-		}
-		if size > RSAMaxSize {
-			return nil, nil, fmt.Errorf("RSA key size too large")
-		}
-
-		key, err = rsa.GenerateKey(rand.Reader, size)
-		if err != nil {
-			return nil, nil, fmt.Errorf("unable to generate RSA private key: %w", err)
-		}
-	case x509.ECDSA:
-		var curve elliptic.Curve
-		switch size {
-		case ECCurve521:
-			curve = elliptic.P521()
-		case ECCurve384:
-			curve = elliptic.P384()
-		case ECCurve256:
-			curve = elliptic.P256()
-		default:
-			return nil, nil, fmt.Errorf("invalid elliptic curve")
-		}
-
-		key, err = ecdsa.GenerateKey(curve, rand.Reader)
-		if err != nil {
-			return nil, nil, fmt.Errorf("unable to generate RSA private key: %w", err)
-		}
-	default:
-		return nil, nil, fmt.Errorf("algorithm not supported")
-	}
-
-	pem, err := privateKeyToBytes(key)
-	if err != nil {
-		return nil, nil, fmt.Errorf("encoding private key failed: %w", err)
-	}
-	return key, pem, nil
-}
 
 func privateKeyToBytes(key crypto.PrivateKey) ([]byte, error) {
 	block, err := pemBlockForKey(key)

@@ -29,6 +29,15 @@ func WrapRegistration(raw []byte, secretHash string) ([]byte, error) {
 	return json.Marshal(&reg)
 }
 
+func WrapRegistrationFromResource(raw []byte) (*wrappedRegistration, error) {
+	reg := &wrappedRegistration{}
+	err := json.Unmarshal(raw, reg)
+	if err != nil {
+		return nil, err
+	}
+	return reg, nil
+}
+
 // IsSameExistingRegistration returns true if status ACME has same secret hash
 func IsSameExistingRegistration(raw *runtime.RawExtension, realSecretHash string) bool {
 	if raw == nil || raw.Raw == nil {
