@@ -9,6 +9,7 @@ GARDENER_HACK_DIR                 := $(shell go list -m -f "{{.Dir}}" github.com
 REGISTRY                          := europe-docker.pkg.dev/gardener-project/public
 EXECUTABLE                        := cert-controller-manager
 REPO_ROOT                         := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+HACK_DIR                          := $(REPO_ROOT)/hack
 PROJECT                           := github.com/gardener/cert-management
 CERT_IMAGE_REPOSITORY             := $(REGISTRY)/cert-controller-manager
 VERSION                           := $(shell cat VERSION)
@@ -24,9 +25,13 @@ include $(GARDENER_HACK_DIR)/tools.mk
 .PHONY: tidy
 tidy:
 	@go mod tidy
+	@cp $(GARDENER_HACK_DIR)/sast.sh $(HACK_DIR)/sast.sh && chmod +xw $(HACK_DIR)/sast.sh
 
 .PHONY: check
-check: format $(GOIMPORTS) $(GOLANGCI_LINT)
+check: sast-report fastcheck
+
+.PHONY: fastcheck
+fastcheck: format $(GOIMPORTS) $(GOLANGCI_LINT)
 	@TOOLS_BIN_DIR="$(TOOLS_BIN_DIR)" bash $(CONTROLLER_MANAGER_LIB_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@echo "Running go vet..."
 	@go vet ./cmd/... ./pkg/... ./test/...
@@ -131,3 +136,17 @@ test-functional-local-dnsrecords: $(GINKGO)
 
 .PHONY: test-e2e-local
 test-e2e-local: kind-up certman-up test-functional-local certman-dnsrecords-up test-functional-local-dnsrecords
+
+# TODO(martinweindel): Remove once https://github.com/gardener/gardener/pull/10642 is available as release.
+TOOLS_PKG_PATH := $(shell go list -tags tools -f '{{ .Dir }}' github.com/gardener/gardener/hack/tools 2>/dev/null)
+.PHONY: adjust-install-gosec.sh
+adjust-install-gosec.sh:
+	@chmod +xw $(TOOLS_PKG_PATH)/install-gosec.sh
+
+.PHONY: sast
+sast: adjust-install-gosec.sh $(GOSEC)
+	@./hack/sast.sh
+
+.PHONY: sast-report
+sast-report: adjust-install-gosec.sh $(GOSEC)
+	@./hack/sast.sh --gosec-report true

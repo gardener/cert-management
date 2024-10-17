@@ -30,7 +30,7 @@ const (
 	// AnnotForwardOwnerRefs is the annotation for the forward owner references
 	AnnotForwardOwnerRefs = "cert.gardener.cloud/forward-owner-refs"
 	// AnnotSecretname is the annotation for the secret name
-	AnnotSecretname = "cert.gardener.cloud/secretname"
+	AnnotSecretname = "cert.gardener.cloud/secretname" // #nosec G101 -- this is no credential
 	// AnnotIssuer is the annotation for the issuer name
 	AnnotIssuer = "cert.gardener.cloud/issuer"
 	// AnnotCommonName is the annotation for explicitly specifying the common name
@@ -41,7 +41,7 @@ const (
 	AnnotFollowCNAME = "cert.gardener.cloud/follow-cname"
 	// AnnotCertSecretLabels is the annotation for setting labels for the secret resource
 	// comma-separated format "key1=value1,key2=value2"
-	AnnotCertSecretLabels = "cert.gardener.cloud/secret-labels"
+	AnnotCertSecretLabels = "cert.gardener.cloud/secret-labels" // #nosec G101 -- this is no credential
 	// AnnotPreferredChain is the annotation for the certificate preferred chain
 	AnnotPreferredChain = "cert.gardener.cloud/preferred-chain"
 
