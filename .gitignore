@@ -8,3 +8,6 @@ tmp/
 /cert-controller-manager
 .vscode/
 .kubeconfig-kind-integration
+
+# gosec
+gosec-report.sarif
