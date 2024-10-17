@@ -62,12 +62,12 @@ const (
 )
 
 // issueSignedCert does all the Certificate Issuing.
-func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Signer, privKeyPEM []byte, signerKeyPair *TLSKeyPair) (*certificate.Resource, error) {
+func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Signer, privKeyPEM []byte, signerKeyPair *TLSKeyPair, duration *time.Duration) (*certificate.Resource, error) {
 	csrPEM, err := generateCSRPEM(csr, privKey)
 	if err != nil {
 		return nil, err
 	}
-	crt, err := generateCertFromCSR(csrPEM, DefaultCertDuration, isCA)
+	crt, err := generateCertFromCSR(csrPEM, duration, isCA)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func generateCSRPEM(csr *x509.CertificateRequest, privateKey crypto.Signer) ([]b
 }
 
 // generateCertFromCSR generates an x509.Certificate based on a PEM encoded CSR.
-func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
+func generateCertFromCSR(csrPEM []byte, duration *time.Duration, isCA bool) (*x509.Certificate, error) {
 	var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 	csr, err := extractCertificateRequest(csrPEM)
@@ -217,12 +217,44 @@ func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x50
 		IsCA:                  isCA,
 		Subject:               csr.Subject,
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(duration),
+		NotAfter:              time.Now().Add(*duration),
 		KeyUsage:              ku,
 		ExtKeyUsage:           DefaultCertExtKeyUsage,
 		DNSNames:              csr.DNSNames,
 		EmailAddresses:        csr.EmailAddresses,
 	}, nil
+}
+
+// newSelfSignedCertInPEMFormat returns a selfsigned certificate and the private key in PEM format
+func newSelfSignedCertInPEMFormat(
+	input ObtainInput, algo x509.PublicKeyAlgorithm, algoSize int) ([]byte, []byte, error) {
+	certPrivateKey, certPrivateKeyPEM, err := generateKey(algo, algoSize)
+	if err != nil {
+		return nil, nil, err
+	}
+	keyUsage := DefaultCertKeyUsage | CAKeyUsage
+	if algo == x509.RSA {
+		keyUsage |= RSAKeyUsage
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: *input.CommonName,
+		},
+		DNSNames:              input.DNSNames,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(*input.Duration),
+		KeyUsage:              keyUsage,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		MaxPathLen:            0,
+	}
+
+	certDerBytes, _ := x509.CreateCertificate(rand.Reader, &template, &template, certPrivateKey.Public(), certPrivateKey)
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDerBytes})
+	return certPEM, certPrivateKeyPEM, nil
 }
 
 // signCert creates a PEM encoded signed certificate.

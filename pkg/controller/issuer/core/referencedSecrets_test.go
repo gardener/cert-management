@@ -12,12 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 func TestRobustRemember(t *testing.T) {
