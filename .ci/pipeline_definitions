@@ -15,6 +15,13 @@ cert-management:
         attribute: image.tag
 
   base_definition:
+    repo:
+      source_labels:
+      - name: cloud.gardener.cnudie/dso/scanning-hints/source_analysis/v1
+        value:
+          policy: skip
+          comment: |
+            we use gosec for sast scanning. See attached log.
     traits:
       version:
         preprocess: inject-branch-name
@@ -72,6 +79,17 @@ cert-management:
           nextversion: 'bump_minor'
           next_version_callback: '.ci/prepare_release'
           release_callback: '.ci/prepare_release'
+          assets:
+          - type: build-step-log
+            step_name: check
+            purposes:
+            - lint
+            - sast
+            - gosec
+            comment: |
+                we use gosec (linter) for SAST scans
+                see: https://github.com/securego/gosec
+                enabled by https://github.com/gardener/cert-management/pull/313
         publish:
           dockerimages:
             cert-management:
