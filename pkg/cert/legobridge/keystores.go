@@ -28,7 +28,7 @@ const (
 	PKCS12TruststoreKey = "truststore.p12"
 
 	// JKSSecretKey is the name of the data entry in the Secret resource used to store the jks file.
-	JKSSecretKey = "keystore.jks"
+	JKSSecretKey = "keystore.jks" // #nosec G101 -- this is no credential
 	// JKSTruststoreKey is the name of the data entry in the Secret resource for JKS containing Certificate Authority
 	JKSTruststoreKey = "truststore.jks"
 )

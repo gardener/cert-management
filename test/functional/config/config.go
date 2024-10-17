@@ -97,7 +97,7 @@ func InitConfig() *Config {
 }
 
 func LoadConfig(filename string) (*Config, error) {
-	f, err := os.Open(filename)
+	f, err := os.Open(filename) // #nosec G304 -- only used for tests for reading configuration file
 	if err != nil {
 		return nil, err
 	}
