@@ -54,10 +54,9 @@ func GetCertInputByCollector(ctx context.Context, log logr.Logger, obj client.Ob
 		} else {
 			domains = mergeCommonName(cn, tls.Hosts)
 		}
-		key := tls.SecretNamespace + "/" + tls.SecretName
+		key := client.ObjectKey{Namespace: tls.SecretNamespace, Name: tls.SecretName}
 		inputMap[key] = augmentFromCommonAnnotations(obj.GetAnnotations(), CertInput{
-			SecretNamespace: tls.SecretNamespace,
-			SecretName:      tls.SecretName,
+			SecretObjectKey: key,
 			Domains:         domains,
 		})
 	}

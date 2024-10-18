@@ -45,12 +45,17 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 	return source.GetCertInputByCollector(ctx, log, gateway, func(ctx context.Context, obj client.Object) ([]*source.TLSData, error) {
 		var array []*source.TLSData
 
+		namespace := gateway.GetAnnotations()[source.AnnotSecretNamespace]
+		if namespace == "" {
+			namespace = gateway.GetNamespace()
+		}
+
 		switch data := obj.(type) {
 		case *istionetworkingv1.Gateway:
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
 					array = append(array, &source.TLSData{
-						SecretNamespace: gateway.GetNamespace(),
+						SecretNamespace: namespace,
 						SecretName:      server.Tls.CredentialName,
 						Hosts:           parsedHosts(server.Hosts),
 					})
@@ -60,7 +65,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
 					array = append(array, &source.TLSData{
-						SecretNamespace: gateway.GetNamespace(),
+						SecretNamespace: namespace,
 						SecretName:      server.Tls.CredentialName,
 						Hosts:           parsedHosts(server.Hosts),
 					})
@@ -70,7 +75,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
 					array = append(array, &source.TLSData{
-						SecretNamespace: gateway.GetNamespace(),
+						SecretNamespace: namespace,
 						SecretName:      server.Tls.CredentialName,
 						Hosts:           parsedHosts(server.Hosts),
 					})

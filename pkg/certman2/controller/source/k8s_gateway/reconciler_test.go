@@ -114,7 +114,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
 				source.AnnotDnsnames:        "*",
 			})
-			modifyListeners(gateway, func(servers []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+			modifyListeners(gateway, func([]gatewayapisv1.Listener) []gatewayapisv1.Listener {
 				return []gatewayapisv1.Listener{
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("host1.example.com"),
@@ -269,7 +269,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			})
 
 			It("should create multiple certificates for multiple TLS", func() {
-				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {
+				modifyListeners(gateway, func([]gatewayapisv1.Listener) []gatewayapisv1.Listener {
 					return []gatewayapisv1.Listener{
 						{
 							Hostname: ptr.To[gatewayapisv1.Hostname]("host1.example.com"),

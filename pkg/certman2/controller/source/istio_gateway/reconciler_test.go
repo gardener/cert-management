@@ -117,7 +117,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
 				source.AnnotDnsnames:        "*",
 			})
-			modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
+			modifyServers(gateway, func([]*networkingv1.Server) []*networkingv1.Server {
 				return []*networkingv1.Server{
 					{
 						Hosts: []string{"host1.example.com"},
@@ -211,6 +211,14 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				})
 			})
 
+			It("should create correct certificate object with overwritten secret namespace", func() {
+				gateway.GetAnnotations()[source.AnnotSecretNamespace] = "other"
+				test(&certmanv1alpha1.CertificateSpec{
+					CommonName: ptr.To("host1.example.com"),
+					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "other"},
+				})
+			})
+
 			It("should update certificate object for service of type load balancer with additional fields", func() {
 				annotations := gateway.GetAnnotations()
 				annotations[source.AnnotCertDNSNames] = fmt.Sprintf("foo1.%s,foo2.%s", longDomain, longDomain)
@@ -270,7 +278,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			})
 
 			It("should create multiple certificates for multiple TLS", func() {
-				modifyServers(gateway, func(servers []*networkingv1.Server) []*networkingv1.Server {
+				modifyServers(gateway, func([]*networkingv1.Server) []*networkingv1.Server {
 					return []*networkingv1.Server{
 						{
 							Hosts: []string{"host1.example.com", "host1-alt.example.com"},

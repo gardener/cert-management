@@ -10,6 +10,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net"
+	"net/http"
+	"time"
+
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
@@ -24,14 +28,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	componentbaseconfig "k8s.io/component-base/config"
-	"net"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"time"
 )
 
 var (
@@ -197,8 +198,8 @@ var _ = Describe("Issuer controller tests", func() {
 			By("Check if issuer has a new secret hash")
 			Eventually(func(g Gomega) {
 				err = testClient.Get(ctx, client.ObjectKeyFromObject(acmeIssuer), acmeIssuer)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(core.IsSameExistingRegistration(acmeIssuer.Status.ACME, *secretHashBefore)).To(BeFalse())
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(core.IsSameExistingRegistration(acmeIssuer.Status.ACME, *secretHashBefore)).To(BeFalse())
 			}, time.Second*3, time.Second).Should(Succeed())
 			Expect(testClient.Delete(ctx, acmeIssuer)).To(Succeed())
 			Expect(testClient.Delete(ctx, secret)).To(Succeed())

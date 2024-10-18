@@ -8,6 +8,7 @@ package controlplane
 
 import (
 	"context"
+
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/acme"
 	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/ca"
@@ -73,10 +74,10 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, controlPlaneCluster clust
 				return r.issuersToReconcileOnSecretChanges(ctx, secret)
 			}),
 			builder.WithPredicates(predicate.Funcs{
-				CreateFunc: func(e event.CreateEvent) bool {
+				CreateFunc: func(event.CreateEvent) bool {
 					return false
 				},
-				DeleteFunc: func(e event.DeleteEvent) bool {
+				DeleteFunc: func(event.DeleteEvent) bool {
 					return false
 				},
 				GenericFunc: func(e event.GenericEvent) bool {

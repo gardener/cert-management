@@ -21,10 +21,14 @@ import (
 type Version string
 
 const (
-	VersionV1       Version = "v1"
-	VersionV1beta1  Version = "v1beta1"
+	// VersionV1 is the v1 version of the Kubernetes Gateway API gateway.
+	VersionV1 Version = "v1"
+	// VersionV1beta1 is the v1beta1 version of the Kubernetes Gateway API gateway.
+	VersionV1beta1 Version = "v1beta1"
+	// VersionV1alpha2 is the v1alpha2 version of the Kubernetes Gateway API gateway.
 	VersionV1alpha2 Version = "v1alpha2"
-	VersionNone     Version = ""
+	// VersionNone is zero version of the Kubernetes Gateway API gateway.
+	VersionNone Version = ""
 )
 
 // GetPreferredVersion retrieves the preferred version from the custom resource definition.

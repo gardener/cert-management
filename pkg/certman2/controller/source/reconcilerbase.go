@@ -35,16 +35,24 @@ type ReconcilerBase struct {
 
 // DoReconcile reconciles for given object and certInput.
 func (r *ReconcilerBase) DoReconcile(ctx context.Context, log logr.Logger, obj client.Object, certInputMap CertInputMap) (reconcile.Result, error) {
-	newCerts := map[string]*certmanv1alpha1.Certificate{}
+	newCerts := map[client.ObjectKey]*certmanv1alpha1.Certificate{}
 	ownedCerts, err := r.getExistingOwnedCertificates(ctx, client.ObjectKeyFromObject(obj))
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	for key, certInput := range certInputMap {
+	for key := range certInputMap {
 		var matchingCert *certmanv1alpha1.Certificate
 		for _, ownedCert := range ownedCerts {
-			if ownedCert.Spec.SecretRef != nil && ownedCert.Spec.SecretRef.Name == certInput.SecretName && ownedCert.Spec.SecretRef.Namespace == certInput.SecretNamespace ||
-				ownedCert.Spec.SecretRef == nil && ownedCert.Spec.SecretName != nil && *ownedCert.Spec.SecretName == certInput.SecretName {
+			var refKey client.ObjectKey
+			if ownedCert.Spec.SecretRef != nil {
+				refKey = client.ObjectKey{Namespace: ownedCert.Spec.SecretRef.Namespace, Name: ownedCert.Spec.SecretRef.Name}
+				if refKey.Namespace == "" {
+					refKey.Namespace = obj.GetNamespace()
+				}
+			} else if ownedCert.Spec.SecretName != nil {
+				refKey = client.ObjectKey{Namespace: obj.GetNamespace(), Name: *ownedCert.Spec.SecretName}
+			}
+			if refKey == key {
 				matchingCert = &ownedCert
 				break
 			}

@@ -17,6 +17,7 @@ type Reconciler struct {
 	source.ReconcilerBase
 }
 
+// Complete implements the option completer.
 func (r *Reconciler) Complete() {
 	r.GVK = schema.GroupVersionKind{Group: "networking.k8s.io", Version: "v1", Kind: "Ingress"}
 }

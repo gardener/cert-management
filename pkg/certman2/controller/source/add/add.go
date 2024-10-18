@@ -22,6 +22,7 @@ import (
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/service"
 )
 
+// AddToManager adds all source controllers to the manager.
 func AddToManager(mgr manager.Manager, cfg *config.CertManagerConfiguration, prestartClient client.Client) error {
 	crdState, err := gateways_crd_watchdog.CheckGatewayCRDs(context.Background(), prestartClient)
 	if err != nil {
