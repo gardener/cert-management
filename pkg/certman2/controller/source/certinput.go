@@ -15,12 +15,12 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // CertInput contains basic certificate data.
 type CertInput struct {
-	SecretNamespace     string
-	SecretName          string
+	SecretObjectKey     client.ObjectKey
 	Domains             []string
 	IssuerName          *string
 	FollowCNAME         bool
@@ -32,8 +32,9 @@ type CertInput struct {
 }
 
 // CertInputMap contains a map of secretName to CertInput.
-type CertInputMap map[string]CertInput
+type CertInputMap map[client.ObjectKey]CertInput
 
+// GetCertSourceSpecForService gets the certificate source spec for a service of type loadbalancer.
 func GetCertSourceSpecForService(log logr.Logger, service *corev1.Service) (CertInputMap, error) {
 	secretName, ok := service.Annotations[AnnotSecretname]
 	if !ok {
@@ -43,18 +44,22 @@ func GetCertSourceSpecForService(log logr.Logger, service *corev1.Service) (Cert
 	if secretName == "" {
 		return nil, fmt.Errorf("empty secret name annotation %q", AnnotSecretname)
 	}
+	secretNamespace, ok := service.Annotations[AnnotSecretNamespace]
+	if !ok {
+		secretNamespace = service.Namespace
+	}
 
 	annotatedDomains, _ := getDomainsFromAnnotations(service.Annotations, true)
 	if annotatedDomains == nil {
 		return nil, fmt.Errorf("no valid domain name annotations found for service %q", service.Name)
 	}
 
+	secretObjectKey := client.ObjectKey{Namespace: secretNamespace, Name: secretName}
 	certInput := augmentFromCommonAnnotations(service.Annotations, CertInput{
-		SecretNamespace: service.Namespace,
-		SecretName:      secretName,
+		SecretObjectKey: secretObjectKey,
 		Domains:         annotatedDomains,
 	})
-	return CertInputMap{secretName: certInput}, nil
+	return CertInputMap{certInput.SecretObjectKey: certInput}, nil
 }
 
 func augmentFromCommonAnnotations(annotations map[string]string, certInput CertInput) CertInput {
@@ -72,9 +77,9 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 	if value, ok := annotations[AnnotFollowCNAME]; ok {
 		followCNAME, _ = strconv.ParseBool(value)
 	}
-	preferredChain, _ := annotations[AnnotPreferredChain]
+	preferredChain := annotations[AnnotPreferredChain]
 
-	algorithm, _ := annotations[AnnotPrivateKeyAlgorithm]
+	algorithm := annotations[AnnotPrivateKeyAlgorithm]
 	keySize := 0
 	if keySizeStr, ok := annotations[AnnotPrivateKeySize]; ok {
 		if value, err := strconv.Atoi(keySizeStr); err == nil {
@@ -116,7 +121,7 @@ func getDomainsFromAnnotations(annotations map[string]string, forService bool) (
 		}
 	}
 
-	cn, _ = annotations[AnnotCommonName]
+	cn = annotations[AnnotCommonName]
 	cn = strings.TrimSpace(cn)
 	annotatedDomains = []string{}
 	if cn != "" {
@@ -158,6 +163,7 @@ func copyAnnotations(annotations map[string]string, keys ...string) (result map[
 	return
 }
 
+// CreateSpec creates a CertificateSpec from a CertInput.
 func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 	spec := certmanv1alpha1.CertificateSpec{}
 	if len(src.Domains) > 0 {
@@ -178,8 +184,8 @@ func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 		}
 	}
 	spec.SecretRef = &corev1.SecretReference{
-		Name:      src.SecretName,
-		Namespace: src.SecretNamespace,
+		Name:      src.SecretObjectKey.Name,
+		Namespace: src.SecretObjectKey.Namespace,
 	}
 	if src.FollowCNAME {
 		spec.FollowCNAME = &src.FollowCNAME

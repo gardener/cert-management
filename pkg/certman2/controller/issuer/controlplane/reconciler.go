@@ -9,6 +9,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -69,7 +70,7 @@ func (r *Reconciler) issuersToReconcileOnSecretChanges(ctx context.Context, secr
 	if err := r.Client.List(ctx, issuerList, client.InNamespace(r.Config.Controllers.Issuer.Namespace)); err != nil {
 		return nil
 	}
-	if issuerList.Items == nil || len(issuerList.Items) == 0 {
+	if len(issuerList.Items) == 0 {
 		return nil
 	}
 	for _, issuer := range issuerList.Items {

@@ -34,6 +34,7 @@ var relevantCRDs = []string{
 	k8sHTTPRoutesCRD,
 }
 
+// CheckGatewayCRDsState contains the state of the gateway CRD check.
 type CheckGatewayCRDsState struct {
 	relevantCRDDeployed      map[string]string
 	istioGatewayVersion      istio_gateway.Version

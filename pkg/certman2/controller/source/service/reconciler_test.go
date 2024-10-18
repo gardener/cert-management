@@ -177,6 +177,14 @@ var _ = Describe("Reconciler", func() {
 			})
 		})
 
+		It("should create correct certificate object with overwritten secret namespace", func() {
+			svc.Annotations[source.AnnotSecretNamespace] = "other"
+			test(&certmanv1alpha1.CertificateSpec{
+				CommonName: ptr.To("foo.example.com"),
+				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "other"},
+			})
+		})
+
 		It("should update certificate object for service of type load balancer with additional fields", func() {
 			svc.Annotations[source.AnnotDnsnames] = fmt.Sprintf("foo1.%s,foo2.%s", longDomain, longDomain)
 			svc.Annotations[source.AnnotClass] = source.DefaultClass

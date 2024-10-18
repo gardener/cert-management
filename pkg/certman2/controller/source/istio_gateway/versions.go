@@ -21,10 +21,14 @@ import (
 type Version string
 
 const (
-	VersionV1       Version = "v1"
-	VersionV1beta1  Version = "v1beta1"
+	// VersionV1 is the v1 version of the istio gateway.
+	VersionV1 Version = "v1"
+	// VersionV1beta1 is the v1beta1 version of the istio gateway.
+	VersionV1beta1 Version = "v1beta1"
+	// VersionV1alpha3 is the v1alpha3 version of the istio gateway.
 	VersionV1alpha3 Version = "v1alpha3"
-	VersionNone     Version = ""
+	// VersionNone is zero version of the istio gateway.
+	VersionNone Version = ""
 )
 
 // GetPreferredVersion retrieves the preferred version from the custom resource definition.

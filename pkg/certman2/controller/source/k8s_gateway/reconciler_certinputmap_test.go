@@ -360,7 +360,7 @@ func singleCertInput(secretName string, ns *string, names ...string) source.Cert
 func toMap(inputs ...source.CertInput) source.CertInputMap {
 	result := source.CertInputMap{}
 	for _, input := range inputs {
-		result[input.SecretNamespace+"/"+input.SecretName] = input
+		result[input.SecretObjectKey] = input
 	}
 	return result
 }
@@ -371,8 +371,7 @@ func makeCertInput(secretName string, ns *string, names ...string) source.CertIn
 		namespace = *ns
 	}
 	return source.CertInput{
-		SecretNamespace: namespace,
-		SecretName:      secretName,
+		SecretObjectKey: client.ObjectKey{Namespace: namespace, Name: secretName},
 		Domains:         names,
 	}
 }

@@ -25,6 +25,7 @@ type Reconciler struct {
 	ActiveVersion Version
 }
 
+// Complete implements the option completer.
 func (r *Reconciler) Complete() {
 	r.GVK = schema.GroupVersionKind{Group: istionetworkingv1.GroupName, Version: string(r.ActiveVersion), Kind: "Gateway"}
 }

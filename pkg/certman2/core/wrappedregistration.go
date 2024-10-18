@@ -18,7 +18,7 @@ type wrappedRegistration struct {
 	SecretHash            *string `json:"secretHash,omitempty"`
 }
 
-// WrapRegistration wraps registration
+// WrapRegistration wraps registration.
 func WrapRegistration(raw []byte, secretHash string) ([]byte, error) {
 	reg := &wrappedRegistration{}
 	err := json.Unmarshal(raw, reg)
@@ -29,6 +29,7 @@ func WrapRegistration(raw []byte, secretHash string) ([]byte, error) {
 	return json.Marshal(&reg)
 }
 
+// WrapRegistrationFromResource unmarshalls a wrapped registration.
 func WrapRegistrationFromResource(raw []byte) (*wrappedRegistration, error) {
 	reg := &wrappedRegistration{}
 	err := json.Unmarshal(raw, reg)
@@ -38,7 +39,7 @@ func WrapRegistrationFromResource(raw []byte) (*wrappedRegistration, error) {
 	return reg, nil
 }
 
-// IsSameExistingRegistration returns true if status ACME has same secret hash
+// IsSameExistingRegistration returns true if status ACME has same secret hash.
 func IsSameExistingRegistration(raw *runtime.RawExtension, realSecretHash string) bool {
 	if raw == nil || raw.Raw == nil {
 		return false

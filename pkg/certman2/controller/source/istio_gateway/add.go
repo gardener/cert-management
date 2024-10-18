@@ -32,7 +32,7 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		ControllerManagedBy(mgr).
 		Named(ControllerName).
 		For(newGateway(r.ActiveVersion), builder.WithPredicates(Predicate(newGateway(r.ActiveVersion), r.Class))).
-		Watches(newVirtualService(r.ActiveVersion), handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, virtualService client.Object) []reconcile.Request {
+		Watches(newVirtualService(r.ActiveVersion), handler.EnqueueRequestsFromMapFunc(func(_ context.Context, virtualService client.Object) []reconcile.Request {
 			var requests []reconcile.Request
 			for key := range extractGatewayNames(virtualService) {
 				requests = append(requests, reconcile.Request{NamespacedName: key})
