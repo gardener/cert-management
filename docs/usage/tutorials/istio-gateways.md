@@ -52,8 +52,9 @@ metadata:
   name: httpbin-gateway
   namespace: istio-system
   annotations:
-    #cert.gardener.cloud/dnsnames: "*.example.com" # alternative if you want to control the dns names explicitly.
     cert.gardener.cloud/purpose: managed
+    #cert.gardener.cloud/dnsnames: "*.example.com"                # alternative if you want to control the dns names explicitly.
+    #cert.gardener.cloud/secret-namespace: "istio-system"         # optional to specify the namespace where the certificate secret should be created
 spec:
   selector:
     istio: ingressgateway # use Istio default gateway implementation

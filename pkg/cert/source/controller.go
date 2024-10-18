@@ -31,6 +31,8 @@ const (
 	AnnotForwardOwnerRefs = "cert.gardener.cloud/forward-owner-refs"
 	// AnnotSecretname is the annotation for the secret name
 	AnnotSecretname = "cert.gardener.cloud/secretname" // #nosec G101 -- this is no credential
+	// AnnotSecretNamespace is the annotation for the TLS secret namespace (only used for Istio Gateways source resources)
+	AnnotSecretNamespace = "cert.gardener.cloud/secret-namespace" // #nosec G101 -- this is no credential
 	// AnnotIssuer is the annotation for the issuer name
 	AnnotIssuer = "cert.gardener.cloud/issuer"
 	// AnnotCommonName is the annotation for explicitly specifying the common name

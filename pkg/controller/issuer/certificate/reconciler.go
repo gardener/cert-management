@@ -796,14 +796,14 @@ func (r *certReconciler) isRenewalOverdue(cert *x509.Certificate) bool {
 func (r *certReconciler) determineSecretRef(namespace string, spec *api.CertificateSpec) (*corev1.SecretReference, error) {
 	ns := core.NormalizeNamespace(namespace)
 	if spec.SecretRef != nil {
-		if spec.SecretRef.Namespace != "" && spec.SecretRef.Namespace != ns {
-			return nil, fmt.Errorf("secretRef must be located in same namespace as certificate for security reasons")
-		}
 		if spec.SecretRef.Name == "" {
 			return nil, fmt.Errorf("secretRef.name must not be empty if specified")
 		}
 		if spec.SecretName != nil && *spec.SecretName != spec.SecretRef.Name {
 			return nil, fmt.Errorf("conflicting names in secretRef.Name and secretName: %s != %s", spec.SecretRef.Name, *spec.SecretName)
+		}
+		if spec.SecretRef.Namespace != "" {
+			ns = spec.SecretRef.Namespace
 		}
 		return &corev1.SecretReference{
 			Name:      spec.SecretRef.Name,
@@ -863,7 +863,7 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 	ns := core.NormalizeNamespace(objectMeta.Namespace)
 	specSecretRef, _ := r.determineSecretRef(ns, spec)
 	if specSecretRef != nil && secretRef.Name == specSecretRef.Name &&
-		(secretRef.Namespace == "" || secretRef.Namespace == ns) {
+		(secretRef.Namespace == specSecretRef.Namespace || (secretRef.Namespace == "" && specSecretRef.Namespace == ns)) {
 		return specSecretRef, nil
 	}
 	secret, err := r.loadSecret(secretRef)
@@ -886,6 +886,9 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 	secret.SetNamespace(core.NormalizeNamespace(objectMeta.GetNamespace()))
 	if specSecretRef != nil {
 		secret.SetName(specSecretRef.Name)
+		if specSecretRef.Namespace != "" {
+			secret.SetNamespace(specSecretRef.Namespace)
+		}
 		// reuse existing secret (especially keep existing annotations and labels)
 		obj, err := r.certSecretResources.GetInto1(secret)
 		if err == nil {

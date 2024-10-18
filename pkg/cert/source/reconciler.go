@@ -14,6 +14,8 @@ import (
 
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
@@ -22,14 +24,13 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/resources/abstract"
-	"github.com/gardener/controller-manager-library/pkg/utils"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
-// SrcReconciler create a source reconciler.
+// SrcReconciler creates a source reconciler.
 func SrcReconciler(sourceType CertSourceType, rtype controller.ReconcilerType) controller.ReconcilerType {
 	return func(c controller.Interface) (reconcile.Interface, error) {
 		s, err := sourceType.Create(c)
@@ -100,19 +101,23 @@ func (r *sourceReconciler) Setup() error {
 	return r.NestedReconciler.Setup()
 }
 
-func getCertificateSecretName(obj resources.Object) (string, error) {
+func getCertificateSecretName(obj resources.Object) (types.NamespacedName, error) {
 	crt := certutils.Certificate(obj).Certificate()
 	if crt.Spec.SecretRef != nil {
-		return crt.Spec.SecretRef.Name, nil
+		ns := crt.Spec.SecretRef.Namespace
+		if ns == "" {
+			ns = obj.GetNamespace()
+		}
+		return types.NamespacedName{Namespace: ns, Name: crt.Spec.SecretRef.Name}, nil
 	} else if crt.Spec.SecretName != nil {
-		return *crt.Spec.SecretName, nil
+		return types.NamespacedName{Namespace: obj.GetNamespace(), Name: *crt.Spec.SecretName}, nil
 	}
-	return "", fmt.Errorf("missing secret name for %s", obj.GetName())
+	return types.NamespacedName{}, fmt.Errorf("missing secret name for %s", obj.GetName())
 }
 
 func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	slaves := r.LookupSlaves(obj.ClusterKey())
-	currentState := &CertCurrentState{CertStates: map[string]*CertState{}}
+	currentState := &CertCurrentState{CertStates: map[types.NamespacedName]*CertState{}}
 	for _, s := range slaves {
 		crt := certutils.Certificate(s).Certificate()
 		secretName, err := getCertificateSecretName(s)
@@ -147,15 +152,15 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 		}
 	}
 
-	missingSecretNames := utils.StringSet{}
+	missingSecretNames := sets.New[types.NamespacedName]()
 	for secretName := range info.Certs {
 		if !currentState.ContainsSecretName(secretName) {
-			missingSecretNames.Add(secretName)
+			missingSecretNames.Insert(secretName)
 		}
 	}
 
 	obsolete := []resources.Object{}
-	obsoleteSecretNames := utils.StringSet{}
+	obsoleteSecretNames := sets.New[types.NamespacedName]()
 	current := []resources.Object{}
 	for _, s := range slaves {
 		secretName, err := getCertificateSecretName(s)
@@ -163,14 +168,14 @@ func (r *sourceReconciler) Reconcile(logger logger.LogContext, obj resources.Obj
 			obsolete = append(obsolete, s)
 		} else if _, ok := info.Certs[secretName]; !ok {
 			obsolete = append(obsolete, s)
-			obsoleteSecretNames.Add(secretName)
+			obsoleteSecretNames.Insert(secretName)
 		} else {
 			current = append(current, s)
 		}
 	}
 
 	var notifiedErrors []string
-	modified := map[string]bool{}
+	modified := map[types.NamespacedName]bool{}
 	if len(missingSecretNames) > 0 {
 		logger.Infof("found missing secrets: %s", missingSecretNames)
 		for secretName := range missingSecretNames {
@@ -337,13 +342,9 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 			cert.Spec.IssuerRef = &api.IssuerRef{Name: *info.IssuerName}
 		}
 	}
-	if info.SecretNamespace != nil {
-		cert.Spec.SecretRef = &core.SecretReference{
-			Name:      info.SecretName,
-			Namespace: *info.SecretNamespace,
-		}
-	} else {
-		cert.Spec.SecretName = &info.SecretName
+	cert.Spec.SecretRef = &core.SecretReference{
+		Name:      info.SecretName.Name,
+		Namespace: info.SecretName.Namespace,
 	}
 	if r.namespace == "" {
 		cert.Namespace = obj.GetNamespace()

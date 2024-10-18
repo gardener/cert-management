@@ -574,6 +574,7 @@ metadata:
     #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
     #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+    #cert.gardener.cloud/secret-namespace: "my-namespace"         # optional to specify the namespace where the certificate secret should be created
     # annotations needed when using DNSRecords
     #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
     #cert.gardener.cloud/dnsrecord-secret-ref: myns/mysecret
@@ -607,6 +608,9 @@ If you want to share a certificate between multiple services and ingresses, usin
 ```
 This will create or reuse a certificate for `*.demo.mydomain.com`. An existing certificate is automatically reused,
 if it has exactly the same common name and DNS names.
+
+The annotation `cert.gardener.cloud/secret-namespace` can be used to change the namespace, the TLS secret is created in.
+By default, it is created in the same namespace as the service. 
 
 ## Demo quick start
 
@@ -702,6 +706,7 @@ metadata:
     #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
     #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+    #cert.gardener.cloud/secret-namespace: "istio-system"         # optional to specify the namespace where the certificate secret should be created
     # annotations needed when using DNSRecords
     #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
     #cert.gardener.cloud/dnsrecord-secret-ref: myns/mysecret
@@ -735,6 +740,9 @@ spec:
 
 In this case, only a `Certificate` resource would be created with domain name `*.example2.com`, as the first server item
 specifies no `tls.credentialName` field.
+
+The annotation `cert.gardener.cloud/secret-namespace` can be used to change the namespace, the TLS secret is created in.
+By default, it is created in the same namespace as the gateway object.
 
 See the [Istio tutorial](docs/usage/tutorials/istio-gateways.md) for a more detailed example.
 

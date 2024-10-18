@@ -13,6 +13,7 @@ import (
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
@@ -89,13 +90,12 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 		} else {
 			domains = mergeCommonName(cn, tls.Hosts)
 		}
-		key := tls.SecretName
+		secretName := types.NamespacedName{Name: tls.SecretName, Namespace: objData.GetNamespace()}
 		if tls.SecretNamespace != nil {
-			key = *tls.SecretNamespace + "/" + tls.SecretName
+			secretName.Namespace = *tls.SecretNamespace
 		}
-		info.Certs[key] = source.CertInfo{
-			SecretNamespace:     tls.SecretNamespace,
-			SecretName:          tls.SecretName,
+		info.Certs[secretName] = source.CertInfo{
+			SecretName:          secretName,
 			Domains:             domains,
 			IssuerName:          issuer,
 			FollowCNAME:         followCNAME,
