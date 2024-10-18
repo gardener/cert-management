@@ -16,7 +16,9 @@ const (
 	// AnnotClass is the annotation for the cert class
 	AnnotClass = "cert.gardener.cloud/class"
 	// AnnotSecretname is the annotation for the secret name
-	AnnotSecretname = "cert.gardener.cloud/secretname"
+	AnnotSecretname = "cert.gardener.cloud/secretname" // #nosec G101 -- this is no credential
+	// AnnotSecretNamespace is the annotation for the TLS secret namespace (only used for Istio Gateways source resources)
+	AnnotSecretNamespace = "cert.gardener.cloud/secret-namespace" // #nosec G101 -- this is no credential
 	// AnnotIssuer is the annotation for the issuer name
 	AnnotIssuer = "cert.gardener.cloud/issuer"
 	// AnnotCommonName is the annotation for explicitly specifying the common name
@@ -27,7 +29,7 @@ const (
 	AnnotFollowCNAME = "cert.gardener.cloud/follow-cname"
 	// AnnotCertSecretLabels is the annotation for setting labels for the secret resource
 	// comma-separated format "key1=value1,key2=value2"
-	AnnotCertSecretLabels = "cert.gardener.cloud/secret-labels"
+	AnnotCertSecretLabels = "cert.gardener.cloud/secret-labels" // #nosec G101 -- this is no credential
 	// AnnotPreferredChain is the annotation for the certificate preferred chain
 	AnnotPreferredChain = "cert.gardener.cloud/preferred-chain"
 	// AnnotPrivateKeyAlgorithm is the annotation key to set the PrivateKeyAlgorithm for a Certificate.
@@ -46,7 +48,7 @@ const (
 	// AnnotDNSRecordProviderType is the annotation for providing the provider type for DNS records.
 	AnnotDNSRecordProviderType = "cert.gardener.cloud/dnsrecord-provider-type"
 	// AnnotDNSRecordSecretRef is the annotation for providing the secret ref for DNS records.
-	AnnotDNSRecordSecretRef = "cert.gardener.cloud/dnsrecord-secret-ref"
+	AnnotDNSRecordSecretRef = "cert.gardener.cloud/dnsrecord-secret-ref" // #nosec G101 -- this is no credential
 	// AnnotationPurposeKey is the annotation key for the purpose
 	AnnotationPurposeKey = "cert.gardener.cloud/purpose"
 	// AnnotationPurposeValueManaged is the managed value for the purpose annotation

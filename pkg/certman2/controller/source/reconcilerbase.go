@@ -74,7 +74,9 @@ func (r *ReconcilerBase) createOrUpdateCert(ctx context.Context, log logr.Logger
 		return nil
 	}
 	if cert.Name == "" {
-		modifier()
+		if err := modifier(); err != nil {
+			return fmt.Errorf("failed to apply modifier: %w", err)
+		}
 		if err := r.Client.Create(ctx, cert); err != nil {
 			return fmt.Errorf("failed to create certificate: %w", err)
 		}
