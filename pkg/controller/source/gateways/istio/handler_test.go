@@ -7,6 +7,7 @@ package istio
 import (
 	"fmt"
 
+	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -17,8 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/gardener/cert-management/pkg/cert/source"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("Istio Gateway Handler", func() {
@@ -46,12 +46,20 @@ var _ = Describe("Istio Gateway Handler", func() {
 		selectorService1   = map[string]string{"app": "istio-ingressgateway", "name": "service1"}
 		selectorService2   = map[string]string{"app": "istio-ingressgateway", "name": "service2"}
 		log                = logger.NewContext("", "TestEnv")
-		emptyMap           = map[string]source.CertInfo{}
+		emptyMap           = map[types.NamespacedName]source.CertInfo{}
 		standardObjectMeta = metav1.ObjectMeta{
 			Namespace: "test",
 			Name:      "g1",
 			Annotations: map[string]string{
 				ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+			},
+		}
+		standardObjectMetaWithSecretNamespace = metav1.ObjectMeta{
+			Namespace: "test",
+			Name:      "g1",
+			Annotations: map[string]string{
+				ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+				source.AnnotSecretNamespace:     "test-ns",
 			},
 		}
 		vsvc1 = &istionetworkingv1.VirtualService{
@@ -73,10 +81,14 @@ var _ = Describe("Istio Gateway Handler", func() {
 			},
 		}
 		allVirtualServices = []*istionetworkingv1.VirtualService{vsvc1, vsvc2, vsvc3}
+		otherSecretName    = types.NamespacedName{
+			Namespace: "test-ns",
+			Name:      "mysecret",
+		}
 	)
 
 	var _ = DescribeTable("GetCertsInfo",
-		func(sources map[string]*corev1.LoadBalancerStatus, gateway *istionetworkingv1.Gateway, virtualServices []*istionetworkingv1.VirtualService, expectedMap map[string]source.CertInfo) {
+		func(sources map[string]*corev1.LoadBalancerStatus, gateway *istionetworkingv1.Gateway, virtualServices []*istionetworkingv1.VirtualService, expectedMap map[types.NamespacedName]source.CertInfo) {
 			lister := &testResourceLister{sources: sources, virtualServices: virtualServices}
 			state := newState()
 			handler, err := newGatewaySourceWithResourceLister(lister, state)
@@ -141,6 +153,24 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService1,
 			},
 		}, nil, singleCertInfo("mysecret", "a.example.com")),
+		Entry("assigned gateway to service with secret namespace overwrite", defaultSources, &istionetworkingv1.Gateway{
+			ObjectMeta: standardObjectMetaWithSecretNamespace,
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
+					{
+						Hosts: []string{"a.example.com"},
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
+							CredentialName: "mysecret",
+						},
+					},
+				},
+				Selector: selectorService1,
+			},
+		}, nil, map[types.NamespacedName]source.CertInfo{otherSecretName: {
+			SecretName: otherSecretName,
+			Domains:    []string{"a.example.com"},
+		}}),
 		Entry("assigned gateway to service with virtual services", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
 			Spec: apinetworkingv1.Gateway{
@@ -188,6 +218,8 @@ var _ = Describe("Istio Gateway Handler", func() {
 		}, nil, singleCertInfo("mysecret", "c.example2.com")),
 		Entry("ignore dns.gardener.cloud/dnsnames annotation", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
 				Annotations: map[string]string{
 					source.AnnotDnsnames:            "a.example.com,c.example.com",
 					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
@@ -208,6 +240,8 @@ var _ = Describe("Istio Gateway Handler", func() {
 		}, nil, singleCertInfo("mysecret", "a.example.com", "c.example.com", "d.example.com")),
 		Entry("selective hosts", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
 				Annotations: map[string]string{
 					source.AnnotCertDNSNames:        "a.example.com,c.example.com",
 					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
@@ -228,6 +262,8 @@ var _ = Describe("Istio Gateway Handler", func() {
 		}, nil, singleCertInfo("mysecret", "a.example.com", "c.example.com")),
 		Entry("explicit common name", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
 				Annotations: map[string]string{
 					source.AnnotCommonName:          "cn.example.com",
 					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
@@ -355,13 +391,13 @@ outer:
 	return list, nil
 }
 
-func singleCertInfo(secretName string, names ...string) map[string]source.CertInfo {
+func singleCertInfo(secretName string, names ...string) map[types.NamespacedName]source.CertInfo {
 	info := makeCertInfo(secretName, names...)
 	return toMap(info)
 }
 
-func toMap(infos ...source.CertInfo) map[string]source.CertInfo {
-	result := map[string]source.CertInfo{}
+func toMap(infos ...source.CertInfo) map[types.NamespacedName]source.CertInfo {
+	result := map[types.NamespacedName]source.CertInfo{}
 	for _, info := range infos {
 		result[info.SecretName] = info
 	}
@@ -370,7 +406,7 @@ func toMap(infos ...source.CertInfo) map[string]source.CertInfo {
 
 func makeCertInfo(secretName string, names ...string) source.CertInfo {
 	return source.CertInfo{
-		SecretName: secretName,
+		SecretName: types.NamespacedName{Namespace: "test", Name: secretName},
 		Domains:    names,
 	}
 }

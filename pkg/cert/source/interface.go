@@ -9,6 +9,7 @@ package source
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
@@ -20,8 +21,7 @@ import (
 
 // CertInfo contains basic certificate data.
 type CertInfo struct {
-	SecretNamespace     *string
-	SecretName          string
+	SecretName          types.NamespacedName
 	Domains             []string
 	IssuerName          *string
 	FollowCNAME         bool
@@ -34,7 +34,7 @@ type CertInfo struct {
 
 // CertsInfo contains a map of CertInfo.
 type CertsInfo struct {
-	Certs map[string]CertInfo
+	Certs map[types.NamespacedName]CertInfo
 }
 
 // CertFeedback is an interface for reporting certificate status.
@@ -65,7 +65,7 @@ type CertSourceType interface {
 }
 
 // CertTargetExtractor is type for extractor.
-type CertTargetExtractor func(logger logger.LogContext, objData resources.ObjectData) (string, error)
+type CertTargetExtractor func(logger logger.LogContext, objData resources.ObjectData) (types.NamespacedName, error)
 
 // CertSourceCreator is type for creator.
 type CertSourceCreator func(controller.Interface) (CertSource, error)
@@ -84,11 +84,11 @@ type CertState struct {
 
 // CertCurrentState contains the current state.
 type CertCurrentState struct {
-	CertStates map[string]*CertState
+	CertStates map[types.NamespacedName]*CertState
 }
 
-// ContainsSecretName returns true if name is in map.
-func (s *CertCurrentState) ContainsSecretName(name string) bool {
+// ContainsSecretName returns true if secret name is in map.
+func (s *CertCurrentState) ContainsSecretName(name types.NamespacedName) bool {
 	_, ok := s.CertStates[name]
 	return ok
 }

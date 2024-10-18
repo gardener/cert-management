@@ -71,13 +71,19 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 	return ctrlsource.GetCertsInfoByCollector(logger, objData, func(objData resources.ObjectData) ([]*ctrlsource.TLSData, error) {
 		var array []*ctrlsource.TLSData
 
+		var secretNamespace *string
+		if v := objData.GetAnnotations()[source.AnnotSecretNamespace]; v != "" {
+			secretNamespace = &v
+		}
+
 		switch data := objData.(type) {
 		case *istionetworkingv1.Gateway:
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
 					array = append(array, &ctrlsource.TLSData{
-						SecretName: server.Tls.CredentialName,
-						Hosts:      parsedHosts(server.Hosts),
+						SecretName:      server.Tls.CredentialName,
+						SecretNamespace: secretNamespace,
+						Hosts:           parsedHosts(server.Hosts),
 					})
 				}
 			}
@@ -85,8 +91,9 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
 					array = append(array, &ctrlsource.TLSData{
-						SecretName: server.Tls.CredentialName,
-						Hosts:      parsedHosts(server.Hosts),
+						SecretName:      server.Tls.CredentialName,
+						SecretNamespace: secretNamespace,
+						Hosts:           parsedHosts(server.Hosts),
 					})
 				}
 			}
@@ -94,8 +101,9 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
 					array = append(array, &ctrlsource.TLSData{
-						SecretName: server.Tls.CredentialName,
-						Hosts:      parsedHosts(server.Hosts),
+						SecretName:      server.Tls.CredentialName,
+						SecretNamespace: secretNamespace,
+						Hosts:           parsedHosts(server.Hosts),
 					})
 				}
 			}

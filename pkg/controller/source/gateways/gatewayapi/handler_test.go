@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -54,7 +55,7 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 		routes = []*gatewayapisv1.HTTPRoute{route1, route2, route3}
 
 		log                = logger.NewContext("", "TestEnv")
-		emptyMap           = map[string]source.CertInfo{}
+		emptyMap           = map[types.NamespacedName]source.CertInfo{}
 		standardObjectMeta = metav1.ObjectMeta{
 			Namespace: "test",
 			Name:      "g1",
@@ -65,7 +66,7 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 	)
 
 	var _ = DescribeTable("GetCertsInfo",
-		func(gateway *gatewayapisv1.Gateway, httpRoutes []*gatewayapisv1.HTTPRoute, expectedMap map[string]source.CertInfo) {
+		func(gateway *gatewayapisv1.Gateway, httpRoutes []*gatewayapisv1.HTTPRoute, expectedMap map[types.NamespacedName]source.CertInfo) {
 			handler, err := newGatewaySourceWithRouteLister(&testRouteLister{routes: httpRoutes}, newState())
 			Expect(err).To(Succeed())
 
@@ -340,28 +341,27 @@ func (t testRouteLister) ListHTTPRoutes(gateway *resources.ObjectName) ([]resour
 	return filtered, nil
 }
 
-func singleCertInfo(secretName string, ns *string, names ...string) map[string]source.CertInfo {
+func singleCertInfo(secretName string, ns *string, names ...string) map[types.NamespacedName]source.CertInfo {
 	info := makeCertInfo(secretName, ns, names...)
 	return toMap(info)
 }
 
-func toMap(infos ...source.CertInfo) map[string]source.CertInfo {
-	result := map[string]source.CertInfo{}
+func toMap(infos ...source.CertInfo) map[types.NamespacedName]source.CertInfo {
+	result := map[types.NamespacedName]source.CertInfo{}
 	for _, info := range infos {
-		key := info.SecretName
-		if info.SecretNamespace != nil {
-			key = *info.SecretNamespace + "/" + info.SecretName
-		}
-		result[key] = info
+		result[info.SecretName] = info
 	}
 	return result
 }
 
 func makeCertInfo(secretName string, ns *string, names ...string) source.CertInfo {
+	namespace := "test"
+	if ns != nil {
+		namespace = *ns
+	}
 	return source.CertInfo{
-		SecretName:      secretName,
-		SecretNamespace: ns,
-		Domains:         names,
+		SecretName: types.NamespacedName{Name: secretName, Namespace: namespace},
+		Domains:    names,
 	}
 }
 

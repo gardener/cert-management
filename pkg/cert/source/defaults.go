@@ -14,6 +14,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
@@ -68,10 +69,7 @@ func (f *EventFeedback) Succeeded() {
 func (f *EventFeedback) event(info *CertInfo, msg string, warning ...bool) {
 	channel := ""
 	if info != nil {
-		channel = info.SecretName
-		if info.SecretNamespace != nil {
-			channel = *info.SecretNamespace + "/" + info.SecretName
-		}
+		channel = info.SecretName.String()
 	}
 	if msg != f.events[channel] {
 		key := f.source.ClusterKey()
@@ -153,7 +151,7 @@ func (s *DefaultCertSource) GetEvents(key resources.ClusterObjectKey) map[string
 
 // NewCertsInfo creates a CertsInfo
 func NewCertsInfo() *CertsInfo {
-	return &CertsInfo{Certs: map[string]CertInfo{}}
+	return &CertsInfo{Certs: map[types.NamespacedName]CertInfo{}}
 }
 
 // CreateCertFeedback creates an event feedback for the given object.

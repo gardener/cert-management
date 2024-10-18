@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	api "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -18,15 +19,20 @@ import (
 )
 
 // GetSecretName finds the secret name from the object annotations
-func GetSecretName(_ logger.LogContext, objData resources.ObjectData) (string, error) {
+func GetSecretName(_ logger.LogContext, objData resources.ObjectData) (types.NamespacedName, error) {
+	var zero types.NamespacedName
 	svc := objData.(*api.Service)
 	if svc.Spec.Type != api.ServiceTypeLoadBalancer {
-		return "", fmt.Errorf("service is not of type LoadBalancer")
+		return zero, fmt.Errorf("service is not of type LoadBalancer")
 	}
 
 	secretName, _ := resources.GetAnnotation(svc, source.AnnotSecretname)
 	if secretName == "" {
-		return "", fmt.Errorf("Missing annotation '%s'", source.AnnotSecretname)
+		return zero, fmt.Errorf("Missing annotation '%s'", source.AnnotSecretname)
 	}
-	return secretName, nil
+	secretNamespace, _ := resources.GetAnnotation(svc, source.AnnotSecretNamespace)
+	if secretNamespace == "" {
+		secretNamespace = svc.GetNamespace()
+	}
+	return types.NamespacedName{Namespace: secretNamespace, Name: secretName}, nil
 }
