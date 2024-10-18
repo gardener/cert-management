@@ -11,6 +11,8 @@ const (
 	IssuerTypeACME = "acme"
 	// IssuerTypeCA is the issuer type CA
 	IssuerTypeCA = "ca"
+	// IssuerTypeSelfSigned is the issuer type selfsigned
+	IssuerTypeSelfSigned = "selfSigned"
 )
 
 // IssuerInfo provides name and type of an issuer
@@ -27,6 +29,11 @@ func NewACMEIssuerInfo(key IssuerKeyItf) IssuerInfo {
 // NewCAIssuerInfo creates info for an CA issuer
 func NewCAIssuerInfo(key IssuerKeyItf) IssuerInfo {
 	return IssuerInfo{key: key, issuertype: IssuerTypeCA}
+}
+
+// NewSelfSignedIssuerInfo creates info for a selfSigned issuer
+func NewSelfSignedIssuerInfo(key IssuerKeyItf) IssuerInfo {
+	return IssuerInfo{key: key, issuertype: IssuerTypeSelfSigned}
 }
 
 // Key returns the issuer key

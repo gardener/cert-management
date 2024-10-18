@@ -1,0 +1,23 @@
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-selfsigned
+  namespace: default
+spec:
+  commonName: ca1.mydomain.com
+  isCA: true
+  # optional: default is 90 days (2160h). Must be greater 2*30 days (1440h)
+  # duration: 1441h
+  # optional defaults to RSA 2048
+  # privateKey:
+  #   algorithm: ECDSA
+  #   size: 384
+  # CSR can also be specified
+  # csr: ...
+  issuerRef:
+    name: issuer-selfsigned
+    namespace: default  # must be specified when issuer runs in shoot!
+  # optional: secret where the certificate should be stored
+  #secretRef:
+  #  name: cert-selfsigned-foo
+  #  namespace: default
