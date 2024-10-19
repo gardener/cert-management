@@ -56,6 +56,8 @@ github.com/gardener/external-dns-management v0.22.0 h1:a9A8A5h1zMzKx52LUUf2k5L5b
 github.com/gardener/external-dns-management v0.22.0/go.mod h1:bryNFmxRFb57tOkvskLwriLEkKkJGG+1Ikmc6h6xTo4=
 github.com/gardener/gardener v1.105.0 h1:yHZTrkVbroRLkW6gP0DcmXVCEiZmSW1dqlOP47vcPBE=
 github.com/gardener/gardener v1.105.0/go.mod h1:6veUAG3zUdUxAGq+0iucMd1m3cOf42bIT6qmkggzUWs=
+github.com/gardener/gardener v1.105.1 h1:2tC01B3TmhLztRx/UQ06xNWe7tkK0GEO8a+BpCGlRos=
+github.com/gardener/gardener v1.105.1/go.mod h1:6veUAG3zUdUxAGq+0iucMd1m3cOf42bIT6qmkggzUWs=
 github.com/gardener/hvpa-controller/api v0.17.0 h1:1mNeP+xsnjPH6GhewugU5srslXiTCJgYIFCMuRXwI7w=
 github.com/gardener/hvpa-controller/api v0.17.0/go.mod h1:eKrL7j6/YX8PaoP80xxi3+UFmQgHVf/QCPsGwNnmDeE=
 github.com/gardener/machine-controller-manager v0.53.1 h1:4P9qtzoD+989Lhc8XaI6Zo3X2TaQVXgHHrbEpuhJcrI=
