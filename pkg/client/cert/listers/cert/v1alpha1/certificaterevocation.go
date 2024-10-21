@@ -8,8 +8,8 @@ package v1alpha1
 
 import (
 	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -26,25 +26,17 @@ type CertificateRevocationLister interface {
 
 // certificateRevocationLister implements the CertificateRevocationLister interface.
 type certificateRevocationLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1alpha1.CertificateRevocation]
 }
 
 // NewCertificateRevocationLister returns a new CertificateRevocationLister.
 func NewCertificateRevocationLister(indexer cache.Indexer) CertificateRevocationLister {
-	return &certificateRevocationLister{indexer: indexer}
-}
-
-// List lists all CertificateRevocations in the indexer.
-func (s *certificateRevocationLister) List(selector labels.Selector) (ret []*v1alpha1.CertificateRevocation, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.CertificateRevocation))
-	})
-	return ret, err
+	return &certificateRevocationLister{listers.New[*v1alpha1.CertificateRevocation](indexer, v1alpha1.Resource("certificaterevocation"))}
 }
 
 // CertificateRevocations returns an object that can list and get CertificateRevocations.
 func (s *certificateRevocationLister) CertificateRevocations(namespace string) CertificateRevocationNamespaceLister {
-	return certificateRevocationNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return certificateRevocationNamespaceLister{listers.NewNamespaced[*v1alpha1.CertificateRevocation](s.ResourceIndexer, namespace)}
 }
 
 // CertificateRevocationNamespaceLister helps list and get CertificateRevocations.
@@ -62,26 +54,5 @@ type CertificateRevocationNamespaceLister interface {
 // certificateRevocationNamespaceLister implements the CertificateRevocationNamespaceLister
 // interface.
 type certificateRevocationNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all CertificateRevocations in the indexer for a given namespace.
-func (s certificateRevocationNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.CertificateRevocation, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.CertificateRevocation))
-	})
-	return ret, err
-}
-
-// Get retrieves the CertificateRevocation from the indexer for a given namespace and name.
-func (s certificateRevocationNamespaceLister) Get(name string) (*v1alpha1.CertificateRevocation, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("certificaterevocation"), name)
-	}
-	return obj.(*v1alpha1.CertificateRevocation), nil
+	listers.ResourceIndexer[*v1alpha1.CertificateRevocation]
 }

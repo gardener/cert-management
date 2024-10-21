@@ -29,22 +29,24 @@ var certificaterevocationsKind = v1alpha1.SchemeGroupVersion.WithKind("Certifica
 
 // Get takes name of the certificateRevocation, and returns the corresponding certificateRevocation object, and an error if there is any.
 func (c *FakeCertificateRevocations) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.CertificateRevocation, err error) {
+	emptyResult := &v1alpha1.CertificateRevocation{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(certificaterevocationsResource, c.ns, name), &v1alpha1.CertificateRevocation{})
+		Invokes(testing.NewGetActionWithOptions(certificaterevocationsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.CertificateRevocation), err
 }
 
 // List takes label and field selectors, and returns the list of CertificateRevocations that match those selectors.
 func (c *FakeCertificateRevocations) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.CertificateRevocationList, err error) {
+	emptyResult := &v1alpha1.CertificateRevocationList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(certificaterevocationsResource, certificaterevocationsKind, c.ns, opts), &v1alpha1.CertificateRevocationList{})
+		Invokes(testing.NewListActionWithOptions(certificaterevocationsResource, certificaterevocationsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -63,40 +65,43 @@ func (c *FakeCertificateRevocations) List(ctx context.Context, opts v1.ListOptio
 // Watch returns a watch.Interface that watches the requested certificateRevocations.
 func (c *FakeCertificateRevocations) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(certificaterevocationsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(certificaterevocationsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a certificateRevocation and creates it.  Returns the server's representation of the certificateRevocation, and an error, if there is any.
 func (c *FakeCertificateRevocations) Create(ctx context.Context, certificateRevocation *v1alpha1.CertificateRevocation, opts v1.CreateOptions) (result *v1alpha1.CertificateRevocation, err error) {
+	emptyResult := &v1alpha1.CertificateRevocation{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(certificaterevocationsResource, c.ns, certificateRevocation), &v1alpha1.CertificateRevocation{})
+		Invokes(testing.NewCreateActionWithOptions(certificaterevocationsResource, c.ns, certificateRevocation, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.CertificateRevocation), err
 }
 
 // Update takes the representation of a certificateRevocation and updates it. Returns the server's representation of the certificateRevocation, and an error, if there is any.
 func (c *FakeCertificateRevocations) Update(ctx context.Context, certificateRevocation *v1alpha1.CertificateRevocation, opts v1.UpdateOptions) (result *v1alpha1.CertificateRevocation, err error) {
+	emptyResult := &v1alpha1.CertificateRevocation{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(certificaterevocationsResource, c.ns, certificateRevocation), &v1alpha1.CertificateRevocation{})
+		Invokes(testing.NewUpdateActionWithOptions(certificaterevocationsResource, c.ns, certificateRevocation, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.CertificateRevocation), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeCertificateRevocations) UpdateStatus(ctx context.Context, certificateRevocation *v1alpha1.CertificateRevocation, opts v1.UpdateOptions) (*v1alpha1.CertificateRevocation, error) {
+func (c *FakeCertificateRevocations) UpdateStatus(ctx context.Context, certificateRevocation *v1alpha1.CertificateRevocation, opts v1.UpdateOptions) (result *v1alpha1.CertificateRevocation, err error) {
+	emptyResult := &v1alpha1.CertificateRevocation{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(certificaterevocationsResource, "status", c.ns, certificateRevocation), &v1alpha1.CertificateRevocation{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(certificaterevocationsResource, "status", c.ns, certificateRevocation, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.CertificateRevocation), err
 }
@@ -111,7 +116,7 @@ func (c *FakeCertificateRevocations) Delete(ctx context.Context, name string, op
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeCertificateRevocations) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(certificaterevocationsResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(certificaterevocationsResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.CertificateRevocationList{})
 	return err
@@ -119,11 +124,12 @@ func (c *FakeCertificateRevocations) DeleteCollection(ctx context.Context, opts 
 
 // Patch applies the patch and returns the patched certificateRevocation.
 func (c *FakeCertificateRevocations) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CertificateRevocation, err error) {
+	emptyResult := &v1alpha1.CertificateRevocation{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(certificaterevocationsResource, c.ns, name, pt, data, subresources...), &v1alpha1.CertificateRevocation{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(certificaterevocationsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.CertificateRevocation), err
 }

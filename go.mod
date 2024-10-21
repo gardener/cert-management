@@ -17,9 +17,7 @@ require (
 	github.com/onsi/gomega v1.34.2
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.20.5
-	golang.org/x/crypto v0.28.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
-	golang.org/x/net v0.30.0
 	istio.io/api v1.23.2
 	istio.io/client-go v1.23.2
 	k8s.io/api v0.31.1
@@ -45,7 +43,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
-	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -93,8 +90,10 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
 	golang.org/x/mod v0.21.0 // indirect
+	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
