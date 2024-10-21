@@ -19,7 +19,6 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
@@ -77,7 +76,6 @@ func init() {
 	utils.Must(resources.Register(istionetworkingv1alpha3.SchemeBuilder))
 	utils.Must(resources.Register(istionetworkingv1beta1.SchemeBuilder))
 	utils.Must(resources.Register(istionetworkingv1.SchemeBuilder))
-	utils.Must(resources.Register(gatewayapisv1alpha2.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1beta1.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1.SchemeBuilder))
 }

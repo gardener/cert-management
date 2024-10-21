@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
@@ -69,8 +68,6 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 		case *gatewayapisv1.Gateway:
 			spec = &data.Spec
 		case *gatewayapisv1beta1.Gateway:
-			spec = &data.Spec
-		case *gatewayapisv1alpha2.Gateway:
 			spec = &data.Spec
 		default:
 			return nil, fmt.Errorf("unexpected istio gateway type: %#v", objData)
@@ -140,10 +137,6 @@ func (s *gatewaySource) appendHostsFromHTTPRoutes(routes []resources.ObjectData,
 				hosts = addHost(hosts, string(h))
 			}
 		case *gatewayapisv1beta1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
-			}
-		case *gatewayapisv1alpha2.HTTPRoute:
 			for _, h := range r.Spec.Hostnames {
 				hosts = addHost(hosts, string(h))
 			}
