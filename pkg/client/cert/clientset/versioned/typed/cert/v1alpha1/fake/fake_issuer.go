@@ -29,22 +29,24 @@ var issuersKind = v1alpha1.SchemeGroupVersion.WithKind("Issuer")
 
 // Get takes name of the issuer, and returns the corresponding issuer object, and an error if there is any.
 func (c *FakeIssuers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Issuer, err error) {
+	emptyResult := &v1alpha1.Issuer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(issuersResource, c.ns, name), &v1alpha1.Issuer{})
+		Invokes(testing.NewGetActionWithOptions(issuersResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Issuer), err
 }
 
 // List takes label and field selectors, and returns the list of Issuers that match those selectors.
 func (c *FakeIssuers) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.IssuerList, err error) {
+	emptyResult := &v1alpha1.IssuerList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(issuersResource, issuersKind, c.ns, opts), &v1alpha1.IssuerList{})
+		Invokes(testing.NewListActionWithOptions(issuersResource, issuersKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -63,40 +65,43 @@ func (c *FakeIssuers) List(ctx context.Context, opts v1.ListOptions) (result *v1
 // Watch returns a watch.Interface that watches the requested issuers.
 func (c *FakeIssuers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(issuersResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(issuersResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a issuer and creates it.  Returns the server's representation of the issuer, and an error, if there is any.
 func (c *FakeIssuers) Create(ctx context.Context, issuer *v1alpha1.Issuer, opts v1.CreateOptions) (result *v1alpha1.Issuer, err error) {
+	emptyResult := &v1alpha1.Issuer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(issuersResource, c.ns, issuer), &v1alpha1.Issuer{})
+		Invokes(testing.NewCreateActionWithOptions(issuersResource, c.ns, issuer, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Issuer), err
 }
 
 // Update takes the representation of a issuer and updates it. Returns the server's representation of the issuer, and an error, if there is any.
 func (c *FakeIssuers) Update(ctx context.Context, issuer *v1alpha1.Issuer, opts v1.UpdateOptions) (result *v1alpha1.Issuer, err error) {
+	emptyResult := &v1alpha1.Issuer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(issuersResource, c.ns, issuer), &v1alpha1.Issuer{})
+		Invokes(testing.NewUpdateActionWithOptions(issuersResource, c.ns, issuer, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Issuer), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeIssuers) UpdateStatus(ctx context.Context, issuer *v1alpha1.Issuer, opts v1.UpdateOptions) (*v1alpha1.Issuer, error) {
+func (c *FakeIssuers) UpdateStatus(ctx context.Context, issuer *v1alpha1.Issuer, opts v1.UpdateOptions) (result *v1alpha1.Issuer, err error) {
+	emptyResult := &v1alpha1.Issuer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(issuersResource, "status", c.ns, issuer), &v1alpha1.Issuer{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(issuersResource, "status", c.ns, issuer, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Issuer), err
 }
@@ -111,7 +116,7 @@ func (c *FakeIssuers) Delete(ctx context.Context, name string, opts v1.DeleteOpt
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeIssuers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(issuersResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(issuersResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.IssuerList{})
 	return err
@@ -119,11 +124,12 @@ func (c *FakeIssuers) DeleteCollection(ctx context.Context, opts v1.DeleteOption
 
 // Patch applies the patch and returns the patched issuer.
 func (c *FakeIssuers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Issuer, err error) {
+	emptyResult := &v1alpha1.Issuer{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(issuersResource, c.ns, name, pt, data, subresources...), &v1alpha1.Issuer{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(issuersResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1alpha1.Issuer), err
 }
