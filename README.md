@@ -748,7 +748,7 @@ See the [Istio tutorial](docs/usage/tutorials/istio-gateways.md) for a more deta
 
 ### Gateway API gateways
 
-The Gateway API versions `gateway.networking.k8s.io/v1`, `gateway.networking.k8s.io/v1beta1`  and `gateway.networking.k8s.io/v1alpha2` are supported.
+The Gateway API versions `gateway.networking.k8s.io/v1` and `gateway.networking.k8s.io/v1beta1` are supported.
 
 To enable automatic management of `Certificate` resources, annotate the Gateway API `Gateway` resource with `cert.gardener.cloud/purpose=managed`.
 The domain names are extracted from the `spec.listeners.hostnames` field and from the field `spec.hostnames` of related `HTTPRoute` resources.
