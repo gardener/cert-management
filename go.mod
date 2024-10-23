@@ -20,9 +20,9 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
 	istio.io/api v1.23.2
 	istio.io/client-go v1.23.2
-	k8s.io/api v0.31.1
+	k8s.io/api v0.31.2
 	k8s.io/apiextensions-apiserver v0.31.1
-	k8s.io/apimachinery v0.31.1
+	k8s.io/apimachinery v0.31.2
 	k8s.io/client-go v0.31.1
 	k8s.io/code-generator v0.31.1
 	k8s.io/kube-openapi v0.0.0-20240903163716-9e1beecbcb38
