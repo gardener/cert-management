@@ -18,7 +18,7 @@ require (
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.20.5
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
-	istio.io/api v1.23.2
+	istio.io/api v1.23.3
 	istio.io/client-go v1.23.2
 	k8s.io/api v0.31.1
 	k8s.io/apiextensions-apiserver v0.31.1
