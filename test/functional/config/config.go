@@ -9,6 +9,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"text/template"
 
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -97,7 +98,7 @@ func InitConfig() *Config {
 }
 
 func LoadConfig(filename string) (*Config, error) {
-	f, err := os.Open(filename) // #nosec G304 -- only used for tests for reading configuration file
+	f, err := os.Open(filepath.Clean(filename))
 	if err != nil {
 		return nil, err
 	}
