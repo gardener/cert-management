@@ -14,7 +14,7 @@ require (
 	github.com/go-acme/lego/v4 v4.19.2
 	github.com/miekg/dns v1.1.62
 	github.com/onsi/ginkgo/v2 v2.21.0
-	github.com/onsi/gomega v1.34.2
+	github.com/onsi/gomega v1.35.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.20.5
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
