@@ -3,9 +3,9 @@
 confirm() {
     read -p "$1 (y/n): " response
     case $response in
-        [Yy]* ) return 0;;  # User responded with 'yes'
-        [Nn]* ) return 1;;  # User responded with 'no'
-        * ) echo "😤 Please answer y or n." && confirm "$1";;  # Invalid input, ask again
+        [Yy]* ) return 0;; # User responded with 'yes'
+        [Nn]* ) return 1;; # User responded with 'no'
+        * ) echo "😤 Please answer y or n." && confirm "$1";; # Invalid input, ask again.
     esac
 }
 
