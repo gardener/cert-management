@@ -71,6 +71,10 @@ generate: $(VGOPATH) $(CONTROLLER_GEN)
 	@./hack/copy-crds.sh
 	@go fmt ./pkg/...
 
+.PHONY: generate-renovate-ignore-deps
+generate-renovate-ignore-deps:
+	@./hack/generate-renovate-ignore-deps.sh
+
 .PHONY: docker-images
 docker-images:
 	@docker build -t $(CERT_IMAGE_REPOSITORY):$(IMAGE_TAG) -t $(CERT_IMAGE_REPOSITORY):latest -f Dockerfile --target cert-controller-manager .
