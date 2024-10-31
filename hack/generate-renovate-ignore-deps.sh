@@ -9,7 +9,7 @@ confirm() {
     esac
 }
 
-# extract_dependencies takes the content of a go.mod file and an array to add the extracted dependencies to.
+# Takes the content of a go.mod file and an array to add the extracted dependencies to.
 extract_dependencies() {
     local go_mod=$1
     local dependencies=$2
@@ -28,7 +28,7 @@ fi
 echo "🛜 Downloading the latest 'go.mod' from gardener/gardener..."
 
 # Only the dependencies in a `go.mod` file are indented with a tab.
-certman_go_mod=$(grep -P '^\t' go.mod)
+certman_go_mod=$(grep -P '^\t' go.mod) # Uses Perl-style regular expressions to match a tab at the beginning of a line.
 gardener_go_mod=$(curl -s https://raw.githubusercontent.com/gardener/gardener/refs/heads/master/go.mod | grep -P '^\t')
 
 certman_dependencies=()
