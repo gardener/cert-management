@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -188,10 +189,10 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 	preferredChain, _ := resources.GetAnnotation(objData, AnnotPreferredChain)
 
 	algorithm, _ := resources.GetAnnotation(objData, AnnotPrivateKeyAlgorithm)
-	keySize := 0
+	var keySize api.PrivateKeySize
 	if keySizeStr, ok := resources.GetAnnotation(objData, AnnotPrivateKeySize); ok {
 		if value, err := strconv.Atoi(keySizeStr); err == nil {
-			keySize = value
+			keySize = api.PrivateKeySize(value) // #nosec G115 -- values are validated anyway
 		}
 	}
 

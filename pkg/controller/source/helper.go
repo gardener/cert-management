@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -64,10 +65,10 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 
 	preferredChain, _ := resources.GetAnnotation(objData, source.AnnotPreferredChain)
 	algorithm, _ := resources.GetAnnotation(objData, source.AnnotPrivateKeyAlgorithm)
-	keySize := 0
+	var keySize api.PrivateKeySize
 	if keySizeStr, ok := resources.GetAnnotation(objData, source.AnnotPrivateKeySize); ok {
 		if value, err := strconv.Atoi(keySizeStr); err == nil {
-			keySize = value
+			keySize = api.PrivateKeySize(value) // #nosec G115 -- values are validated anyway
 		}
 	}
 

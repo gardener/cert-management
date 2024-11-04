@@ -487,7 +487,7 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 	return obj.Modify(f)
 }
 
-func createPrivateKey(algorithm string, size int) *api.CertificatePrivateKey {
+func createPrivateKey(algorithm string, size api.PrivateKeySize) *api.CertificatePrivateKey {
 	if algorithm == "" && size == 0 {
 		return nil
 	}
@@ -496,7 +496,7 @@ func createPrivateKey(algorithm string, size int) *api.CertificatePrivateKey {
 		obj.Algorithm = ptr.To(api.PrivateKeyAlgorithm(algorithm))
 	}
 	if size != 0 {
-		obj.Size = ptr.To(api.PrivateKeySize(size))
+		obj.Size = ptr.To(size)
 	}
 	return obj
 }
