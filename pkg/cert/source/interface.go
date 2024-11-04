@@ -28,7 +28,7 @@ type CertInfo struct {
 	SecretLabels        map[string]string
 	PreferredChain      string
 	PrivateKeyAlgorithm string
-	PrivateKeySize      int
+	PrivateKeySize      api.PrivateKeySize
 	Annotations         map[string]string
 }
 

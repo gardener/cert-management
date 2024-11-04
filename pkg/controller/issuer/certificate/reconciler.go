@@ -86,7 +86,7 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	algorithm, _ := c.GetStringOption(core.OptDefaultPrivateKeyAlgorithm)
 	rsaSize, _ := c.GetIntOption(core.OptDefaultRSAPrivateKeySize)
 	ecdsaSize, _ := c.GetIntOption(core.OptDefaultECDSAPrivateKeySize)
-	defaults, err := legobridge.NewCertificatePrivateKeyDefaults(api.PrivateKeyAlgorithm(algorithm), api.PrivateKeySize(rsaSize), api.PrivateKeySize(ecdsaSize))
+	defaults, err := legobridge.NewCertificatePrivateKeyDefaults(api.PrivateKeyAlgorithm(algorithm), api.PrivateKeySize(rsaSize), api.PrivateKeySize(ecdsaSize)) // #nosec G115 -- only validated values in int32 range are used
 	if err != nil {
 		return nil, err
 	}
