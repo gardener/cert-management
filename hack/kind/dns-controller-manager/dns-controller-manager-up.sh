@@ -20,7 +20,7 @@ download_external_dns_management_helm_charts()
     return
   fi
 
-  wget -qO- https://github.com/gardener/external-dns-management/archive/refs/tags/$VERSION.tar.gz | tar xvz -C ${SOURCE_PATH}/dev external-dns-management-${VERSION#v}/charts/external-dns-management
+  curl -sL "https://github.com/gardener/external-dns-management/archive/refs/tags/$VERSION.tar.gz" | tar xvz -C ${SOURCE_PATH}/dev external-dns-management-${VERSION#v}/charts/external-dns-management
 }
 
 install_dns_controller_manager()
