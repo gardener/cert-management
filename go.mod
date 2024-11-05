@@ -29,6 +29,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20240903163716-9e1beecbcb38
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	sigs.k8s.io/controller-runtime v0.19.1
+	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9
 	sigs.k8s.io/gateway-api v1.2.0
 	sigs.k8s.io/kind v0.24.0
 	software.sslmate.com/src/go-pkcs12 v0.5.0
@@ -107,6 +108,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

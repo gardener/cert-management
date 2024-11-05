@@ -66,6 +66,10 @@ release:
 test: $(GINKGO)
 	$(GINKGO) -r ./pkg
 
+.PHONY: test-integration
+test-integration: $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
+	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/integration/...
+
 .PHONY: generate
 generate: $(VGOPATH) $(CONTROLLER_GEN)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) ./hack/generate-code

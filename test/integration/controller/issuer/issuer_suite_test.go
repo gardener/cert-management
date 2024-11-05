@@ -16,7 +16,7 @@ import (
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certclient "github.com/gardener/cert-management/pkg/cert/client"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
-	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "github.com/gardener/cert-management/pkg/controller/issuer"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -67,10 +68,10 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDInstallOptions: envtest.CRDInstallOptions{
 			Paths: []string{
-				filepath.Join("..", "..", "..", "pkg", "apis", "cert", "crds", "cert.gardener.cloud_certificaterevocations.yaml"),
-				filepath.Join("..", "..", "..", "pkg", "apis", "cert", "crds", "cert.gardener.cloud_certificates.yaml"),
-				filepath.Join("..", "..", "..", "pkg", "apis", "cert", "crds", "cert.gardener.cloud_issuers.yaml"),
-				filepath.Join("..", "..", "..", "examples", "11-dns.gardener.cloud_dnsentries.yaml"),
+				filepath.Join("..", "..", "..", "..", "pkg", "apis", "cert", "crds", "cert.gardener.cloud_certificaterevocations.yaml"),
+				filepath.Join("..", "..", "..", "..", "pkg", "apis", "cert", "crds", "cert.gardener.cloud_certificates.yaml"),
+				filepath.Join("..", "..", "..", "..", "pkg", "apis", "cert", "crds", "cert.gardener.cloud_issuers.yaml"),
+				filepath.Join("..", "..", "..", "..", "examples", "11-dns.gardener.cloud_dnsentries.yaml"),
 			},
 		},
 		ErrorIfCRDPathMissing: true,
