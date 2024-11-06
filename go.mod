@@ -2,7 +2,7 @@ module github.com/gardener/cert-management
 
 go 1.23.0
 
-toolchain go1.23.2
+toolchain go1.23.3
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
