@@ -6,6 +6,7 @@ ENSURE_CONTROLLER_MANAGER_LIB_MOD := $(shell go get github.com/gardener/controll
 CONTROLLER_MANAGER_LIB_HACK_DIR   := $(shell go list -m -f "{{.Dir}}" github.com/gardener/controller-manager-library)/hack
 ENSURE_GARDENER_MOD               := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 GARDENER_HACK_DIR                 := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
+EXTERNAL_DNS_MAN_DIR              := $(shell go list -m -f "{{.Dir}}" github.com/gardener/external-dns-management)
 REGISTRY                          := europe-docker.pkg.dev/gardener-project/public
 EXECUTABLE                        := cert-controller-manager
 REPO_ROOT                         := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
@@ -26,6 +27,7 @@ include $(GARDENER_HACK_DIR)/tools.mk
 tidy:
 	@go mod tidy
 	@cp $(GARDENER_HACK_DIR)/sast.sh $(HACK_DIR)/sast.sh && chmod +xw $(HACK_DIR)/sast.sh
+	@cp $(EXTERNAL_DNS_MAN_DIR)/pkg/apis/dns/crds/dns.gardener.cloud_dnsentries.yaml $(REPO_ROOT)/examples/11-dns.gardener.cloud_dnsentries.yaml
 
 .PHONY: check
 check: sast-report fastcheck
@@ -63,6 +65,10 @@ release:
 .PHONY: test
 test: $(GINKGO)
 	$(GINKGO) -r ./pkg
+
+.PHONY: test-integration
+test-integration: $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
+	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/integration/...
 
 .PHONY: generate
 generate: $(VGOPATH) $(CONTROLLER_GEN)
