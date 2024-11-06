@@ -8,15 +8,13 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
-
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certclient "github.com/gardener/cert-management/pkg/cert/client"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
+	"os"
+	"path/filepath"
+	"testing"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
