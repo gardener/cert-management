@@ -16,7 +16,7 @@ import (
 	certclient "github.com/gardener/cert-management/pkg/cert/client"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
-
+	testutils "github.com/gardener/cert-management/test/utils"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
@@ -44,6 +44,8 @@ func TestIssuerController(t *testing.T) {
 const testID = "issuer-controller-test"
 
 var (
+	ACMEDirectoryAddress string
+
 	ctx context.Context
 	log logr.Logger
 
@@ -56,9 +58,22 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-
 	logf.SetLogger(logger.MustNewZapLogger(logger.DebugLevel, logger.FormatJSON, zap.WriteTo(GinkgoWriter)))
 	log = logf.Log.WithName(testID)
+
+	By("Start Pebble ACME server")
+	certificatePath, ACMEDirectoryAddress, err := testutils.RunPebble(log.WithName("pebble"))
+	Expect(err).NotTo(HaveOccurred())
+
+	// The go-acme/lego library needs to trust the TLS certificate of the Pebble ACME server.
+	// See: https://github.com/go-acme/lego/blob/f2f5550d3a55ec1118f73346cce7a984b4d530f6/lego/client_config.go#L19-L24
+	Expect(os.Setenv("LEGO_CA_CERTIFICATES", certificatePath)).To(Succeed())
+
+	// Starting the Pebble TLS server is a blocking function call that runs in a separate goroutine.
+	// As the ACME directory endpoint might not be available immediately, we wait until it is reachable.
+	Eventually(func() error {
+		return testutils.CheckPebbleAvailability(certificatePath, ACMEDirectoryAddress)
+	}).Should(Succeed())
 
 	By("Start test environment")
 	testEnv = &envtest.Environment{
@@ -73,8 +88,7 @@ var _ = BeforeSuite(func() {
 		ErrorIfCRDPathMissing: true,
 	}
 
-	var err error
-	restConfig, err = testEnv.Start()
+	restConfig, err := testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restConfig).NotTo(BeNil())
 
@@ -86,6 +100,7 @@ var _ = BeforeSuite(func() {
 	DeferCleanup(func() {
 		By("Stop test environment")
 		Expect(testEnv.Stop()).To(Succeed())
+		_ = os.RemoveAll(filepath.Dir(certificatePath))
 		_ = os.Remove(kubeconfigFile)
 	})
 
