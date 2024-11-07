@@ -78,7 +78,7 @@ var _ = Describe("Issuer controller tests", func() {
 			Spec: v1alpha1.IssuerSpec{
 				ACME: &v1alpha1.ACMESpec{
 					Email:            "foo@somewhere-foo-123456.com",
-					Server:           "https://acme-staging-v02.api.letsencrypt.org/directory",
+					Server:           ACMEDirectoryAddress,
 					AutoRegistration: true,
 				},
 			},
