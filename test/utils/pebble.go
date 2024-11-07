@@ -17,8 +17,7 @@ import (
 	"github.com/letsencrypt/pebble/v2/wfe"
 )
 
-// The default values for the Pebble config have been taken from:
-// https://github.com/letsencrypt/pebble/blob/main/test/config/pebble-config.json
+// The default values for the Pebble config have been taken from: https://github.com/letsencrypt/pebble/blob/main/test/config/pebble-config.json
 const (
 	listenAddress             = "localhost:14000"
 	ocspResponderURL          = ""
@@ -35,8 +34,7 @@ const (
 )
 
 // RunPebble runs a pebble server with the given configuration.
-// The code is copied, shortened, and adapted from:
-// https://github.com/letsencrypt/pebble/blob/main/cmd/pebble/main.go
+// The code is copied, shortened, and adapted from: https://github.com/letsencrypt/pebble/blob/main/cmd/pebble/main.go
 func RunPebble(logr logr.Logger) (certificatePath, directoryAddress string, err error) {
 	certificatePath, privateKeyPath, err := generateCertificate()
 	if err != nil {
@@ -97,8 +95,7 @@ func CheckPebbleAvailability(certificatePath string, listenAddress string) error
 }
 
 // generateCertificate generates a certificate and private key for the Pebble server in a temporary OS directory.
-// Inspired from:
-// https://github.com/gardener/cert-management/blob/584014befb02a80a063184c9b765db7e12e66f52/hack/kind/pebble/pebble-up.sh#L15-L23
+// Inspired from: https://github.com/gardener/cert-management/blob/584014befb02a80a063184c9b765db7e12e66f52/hack/kind/pebble/pebble-up.sh#L15-L23
 func generateCertificate() (certificatePath, privateKeyPath string, err error) {
 	tempDirectoryPath, err := os.MkdirTemp("", "pebble")
 	if err != nil {
