@@ -4,16 +4,17 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
+
 	"github.com/go-logr/logr"
 	"github.com/letsencrypt/pebble/v2/ca"
 	"github.com/letsencrypt/pebble/v2/cmd"
 	"github.com/letsencrypt/pebble/v2/db"
 	"github.com/letsencrypt/pebble/v2/va"
 	"github.com/letsencrypt/pebble/v2/wfe"
-	"net/http"
-	"os"
-	"os/exec"
-	"runtime"
 )
 
 // The default values for the Pebble config have been taken from:
