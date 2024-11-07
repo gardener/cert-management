@@ -36,6 +36,15 @@ const (
 // RunPebble runs a pebble server with the given configuration.
 // The code is copied, shortened, and adapted from: https://github.com/letsencrypt/pebble/blob/main/cmd/pebble/main.go
 func RunPebble(logr logr.Logger) (certificatePath, directoryAddress string, err error) {
+	// We don't want to go through DNS-01 challenges in the integration tests as we would have to spin up a local, authoritative DNS server.
+	// Setting the environment variable PEBBLE_VA_ALWAYS_VALID to 1 makes the Pebble server always return a valid response for the validation authority.
+	// Testing the DNS-01 challenge is covered by the functional E2E tests.
+	// See the Pebble documentation: https://github.com/letsencrypt/pebble#skipping-validation
+	err = os.Setenv("PEBBLE_VA_ALWAYS_VALID", "1")
+	if err != nil {
+		return "", "", fmt.Errorf("failed to set environment variable: %v", err)
+	}
+
 	certificatePath, privateKeyPath, err := generateCertificate()
 	if err != nil {
 		return "", "", err
