@@ -44,15 +44,14 @@ func TestIssuerController(t *testing.T) {
 const testID = "issuer-controller-test"
 
 var (
-	ACMEDirectoryAddress string
-
 	ctx context.Context
 	log logr.Logger
 
-	restConfig     *rest.Config
-	testEnv        *envtest.Environment
-	testClient     client.Client
-	kubeconfigFile string
+	restConfig           *rest.Config
+	testEnv              *envtest.Environment
+	testClient           client.Client
+	acmeDirectoryAddress string
+	kubeconfigFile       string
 
 	scheme *runtime.Scheme
 )
@@ -62,8 +61,9 @@ var _ = BeforeSuite(func() {
 	log = logf.Log.WithName(testID)
 
 	By("Start Pebble ACME server")
-	certificatePath, ACMEDirectoryAddress, err := testutils.RunPebble(log.WithName("pebble"))
+	certificatePath, directoryAddress, err := testutils.RunPebble(log.WithName("pebble"))
 	Expect(err).NotTo(HaveOccurred())
+	acmeDirectoryAddress = directoryAddress
 
 	// The go-acme/lego library needs to trust the TLS certificate of the Pebble ACME server.
 	// See: https://github.com/go-acme/lego/blob/f2f5550d3a55ec1118f73346cce7a984b4d530f6/lego/client_config.go#L19-L24
@@ -72,7 +72,7 @@ var _ = BeforeSuite(func() {
 	// Starting the Pebble TLS server is a blocking function call that runs in a separate goroutine.
 	// As the ACME directory endpoint might not be available immediately, we wait until it is reachable.
 	Eventually(func() error {
-		return testutils.CheckPebbleAvailability(certificatePath, ACMEDirectoryAddress)
+		return testutils.CheckPebbleAvailability(certificatePath, acmeDirectoryAddress)
 	}).Should(Succeed())
 
 	By("Start test environment")
