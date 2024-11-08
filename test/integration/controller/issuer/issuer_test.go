@@ -28,6 +28,8 @@ var _ = Describe("Issuer controller tests", func() {
 	)
 
 	BeforeEach(func() {
+		Expect(acmeDirectoryAddress).NotTo(BeEmpty())
+
 		ctxLocal := context.Background()
 		ctx0 := ctxutil.CancelContext(ctxutil.WaitGroupContext(context.Background(), "main"))
 		ctx = ctxutil.TickContext(ctx0, controllermanager.DeletionActivity)
@@ -78,7 +80,7 @@ var _ = Describe("Issuer controller tests", func() {
 			Spec: v1alpha1.IssuerSpec{
 				ACME: &v1alpha1.ACMESpec{
 					Email:            "foo@somewhere-foo-123456.com",
-					Server:           "https://acme-staging-v02.api.letsencrypt.org/directory",
+					Server:           acmeDirectoryAddress,
 					AutoRegistration: true,
 				},
 			},
