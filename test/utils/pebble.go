@@ -85,7 +85,7 @@ func CheckPebbleAvailability(certificatePath string, listenAddress string) error
 	}
 
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{RootCAs: rootCAs}
+	customTransport.TLSClientConfig = &tls.Config{RootCAs: rootCAs, MinVersion: tls.VersionTLS13}
 	http.DefaultTransport = customTransport
 	client := &http.Client{Transport: customTransport}
 
