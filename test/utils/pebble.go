@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/letsencrypt/pebble/v2/ca"
@@ -67,11 +68,14 @@ func RunPebble(logr logr.Logger) (certificatePath, directoryAddress string, err 
 		directoryAddress)
 
 	go func() {
-		err := http.ListenAndServeTLS(
-			listenAddress,
-			certificatePath,
-			privateKeyPath,
-			muxHandler)
+		server := &http.Server{
+			Addr:         listenAddress,
+			Handler:      muxHandler,
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 5 * time.Second,
+			IdleTimeout:  10 * time.Second,
+		}
+		err := server.ListenAndServeTLS(certificatePath, privateKeyPath)
 		cmd.FailOnError(err, "Calling ListenAndServeTLS()")
 	}()
 
