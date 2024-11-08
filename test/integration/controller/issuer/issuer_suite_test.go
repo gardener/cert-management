@@ -57,13 +57,17 @@ var (
 )
 
 var _ = BeforeSuite(func() {
+	var (
+		certificatePath string
+		err             error
+	)
+
 	logf.SetLogger(logger.MustNewZapLogger(logger.DebugLevel, logger.FormatJSON, zap.WriteTo(GinkgoWriter)))
 	log = logf.Log.WithName(testID)
 
 	By("Start Pebble ACME server")
-	certificatePath, directoryAddress, err := testutils.RunPebble(log.WithName("pebble"))
+	certificatePath, acmeDirectoryAddress, err = testutils.RunPebble(log.WithName("pebble"))
 	Expect(err).NotTo(HaveOccurred())
-	acmeDirectoryAddress = directoryAddress
 
 	// The go-acme/lego library needs to trust the TLS certificate of the Pebble ACME server.
 	// See: https://github.com/go-acme/lego/blob/f2f5550d3a55ec1118f73346cce7a984b4d530f6/lego/client_config.go#L19-L24
@@ -88,7 +92,7 @@ var _ = BeforeSuite(func() {
 		ErrorIfCRDPathMissing: true,
 	}
 
-	restConfig, err := testEnv.Start()
+	restConfig, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restConfig).NotTo(BeNil())
 
