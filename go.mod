@@ -13,6 +13,7 @@ require (
 	github.com/gardener/gardener v1.107.0
 	github.com/go-acme/lego/v4 v4.19.2
 	github.com/go-logr/logr v1.4.2
+	github.com/letsencrypt/pebble/v2 v2.6.0
 	github.com/miekg/dns v1.1.62
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.0
@@ -90,7 +91,6 @@ require (
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0 // indirect
 	github.com/letsencrypt/challtestsrv v1.3.2 // indirect
-	github.com/letsencrypt/pebble/v2 v2.6.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
