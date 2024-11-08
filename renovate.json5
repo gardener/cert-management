@@ -1,5 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": ["kind/enhancement"],
+  "postUpdateOptions": ["gomodTidy"],
   "ignoreDeps": [
     "github.com/Masterminds/semver/v3",
     "github.com/ahmetb/gen-crd-api-reference-docs",
