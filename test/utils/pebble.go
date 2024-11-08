@@ -35,19 +35,19 @@ const (
 
 // RunPebble runs a pebble server with the given configuration.
 // The code is copied, shortened, and adapted from: https://github.com/letsencrypt/pebble/blob/main/cmd/pebble/main.go
-func RunPebble(logr logr.Logger) (certificatePath, directoryAddress string, err error) {
+func RunPebble(logr logr.Logger) (server *http.Server, certificatePath, directoryAddress string, err error) {
 	// We don't want to go through DNS-01 challenges in the integration tests as we would have to spin up a local, authoritative DNS server.
 	// Setting the environment variable PEBBLE_VA_ALWAYS_VALID to 1 makes the Pebble server always return a valid response for the validation authority.
 	// Testing the DNS-01 challenge is covered by the functional E2E tests.
 	// See the Pebble documentation: https://github.com/letsencrypt/pebble#skipping-validation
 	err = os.Setenv("PEBBLE_VA_ALWAYS_VALID", "1")
 	if err != nil {
-		return "", "", fmt.Errorf("failed to set environment variable: %v", err)
+		return nil, "", "", fmt.Errorf("failed to set environment variable: %v", err)
 	}
 
 	certificatePath, privateKeyPath, err := generateCertificate()
 	if err != nil {
-		return "", "", err
+		return nil, "", "", err
 	}
 
 	log := NewLogBridge(logr)
@@ -65,19 +65,22 @@ func RunPebble(logr logr.Logger) (certificatePath, directoryAddress string, err 
 	log.Printf("ACME directory available at: %s",
 		directoryAddress)
 
+	server = &http.Server{
+		Addr:         listenAddress,
+		Handler:      muxHandler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		IdleTimeout:  10 * time.Second,
+	}
+
 	go func() {
-		server := &http.Server{
-			Addr:         listenAddress,
-			Handler:      muxHandler,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-			IdleTimeout:  10 * time.Second,
-		}
 		err := server.ListenAndServeTLS(certificatePath, privateKeyPath)
-		cmd.FailOnError(err, "Calling ListenAndServeTLS()")
+		if err != http.ErrServerClosed {
+			cmd.FailOnError(err, "Calling ListenAndServeTLS()")
+		}
 	}()
 
-	return certificatePath, directoryAddress, nil
+	return server, certificatePath, directoryAddress, nil
 }
 
 // CheckPebbleAvailability checks if the Pebble ACME server is available at the given address.

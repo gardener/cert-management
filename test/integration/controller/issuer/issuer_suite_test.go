@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -58,15 +59,16 @@ var (
 
 var _ = BeforeSuite(func() {
 	var (
-		certificatePath string
-		err             error
+		certificatePath  string
+		pebbleHTTPServer io.Closer
+		err              error
 	)
 
 	logf.SetLogger(logger.MustNewZapLogger(logger.DebugLevel, logger.FormatJSON, zap.WriteTo(GinkgoWriter)))
 	log = logf.Log.WithName(testID)
 
 	By("Start Pebble ACME server")
-	certificatePath, acmeDirectoryAddress, err = testutils.RunPebble(log.WithName("pebble"))
+	pebbleHTTPServer, certificatePath, acmeDirectoryAddress, err = testutils.RunPebble(log.WithName("pebble"))
 	Expect(err).NotTo(HaveOccurred())
 
 	// The go-acme/lego library needs to trust the TLS certificate of the Pebble ACME server.
@@ -106,6 +108,9 @@ var _ = BeforeSuite(func() {
 		Expect(testEnv.Stop()).To(Succeed())
 		_ = os.RemoveAll(filepath.Dir(certificatePath))
 		_ = os.Remove(kubeconfigFile)
+		if pebbleHTTPServer != nil {
+			_ = pebbleHTTPServer.Close()
+		}
 	})
 
 	By("Create test client")
