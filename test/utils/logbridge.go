@@ -1,9 +1,10 @@
 package testutils
 
 import (
-	"github.com/go-logr/logr"
 	"log"
 	"strings"
+
+	"github.com/go-logr/logr"
 )
 
 type logBridge struct {
