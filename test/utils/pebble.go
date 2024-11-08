@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"github.com/go-logr/logr"
@@ -127,7 +128,7 @@ func generateCertificate() (certificatePath, privateKeyPath string, err error) {
 }
 
 func loadCertPool(certificatePath string) (*x509.CertPool, error) {
-	certData, err := os.ReadFile(certificatePath)
+	certData, err := os.ReadFile(filepath.Clean(certificatePath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read certificate file: %v", err)
 	}
