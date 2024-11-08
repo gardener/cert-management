@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -109,24 +107,24 @@ func CheckPebbleAvailability(certificatePath string, listenAddress string) error
 }
 
 // generateCertificate generates a certificate and private key for the Pebble server in a temporary OS directory.
-// Inspired from: https://github.com/gardener/cert-management/blob/584014befb02a80a063184c9b765db7e12e66f52/hack/kind/pebble/pebble-up.sh#L15-L23
 func generateCertificate() (certificatePath, privateKeyPath string, err error) {
 	tempDirectoryPath, err := os.MkdirTemp("", "pebble")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create temporary directory: %v", err)
 	}
 
-	goRoot := runtime.GOROOT()
-	goFile := fmt.Sprintf("%s/src/crypto/tls/generate_cert.go", goRoot)
-	command := exec.Command("go", "run", goFile, "--host=localhost", "--ecdsa-curve=P256")
-	command.Dir = tempDirectoryPath
-	err = command.Run()
+	certificatePath = fmt.Sprintf("%s/cert.pem", tempDirectoryPath)
+	privateKeyPath = fmt.Sprintf("%s/key.pem", tempDirectoryPath)
+	host := "localhost"
+	ecdsaCurve := "P256"
+
+	err = generateCert(certFlags{
+		host:       &host,
+		ecdsaCurve: &ecdsaCurve,
+	}, certificatePath, privateKeyPath)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate certificate: %v", err)
 	}
-
-	certificatePath = fmt.Sprintf("%s/cert.pem", tempDirectoryPath)
-	privateKeyPath = fmt.Sprintf("%s/key.pem", tempDirectoryPath)
 
 	return certificatePath, privateKeyPath, nil
 }
