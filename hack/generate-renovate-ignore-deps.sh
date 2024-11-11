@@ -1,5 +1,7 @@
 #!/bin/bash
 
+readonly RENOVATE_FILE="renovate.json5"
+
 confirm() {
     read -p "$1 (y/n): " response
     case $response in
@@ -20,7 +22,7 @@ extract_dependencies() {
     done <<< "$go_mod"
 }
 
-if ! confirm "🤔 This will override the field 'ignoreDeps' in the file 'renovate.json'. Do you want to continue?"; then
+if ! confirm "🤔 This will override the field 'ignoreDeps' in the file '$RENOVATE_FILE'. Do you want to continue?"; then
     echo "🛑 Cancelled."
     exit 0
 fi
@@ -53,13 +55,14 @@ for certman_dependency in "${certman_dependencies[@]}"; do
 done
 
 echo "☯️ Found ${#common_dependencies[@]} common dependencies."
-echo "✍️ Overriding the field 'ignoreDeps' in the file 'renovate.json'..."
+echo "✍️ Overriding the field 'ignoreDeps' in the file '$RENOVATE_FILE'..."
 
 ignore_deps=$(printf ',"%s"' "${common_dependencies[@]}") # Add a comma to the beginning of each element and concatenate them.
 ignore_deps="[${ignore_deps:1}]" # Remove the leading comma and wrap the string in square brackets.
+renovate_file_tmp="$RENOVATE_FILE.tmp"
 
-# Use `jq` to override the field `ignoreDeps` in the file `renovate.json`.
-jq --argjson ignoreDeps "$ignore_deps" '.ignoreDeps = $ignoreDeps' renovate.json > renovate.json.tmp && mv renovate.json.tmp renovate.json
+# Use `jq` to override the field `ignoreDeps` in the file `renovate.json5`.
+jq --argjson ignoreDeps "$ignore_deps" '.ignoreDeps = $ignoreDeps' $RENOVATE_FILE > $renovate_file_tmp && mv $renovate_file_tmp $RENOVATE_FILE
 
 echo '🎉 Done!'
 exit 0
