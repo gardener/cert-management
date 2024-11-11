@@ -10,19 +10,28 @@
     "gomodTidy"
   ],
   "packageRules": [
-    // Analog to: https://github.com/gardener/gardener/blob/bc9877cb5aaf725a569a973a77d5cd3545ef1590/.github/renovate.json5#L171-L188
     {
-      "description":  "Ask for manual approval to create PRs for minor and major updates of dependencies which most likely require manual adaptations of the code.",
-      "matchDatasources": ["go"],
-      "matchUpdateTypes": ["major", "minor"],
-      "matchPackageNames": ["sigs.k8s.io/controller-runtime"],
+      "description": "Ask for manual approval to create PRs for minor and major updates of dependencies which most likely require manual adaptations of the code. Analog to: https://github.com/gardener/gardener/blob/bc9877cb5aaf725a569a973a77d5cd3545ef1590/.github/renovate.json5#L171-L188",
+      "matchDatasources": [
+        "go"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "matchPackageNames": [
+        "sigs.k8s.io/controller-runtime"
+      ],
       "dependencyDashboardApproval": true
     },
-    // Analog to: https://github.com/gardener/gardener/blob/bc9877cb5aaf725a569a973a77d5cd3545ef1590/.github/renovate.json5#L332-L341
     {
-      "description": "Ignore dependency updates from sigs.k8s.io/controller-runtime/tools/setup-envtest because it should be in sync with controller-runtime.",
-      "matchDatasources": ["go"],
-      "matchPackageNames": ["sigs.k8s.io/controller-runtime/tools/setup-envtest" ],
+      "description": "Ignore dependency updates from sigs.k8s.io/controller-runtime/tools/setup-envtest because it should be in sync with controller-runtime. Analog to: https://github.com/gardener/gardener/blob/bc9877cb5aaf725a569a973a77d5cd3545ef1590/.github/renovate.json5#L332-L341",
+      "matchDatasources": [
+        "go"
+      ],
+      "matchPackageNames": [
+        "sigs.k8s.io/controller-runtime/tools/setup-envtest"
+      ],
       "enabled": false
     }
   ],
