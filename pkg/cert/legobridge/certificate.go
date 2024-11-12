@@ -14,18 +14,17 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
-	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/go-acme/lego/v4/certcrypto"
-	"k8s.io/utils/ptr"
-
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/metrics"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 // TLSCAKey is the secret data key for the CA key.

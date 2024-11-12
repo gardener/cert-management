@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strings"
 
-	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -18,6 +17,7 @@ import (
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
+	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 )
 
 type httpRouteLister interface {

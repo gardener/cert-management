@@ -9,8 +9,9 @@ package core
 import (
 	"sync"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 // NewReferencedSecrets create a ReferencedSecrets

@@ -7,12 +7,12 @@ package istio
 import (
 	"strings"
 
+	"github.com/gardener/controller-manager-library/pkg/resources"
+
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/source/ingress"
 	"github.com/gardener/cert-management/pkg/controller/source/service"
-
-	"github.com/gardener/controller-manager-library/pkg/resources"
 )
 
 var (

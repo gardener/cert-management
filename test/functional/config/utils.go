@@ -16,9 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 )
 
 const STATE_DELETED = "~DELETED~"
