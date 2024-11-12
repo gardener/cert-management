@@ -30,6 +30,7 @@ import (
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
@@ -402,7 +403,9 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
 	}
-
+	if cert.Spec.Duration != nil {
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("duration cannot be set for ACME certificate"))
+	}
 	err = r.validateDomainsAndCsr(&cert.Spec, issuer.Spec.ACME.Domains, issuerKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
@@ -555,6 +558,17 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		return r.failed(logctx, obj, api.StateError, err)
 	}
 
+	duration, err := r.getDuration(cert)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
+	if duration == nil {
+		duration = ptr.To(2 * legobridge.DefaultCertDuration)
+	}
+	err = r.validateCertDuration(duration, CAKeyPair)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
 	err = r.validateDomainsAndCsr(&cert.Spec, nil, issuerKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
@@ -584,7 +598,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		Callback: callback, Renew: renew}
+		Callback: callback, Renew: renew, Duration: duration}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
@@ -639,6 +653,29 @@ func (r *certReconciler) checkDomainRangeRestriction(issuerDomains *api.DNSSelec
 					domain, issuerKey, strings.Join(issuerDomains.Include, ","))
 			}
 		}
+	}
+	return nil
+}
+
+func (r *certReconciler) getDuration(cert *api.Certificate) (*time.Duration, error) {
+	if cert.Spec.Duration == nil {
+		return nil, nil
+	}
+	duration := cert.Spec.Duration.Duration
+	if duration < 2*r.renewalWindow {
+		return nil, fmt.Errorf("certificate duration must be greater than %v", 2*r.renewalWindow)
+	}
+	return ptr.To(duration), nil
+}
+
+func (r *certReconciler) validateCertDuration(duration *time.Duration, caKeyPair *legobridge.TLSKeyPair) error {
+	if duration == nil {
+		return nil
+	}
+	caNotAfter := caKeyPair.Cert.NotAfter
+	now := time.Now()
+	if now.Add(*duration).After(caNotAfter) {
+		return fmt.Errorf("certificate lifetime (%v) is longer than the lifetime of the CA certificate (%v)", now.Add(*duration), caNotAfter)
 	}
 	return nil
 }
