@@ -103,12 +103,12 @@ github.com/fxamacker/cbor/v2 v2.7.0 h1:iM5WgngdRBanHcxugY4JySA0nk1wZorNOpTgCMedv
 github.com/fxamacker/cbor/v2 v2.7.0/go.mod h1:pxXPTn3joSm21Gbwsv0w9OSA2y1HFR9qXEeXQVeNoDQ=
 github.com/gardener/controller-manager-library v0.2.1-0.20241104074533-80cbeddadabc h1:o4r1a4B2HKwkglGpO74FJ9XnrGK8NAqynTpvKTfapyI=
 github.com/gardener/controller-manager-library v0.2.1-0.20241104074533-80cbeddadabc/go.mod h1:fyLOrcaKtGno4McZKW21b6QtwNghCF0IemTLKcwKZlM=
-github.com/gardener/etcd-druid v0.23.2 h1:wK4Ys3+DZucMUcHOkVD+moosP9iu4qoNx14nSZO4I8E=
-github.com/gardener/etcd-druid v0.23.2/go.mod h1:D2VHr239nkMyRKtR6B/KGdbma7qVNmuZV8J/226VPwo=
+github.com/gardener/etcd-druid v0.23.3 h1:MjkWn1e8M4SoohHp7gVMuT6iIkosjqH2dXaH8gH2Epo=
+github.com/gardener/etcd-druid v0.23.3/go.mod h1:D2VHr239nkMyRKtR6B/KGdbma7qVNmuZV8J/226VPwo=
 github.com/gardener/external-dns-management v0.22.0 h1:a9A8A5h1zMzKx52LUUf2k5L5bmMoai0eZL8HkED+qQA=
 github.com/gardener/external-dns-management v0.22.0/go.mod h1:bryNFmxRFb57tOkvskLwriLEkKkJGG+1Ikmc6h6xTo4=
-github.com/gardener/gardener v1.107.1 h1:vRl+o2gpFs6XRUmHXJtJgy0Z1LukFW+WB6t5OvADtmA=
-github.com/gardener/gardener v1.107.1/go.mod h1:QjnfvhI6V6ER+xMQEUaSEPSFx8D6Z3YIoxb11Aq4LVQ=
+github.com/gardener/gardener v1.107.2 h1:lXMWpE5sAm9C+n+0HzQ3iTWWBvWJkTZaU6zM3nZ2ffk=
+github.com/gardener/gardener v1.107.2/go.mod h1:uyKS7aU7zxu+Cu+0HBSkaBx1GnLb7HHIBj4GwcpAQaI=
 github.com/gardener/hvpa-controller/api v0.17.0 h1:1mNeP+xsnjPH6GhewugU5srslXiTCJgYIFCMuRXwI7w=
 github.com/gardener/hvpa-controller/api v0.17.0/go.mod h1:eKrL7j6/YX8PaoP80xxi3+UFmQgHVf/QCPsGwNnmDeE=
 github.com/gardener/machine-controller-manager v0.54.0 h1:V7EOODiaBO9VesskdCgxMvo5vgMAmtmUTdb9Y9Nwp50=
