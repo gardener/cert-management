@@ -1,14 +1,5 @@
 #!/bin/bash
 
-confirm() {
-    read -p "$1 (y/n): " response
-    case $response in
-        [Yy]* ) return 0;; # User responded with 'yes'
-        [Nn]* ) return 1;; # User responded with 'no'
-        * ) echo "😤 Please answer y or n." && confirm "$1";; # Invalid input, ask again.
-    esac
-}
-
 # Takes the content of a go.mod file and an array to add the extracted dependencies to.
 extract_dependencies() {
     local go_mod=$1
@@ -19,11 +10,6 @@ extract_dependencies() {
         eval "$dependencies+=('$dependency')"
     done <<< "$go_mod"
 }
-
-if ! confirm "🤔 This will override the field 'ignoreDeps' in the file 'renovate.json'. Do you want to continue?"; then
-    echo "🛑 Cancelled."
-    exit 0
-fi
 
 echo "🛜 Downloading the latest 'go.mod' from gardener/gardener..."
 
@@ -53,13 +39,16 @@ for certman_dependency in "${certman_dependencies[@]}"; do
 done
 
 echo "☯️ Found ${#common_dependencies[@]} common dependencies."
-echo "✍️ Overriding the field 'ignoreDeps' in the file 'renovate.json'..."
 
 ignore_deps=$(printf ',"%s"' "${common_dependencies[@]}") # Add a comma to the beginning of each element and concatenate them.
-ignore_deps="[${ignore_deps:1}]" # Remove the leading comma and wrap the string in square brackets.
+ignore_deps="[${ignore_deps:1}]" # Remove the leading comma and wrap the string in square brackets to format it as a JSON array.
+clipboard_content=$(echo "$ignore_deps" | jq) # Format the JSON array as a string to copy it to the clipboard.
 
-# Use `jq` to override the field `ignoreDeps` in the file `renovate.json`.
-jq --argjson ignoreDeps "$ignore_deps" '.ignoreDeps = $ignoreDeps' renovate.json > renovate.json.tmp && mv renovate.json.tmp renovate.json
+printf '\n'
+echo "{\"ignoreDeps\":$ignore_deps}" | jq # Output the full JSON object to the shell.
+printf '\n'
 
-echo '🎉 Done!'
+pbcopy <<< "$clipboard_content" # Copy the formatted JSON array to the clipboard.
+
+echo "📋 Please paste the value of the generated 'ignoreDeps' into the 'renovate.json5' configuration file. The content has been copied to your clipboard."
 exit 0
