@@ -9,8 +9,6 @@ package issuer_test
 import (
 	"context"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/ctxutil"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
@@ -19,6 +17,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 var _ = Describe("Issuer controller tests", func() {

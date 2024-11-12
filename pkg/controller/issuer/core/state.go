@@ -7,10 +7,11 @@
 package core
 
 import (
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 type state struct {

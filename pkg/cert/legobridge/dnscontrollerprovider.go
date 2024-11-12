@@ -11,13 +11,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
-	"k8s.io/utils/ptr"
-
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	"github.com/gardener/external-dns-management/pkg/dns"
+	"k8s.io/utils/ptr"
+
+	"github.com/gardener/cert-management/pkg/cert/source"
 )
 
 func newDNSControllerProvider(settings DNSControllerSettings, targetClass string) (internalProvider, error) {

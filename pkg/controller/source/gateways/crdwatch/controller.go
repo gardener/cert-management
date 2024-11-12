@@ -8,13 +8,14 @@ import (
 	"os"
 	"time"
 
-	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
 // Controller is the controller name.

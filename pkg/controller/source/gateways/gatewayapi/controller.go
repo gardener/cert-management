@@ -7,10 +7,10 @@ package gatewayapi
 import (
 	"strings"
 
-	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
+	ctrl "github.com/gardener/cert-management/pkg/controller"
 )
 
 // Group is the group of the Gateway API.

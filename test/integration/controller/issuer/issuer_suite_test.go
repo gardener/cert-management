@@ -13,11 +13,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	certclient "github.com/gardener/cert-management/pkg/cert/client"
-	ctrl "github.com/gardener/cert-management/pkg/controller"
-	_ "github.com/gardener/cert-management/pkg/controller/issuer"
-	testutils "github.com/gardener/cert-management/test/utils"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
@@ -35,6 +30,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	certclient "github.com/gardener/cert-management/pkg/cert/client"
+	ctrl "github.com/gardener/cert-management/pkg/controller"
+	_ "github.com/gardener/cert-management/pkg/controller/issuer"
+	testutils "github.com/gardener/cert-management/test/utils"
 )
 
 func TestIssuerController(t *testing.T) {

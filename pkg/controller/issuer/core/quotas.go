@@ -9,8 +9,9 @@ package core
 import (
 	"sync"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	"k8s.io/client-go/util/flowcontrol"
+
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 // NewQuotas create a Quotas

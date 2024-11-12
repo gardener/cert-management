@@ -5,8 +5,6 @@
 package gatewayapi
 
 import (
-	"github.com/gardener/cert-management/pkg/cert/source"
-	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/gardener/cert-management/pkg/cert/source"
+	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 )
 
 var _ = Describe("Kubernetes Networking Gateway Handler", func() {
