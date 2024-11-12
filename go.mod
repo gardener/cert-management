@@ -19,7 +19,7 @@ require (
 	github.com/onsi/gomega v1.35.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.20.5
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
+	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
 	istio.io/api v1.23.3
 	istio.io/client-go v1.23.3
 	k8s.io/api v0.31.2
