@@ -669,6 +669,9 @@ func (r *certReconciler) getDuration(cert *api.Certificate) (*time.Duration, err
 }
 
 func (r *certReconciler) validateCertDuration(duration *time.Duration, caKeyPair *legobridge.TLSKeyPair) error {
+	if duration == nil {
+		return nil
+	}
 	caNotAfter := caKeyPair.Cert.NotAfter
 	now := time.Now()
 	if now.Add(*duration).After(caNotAfter) {
