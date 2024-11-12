@@ -12,13 +12,15 @@ import (
 	"strings"
 	"sync"
 
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

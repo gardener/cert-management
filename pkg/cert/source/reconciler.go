@@ -23,9 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
-	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
