@@ -44,8 +44,8 @@ add-license-headers: $(GO_ADD_LICENSE)
 	@bash $(GARDENER_HACK_DIR)/add-license-header.sh
 
 .PHONY: format
-format:
-	@go fmt ./cmd/... ./pkg/... ./test/...
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
+	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./pkg ./test
 
 .PHONY: build
 build:
