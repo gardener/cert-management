@@ -1,4 +1,8 @@
 #!/bin/bash
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 
 # Takes the content of a go.mod file and an array to add the extracted dependencies to.
 extract_dependencies() {

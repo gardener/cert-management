@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Adapted from the Go standard library generate_cert.go
 // Source: https://github.com/golang/go/blob/master/src/crypto/tls/generate_cert.go
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash 
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 #
 # Tool for extracting X509 certificate (and revocation information) from the certificate secret object.
 # Run ./check-cert-secret to see commands
