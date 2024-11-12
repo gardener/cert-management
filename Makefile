@@ -33,10 +33,15 @@ tidy:
 check: sast-report fastcheck
 
 .PHONY: fastcheck
-fastcheck: format $(GOIMPORTS) $(GOLANGCI_LINT)
+fastcheck: format $(GOIMPORTS) $(GOLANGCI_LINT) $(GO_ADD_LICENSE)
 	@TOOLS_BIN_DIR="$(TOOLS_BIN_DIR)" bash $(CONTROLLER_MANAGER_LIB_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
+	@bash $(GARDENER_HACK_DIR)/check-license-header.sh
 	@echo "Running go vet..."
 	@go vet ./cmd/... ./pkg/... ./test/...
+
+.PHONY: add-license-headers
+add-license-headers: $(GO_ADD_LICENSE)
+	@bash $(GARDENER_HACK_DIR)/add-license-header.sh
 
 .PHONY: format
 format:
