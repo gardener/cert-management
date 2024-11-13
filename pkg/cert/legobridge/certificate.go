@@ -535,6 +535,9 @@ func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) ([]byte, []byte, err
 	if err != nil {
 		return nil, nil, err
 	}
+	if input.Duration == nil {
+		return nil, nil, fmt.Errorf("duration must be set")
+	}
 	crt, err := generateCertFromCSR(csrPEM, *input.Duration, true)
 	if err != nil {
 		return nil, nil, err
