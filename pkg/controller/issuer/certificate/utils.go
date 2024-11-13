@@ -86,7 +86,7 @@ func LookupSerialNumber(res resources.Interface, ref *corev1.SecretReference) (s
 	return SerialNumberToString(cert.SerialNumber, false), nil
 }
 
-func multipleIssuerTypes(issuer *api.Issuer) bool {
+func hasMultipleIssuerTypes(issuer *api.Issuer) bool {
 	count := 0
 	if issuer.Spec.SelfSigned != nil {
 		count++

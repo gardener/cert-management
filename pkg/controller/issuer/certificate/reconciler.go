@@ -389,7 +389,7 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 		return r.failed(logctx, obj, api.StateError, err)
 	}
 
-	if multipleIssuerTypes(issuer) {
+	if hasMultipleIssuerTypes(issuer) {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid issuer spec: either ACME, CA or selfSigned can be set"))
 	}
 	if issuer.Spec.ACME != nil {
