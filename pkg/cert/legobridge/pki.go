@@ -62,7 +62,7 @@ const (
 )
 
 // issueSignedCert does all the Certificate Issuing.
-func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Signer, privKeyPEM []byte, signerKeyPair *TLSKeyPair, duration *time.Duration) (*certificate.Resource, error) {
+func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Signer, privKeyPEM []byte, signerKeyPair *TLSKeyPair, duration time.Duration) (*certificate.Resource, error) {
 	csrPEM, err := generateCSRPEM(csr, privKey)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func generateCSRPEM(csr *x509.CertificateRequest, privateKey crypto.Signer) ([]b
 }
 
 // generateCertFromCSR generates an x509.Certificate based on a PEM encoded CSR.
-func generateCertFromCSR(csrPEM []byte, duration *time.Duration, isCA bool) (*x509.Certificate, error) {
+func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
 	var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
 	csr, err := extractCertificateRequest(csrPEM)
@@ -217,7 +217,7 @@ func generateCertFromCSR(csrPEM []byte, duration *time.Duration, isCA bool) (*x5
 		IsCA:                  isCA,
 		Subject:               csr.Subject,
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(*duration),
+		NotAfter:              time.Now().Add(duration),
 		KeyUsage:              ku,
 		ExtKeyUsage:           DefaultCertExtKeyUsage,
 		DNSNames:              csr.DNSNames,

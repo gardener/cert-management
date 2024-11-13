@@ -535,7 +535,7 @@ func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) ([]byte, []byte, err
 	if err != nil {
 		return nil, nil, err
 	}
-	crt, err := generateCertFromCSR(csrPEM, input.Duration, true)
+	crt, err := generateCertFromCSR(csrPEM, *input.Duration, true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -618,7 +618,7 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyP
 	if duration == nil {
 		return nil, fmt.Errorf("duration must be set")
 	}
-	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair, duration)
+	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair, *duration)
 }
 
 // RevokeCertificate revokes a certificate
