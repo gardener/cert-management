@@ -557,7 +557,7 @@ func CertificatesToSecretData(certificates *certificate.Resource) map[string][]b
 	return data
 }
 
-// SecretDataToCertificates converts secret data to a certicate resource.
+// SecretDataToCertificates converts secret data to a certificate resource.
 func SecretDataToCertificates(data map[string][]byte) *certificate.Resource {
 	certificates := &certificate.Resource{}
 	certificates.Certificate = data[corev1.TLSCertKey]
