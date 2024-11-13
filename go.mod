@@ -10,7 +10,7 @@ require (
 	github.com/cert-manager/cert-manager v1.16.1
 	github.com/gardener/controller-manager-library v0.2.1-0.20241104074533-80cbeddadabc
 	github.com/gardener/external-dns-management v0.22.0
-	github.com/gardener/gardener v1.107.1
+	github.com/gardener/gardener v1.107.2
 	github.com/go-acme/lego/v4 v4.20.2
 	github.com/go-logr/logr v1.4.2
 	github.com/letsencrypt/pebble/v2 v2.6.0
@@ -56,7 +56,7 @@ require (
 	github.com/fluent/fluent-operator/v2 v2.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/gardener/etcd-druid v0.23.2 // indirect
+	github.com/gardener/etcd-druid v0.23.3 // indirect
 	github.com/gardener/hvpa-controller/api v0.17.0 // indirect
 	github.com/gardener/machine-controller-manager v0.54.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.6 // indirect
