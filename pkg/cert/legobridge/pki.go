@@ -228,6 +228,9 @@ func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x50
 // newSelfSignedCertInPEMFormat returns a selfsigned certificate and the private key in PEM format
 func newSelfSignedCertInPEMFormat(
 	input ObtainInput, algo x509.PublicKeyAlgorithm, algoSize int) ([]byte, []byte, error) {
+	if input.Duration == nil {
+		return nil, nil, fmt.Errorf("duration must be set")
+	}
 	certPrivateKey, certPrivateKeyPEM, err := generateKey(algo, algoSize)
 	if err != nil {
 		return nil, nil, err
