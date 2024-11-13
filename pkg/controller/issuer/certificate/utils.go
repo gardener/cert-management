@@ -19,7 +19,7 @@ import (
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
 )
 
-// ExtractRequestedAtFromAnnotation extracts the requestedAt timestamp from the annotation cert.gardener.cloud/requesteAt
+// ExtractRequestedAtFromAnnotation extracts the requestedAt timestamp from the annotation cert.gardener.cloud/requestedAt
 func ExtractRequestedAtFromAnnotation(obj resources.ObjectData) *time.Time {
 	if value, ok := resources.GetAnnotation(obj, AnnotationRequestedAt); ok {
 		t, err := time.Parse(time.RFC3339, value)
