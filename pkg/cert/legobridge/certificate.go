@@ -618,7 +618,7 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, CAKeyPair *TLSKeyP
 	if duration == nil {
 		return nil, fmt.Errorf("duration must be set")
 	}
-	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair, *duration)
+	return issueSignedCert(csr, false, privKey, privKeyPEM, CAKeyPair, duration)
 }
 
 // RevokeCertificate revokes a certificate
