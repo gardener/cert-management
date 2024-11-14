@@ -10,7 +10,7 @@ require (
 	github.com/cert-manager/cert-manager v1.16.1
 	github.com/gardener/controller-manager-library v0.2.1-0.20241104074533-80cbeddadabc
 	github.com/gardener/external-dns-management v0.22.0
-	github.com/gardener/gardener v1.107.2
+	github.com/gardener/gardener v1.108.0
 	github.com/go-acme/lego/v4 v4.20.2
 	github.com/go-logr/logr v1.4.2
 	github.com/letsencrypt/pebble/v2 v2.6.0
@@ -28,7 +28,7 @@ require (
 	k8s.io/client-go v0.31.2
 	k8s.io/code-generator v0.31.2
 	k8s.io/kube-openapi v0.0.0-20240903163716-9e1beecbcb38
-	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
+	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
 	sigs.k8s.io/controller-runtime v0.19.1
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9
 	sigs.k8s.io/gateway-api v1.2.0
@@ -56,7 +56,7 @@ require (
 	github.com/fluent/fluent-operator/v2 v2.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/gardener/etcd-druid v0.23.3 // indirect
+	github.com/gardener/etcd-druid v0.24.1 // indirect
 	github.com/gardener/hvpa-controller/api v0.17.0 // indirect
 	github.com/gardener/machine-controller-manager v0.54.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.6 // indirect
@@ -103,7 +103,7 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.77.2 // indirect
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.78.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.60.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -120,17 +120,17 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.28.0 // indirect
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
-	golang.org/x/mod v0.21.0 // indirect
-	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/crypto v0.29.0 // indirect
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
+	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/term v0.25.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
-	golang.org/x/time v0.7.0 // indirect
-	golang.org/x/tools v0.26.0 // indirect
+	golang.org/x/sync v0.9.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/term v0.26.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/time v0.8.0 // indirect
+	golang.org/x/tools v0.27.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
