@@ -498,6 +498,9 @@ func newSelfSignedCertFromInput(input ObtainInput) (certificates *certificate.Re
 		certPEM, privKeyPEM, err = newSelfSignedCertFromCSRinPEMFormat(input)
 	} else {
 		certPrivateKey := FromKeyType(input.KeyType)
+		if certPrivateKey == nil {
+			return nil, fmt.Errorf("invalid key type: '%s'", input.KeyType)
+		}
 		var algo x509.PublicKeyAlgorithm
 		switch *certPrivateKey.Algorithm {
 		case api.RSAKeyAlgorithm:
