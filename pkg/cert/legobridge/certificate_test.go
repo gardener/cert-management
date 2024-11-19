@@ -104,7 +104,7 @@ var _ = Describe("Certificate", func() {
 			cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
-			Expect(cap(cert.PrivateKey)).To(Equal(2048))
+			Expect(cert.PrivateKey).To(HaveCap(2048))
 		})
 
 		It("should create a self-signed certificate from a CSR", func() {
@@ -112,7 +112,7 @@ var _ = Describe("Certificate", func() {
 			cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
-			Expect(cap(cert.PrivateKey)).To(Equal(2048))
+			Expect(cert.PrivateKey).To(HaveCap(2048))
 		})
 
 		It("should prioritize a CSR over the input key type", func() {
@@ -120,7 +120,7 @@ var _ = Describe("Certificate", func() {
 			cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
-			Expect(cap(cert.PrivateKey)).To(Equal(2048))
+			Expect(cert.PrivateKey).To(HaveCap(2048))
 		})
 	})
 })
