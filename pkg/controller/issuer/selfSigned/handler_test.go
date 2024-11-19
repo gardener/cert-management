@@ -1,10 +1,11 @@
 package selfSigned_test
 
 import (
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/controller/issuer/selfSigned"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/controller/issuer/selfSigned"
 )
 
 var _ = Describe("Handler", func() {

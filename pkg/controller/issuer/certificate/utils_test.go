@@ -1,9 +1,10 @@
 package certificate
 
 import (
-	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 var _ = Describe("Utils", func() {
