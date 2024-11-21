@@ -11,13 +11,10 @@ import (
 	"crypto/x509"
 	"time"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
-	"github.com/gardener/controller-manager-library/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/test/functional/config"
 )
@@ -278,168 +275,167 @@ spec:
 `
 
 func init() {
-	utils.Must(resources.Register(v1alpha1.SchemeBuilder))
 	addIssuerTests(functestbasics)
 }
 
 func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 	_ = Describe("basics-"+iss.Name, func() {
-		It("should work with "+iss.Name, func(_ context.Context) {
+		It("should work with "+iss.Name, func(ctx context.Context) {
 			if useDNSRecords() {
 				Skip("skipping for DNSRecords")
 			}
 			manifestFilename, err := iss.CreateTempManifest("Manifest", basicTemplate)
 			defer iss.DeleteTempManifest(manifestFilename)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			u := cfg.Utils
 
-			err = u.AwaitKubectlGetCRDs("issuers.cert.gardener.cloud", "certificates.cert.gardener.cloud")
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilCRDsReady(ctx, "issuers.cert.gardener.cloud", "certificates.cert.gardener.cloud")
+			Expect(err).ShouldNot(HaveOccurred())
 
 			err = u.KubectlApply(manifestFilename)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
-			err = u.AwaitIssuerReady(iss.Name)
+			err = u.WaitUntilIssuerReady(ctx, iss.Name)
 			if err != nil {
 				output, _ := u.KubectlGetAllIssuers()
 				println("all issuers:")
 				println(output)
 			}
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			entryNames := []string{}
 			for _, name := range []string{"1", "2", "2b", "3", "5", "6", "7", "8", "9"} {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
-			err = u.AwaitCertReady(entryNames...)
+			err = u.WaitUntilCertReady(ctx, entryNames...)
 			if err != nil {
 				output, _ := u.KubectlGetAllCertificatesPlain()
 				println("all certs:")
 				println(output)
 			}
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
-			itemMap, err := u.KubectlGetAllCertificates()
-			Ω(err).ShouldNot(HaveOccurred())
+			certMap, err := u.GetAllCertificates(ctx)
+			Expect(err).ShouldNot(HaveOccurred())
 
-			Ω(itemMap).Should(MatchKeys(IgnoreExtras, Keys{
-				entryName(iss, "1"): MatchKeys(IgnoreExtras, Keys{
-					"metadata": MatchKeys(IgnoreExtras, Keys{
-						"labels": MatchKeys(IgnoreExtras, Keys{
+			Expect(certMap).Should(MatchKeys(IgnoreExtras, Keys{
+				entryName(iss, "1"): MatchFields(IgnoreExtras, Fields{
+					"ObjectMeta": MatchFields(IgnoreExtras, Fields{
+						"Labels": MatchKeys(IgnoreExtras, Keys{
 							"cert.gardener.cloud/hash": HavePrefix(""),
 						}),
 					}),
-					"spec": MatchKeys(IgnoreExtras, Keys{
-						"secretRef": MatchKeys(IgnoreExtras, Keys{
-							"name":      HavePrefix(entryName(iss, "1") + "-"),
-							"namespace": Equal(iss.Namespace),
-						}),
+					"Spec": MatchFields(IgnoreExtras, Fields{
+						"SecretRef": PointTo(MatchFields(IgnoreExtras, Fields{
+							"Name":      HavePrefix(entryName(iss, "1") + "-"),
+							"Namespace": Equal(iss.Namespace),
+						})),
 					}),
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert1")),
-						"dnsNames":       And(HaveLen(2), ContainElement(dnsName(iss, "cert1a")), ContainElement(dnsName(iss, "cert1b"))),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
-					}),
-				}),
-				entryName(iss, "2"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert2")),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert1"))),
+						"DNSNames":       And(HaveLen(2), ContainElement(dnsName(iss, "cert1a")), ContainElement(dnsName(iss, "cert1b"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
-				entryName(iss, "2b"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert2")),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+				entryName(iss, "2"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert2"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
-				entryName(iss, "3"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert3")),
-						"dnsNames":       And(HaveLen(1), ContainElement(dnsName(iss, "*.cert3"))),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+				entryName(iss, "2b"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert2"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
-				entryName(iss, "5"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"dnsNames":       And(HaveLen(2), ContainElements(dnsName(iss, "cert5.very-very-very-very-very-very-very-very-very-very-very-long"), dnsName(iss, "cert5"))),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+				entryName(iss, "3"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert3"))),
+						"DNSNames":       And(HaveLen(1), ContainElement(dnsName(iss, "*.cert3"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
-				entryName(iss, "6"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert6")),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+				entryName(iss, "5"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"DNSNames":       And(HaveLen(2), ContainElements(dnsName(iss, "cert5.very-very-very-very-very-very-very-very-very-very-very-long"), dnsName(iss, "cert5"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
-				entryName(iss, "7"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert7")),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+				entryName(iss, "6"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert6"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
-				entryName(iss, "8"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert8")),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+				entryName(iss, "7"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert7"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
-				entryName(iss, "9"): MatchKeys(IgnoreExtras, Keys{
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert9")),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+				entryName(iss, "8"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert8"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
+					}),
+				}),
+				entryName(iss, "9"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert9"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
 			}))
 
-			Ω(u.CheckCertificatePrivateKey("cert3-secret", x509.RSA, 2048)).ShouldNot(HaveOccurred())
-			Ω(u.CheckCertificatePrivateKey("cert6-secret", x509.RSA, 3072)).ShouldNot(HaveOccurred())
-			Ω(u.CheckCertificatePrivateKey("cert7-secret", x509.RSA, 4096)).ShouldNot(HaveOccurred())
-			Ω(u.CheckCertificatePrivateKey("cert8-secret", x509.ECDSA, 256)).ShouldNot(HaveOccurred())
-			Ω(u.CheckCertificatePrivateKey("cert9-secret", x509.ECDSA, 384)).ShouldNot(HaveOccurred())
+			Expect(u.CheckCertificatePrivateKey("cert3-secret", x509.RSA, 2048)).ShouldNot(HaveOccurred())
+			Expect(u.CheckCertificatePrivateKey("cert6-secret", x509.RSA, 3072)).ShouldNot(HaveOccurred())
+			Expect(u.CheckCertificatePrivateKey("cert7-secret", x509.RSA, 4096)).ShouldNot(HaveOccurred())
+			Expect(u.CheckCertificatePrivateKey("cert8-secret", x509.ECDSA, 256)).ShouldNot(HaveOccurred())
+			Expect(u.CheckCertificatePrivateKey("cert9-secret", x509.ECDSA, 384)).ShouldNot(HaveOccurred())
 
 			By("check keystores in cert3", func() {
-				secret, err := u.KubectlGetSecret("cert3-secret")
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(secret.Data).Should(HaveLen(3))
+				secret, err := u.GetSecret("cert3-secret")
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(secret.Data).Should(HaveLen(3))
 
 				manifestFilename, err := iss.CreateTempManifest("Manifest", cert3WithKeystores)
 				defer iss.DeleteTempManifest(manifestFilename)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).ShouldNot(HaveOccurred())
 				err = u.KubectlApply(manifestFilename)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).ShouldNot(HaveOccurred())
 
 				time.Sleep(3 * time.Second) // wait for reconciliation
 
-				secret, err = u.KubectlGetSecret("cert3-secret")
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(secret.Data).Should(HaveLen(7))
-				Ω(secret.Data[legobridge.JKSTruststoreKey]).ShouldNot(BeNil())
-				Ω(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
-				Ω(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
-				Ω(secret.Data[legobridge.PKCS12SecretKey]).ShouldNot(BeNil())
+				secret, err = u.GetSecret("cert3-secret")
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(secret.Data).Should(HaveLen(7))
+				Expect(secret.Data[legobridge.JKSTruststoreKey]).ShouldNot(BeNil())
+				Expect(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
+				Expect(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
+				Expect(secret.Data[legobridge.PKCS12SecretKey]).ShouldNot(BeNil())
 			})
 
 			By("check secret labels in cert3", func() {
-				secret, err := u.KubectlGetSecret("cert3-secret")
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(secret.Labels["foo"]).Should(Equal("bar"))
-				Ω(secret.Labels["some.gardener.cloud/thing"]).Should(Equal("true"))
+				secret, err := u.GetSecret("cert3-secret")
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(secret.Labels["foo"]).Should(Equal("bar"))
+				Expect(secret.Labels["some.gardener.cloud/thing"]).Should(Equal("true"))
 			})
 
 			By("check starting from invalid state in cert4", func() {
-				err = u.AwaitCertReady("cert4")
-				Ω(err).ShouldNot(HaveOccurred())
+				err = u.WaitUntilCertReady(ctx, "cert4")
+				Expect(err).ShouldNot(HaveOccurred())
 			})
 
 			By("revoking without renewal", func() {
@@ -448,49 +444,49 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 
 				filename, err := iss.CreateTempManifest("revoke2", revoke2Template)
 				defer iss.DeleteTempManifest(filename)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).ShouldNot(HaveOccurred())
 
 				err = u.KubectlApply(filename)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).ShouldNot(HaveOccurred())
 
-				err = u.AwaitCertRevocationApplied("revoke-cert2")
-				Ω(err).ShouldNot(HaveOccurred())
+				err = u.WaitUntilCertRevocationApplied(ctx, "revoke-cert2")
+				Expect(err).ShouldNot(HaveOccurred())
 
-				err = u.AwaitCertRevoked(entryName(iss, "2"), entryName(iss, "2b"))
-				Ω(err).ShouldNot(HaveOccurred())
+				err = u.WaitUntilCertRevoked(ctx, entryName(iss, "2"), entryName(iss, "2b"))
+				Expect(err).ShouldNot(HaveOccurred())
 
 				err = u.KubectlDelete(filename)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).ShouldNot(HaveOccurred())
 			})
 
 			if !iss.SkipRevokeWithRenewal {
 				By("revoking with renewal", func() {
 					filename, err := iss.CreateTempManifest("revoke3", revoke3Template)
 					defer iss.DeleteTempManifest(filename)
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).ShouldNot(HaveOccurred())
 
 					err = u.KubectlApply(filename)
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).ShouldNot(HaveOccurred())
 
-					err = u.AwaitCertRevocationApplied("revoke-cert3")
-					Ω(err).ShouldNot(HaveOccurred())
+					err = u.WaitUntilCertRevocationApplied(ctx, "revoke-cert3")
+					Expect(err).ShouldNot(HaveOccurred())
 
-					err = u.AwaitCertReady(entryName(iss, "3"))
-					Ω(err).ShouldNot(HaveOccurred())
+					err = u.WaitUntilCertReady(ctx, entryName(iss, "3"))
+					Expect(err).ShouldNot(HaveOccurred())
 
 					err = u.KubectlDelete(filename)
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(err).ShouldNot(HaveOccurred())
 				})
 			}
 
 			err = u.KubectlDelete(manifestFilename)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
-			err = u.AwaitCertDeleted(entryNames...)
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilCertDeleted(ctx, entryNames...)
+			Expect(err).ShouldNot(HaveOccurred())
 
-			err = u.AwaitIssuerDeleted(iss.Name)
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilIssuerDeleted(ctx, iss.Name)
+			Expect(err).ShouldNot(HaveOccurred())
 		}, SpecTimeout(360*time.Second))
 	})
 }
