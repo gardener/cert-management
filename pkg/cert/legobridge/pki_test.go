@@ -33,7 +33,8 @@ var _ = Describe("PKI", func() {
 			Expect(err).To(MatchError("duration must be set"))
 		})
 
-		It("should be able to create a self signed certificate", func() {
+		It("should be able to create a self-signed certificate", func() {
+			By("Creating a self-signed certificate")
 			duration := ptr.To(90 * 24 * time.Hour)
 			expectedNotBefore := time.Now()
 			expectedNotAfter := expectedNotBefore.Add(*duration)
@@ -49,10 +50,12 @@ var _ = Describe("PKI", func() {
 			Expect(certPrivateKeyPEM).NotTo(BeNil())
 			Expect(certPrivateKeyPEM).NotTo(BeEmpty())
 
+			By("Decoding the certificate")
 			p, _ := pem.Decode(certPEM)
 			Expect(p).NotTo(BeNil())
 			Expect(p.Bytes).NotTo(BeEmpty())
 
+			By("Parsing the certificate")
 			cert, err := x509.ParseCertificate(p.Bytes)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
@@ -62,10 +65,12 @@ var _ = Describe("PKI", func() {
 			Expect(cert.NotBefore).To(BeTemporally("~", expectedNotBefore, time.Second))
 			Expect(cert.NotAfter).To(BeTemporally("~", expectedNotAfter, time.Second))
 
+			By("Decoding the certificate private key")
 			p, _ = pem.Decode(certPrivateKeyPEM)
 			Expect(p).NotTo(BeNil())
 			Expect(p.Bytes).NotTo(BeEmpty())
 
+			By("Parsing the certificate private key")
 			privateKey, err := x509.ParsePKCS1PrivateKey(p.Bytes)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(privateKey).NotTo(BeNil())
