@@ -11,7 +11,7 @@ require (
 	github.com/gardener/controller-manager-library v0.2.1-0.20241104074533-80cbeddadabc
 	github.com/gardener/external-dns-management v0.22.1
 	github.com/gardener/gardener v1.108.0
-	github.com/go-acme/lego/v4 v4.20.2
+	github.com/go-acme/lego/v4 v4.20.3
 	github.com/go-logr/logr v1.4.2
 	github.com/letsencrypt/pebble/v2 v2.6.0
 	github.com/miekg/dns v1.1.62
