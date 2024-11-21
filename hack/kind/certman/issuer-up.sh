@@ -11,6 +11,8 @@ source $(dirname ${0})/../common.sh /..
 
 kubectl apply -f ${SOURCE_PATH}/pkg/apis/cert/crds/cert.gardener.cloud_issuers.yaml
 
+kubectl wait crd issuers.cert.gardener.cloud --for=condition=NamesAccepted
+
 cat  << EOF | kubectl apply -f -
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Issuer

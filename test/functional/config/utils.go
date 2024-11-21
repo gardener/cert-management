@@ -33,7 +33,7 @@ type TestUtils struct {
 
 func CreateDefaultTestUtils() *TestUtils {
 	return &TestUtils{
-		AwaitTimeout:  180 * time.Second,
+		AwaitTimeout:  240 * time.Second,
 		PollingPeriod: 200 * time.Millisecond,
 		Namespace:     "default",
 		Verbose:       true,
