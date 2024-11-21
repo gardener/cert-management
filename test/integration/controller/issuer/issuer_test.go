@@ -98,3 +98,62 @@ var _ = Describe("Issuer controller tests", func() {
 			}).Should(Succeed())
 		})
 	})
+
+	Context("Self-signed issuer", func() {
+		It("should be able to create self-signed certificates", func() {
+			By("Create self-signed issuer")
+			issuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "self-signed-issuer",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					SelfSigned: &v1alpha1.SelfSignedSpec{},
+				},
+			}
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Create self-signed certificate")
+			certificate := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "self-signed-certificate",
+				},
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: ptr.To("ca1.mydomain.com"),
+					IsCA:       ptr.To(true),
+					IssuerRef: &v1alpha1.IssuerRef{
+						Name:      issuer.Name,
+						Namespace: issuer.Namespace,
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Resolve certificate secret reference")
+			secretReference := certificate.Spec.SecretRef
+			secretKey := client.ObjectKey{Name: secretReference.Name, Namespace: secretReference.Namespace}
+			secret := &corev1.Secret{}
+			Expect(testClient.Get(ctx, secretKey, secret)).To(Succeed())
+			Expect(secret.Data).To(HaveKeyWithValue("ca.crt", Not(BeEmpty())))
+			Expect(secret.Data).To(HaveKeyWithValue("tls.crt", Not(BeEmpty())))
+			Expect(secret.Data).To(HaveKeyWithValue("tls.key", Not(BeEmpty())))
+		})
+	})
+})
