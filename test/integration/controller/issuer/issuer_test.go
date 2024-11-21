@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -71,28 +72,29 @@ var _ = Describe("Issuer controller tests", func() {
 		})
 	})
 
-	It("should create an ACME issuer", func() {
-		issuer := &v1alpha1.Issuer{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: testRunID,
-				Name:      "acme1",
-			},
-			Spec: v1alpha1.IssuerSpec{
-				ACME: &v1alpha1.ACMESpec{
-					Email:            "foo@somewhere-foo-123456.com",
-					Server:           acmeDirectoryAddress,
-					AutoRegistration: true,
+	Context("ACME issuer", func() {
+		It("should create an ACME issuer", func() {
+			issuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "acme1",
 				},
-			},
-		}
-		Expect(testClient.Create(ctx, issuer)).To(Succeed())
-		DeferCleanup(func() {
-			Expect(testClient.Delete(ctx, issuer)).To(Succeed())
-		})
+				Spec: v1alpha1.IssuerSpec{
+					ACME: &v1alpha1.ACMESpec{
+						Email:            "foo@somewhere-foo-123456.com",
+						Server:           acmeDirectoryAddress,
+						AutoRegistration: true,
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
 
-		Eventually(func(g Gomega) {
-			Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-			g.Expect(issuer.Status.State).To(Equal("Ready"))
-		}).Should(Succeed())
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+		})
 	})
-})
