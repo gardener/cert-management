@@ -83,7 +83,7 @@ var _ = Describe("Certificate", func() {
 				Expect(err).To(MatchError("duration must be set"))
 			})
 
-			It("should fail when no duration is set", func() {
+			It("should succeed when the duration is set", func() {
 				input.Duration = ptr.To(time.Hour)
 				cert, key, err := newSelfSignedCertFromCSRinPEMFormat(input)
 				Expect(err).NotTo(HaveOccurred())
