@@ -116,7 +116,10 @@ func LoadConfig(filename string) (*Config, error) {
 		return nil, fmt.Errorf("Post processing config file %s failed: %w", filename, err)
 	}
 
-	config.Utils = CreateDefaultTestUtils()
+	config.Utils, err = CreateDefaultTestUtils()
+	if err != nil {
+		return nil, fmt.Errorf("Creating test utils failed: %w", err)
+	}
 
 	return config, nil
 }

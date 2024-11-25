@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/resources"
-	"github.com/gardener/controller-manager-library/pkg/utils"
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -26,7 +25,6 @@ import (
 	"k8s.io/kube-openapi/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/test/functional/config"
 )
 
@@ -104,9 +102,6 @@ spec:
 `
 
 func init() {
-	utils.Must(resources.Register(v1alpha1.SchemeBuilder))
-	utils.Must(resources.Register(extensionsv1alpha.SchemeBuilder))
-	utils.Must(resources.Register(dnsapi.SchemeBuilder))
 	addIssuerTests(functestdnsrecords)
 }
 
@@ -127,62 +122,62 @@ func functestdnsrecords(cfg *config.Config, iss *config.IssuerConfig) {
 				cancelFuncTranslator()
 			}
 		})
-		It("should work with "+iss.Name, func(_ context.Context) {
+		It("should work with "+iss.Name, func(ctx context.Context) {
 			if !useDNSRecords() {
 				Skip("skipping as not using DNSRecords")
 			}
 			manifestFilename, err := iss.CreateTempManifest("Manifest", dnsrecordsTemplate)
 			defer iss.DeleteTempManifest(manifestFilename)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			u := cfg.Utils
 
-			err = u.AwaitKubectlGetCRDs("issuers.cert.gardener.cloud", "certificates.cert.gardener.cloud")
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilCRDsReady(ctx, "issuers.cert.gardener.cloud", "certificates.cert.gardener.cloud")
+			Expect(err).ShouldNot(HaveOccurred())
 
 			err = u.KubectlApply(manifestFilename)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
-			err = u.AwaitIssuerReady(iss.Name)
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilIssuerReady(ctx, iss.Name)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			cert1Name := entryName(iss, "1-dnsrecords")
-			err = u.AwaitCertReady(cert1Name)
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilCertReady(ctx, cert1Name)
+			Expect(err).ShouldNot(HaveOccurred())
 
-			itemMap, err := u.KubectlGetAllCertificates()
-			Ω(err).ShouldNot(HaveOccurred())
+			certMap, err := u.GetAllCertificates(ctx)
+			Expect(err).ShouldNot(HaveOccurred())
 
-			Ω(itemMap).Should(MatchKeys(IgnoreExtras, Keys{
-				cert1Name: MatchKeys(IgnoreExtras, Keys{
-					"metadata": MatchKeys(IgnoreExtras, Keys{
-						"labels": MatchKeys(IgnoreExtras, Keys{
+			Expect(certMap).Should(MatchKeys(IgnoreExtras, Keys{
+				cert1Name: MatchFields(IgnoreExtras, Fields{
+					"ObjectMeta": MatchFields(IgnoreExtras, Fields{
+						"Labels": MatchKeys(IgnoreExtras, Keys{
 							"cert.gardener.cloud/hash": HavePrefix(""),
 						}),
 					}),
-					"spec": MatchKeys(IgnoreExtras, Keys{
-						"secretRef": MatchKeys(IgnoreExtras, Keys{
-							"name":      HavePrefix(cert1Name + "-"),
-							"namespace": Equal(iss.Namespace),
-						}),
+					"Spec": MatchFields(IgnoreExtras, Fields{
+						"SecretRef": PointTo(MatchFields(IgnoreExtras, Fields{
+							"Name":      HavePrefix(cert1Name + "-"),
+							"Namespace": Equal(iss.Namespace),
+						})),
 					}),
-					"status": MatchKeys(IgnoreExtras, Keys{
-						"commonName":     Equal(dnsName(iss, "cert1.dnsrecords")),
-						"dnsNames":       And(HaveLen(2), ContainElement(dnsName(iss, "cert1a.dnsrecords")), ContainElement(dnsName(iss, "cert1b.dnsrecords"))),
-						"state":          Equal("Ready"),
-						"expirationDate": HavePrefix("20"),
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert1.dnsrecords"))),
+						"DNSNames":       And(HaveLen(2), ContainElement(dnsName(iss, "cert1a.dnsrecords")), ContainElement(dnsName(iss, "cert1b.dnsrecords"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
 				}),
 			}))
 
 			err = u.KubectlDelete(manifestFilename)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).ShouldNot(HaveOccurred())
 
-			err = u.AwaitCertDeleted(cert1Name)
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilCertDeleted(ctx, cert1Name)
+			Expect(err).ShouldNot(HaveOccurred())
 
-			err = u.AwaitIssuerDeleted(iss.Name)
-			Ω(err).ShouldNot(HaveOccurred())
+			err = u.WaitUntilIssuerDeleted(ctx, iss.Name)
+			Expect(err).ShouldNot(HaveOccurred())
 		}, SpecTimeout(180*time.Second))
 	})
 }
