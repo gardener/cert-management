@@ -35,6 +35,7 @@ var _ = Describe("PKI", func() {
 
 		It("should be able to create a self-signed certificate", func() {
 			By("Creating a self-signed certificate")
+			keySize := 2048
 			duration := ptr.To(90 * 24 * time.Hour)
 			expectedNotBefore := time.Now()
 			expectedNotAfter := expectedNotBefore.Add(*duration)
@@ -43,7 +44,7 @@ var _ = Describe("PKI", func() {
 				DNSNames:   []string{"test-dns-name"},
 				Duration:   duration,
 			}
-			certPEM, certPrivateKeyPEM, err := newSelfSignedCertInPEMFormat(input, x509.RSA, 2048)
+			certPEM, certPrivateKeyPEM, err := newSelfSignedCertInPEMFormat(input, x509.RSA, keySize)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(certPEM).NotTo(BeNil())
 			Expect(certPEM).NotTo(BeEmpty())
@@ -74,6 +75,7 @@ var _ = Describe("PKI", func() {
 			privateKey, err := x509.ParsePKCS1PrivateKey(p.Bytes)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(privateKey).NotTo(BeNil())
+			Expect(privateKey.Size()).To(Equal(keySize / 8))
 		})
 	})
 })
