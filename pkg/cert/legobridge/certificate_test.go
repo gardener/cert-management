@@ -104,7 +104,7 @@ var _ = Describe("Certificate", func() {
 			cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
-			Expect(cert.PrivateKey).To(HaveCap(2048))
+			assertRSAPrivateKeySize(cert.PrivateKey, 2048)
 		})
 
 		It("should create a self-signed certificate from a CSR", func() {
@@ -112,7 +112,7 @@ var _ = Describe("Certificate", func() {
 			cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
-			Expect(cert.PrivateKey).To(HaveCap(2048))
+			assertRSAPrivateKeySize(cert.PrivateKey, 2048)
 		})
 
 		It("should prioritize a CSR over the input key type", func() {
@@ -120,10 +120,19 @@ var _ = Describe("Certificate", func() {
 			cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
-			Expect(cert.PrivateKey).To(HaveCap(2048))
+			assertRSAPrivateKeySize(cert.PrivateKey, 2048)
 		})
 	})
 })
+
+func assertRSAPrivateKeySize(keyMaterial []byte, expectedBits int) {
+	block, rest := pem.Decode(keyMaterial)
+	ExpectWithOffset(1, rest).To(BeEmpty())
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, privateKey.Size()).To(Equal(expectedBits / 8))
+}
 
 func _createCSR() []byte {
 	key, _ := rsa.GenerateKey(rand.Reader, 2048)
