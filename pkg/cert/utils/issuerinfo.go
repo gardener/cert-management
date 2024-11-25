@@ -31,7 +31,7 @@ func NewCAIssuerInfo(key IssuerKeyItf) IssuerInfo {
 	return IssuerInfo{key: key, issuertype: IssuerTypeCA}
 }
 
-// NewSelfSignedIssuerInfo creates info for a selfSigned issuer
+// NewSelfSignedIssuerInfo creates info for a selfSigned issuer.
 func NewSelfSignedIssuerInfo(key IssuerKeyItf) IssuerInfo {
 	return IssuerInfo{key: key, issuertype: IssuerTypeSelfSigned}
 }
