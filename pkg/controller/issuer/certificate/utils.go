@@ -15,10 +15,11 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
 )
 
-// ExtractRequestedAtFromAnnotation extracts the requestedAt timestamp from the annotation cert.gardener.cloud/requesteAt
+// ExtractRequestedAtFromAnnotation extracts the requestedAt timestamp from the annotation cert.gardener.cloud/requestedAt
 func ExtractRequestedAtFromAnnotation(obj resources.ObjectData) *time.Time {
 	if value, ok := resources.GetAnnotation(obj, AnnotationRequestedAt); ok {
 		t, err := time.Parse(time.RFC3339, value)
@@ -83,4 +84,18 @@ func LookupSerialNumber(res resources.Interface, ref *corev1.SecretReference) (s
 		return "", err
 	}
 	return SerialNumberToString(cert.SerialNumber, false), nil
+}
+
+func hasMultipleIssuerTypes(issuer *api.Issuer) bool {
+	count := 0
+	if issuer.Spec.SelfSigned != nil {
+		count++
+	}
+	if issuer.Spec.ACME != nil {
+		count++
+	}
+	if issuer.Spec.CA != nil {
+		count++
+	}
+	return count > 1
 }

@@ -103,6 +103,12 @@ spec:
                   is used if CNAME record for DNS01 challange domain `_acme-challenge.<domain>`
                   is set.
                 type: boolean
+              isCA:
+                description: |-
+                  IsCA value is used to set the `isCA` field on the certificate request.
+                  Note that the issuer may choose to ignore the requested isCA value, just
+                  like any other requested attribute.
+                type: boolean
               issuerRef:
                 description: IssuerRef is the reference of the issuer to use.
                 properties:

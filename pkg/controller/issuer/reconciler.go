@@ -24,10 +24,11 @@ import (
 	"github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
 	"github.com/gardener/cert-management/pkg/controller/issuer/revocation"
+	"github.com/gardener/cert-management/pkg/controller/issuer/selfSigned"
 )
 
 func newCompoundReconciler(c controller.Interface) (reconcile.Interface, error) {
-	handler, err := core.NewCompoundHandler(c, acme.NewACMEIssuerHandler, ca.NewCAIssuerHandler)
+	handler, err := core.NewCompoundHandler(c, acme.NewACMEIssuerHandler, ca.NewCAIssuerHandler, selfSigned.NewSelfSignedIssuerHandler)
 	if err != nil {
 		return nil, err
 	}

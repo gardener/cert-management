@@ -63,6 +63,8 @@ type ObtainInput struct {
 	PreferredChain string
 	// KeyType represents the algo and size to use for the private key (only used if CSR is not set).
 	KeyType certcrypto.KeyType
+	// IsCA is used to request a self-signed certificate
+	IsCA bool
 	// Duration is the lifetime of the certificate
 	Duration *time.Duration
 }
@@ -111,6 +113,8 @@ type ObtainOutput struct {
 	CSR []byte
 	// KeyType is the copy from the input.
 	KeyType certcrypto.KeyType
+	// IsCA is used to request a self-signed certificate
+	IsCA bool
 	// Err contains the obtain request error.
 	Err error
 }
@@ -317,8 +321,10 @@ func (o *obtainer) Obtain(input ObtainInput) error {
 		return o.ObtainACME(input)
 	case input.CAKeyPair != nil:
 		return o.ObtainFromCA(input)
+	case input.IsCA:
+		return o.ObtainFromSelfSigned(input)
 	default:
-		return fmt.Errorf("Certificate obtention not valid, neither ACME or CA values were provided")
+		return fmt.Errorf("Certificate obtention not valid, neither ACME, CA  or selfSigned values were provided")
 	}
 }
 
@@ -467,6 +473,85 @@ func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
 	return san, nil
 }
 
+// ObtainFromSelfSigned starts the creation of a selfsigned certificate
+func (o *obtainer) ObtainFromSelfSigned(input ObtainInput) error {
+	go func() {
+		certificates, err := newSelfSignedCertFromInput(input)
+		output := &ObtainOutput{
+			Certificates: certificates,
+			IssuerInfo:   utils.NewSelfSignedIssuerInfo(input.IssuerKey),
+			CommonName:   input.CommonName,
+			DNSNames:     input.DNSNames,
+			KeyType:      input.KeyType,
+			IsCA:         input.IsCA,
+			CSR:          input.CSR,
+			Err:          err,
+		}
+		input.Callback(output)
+	}()
+	return nil
+}
+
+func newSelfSignedCertFromInput(input ObtainInput) (certificates *certificate.Resource, err error) {
+	var certPEM, privKeyPEM []byte
+	if input.CSR != nil {
+		certPEM, privKeyPEM, err = newSelfSignedCertFromCSRinPEMFormat(input)
+	} else {
+		certPrivateKey := FromKeyType(input.KeyType)
+		if certPrivateKey == nil {
+			return nil, fmt.Errorf("invalid key type: '%s'", input.KeyType)
+		}
+		var algo x509.PublicKeyAlgorithm
+		switch *certPrivateKey.Algorithm {
+		case api.RSAKeyAlgorithm:
+			algo = x509.RSA
+		case api.ECDSAKeyAlgorithm:
+			algo = x509.ECDSA
+		}
+		certPEM, privKeyPEM, err = newSelfSignedCertInPEMFormat(input, algo, int(*certPrivateKey.Size))
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &certificate.Resource{
+		PrivateKey:        privKeyPEM,
+		Certificate:       certPEM,
+		IssuerCertificate: certPEM,
+	}, nil
+}
+
+func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) ([]byte, []byte, error) {
+	csr, err := extractCertificateRequest(input.CSR)
+	if err != nil {
+		return nil, nil, err
+	}
+	pubKeySize := pubKeySize(csr.PublicKey)
+	if pubKeySize == 0 {
+		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
+	}
+	certPrivateKey, certPrivateKeyPEM, err := generateKey(csr.PublicKeyAlgorithm, pubKeySize)
+	if err != nil {
+		return nil, nil, err
+	}
+	csrPEM, err := generateCSRPEM(csr, certPrivateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	if input.Duration == nil {
+		return nil, nil, fmt.Errorf("duration must be set")
+	}
+	crt, err := generateCertFromCSR(csrPEM, *input.Duration, true)
+	if err != nil {
+		return nil, nil, err
+	}
+	crtPEM, err := signCert(crt, crt, certPrivateKey.Public(), certPrivateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return crtPEM, certPrivateKeyPEM, nil
+}
+
 // CertificatesToSecretData converts a certificate resource to secret data.
 func CertificatesToSecretData(certificates *certificate.Resource) map[string][]byte {
 	data := map[string][]byte{}
@@ -478,7 +563,7 @@ func CertificatesToSecretData(certificates *certificate.Resource) map[string][]b
 	return data
 }
 
-// SecretDataToCertificates converts secret data to a certicate resource.
+// SecretDataToCertificates converts secret data to a certificate resource.
 func SecretDataToCertificates(data map[string][]byte) *certificate.Resource {
 	certificates := &certificate.Resource{}
 	certificates.Certificate = data[corev1.TLSCertKey]

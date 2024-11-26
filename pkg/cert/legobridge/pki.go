@@ -225,6 +225,44 @@ func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x50
 	}, nil
 }
 
+// newSelfSignedCertInPEMFormat returns a self-signed certificate and the private key in PEM format.
+func newSelfSignedCertInPEMFormat(
+	input ObtainInput, algo x509.PublicKeyAlgorithm, algoSize int) ([]byte, []byte, error) {
+	if input.CommonName == nil {
+		return nil, nil, fmt.Errorf("common name must be set")
+	}
+	if input.Duration == nil {
+		return nil, nil, fmt.Errorf("duration must be set")
+	}
+	certPrivateKey, certPrivateKeyPEM, err := generateKey(algo, algoSize)
+	if err != nil {
+		return nil, nil, err
+	}
+	keyUsage := DefaultCertKeyUsage | CAKeyUsage
+	if algo == x509.RSA {
+		keyUsage |= RSAKeyUsage
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: *input.CommonName,
+		},
+		DNSNames:              input.DNSNames,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(*input.Duration),
+		KeyUsage:              keyUsage,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		MaxPathLen:            0,
+	}
+
+	certDerBytes, _ := x509.CreateCertificate(rand.Reader, &template, &template, certPrivateKey.Public(), certPrivateKey)
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDerBytes})
+	return certPEM, certPrivateKeyPEM, nil
+}
+
 // signCert creates a PEM encoded signed certificate.
 func signCert(cert, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey crypto.PrivateKey) ([]byte, error) {
 	derBytes, err := x509.CreateCertificate(rand.Reader, cert, issuerCert, publicKey, signerKey)

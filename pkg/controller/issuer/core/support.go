@@ -370,6 +370,13 @@ func (s *Support) SucceededAndTriggerCertificates(logger logger.LogContext, obj 
 	return reconcile.Succeeded(logger)
 }
 
+// SucceedSelfSignedIssuer handles succeeded self-signed issuers.
+func (s *Support) SucceedSelfSignedIssuer(logger logger.LogContext, obj resources.Object, itype *string) reconcile.Status {
+	modificationState, _ := s.prepareUpdateStatus(obj, api.StateReady, itype, nil)
+	s.updateStatus(modificationState)
+	return reconcile.Succeeded(logger)
+}
+
 func updateTypeStatus(mod *resources.ModificationState, status **runtime.RawExtension, regRaw []byte) {
 	changedRegistration := false
 	if *status == nil || (*status).Raw == nil {

@@ -1,0 +1,7 @@
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: issuer-selfsigned
+  namespace: default
+spec:
+  selfSigned: {}
