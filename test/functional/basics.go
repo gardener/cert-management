@@ -415,15 +415,15 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				err = u.KubectlApply(manifestFilename)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				time.Sleep(3 * time.Second) // wait for reconciliation
-
-				secret, err = u.GetSecret("cert3-secret")
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(secret.Data).Should(HaveLen(7))
-				Expect(secret.Data[legobridge.JKSTruststoreKey]).ShouldNot(BeNil())
-				Expect(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
-				Expect(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
-				Expect(secret.Data[legobridge.PKCS12SecretKey]).ShouldNot(BeNil())
+				Eventually(func(g Gomega) {
+					secret, err = u.GetSecret("cert3-secret")
+					g.Expect(err).ShouldNot(HaveOccurred())
+					g.Expect(secret.Data).Should(HaveLen(7))
+					g.Expect(secret.Data[legobridge.JKSTruststoreKey]).ShouldNot(BeNil())
+					g.Expect(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
+					g.Expect(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
+					g.Expect(secret.Data[legobridge.PKCS12SecretKey]).ShouldNot(BeNil())
+				}).Should(Succeed())
 			})
 
 			By("check secret labels in cert3", func() {
