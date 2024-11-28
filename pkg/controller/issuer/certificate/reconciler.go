@@ -212,12 +212,23 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		return reconcile.Succeeded(logctx)
 	}
 
+	if cert.Status.State == api.StatePending && !r.challengePending(cert) && r.pendingResults.Peek(obj.ObjectName()) == nil {
+		// invalid orphan pending state unfinished from former controller instance, reset status to trigger retry.
+		cert.Status.LastPendingTimestamp = nil
+		mod, _ := r.prepareUpdateStatus(obj, "", nil, boNone)
+		err := mod.UpdateStatus()
+		if err != nil {
+			return reconcile.Failed(logctx, err)
+		}
+		return reconcile.Succeeded(logctx)
+	}
+
 	if cert.Status.BackOff != nil &&
 		obj.GetGeneration() == cert.Status.BackOff.ObservedGeneration &&
 		time.Now().Before(cert.Status.BackOff.RetryAfter.Time) {
 		interval := time.Until(cert.Status.BackOff.RetryAfter.Time)
-		if interval < 30*time.Second {
-			interval = 30 * time.Second
+		if interval < 1*time.Second {
+			interval = 1 * time.Second
 		}
 		return reconcile.Recheck(logctx, fmt.Errorf("backoff"), interval)
 	}

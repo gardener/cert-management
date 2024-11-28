@@ -8,8 +8,8 @@ package issuer_test
 
 import (
 	"context"
+	"time"
 
-	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/ctxutil"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
@@ -32,8 +32,6 @@ var _ = Describe("Issuer controller tests", func() {
 		Expect(acmeDirectoryAddress).NotTo(BeEmpty())
 
 		ctxLocal := context.Background()
-		ctx0 := ctxutil.CancelContext(ctxutil.WaitGroupContext(context.Background(), "main"))
-		ctx = ctxutil.TickContext(ctx0, controllermanager.DeletionActivity)
 
 		By("Create test Namespace")
 		testNamespace = &corev1.Namespace{
@@ -51,24 +49,11 @@ var _ = Describe("Issuer controller tests", func() {
 		})
 
 		By("Start manager")
-
-		go func() {
-			defer GinkgoRecover()
-			args := []string{
-				"--kubeconfig", kubeconfigFile,
-				"--controllers", "issuer",
-				"--issuer-namespace", testRunID,
-				"--omit-lease",
-				"--pool.size", "1",
-			}
-			runControllerManager(ctx, args)
-		}()
+		startManager(testRunID)
 
 		DeferCleanup(func() {
 			By("Stop manager")
-			if ctx != nil {
-				ctxutil.Cancel(ctx)
-			}
+			stopManager()
 		})
 	})
 
@@ -96,6 +81,76 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
 			}).Should(Succeed())
+		})
+
+		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
+			By("Create ACME issuer")
+			issuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "acme1",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					ACME: &v1alpha1.ACMESpec{
+						Email:                      "foo@somewhere-foo-123456.com",
+						Server:                     acmeDirectoryAddress,
+						AutoRegistration:           true,
+						SkipDNSChallengeValidation: ptr.To(true),
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Stop manager")
+			stopManager()
+
+			By("Create orphan pending certificate")
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "orphan-pending-certificate",
+				},
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: ptr.To("example.com"),
+					IssuerRef: &v1alpha1.IssuerRef{
+						Name: issuer.Name,
+					},
+				},
+			}
+			ctxLocal := context.Background()
+			Expect(testClient.Create(ctxLocal, cert)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctxLocal, cert)).To(Succeed())
+			})
+			cert.Status = v1alpha1.CertificateStatus{
+				ObservedGeneration:   cert.Generation,
+				State:                "Pending",
+				Message:              ptr.To("simulated orphan pending certificate"),
+				LastPendingTimestamp: ptr.To(metav1.Now()),
+				BackOff: &v1alpha1.BackOffState{
+					ObservedGeneration: cert.Generation,
+					RetryAfter:         metav1.Time{Time: time.Now().Add(1 * time.Second)},
+					RetryInterval:      metav1.Duration{Duration: 120 * time.Second},
+				},
+			}
+			Expect(testClient.SubResource("status").Update(ctxLocal, cert)).To(Succeed())
+
+			By("Start manager")
+			startManager(testRunID)
+
+			By("Wait for certificate to become ready")
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				return cert.Status.State
+			}).WithPolling(500 * time.Millisecond).WithTimeout(20 * time.Second).Should(Equal("Ready"))
 		})
 	})
 
@@ -157,3 +212,24 @@ var _ = Describe("Issuer controller tests", func() {
 		})
 	})
 })
+
+func startManager(testRunID string) {
+	newContext()
+	go func() {
+		defer GinkgoRecover()
+		args := []string{
+			"--kubeconfig", kubeconfigFile,
+			"--controllers", "issuer",
+			"--issuer-namespace", testRunID,
+			"--omit-lease",
+			"--pool.size", "1",
+		}
+		runControllerManager(ctx, args)
+	}()
+}
+
+func stopManager() {
+	if ctx != nil {
+		ctxutil.Cancel(ctx)
+	}
+}

@@ -16,8 +16,10 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
+	"github.com/gardener/controller-manager-library/pkg/ctxutil"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/utils"
+	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	"github.com/gardener/gardener/pkg/logger"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
@@ -169,6 +171,7 @@ func doInit() {
 
 	utils.Must(resources.Register(v1alpha1.SchemeBuilder))
 	utils.Must(resources.Register(apiextensionsv1.SchemeBuilder))
+	utils.Must(resources.Register(dnsapi.SchemeBuilder))
 	utils.Must(resources.Register(runtime.SchemeBuilder{kubernetesscheme.AddToScheme}))
 }
 
@@ -182,4 +185,9 @@ func runControllerManager(ctx context.Context, args []string) {
 	if err := command.Execute(); err != nil {
 		log.Error(err, "controllermanager command failed")
 	}
+}
+
+func newContext() {
+	ctx0 := ctxutil.CancelContext(ctxutil.WaitGroupContext(context.Background(), "main"))
+	ctx = ctxutil.TickContext(ctx0, controllermanager.DeletionActivity)
 }
