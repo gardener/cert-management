@@ -423,7 +423,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 					g.Expect(secret.Data[legobridge.JKSSecretKey]).ShouldNot(BeNil())
 					g.Expect(secret.Data[legobridge.PKCS12TruststoreKey]).ShouldNot(BeNil())
 					g.Expect(secret.Data[legobridge.PKCS12SecretKey]).ShouldNot(BeNil())
-				}).Should(Succeed())
+				}).WithPolling(500 * time.Millisecond).WithTimeout(10 * time.Second).Should(Succeed())
 			})
 
 			By("check secret labels in cert3", func() {
