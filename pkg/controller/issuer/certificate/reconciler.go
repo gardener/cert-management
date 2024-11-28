@@ -212,7 +212,7 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		return reconcile.Succeeded(logctx)
 	}
 
-	if cert.Status.State == api.StatePending && !r.challengePending(cert) && r.pendingResults.Peek(obj.ObjectName()) == nil {
+	if r.isOrphanedPendingCertificate(cert) {
 		// invalid orphan pending state unfinished from former controller instance, reset status to trigger retry.
 		cert.Status.LastPendingTimestamp = nil
 		mod, _ := r.prepareUpdateStatus(obj, "", nil, boNone)
@@ -241,6 +241,10 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		r.addEvent(obj, status, newMsg)
 	}
 	return status
+}
+
+func (r *certReconciler) isOrphanedPendingCertificate(cert *api.Certificate) bool {
+	return cert.Status.State == api.StatePending && !r.challengePending(cert) && r.pendingResults.Peek(resources.NewObjectName(cert.Namespace, cert.Name)) == nil
 }
 
 func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) reconcile.Status {
@@ -1311,7 +1315,7 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() error {
 
 	entriesResource, err := r.dnsCluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
-		return fmt.Errorf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %s", err)
+		return fmt.Errorf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %w", err)
 	}
 	var objects []resources.Object
 	if r.dnsNamespace != nil {
@@ -1320,7 +1324,7 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() error {
 		objects, err = entriesResource.List(metav1.ListOptions{})
 	}
 	if err != nil {
-		return fmt.Errorf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %s", err)
+		return fmt.Errorf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %w", err)
 	}
 	count := 0
 	expectedClass := ""
@@ -1349,7 +1353,7 @@ func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() error {
 
 	recordsResource, err := r.dnsCluster.Resources().GetByExample(&extensionsv1alpha.DNSRecord{})
 	if err != nil {
-		return fmt.Errorf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %s", err)
+		return fmt.Errorf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %w", err)
 	}
 	var objects []resources.Object
 	if r.dnsNamespace != nil {
@@ -1358,7 +1362,7 @@ func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() error {
 		objects, err = recordsResource.List(metav1.ListOptions{})
 	}
 	if err != nil {
-		return fmt.Errorf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %s", err)
+		return fmt.Errorf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %w", err)
 	}
 	count := 0
 	for _, obj := range objects {
@@ -1399,11 +1403,11 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() error {
 	}
 	secrets, err := r.certSecretResources.List(opts)
 	if err != nil {
-		return fmt.Errorf(prefix+"list secrets failed with %s", err)
+		return fmt.Errorf("%slist secrets failed with %w", prefix, err)
 	}
 	certs, err := r.certResources.List(metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf(prefix+"list certificates failed with %s", err)
+		return fmt.Errorf("%slist certificates failed with %w", prefix, err)
 	}
 	secretNamesToKeep := cmlutils.StringSet{}
 	for _, obj := range certs {
