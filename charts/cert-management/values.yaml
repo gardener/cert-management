@@ -9,7 +9,7 @@ replicaCount: 1
 
 image:
   repository: europe-docker.pkg.dev/gardener-project/public/cert-controller-manager
-  tag: v0.17.0-master
+  tag: v0.17.0
   pullPolicy: IfNotPresent
 
 resources:
