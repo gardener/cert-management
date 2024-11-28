@@ -91,8 +91,8 @@ func (r *compoundReconciler) setupIssuers(cluster utils.Cluster) error {
 	return nil
 }
 
-func (r *compoundReconciler) Start() {
-	r.certificateReconciler.(reconcile.LegacyStartInterface).Start()
+func (r *compoundReconciler) Start() error {
+	return r.certificateReconciler.(reconcile.StartInterface).Start()
 }
 
 func (r *compoundReconciler) Reconcile(logger logger.LogContext, obj resources.Object) reconcile.Status {
