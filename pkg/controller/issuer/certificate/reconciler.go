@@ -177,7 +177,7 @@ type certReconciler struct {
 func (r *certReconciler) Start() error {
 	if !r.useDNSRecords {
 		if err := r.cleanupOrphanDNSEntriesFromOldChallenges(); err != nil {
-			return err
+			return fmt.Errorf("failed cleaning up orphaned DNS entries: %w", err)
 		}
 	} else {
 		if err := r.cleanupOrphanDNSRecordsFromOldChallenges(); err != nil {
