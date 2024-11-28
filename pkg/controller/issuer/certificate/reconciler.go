@@ -181,7 +181,7 @@ func (r *certReconciler) Start() error {
 		}
 	} else {
 		if err := r.cleanupOrphanDNSRecordsFromOldChallenges(); err != nil {
-			return err
+			return fmt.Errorf("failed cleaning up orphaned DNS records: %w", err)
 		}
 	}
 
