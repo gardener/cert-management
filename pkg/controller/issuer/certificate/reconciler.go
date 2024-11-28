@@ -174,20 +174,30 @@ type certReconciler struct {
 	certificatePrivateKeyDefaults  legobridge.CertificatePrivateKeyDefaults
 }
 
-func (r *certReconciler) Start() {
+func (r *certReconciler) Start() error {
 	if !r.useDNSRecords {
-		r.cleanupOrphanDNSEntriesFromOldChallenges()
+		if err := r.cleanupOrphanDNSEntriesFromOldChallenges(); err != nil {
+			return fmt.Errorf("failed cleaning up orphaned DNS entries: %w", err)
+		}
 	} else {
-		r.cleanupOrphanDNSRecordsFromOldChallenges()
+		if err := r.cleanupOrphanDNSRecordsFromOldChallenges(); err != nil {
+			return fmt.Errorf("failed cleaning up orphaned DNS records: %w", err)
+		}
 	}
 
-	r.cleanupOrphanOutdatedCertificateSecrets()
+	if err := r.cleanupOrphanOutdatedCertificateSecrets(); err != nil {
+		return fmt.Errorf("failed cleaning up orphaned, outdated certificate secrets: %w", err)
+	}
 	r.garbageCollectorTicker = time.NewTicker(7 * 24 * time.Hour)
 	go func() {
 		for range r.garbageCollectorTicker.C {
-			r.cleanupOrphanOutdatedCertificateSecrets()
+			if err := r.cleanupOrphanOutdatedCertificateSecrets(); err != nil {
+				logger.Warnf("Garbage collection failed: %v", err)
+			}
 		}
 	}()
+
+	return nil
 }
 
 func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Object) reconcile.Status {
@@ -202,12 +212,23 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		return reconcile.Succeeded(logctx)
 	}
 
+	if r.isOrphanedPendingCertificate(cert) {
+		// invalid orphan pending state unfinished from former controller instance, reset status to trigger retry.
+		cert.Status.LastPendingTimestamp = nil
+		mod, _ := r.prepareUpdateStatus(obj, "", nil, boNone)
+		err := mod.UpdateStatus()
+		if err != nil {
+			return reconcile.Failed(logctx, err)
+		}
+		return reconcile.Succeeded(logctx)
+	}
+
 	if cert.Status.BackOff != nil &&
 		obj.GetGeneration() == cert.Status.BackOff.ObservedGeneration &&
 		time.Now().Before(cert.Status.BackOff.RetryAfter.Time) {
 		interval := time.Until(cert.Status.BackOff.RetryAfter.Time)
-		if interval < 30*time.Second {
-			interval = 30 * time.Second
+		if interval < 1*time.Second {
+			interval = 1 * time.Second
 		}
 		return reconcile.Recheck(logctx, fmt.Errorf("backoff"), interval)
 	}
@@ -220,6 +241,10 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		r.addEvent(obj, status, newMsg)
 	}
 	return status
+}
+
+func (r *certReconciler) isOrphanedPendingCertificate(cert *api.Certificate) bool {
+	return cert.Status.State == api.StatePending && !r.challengePending(cert) && r.pendingResults.Peek(resources.NewObjectName(cert.Namespace, cert.Name)) == nil
 }
 
 func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) reconcile.Status {
@@ -1284,14 +1309,13 @@ func (r *certReconciler) repeat(logctx logger.LogContext, obj resources.Object) 
 	return reconcile.Repeat(logctx)
 }
 
-func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() {
+func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() error {
 	// find orphan dnsentries from DNSChallenges and try to delete them
 	// should only happen if cert-manager is terminated during running DNS challenge(s)
 
 	entriesResource, err := r.dnsCluster.Resources().GetByExample(&dnsapi.DNSEntry{})
 	if err != nil {
-		logger.Warnf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %s", err)
-		return
+		return fmt.Errorf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %w", err)
 	}
 	var objects []resources.Object
 	if r.dnsNamespace != nil {
@@ -1300,8 +1324,7 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() {
 		objects, err = entriesResource.List(metav1.ListOptions{})
 	}
 	if err != nil {
-		logger.Warnf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %s", err)
-		return
+		return fmt.Errorf("issuer: cleanupOrphanDNSEntriesFromOldChallenges failed with: %w", err)
 	}
 	count := 0
 	expectedClass := ""
@@ -1321,16 +1344,16 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() {
 		}
 	}
 	logger.Infof("issuer: cleanup: %d orphan DNS entries deleted", count)
+	return nil
 }
 
-func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() {
+func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() error {
 	// find orphan dnsentries from DNSChallenges and try to delete them
 	// should only happen if cert-manager is terminated during running DNS challenge(s)
 
 	recordsResource, err := r.dnsCluster.Resources().GetByExample(&extensionsv1alpha.DNSRecord{})
 	if err != nil {
-		logger.Warnf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %s", err)
-		return
+		return fmt.Errorf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %w", err)
 	}
 	var objects []resources.Object
 	if r.dnsNamespace != nil {
@@ -1339,8 +1362,7 @@ func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() {
 		objects, err = recordsResource.List(metav1.ListOptions{})
 	}
 	if err != nil {
-		logger.Warnf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %s", err)
-		return
+		return fmt.Errorf("issuer: cleanupOrphanDNSRecordsFromOldChallenges failed with: %w", err)
 	}
 	count := 0
 	for _, obj := range objects {
@@ -1362,12 +1384,13 @@ func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() {
 		}
 	}
 	logger.Infof("issuer: cleanup: %d orphan DNSRecords deleted", count)
+	return nil
 }
 
 // cleanupOrphanOutdatedCertificateSecrets performs a garbage collection of orphan secrets.
 // A certificate secret is deleted if it is not referenced by a certificate custom resource and
 // if its TLS certificate is not valid since at least 14 days.
-func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
+func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() error {
 	const prefix = "issuer: cleanup-secrets: "
 	logger.Infof(prefix + "starting GC for orphan outdated certificate secrets")
 	deleted := 0
@@ -1380,13 +1403,11 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 	}
 	secrets, err := r.certSecretResources.List(opts)
 	if err != nil {
-		logger.Warnf(prefix+"list secrets failed with %s", err)
-		return
+		return fmt.Errorf("%slist secrets failed with %w", prefix, err)
 	}
 	certs, err := r.certResources.List(metav1.ListOptions{})
 	if err != nil {
-		logger.Warnf(prefix+"list certificates failed with %s", err)
-		return
+		return fmt.Errorf("%slist certificates failed with %w", prefix, err)
 	}
 	secretNamesToKeep := cmlutils.StringSet{}
 	for _, obj := range certs {
@@ -1431,6 +1452,7 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() {
 
 	logger.Infof("issuer: cleanup-secrets: %d/%d orphan outdated certificate secrets deleted (%d total, %d backups, %d revoked)",
 		deleted, outdated, len(secrets), backup, revoked)
+	return nil
 }
 
 func createDNSRecordSettings(cert *api.Certificate) (*legobridge.DNSRecordSettings, error) {
