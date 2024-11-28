@@ -186,7 +186,7 @@ func (r *certReconciler) Start() error {
 	}
 
 	if err := r.cleanupOrphanOutdatedCertificateSecrets(); err != nil {
-		return err
+		return fmt.Errorf("failed cleaning up orphaned, outdated certificate secrets: %w", err)
 	}
 	r.garbageCollectorTicker = time.NewTicker(7 * 24 * time.Hour)
 	go func() {
