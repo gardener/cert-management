@@ -31,7 +31,7 @@ require (
 	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
 	sigs.k8s.io/controller-runtime v0.19.2
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9
-	sigs.k8s.io/gateway-api v1.2.0
+	sigs.k8s.io/gateway-api v1.2.1
 	sigs.k8s.io/kind v0.25.0
 	software.sslmate.com/src/go-pkcs12 v0.5.0
 )
