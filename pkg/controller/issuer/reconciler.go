@@ -77,8 +77,11 @@ func (r *compoundReconciler) Setup() error {
 
 func (r *compoundReconciler) setupIssuers(cluster utils.Cluster) error {
 	dummyKey := utils.NewIssuerKey(cluster, "dummy", "dummy")
-	res := r.handler.Support().GetIssuerResources(dummyKey)
-	list, err := res.Namespace(r.handler.Support().IssuerNamespace()).List(v1.ListOptions{})
+	issuerResources, err := r.handler.Support().GetIssuerResources(dummyKey)
+	if err != nil {
+		return fmt.Errorf("cannot get issuer resources: %w", err)
+	}
+	list, err := issuerResources.Namespace(r.handler.Support().IssuerNamespace()).List(v1.ListOptions{})
 	if err != nil {
 		return err
 	}

@@ -572,8 +572,12 @@ func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer
 		return nil, fmt.Errorf("CA registration? missing in status")
 	}
 	issuerSecretObjectName := resources.NewObjectName(secretRef.Namespace, secretRef.Name)
+	secretResources, err := r.support.GetIssuerSecretResources(issuerKey)
+	if err != nil {
+		return nil, fmt.Errorf("fetching issuer secret failed: %w", err)
+	}
 	issuerSecret := &corev1.Secret{}
-	_, err := r.support.GetIssuerSecretResources(issuerKey).GetInto(issuerSecretObjectName, issuerSecret)
+	_, err = secretResources.GetInto(issuerSecretObjectName, issuerSecret)
 	if err != nil {
 		return nil, fmt.Errorf("fetching issuer secret failed: %w", err)
 	}

@@ -126,7 +126,11 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		if err != nil {
 			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("registration marshalling failed: %w", err))
 		}
-		newObj, err := r.support.GetIssuerResources(issuerKey).Update(issuer)
+		issuerResources, err := r.support.GetIssuerResources(issuerKey)
+		if err != nil {
+			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("invalid issuer: %w", err))
+		}
+		newObj, err := issuerResources.Update(issuer)
 		if err != nil {
 			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("updating resource failed: %w", err))
 		}

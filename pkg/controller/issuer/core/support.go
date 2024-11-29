@@ -89,6 +89,7 @@ func NewHandlerSupport(c controller.Interface) (*Support, error) {
 		defaultSecretResources: defaultSecretResources,
 		targetIssuerResources:  targetIssuerResources,
 		targetSecretResources:  targetSecretResources,
+		targetIssuerAllowed:    allowTargetIssuers,
 		defaultCluster:         defaultCluster,
 		targetCluster:          targetCluster,
 	}
@@ -221,6 +222,7 @@ type Support struct {
 	defaultSecretResources     resources.Interface
 	targetIssuerResources      resources.Interface
 	targetSecretResources      resources.Interface
+	targetIssuerAllowed        bool
 	defaultIssuerName          string
 	issuerNamespace            string
 	defaultRequestsPerDayQuota int
@@ -262,7 +264,11 @@ func (s *Support) WriteIssuerSecretFromRegistrationUser(issuerKey utils.IssuerKe
 		return nil, nil, err
 	}
 
-	obj, err := s.GetIssuerSecretResources(issuerKey).CreateOrUpdate(secret)
+	secretResources, err := s.GetIssuerSecretResources(issuerKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting issuer secret resources failed: %w", err)
+	}
+	obj, err := secretResources.CreateOrUpdate(secret)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating/updating issuer secret failed: %w", err)
 	}
@@ -278,7 +284,11 @@ func (s *Support) UpdateIssuerSecret(issuerKey utils.IssuerKey, reguser *legobri
 	if err != nil {
 		return err
 	}
-	obj, err := s.GetIssuerSecretResources(issuerKey).Wrap(secret)
+	secretResources, err := s.GetIssuerSecretResources(issuerKey)
+	if err != nil {
+		return fmt.Errorf("getting issuer secret resources failed: %w", err)
+	}
+	obj, err := secretResources.Wrap(secret)
 	if err != nil {
 		return fmt.Errorf("wrapping issuer secret failed: %w", err)
 	}
@@ -292,11 +302,14 @@ func (s *Support) UpdateIssuerSecret(issuerKey utils.IssuerKey, reguser *legobri
 
 // ReadIssuerSecret reads a issuer secret
 func (s *Support) ReadIssuerSecret(issuerKey utils.IssuerKey, ref *corev1.SecretReference) (*corev1.Secret, error) {
-	res := s.GetIssuerSecretResources(issuerKey)
+	secretResources, err := s.GetIssuerSecretResources(issuerKey)
+	if err != nil {
+		return nil, fmt.Errorf("getting issuer secret resources failed: %w", err)
+	}
 
 	secret := &corev1.Secret{}
 	objName := resources.NewObjectName(ref.Namespace, ref.Name)
-	_, err := res.GetInto(objName, secret)
+	_, err = secretResources.GetInto(objName, secret)
 	if err != nil {
 		return nil, err
 	}
@@ -663,25 +676,31 @@ func (s *Support) IsDefaultIssuer(issuerKey utils.IssuerKey) bool {
 }
 
 // GetIssuerResources returns the resources for issuer.
-func (s *Support) GetIssuerResources(issuerKey utils.IssuerKey) resources.Interface {
+func (s *Support) GetIssuerResources(issuerKey utils.IssuerKey) (resources.Interface, error) {
 	switch issuerKey.Cluster() {
 	case utils.ClusterDefault:
-		return s.defaultIssuerResources
+		return s.defaultIssuerResources, nil
 	case utils.ClusterTarget:
-		return s.targetIssuerResources
+		if !s.targetIssuerAllowed {
+			return nil, fmt.Errorf("target issuers not allowed")
+		}
+		return s.targetIssuerResources, nil
 	}
-	return nil
+	return nil, fmt.Errorf("unexpected issuer cluster: %s", issuerKey.ClusterName())
 }
 
 // GetIssuerSecretResources returns the resources for issuer secrets.
-func (s *Support) GetIssuerSecretResources(issuerKey utils.IssuerKey) resources.Interface {
+func (s *Support) GetIssuerSecretResources(issuerKey utils.IssuerKey) (resources.Interface, error) {
 	switch issuerKey.Cluster() {
 	case utils.ClusterDefault:
-		return s.defaultSecretResources
+		return s.defaultSecretResources, nil
 	case utils.ClusterTarget:
-		return s.targetSecretResources
+		if !s.targetIssuerAllowed {
+			return nil, fmt.Errorf("target issuers not allowed")
+		}
+		return s.targetSecretResources, nil
 	}
-	return nil
+	return nil, fmt.Errorf("unexpected issuer cluster: %s", issuerKey.ClusterName())
 }
 
 // CalcSecretHash calculates the secret hash
@@ -742,7 +761,7 @@ func (s *Support) ClearCertRevoked(certName resources.ObjectName) {
 	}
 }
 
-// GetAllRevoked gets all certificate object object names which are revoked
+// GetAllRevoked gets all certificate object names which are revoked
 func (s *Support) GetAllRevoked() []resources.ObjectName {
 	return s.state.GetAllRevoked()
 }
@@ -754,9 +773,12 @@ func (s *Support) reportRevokedCount() {
 
 // LoadIssuer loads the issuer for the given Certificate
 func (s *Support) LoadIssuer(issuerKey utils.IssuerKey) (*api.Issuer, error) {
-	res := s.GetIssuerResources(issuerKey)
+	issuerResources, err := s.GetIssuerResources(issuerKey)
+	if err != nil {
+		return nil, err
+	}
 	issuer := &api.Issuer{}
-	_, err := res.GetInto(issuerKey.ObjectName(s.IssuerNamespace()), issuer)
+	_, err = issuerResources.GetInto(issuerKey.ObjectName(s.IssuerNamespace()), issuer)
 	if err != nil {
 		return nil, fmt.Errorf("fetching issuer failed: %w", err)
 	}
