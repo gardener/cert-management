@@ -686,7 +686,7 @@ func (s *Support) GetIssuerResources(issuerKey utils.IssuerKey) (resources.Inter
 		}
 		return s.targetIssuerResources, nil
 	}
-	return nil, fmt.Errorf("unexpected issuer cluster: %s", issuerKey.Cluster())
+	return nil, fmt.Errorf("unexpected issuer cluster: %s", issuerKey.ClusterName())
 }
 
 // GetIssuerSecretResources returns the resources for issuer secrets.
@@ -700,7 +700,7 @@ func (s *Support) GetIssuerSecretResources(issuerKey utils.IssuerKey) (resources
 		}
 		return s.targetSecretResources, nil
 	}
-	return nil, fmt.Errorf("unexpected issuer cluster: %s", issuerKey.Cluster())
+	return nil, fmt.Errorf("unexpected issuer cluster: %s", issuerKey.ClusterName())
 }
 
 // CalcSecretHash calculates the secret hash
