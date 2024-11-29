@@ -14,6 +14,7 @@ import (
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -151,6 +152,35 @@ var _ = Describe("Issuer controller tests", func() {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
 				return cert.Status.State
 			}).WithPolling(500 * time.Millisecond).WithTimeout(20 * time.Second).Should(Equal("Ready"))
+		})
+
+		It("should reconcile a certificate referencing unallowed target issuer", func() {
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "certificate-with-unallowed-issuer",
+				},
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: ptr.To("example.com"),
+					IssuerRef: &v1alpha1.IssuerRef{
+						Namespace: "namespace1",
+						Name:      "foo",
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, cert)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert)).To(Succeed())
+			})
+
+			By("Wait for certificate to become ready")
+			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				return cert.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(Equal("target issuers not allowed")),
+			}))
 		})
 	})
 
