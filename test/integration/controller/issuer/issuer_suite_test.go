@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	stdlog "log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,10 +18,12 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
 	"github.com/gardener/controller-manager-library/pkg/ctxutil"
+	cmllogger "github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/utils"
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	"github.com/gardener/gardener/pkg/logger"
+	legolog "github.com/go-acme/lego/v4/log"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -67,6 +70,8 @@ var _ = BeforeSuite(func() {
 		err              error
 	)
 
+	cmllogger.SetOutput(GinkgoWriter)
+	legolog.Logger = stdlog.New(GinkgoWriter, "lego", stdlog.LstdFlags)
 	logf.SetLogger(logger.MustNewZapLogger(logger.DebugLevel, logger.FormatJSON, zap.WriteTo(GinkgoWriter)))
 	log = logf.Log.WithName(testID)
 
@@ -181,6 +186,7 @@ func runControllerManager(ctx context.Context, args []string) {
 	c := controllermanager.PrepareStart(use, short)
 	def := c.Definition()
 	os.Args = args
+	controllermanager.DisableOptionSettingsLogging = true
 	command := controllermanager.NewCommand(ctx, use, short, short, def)
 	if err := command.Execute(); err != nil {
 		log.Error(err, "controllermanager command failed")
