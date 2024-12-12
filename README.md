@@ -10,7 +10,7 @@ The cert-controller-manager runs in a **secured cluster** where the issuer secre
 At the same time it watches an untrusted **source cluster** and can provide certificates for it.
 The cert-controller-manager relies on DNS challenges (ACME only) for validating the domain names of the certificates.
 For this purpose it creates DNSEntry custom resources (in a possible separate **dns cluster**) to be
-handled by the compagnion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
+handled by the companion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
 
 Currently, the `cert-controller-manager` supports certificate authorities via:
 
@@ -142,7 +142,7 @@ issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.u
 This issuer is meant to be used where a central Certificate Authority
 is already in place. The operator must request/provide by its own means a CA
 or an intermediate CA. This is mainly used for **on-premises** and
-**airgapped** environements.
+**air-gapped** environments.
 
 To create a self-signed certificate a dedicated issuer of type [selfSigned](#selfsigned) should be used. 
 
@@ -859,7 +859,7 @@ See the [Gateway API tutorial](docs/usage/tutorials/gateway-api-gateways.md) for
 
 ## Using the cert-controller-manager
 
-The cert-controller-manager communicated with up to four different clusters:
+The cert-controller-manager communicates with up to four different clusters:
 - **default** 
   used for managing issuers and lease management.
   The path to the kubeconfig is specified with command line option `--kubeconfig`.
@@ -1040,7 +1040,7 @@ The configuration can be changed with the command line parameter `--issuer.renew
 ## Revoking Certificates
 
 Certificates created with an `ACME` issuer can also be revoked if private key of the certificate
-is not longer safe. This page about [Revoking certificates on Let's Encrypt](https://letsencrypt.org/docs/revoking/)
+is no longer safe. This page about [Revoking certificates on Let's Encrypt](https://letsencrypt.org/docs/revoking/)
 list various reasons:
 > For instance, you might accidentally share the private key on a public website; hackers might copy the private key off 
 > of your servers; or hackers might take temporary control over your servers or your DNS configuration, and use that to
@@ -1114,7 +1114,7 @@ The `cert-controller-manager` will then perform several steps.
 
 With this variant the certificate is renewed, before the old one(s) are revoked. This means the 
 certificate secrets of the `Certificate` objects will contain newly requested certificates and
-the old certificate(s) will be revoked afterwards.
+the old certificate(s) will be revoked afterward.
 
 For this purpose, set `renew: true` in the spec of the `CertificateRevocation` object:
 
@@ -1198,7 +1198,7 @@ With the command line option `--use-dnsrecords`, the cert-controller-manager cre
 
 ## Troubleshooting
 
-Requesting certificates from an ACME provider (like Let's encrypt) is always performed using a DNS01 challenge.
+Requesting certificates from an ACME provider (like Let's Encrypt) is always performed using a DNS01 challenge.
 For this purpose, the `cert-controller-manager` creates an `DNSEntry` for the `dns-controller-manager`
 (see project [external-dns-management](https://github.com/gardener/external-dns-management)).
 Your `dns-controller-manager` needs a suitable `DNSProvider` responsible for the domain(s) of the common name and further
@@ -1221,7 +1221,7 @@ Here are the two most frequent ones.
    LAST SEEN   TYPE      REASON      OBJECT               MESSAGE
    10m         Warning   reconcile   certificate/mycert   obtaining certificate failed: error: one or more domains had a problem: [mycert.<mydomain>] time limit exceeded . Details: DNS TXT record '_acme-challenge.mycert.<mydomain>' is not visible on public (or precheck) name servers. Failed check: DNS record propagation
    ```
-   This means the DNS TXT record could not be looked up by the configurated "precheck" nameservers. With the default configuration, these are some public DNS servers.
+   This means the DNS TXT record could not be looked up by the configured "precheck" nameservers. With the default configuration, these are some public DNS servers.
    In this case, check if the configured `DNSProvider` uses a private hosted zone or if the "precheck" nameservers need to be adjusted to your use case.
    There may also some configuration of the hosted zone itself (i.e. generic CNAME forwarding) which may cause problems. 
 
