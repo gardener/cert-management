@@ -251,6 +251,7 @@ Some details about the CA can be found in the status of the issuer.
 </details>
 
 ### SelfSigned
+
 This issuer is meant to be used when you want to create a fully managed self-signed certificate.
 
 Configure your shoot to allow custom issuers in the shoot cluster. By default, issuers are created in the control plane of your cluster.
