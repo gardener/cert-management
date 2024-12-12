@@ -517,7 +517,7 @@ spec:
         key: password  
 ```
 
-## Requesting a Certificate for Ingress 
+## Requesting a Certificate for Ingress
 
 Add the annotation `cert.gardener.cloud/purpose: managed` to the Ingress resource.
 The `cert-controller-manager` will then automatically request a certificate for all domains given by the hosts in the
@@ -616,7 +616,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
 
    The certificate is stored in the secret as specified in the Ingress resource.
 
-## Requesting a Certificate for Service 
+## Requesting a Certificate for Service
 
 If you have a service of type `LoadBalancer`, you can use the annotation `cert.gardener.cloud/secretname` together
 with the annotation `dns.gardener.cloud/dnsnames` from the `dns-controller-manager` to trigger automatic creation of 
