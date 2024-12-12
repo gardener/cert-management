@@ -24,6 +24,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
       - [Auto registration](#auto-registration)
       - [Using existing account](#using-existing-account)
     - [Certificate Authority (CA)](#certificate-authority-ca)
+    - [SelfSigned](#selfsigned)
   - [Requesting a Certificate](#requesting-a-certificate)
     - [Using `commonName` and optional `dnsNames`](#using-commonname-and-optional-dnsnames)
     - [Follow CNAME](#follow-cname)
