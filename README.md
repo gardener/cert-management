@@ -49,6 +49,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Using DNSRecords](#using-dnsrecords)
   - [Troubleshooting](#troubleshooting)
   - [Development](#development)
+  - [Why not use the community `cert-manager` solution?](#why-not-use-the-community-cert-manager-solution)
 
 ## Quick start using certificates in a Gardener shoot cluster
 
@@ -1227,3 +1228,42 @@ Here are the two most frequent ones.
 ## Development
 
 For development please see [Development documentation](docs/development/getting-started.md)
+
+## Why not use the community [`cert-manager`](https://github.com/cert-manager/cert-manager) solution?
+
+Some of the reasons for developing our own solution relate to Gardener's highly dynamic requirements.
+The following list differentiates reasons based on the effort that would be required to adapt `cert-manager` to our needs.
+
+⚠️ is used to indicate that a difference exists, but it could be resolved with a reasonable effort.
+
+⛔️ is used to indicate that overcoming the difference would require a significant effort.
+
+1. ⚠️ `CertificateSigningRequest`s (CSR) are supported via a custom resource in the `cert-manager` project ([ref](https://cert-manager.io/docs/usage/kube-csr/)).
+   Gardener's `cert-management` supports CSRs via the `csr` spec field of the `Certificate` resource.
+
+2. ⚠️ The `FollowCNAME` options is only supported on the `Issuer` resource in the `cert-manager` project ([ref](https://cert-manager.io/docs/configuration/acme/dns01/#delegated-domains-for-dns01)).
+   Gardener's `cert-management` allows to configure the `followCNAME` option on the `Certificate` resource.
+
+3. ⚠️ `CertificateRevocation`s are not supported in the `cert-manager` project.
+
+4. ⚠️ Only Kubernetes `Gateway` resources can be annotated in the `cert-manager` project ([ref](https://cert-manager.io/docs/usage/gateway/)).
+   Gardener's `cert-management` supports both Kubernetes `Gateway` and Istio `Gateway` resources.
+
+5. ⚠️ It is not possible to annotate `Service` resources of type `LoadBalancer` in the `cert-manager` project ([ref](https://cert-manager.io/docs/usage/)).
+   Gardener's `cert-management` supports such an annotation.
+
+6. ⛔️ There is no reuse of existing certificates in the `cert-manager` project.
+   This means that if a certificate is requested multiple times, it will be issued multiple times.
+   Gardener's `cert-management` reuses existing certificates if the common name and DNS names match.
+
+7. ⛔️ The ACME DNS-01 challenge is represented through the custom resources `DNSEntry` and `DNSRecord` in the `cert-manager` project.
+   Gardener's `cert-management` uses the companion `dns-controller-manager` from [external-dns-management](https://github.com/gardener/external-dns-management) to solve DNS-01 challenges (in a possible separate DNS cluster). 
+   This would require developing a webhook `Issuer` for `cert-manager` to integrate with the `dns-controller-manager` ([ref](https://cert-manager.io/docs/configuration/acme/dns01/webhook/)).
+
+8. ⛔️ Private keys for the ACME `Issuer` have to be stored in the same cluster as the `cert-manager` controller is running in ([ref](https://github.com/cert-manager/cert-manager/issues/756)).
+   Gardener's `cert-management` allows to separate `Issuer` and `Certificate` resources in different clusters.
+
+9. ⛔️ There's no dynamic watch support for Istio `Gateway` resources in the `cert-manager` project since it only supports Kubernetes `Gateway`s.
+   In Gardener's `cert-management` the `cert-controller-manager` automatically restarts itself when the Istio `Gateway` CRD is installed to start watching the resources.
+
+The `cert-management` authors are open to align the projects more closely in the future if the gaps can be overcome.
