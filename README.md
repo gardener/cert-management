@@ -677,72 +677,6 @@ if it has exactly the same common name and DNS names.
 The annotation `cert.gardener.cloud/secret-namespace` can be used to change the namespace, the TLS secret is created in.
 By default, it is created in the same namespace as the service. 
 
-## Demo quick start
-
-1. Run dns-controller-manager with:
-
-    ```bash
-    ./dns-controller-manager --controllers=azure-dns --identifier=myOwnerId --disable-namespace-restriction
-    ```
-
-2. Ensure provider and its secret, e.g.
-
-    ```bash
-    kubectl apply -f azure-secret.yaml
-    kubectl apply -f azure-provider.yaml
-    ```
-
-   - check with
-
-        ```bash
-        ▶ kubectl get dnspr
-        NAME               TYPE        STATUS   AGE
-        azure-playground   azure-dns   Ready    28m
-        ```
-
-3. Create test namespace
-
-    ```bash
-    kubectl create ns test
-    ```
-
-4. Run cert-controller-manager
-
-    ```bash
-    ./cert-controller-manager
-    ```
-
-5. Register user `some.user@mydomain.com` at let's encrypt
-
-    ```bash
-    kubectl apply -f examples/20-issuer-staging.yaml
-    ```
-
-   - check with
-
-        ```bash
-        ▶ kubectl get issuer
-        NAME             SERVER                                                   EMAIL                    STATUS   TYPE   AGE
-        issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
-        ```
-
-6. Request a certificate for `cert1.martin.test6227.ml`
-
-    ```bash
-    kubectl apply -f examples/30-cert-simple.yaml
-    ```
-
-    If this certificate has been already registered for the same issuer before,
-    it will be returned immediately from the ACME server.
-    Otherwise a DNS challenge is started using a temporary DNSEntry to be set by `dns-controller-manager`
-
-   - check with
-
-        ```bash
-        ▶ kubectl get cert -o wide
-        NAME          COMMON NAME           ISSUER           STATUS   EXPIRATION_DATE        DNS_NAMES                 AGE
-        cert-simple   cert1.mydomain.com    issuer-staging   Ready    2019-11-10T09:48:17Z   [cert1.my-domain.com]     34s
-        ```
 ## Requesting a Certificate for Gateways
 
 There are source controllers for `Gateways` from [Istio](https://github.com/istio/istio) or the new 
@@ -858,6 +792,73 @@ spec:
 In this case, a single `Certificate` resource with domain name `foo.example.com` would be created.
 
 See the [Gateway API tutorial](docs/usage/tutorials/gateway-api-gateways.md) for a more detailed example.
+
+## Demo quick start
+
+1. Run dns-controller-manager with:
+
+    ```bash
+    ./dns-controller-manager --controllers=azure-dns --identifier=myOwnerId --disable-namespace-restriction
+    ```
+
+2. Ensure provider and its secret, e.g.
+
+    ```bash
+    kubectl apply -f azure-secret.yaml
+    kubectl apply -f azure-provider.yaml
+    ```
+
+    - check with
+
+         ```bash
+         ▶ kubectl get dnspr
+         NAME               TYPE        STATUS   AGE
+         azure-playground   azure-dns   Ready    28m
+         ```
+
+3. Create test namespace
+
+    ```bash
+    kubectl create ns test
+    ```
+
+4. Run cert-controller-manager
+
+    ```bash
+    ./cert-controller-manager
+    ```
+
+5. Register user `some.user@mydomain.com` at Let's Encrypt
+
+    ```bash
+    kubectl apply -f examples/20-issuer-staging.yaml
+    ```
+
+    - check with
+
+         ```bash
+         ▶ kubectl get issuer
+         NAME             SERVER                                                   EMAIL                    STATUS   TYPE   AGE
+         issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
+         ```
+
+6. Request a certificate for `cert1.martin.test6227.ml`
+
+    ```bash
+    kubectl apply -f examples/30-cert-simple.yaml
+    ```
+
+   If this certificate has been already registered for the same issuer before,
+   it will be returned immediately from the ACME server.
+   Otherwise, a DNS challenge is started using a temporary DNSEntry to be set by `dns-controller-manager`
+
+    - check with
+
+         ```bash
+         ▶ kubectl get cert -o wide
+         NAME          COMMON NAME           ISSUER           STATUS   EXPIRATION_DATE        DNS_NAMES                 AGE
+         cert-simple   cert1.mydomain.com    issuer-staging   Ready    2019-11-10T09:48:17Z   [cert1.my-domain.com]     34s
+         ```
 
 ## Using the cert-controller-manager
 
