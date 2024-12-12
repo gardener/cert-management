@@ -1253,7 +1253,6 @@ The following list differentiates reasons based on the effort that would be requ
    Gardener's `cert-management` supports both Kubernetes `Gateway` and Istio `Gateway` resources.
 
 5. ⚠️ It is not possible to annotate `Service` resources of type `LoadBalancer` in the `cert-manager` project ([ref](https://cert-manager.io/docs/usage/)).
-   Gardener's `cert-management` supports such an annotation.
 
 6. ⛔️ There is no reuse of existing certificates in the `cert-manager` project.
    This means that if a certificate is requested multiple times, it will be issued multiple times.
