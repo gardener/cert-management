@@ -1262,7 +1262,7 @@ The following list differentiates reasons based on the effort that would be requ
    Gardener's `cert-management` uses the companion `dns-controller-manager` from [external-dns-management](https://github.com/gardener/external-dns-management) to solve DNS-01 challenges (possibly in a separate DNS cluster). 
    This would require developing a webhook `Issuer` for `cert-manager` to integrate with the `dns-controller-manager` ([ref](https://cert-manager.io/docs/configuration/acme/dns01/webhook/)).
 
-8. ⛔️ Private keys for the ACME `Issuer` have to be stored in the same cluster as the `cert-manager` controller is running in ([ref](https://github.com/cert-manager/cert-manager/issues/756)).
+8. ⛔️ Private keys for the ACME `Issuer` have to be stored in the same cluster as the `cert-manager` controller is running in ([ref](https://github.com/cert-manager/cert-manager/issues/756)). This is an essential requirement for a hosted control-plane solution like Gardener, where issuers and especially their secrets should remain opaque to end-users.
    Gardener's `cert-management` allows to separate `Issuer` and `Certificate` resources in different clusters.
 
 9. ⛔️ There's no dynamic watch support for Istio `Gateway` resources in the `cert-manager` project since it only supports Kubernetes `Gateway`s.
