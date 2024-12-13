@@ -842,7 +842,7 @@ See the [Gateway API tutorial](docs/usage/tutorials/gateway-api-gateways.md) for
          issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
          ```
 
-6. Request a certificate for `cert1.martin.test6227.ml`
+6. Request a certificate for `cert1.my-domain.com`
 
     ```bash
     kubectl apply -f examples/30-cert-simple.yaml
