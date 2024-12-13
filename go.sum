@@ -101,8 +101,8 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/fxamacker/cbor/v2 v2.7.0 h1:iM5WgngdRBanHcxugY4JySA0nk1wZorNOpTgCMedv5E=
 github.com/fxamacker/cbor/v2 v2.7.0/go.mod h1:pxXPTn3joSm21Gbwsv0w9OSA2y1HFR9qXEeXQVeNoDQ=
-github.com/gardener/controller-manager-library v0.2.1-0.20241206090116-9fadce45689c h1:im/eYurY6+CzlRtxYzes6IfqMPIuzQ7Cy3sA8D/t528=
-github.com/gardener/controller-manager-library v0.2.1-0.20241206090116-9fadce45689c/go.mod h1:fyLOrcaKtGno4McZKW21b6QtwNghCF0IemTLKcwKZlM=
+github.com/gardener/controller-manager-library v0.2.1-0.20241212154005-7de194a006b6 h1:/0hc8MLgN2MveT337C2bg1SNV5M/rkisIuxGwD09vnc=
+github.com/gardener/controller-manager-library v0.2.1-0.20241212154005-7de194a006b6/go.mod h1:MY4/kbJSY5V+viMdHndNqwGzsKr1XvRwMmWViM8vj24=
 github.com/gardener/etcd-druid v0.25.0 h1:mR9/x5r27pO+I+XzpNcN2DDenam+7ITrhc7qKt9rbsI=
 github.com/gardener/etcd-druid v0.25.0/go.mod h1:6C0eyfdlw6CowLm/l4ZiKwrvkc+5NHrnc/rY2wCUwys=
 github.com/gardener/external-dns-management v0.22.1 h1:WEwCDOersJ7ezeDJelbGVac1BTmEveJuds3JlJc84Xg=
