@@ -1259,7 +1259,7 @@ The following list differentiates reasons based on the effort that would be requ
    Gardener's `cert-management` reuses existing certificates if the common name and DNS names match.
 
 7. ⛔️ The ACME DNS-01 challenge is represented through the custom resources `DNSEntry` and `DNSRecord` in the `cert-manager` project.
-   Gardener's `cert-management` uses the companion `dns-controller-manager` from [external-dns-management](https://github.com/gardener/external-dns-management) to solve DNS-01 challenges (in a possible separate DNS cluster). 
+   Gardener's `cert-management` uses the companion `dns-controller-manager` from [external-dns-management](https://github.com/gardener/external-dns-management) to solve DNS-01 challenges (possibly in a separate DNS cluster). 
    This would require developing a webhook `Issuer` for `cert-manager` to integrate with the `dns-controller-manager` ([ref](https://cert-manager.io/docs/configuration/acme/dns01/webhook/)).
 
 8. ⛔️ Private keys for the ACME `Issuer` have to be stored in the same cluster as the `cert-manager` controller is running in ([ref](https://github.com/cert-manager/cert-manager/issues/756)).
