@@ -10,7 +10,7 @@ The cert-controller-manager runs in a **secured cluster** where the issuer secre
 At the same time it watches an untrusted **source cluster** and can provide certificates for it.
 The cert-controller-manager relies on DNS challenges (ACME only) for validating the domain names of the certificates.
 For this purpose it creates DNSEntry custom resources (in a possible separate **dns cluster**) to be
-handled by the compagnion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
+handled by the companion dns-controller-manager from [external-dns-management](https://github.com/gardener/external-dns-management).
 
 Currently, the `cert-controller-manager` supports certificate authorities via:
 
@@ -24,6 +24,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
       - [Auto registration](#auto-registration)
       - [Using existing account](#using-existing-account)
     - [Certificate Authority (CA)](#certificate-authority-ca)
+    - [SelfSigned](#selfsigned)
   - [Requesting a Certificate](#requesting-a-certificate)
     - [Using `commonName` and optional `dnsNames`](#using-commonname-and-optional-dnsnames)
     - [Follow CNAME](#follow-cname)
@@ -49,6 +50,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Using DNSRecords](#using-dnsrecords)
   - [Troubleshooting](#troubleshooting)
   - [Development](#development)
+  - [Why not use the community `cert-manager` solution?](#why-not-use-the-community-cert-manager-solution)
 
 ## Quick start using certificates in a Gardener shoot cluster
 
@@ -141,7 +143,7 @@ issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.u
 This issuer is meant to be used where a central Certificate Authority
 is already in place. The operator must request/provide by its own means a CA
 or an intermediate CA. This is mainly used for **on-premises** and
-**airgapped** environements.
+**air-gapped** environments.
 
 To create a self-signed certificate a dedicated issuer of type [selfSigned](#selfsigned) should be used. 
 
@@ -249,6 +251,7 @@ Some details about the CA can be found in the status of the issuer.
 </details>
 
 ### SelfSigned
+
 This issuer is meant to be used when you want to create a fully managed self-signed certificate.
 
 Configure your shoot to allow custom issuers in the shoot cluster. By default, issuers are created in the control plane of your cluster.
@@ -514,7 +517,7 @@ spec:
         key: password  
 ```
 
-## Requesting a Certificate for Ingress 
+## Requesting a Certificate for Ingress
 
 Add the annotation `cert.gardener.cloud/purpose: managed` to the Ingress resource.
 The `cert-controller-manager` will then automatically request a certificate for all domains given by the hosts in the
@@ -613,7 +616,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
 
    The certificate is stored in the secret as specified in the Ingress resource.
 
-## Requesting a Certificate for Service 
+## Requesting a Certificate for Service
 
 If you have a service of type `LoadBalancer`, you can use the annotation `cert.gardener.cloud/secretname` together
 with the annotation `dns.gardener.cloud/dnsnames` from the `dns-controller-manager` to trigger automatic creation of 
@@ -674,72 +677,6 @@ if it has exactly the same common name and DNS names.
 The annotation `cert.gardener.cloud/secret-namespace` can be used to change the namespace, the TLS secret is created in.
 By default, it is created in the same namespace as the service. 
 
-## Demo quick start
-
-1. Run dns-controller-manager with:
-
-    ```bash
-    ./dns-controller-manager --controllers=azure-dns --identifier=myOwnerId --disable-namespace-restriction
-    ```
-
-2. Ensure provider and its secret, e.g.
-
-    ```bash
-    kubectl apply -f azure-secret.yaml
-    kubectl apply -f azure-provider.yaml
-    ```
-
-   - check with
-
-        ```bash
-        ▶ kubectl get dnspr
-        NAME               TYPE        STATUS   AGE
-        azure-playground   azure-dns   Ready    28m
-        ```
-
-3. Create test namespace
-
-    ```bash
-    kubectl create ns test
-    ```
-
-4. Run cert-controller-manager
-
-    ```bash
-    ./cert-controller-manager
-    ```
-
-5. Register user `some.user@mydomain.com` at let's encrypt
-
-    ```bash
-    kubectl apply -f examples/20-issuer-staging.yaml
-    ```
-
-   - check with
-
-        ```bash
-        ▶ kubectl get issuer
-        NAME             SERVER                                                   EMAIL                    STATUS   TYPE   AGE
-        issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
-        ```
-
-6. Request a certificate for `cert1.martin.test6227.ml`
-
-    ```bash
-    kubectl apply -f examples/30-cert-simple.yaml
-    ```
-
-    If this certificate has been already registered for the same issuer before,
-    it will be returned immediately from the ACME server.
-    Otherwise a DNS challenge is started using a temporary DNSEntry to be set by `dns-controller-manager`
-
-   - check with
-
-        ```bash
-        ▶ kubectl get cert -o wide
-        NAME          COMMON NAME           ISSUER           STATUS   EXPIRATION_DATE        DNS_NAMES                 AGE
-        cert-simple   cert1.mydomain.com    issuer-staging   Ready    2019-11-10T09:48:17Z   [cert1.my-domain.com]     34s
-        ```
 ## Requesting a Certificate for Gateways
 
 There are source controllers for `Gateways` from [Istio](https://github.com/istio/istio) or the new 
@@ -856,9 +793,76 @@ In this case, a single `Certificate` resource with domain name `foo.example.com`
 
 See the [Gateway API tutorial](docs/usage/tutorials/gateway-api-gateways.md) for a more detailed example.
 
+## Demo quick start
+
+1. Run dns-controller-manager with:
+
+    ```bash
+    ./dns-controller-manager --controllers=azure-dns --identifier=myOwnerId --disable-namespace-restriction
+    ```
+
+2. Ensure provider and its secret, e.g.
+
+    ```bash
+    kubectl apply -f azure-secret.yaml
+    kubectl apply -f azure-provider.yaml
+    ```
+
+    - check with
+
+         ```bash
+         ▶ kubectl get dnspr
+         NAME               TYPE        STATUS   AGE
+         azure-playground   azure-dns   Ready    28m
+         ```
+
+3. Create test namespace
+
+    ```bash
+    kubectl create ns test
+    ```
+
+4. Run cert-controller-manager
+
+    ```bash
+    ./cert-controller-manager
+    ```
+
+5. Register user `some.user@mydomain.com` at Let's Encrypt
+
+    ```bash
+    kubectl apply -f examples/20-issuer-staging.yaml
+    ```
+
+    - check with
+
+         ```bash
+         ▶ kubectl get issuer
+         NAME             SERVER                                                   EMAIL                    STATUS   TYPE   AGE
+         issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
+         ```
+
+6. Request a certificate for `cert1.my-domain.com`
+
+    ```bash
+    kubectl apply -f examples/30-cert-simple.yaml
+    ```
+
+   If this certificate has been already registered for the same issuer before,
+   it will be returned immediately from the ACME server.
+   Otherwise, a DNS challenge is started using a temporary DNSEntry to be set by `dns-controller-manager`
+
+    - check with
+
+         ```bash
+         ▶ kubectl get cert -o wide
+         NAME          COMMON NAME           ISSUER           STATUS   EXPIRATION_DATE        DNS_NAMES                 AGE
+         cert-simple   cert1.mydomain.com    issuer-staging   Ready    2019-11-10T09:48:17Z   [cert1.my-domain.com]     34s
+         ```
+
 ## Using the cert-controller-manager
 
-The cert-controller-manager communicated with up to four different clusters:
+The cert-controller-manager communicates with up to four different clusters:
 - **default** 
   used for managing issuers and lease management.
   The path to the kubeconfig is specified with command line option `--kubeconfig`.
@@ -1039,7 +1043,7 @@ The configuration can be changed with the command line parameter `--issuer.renew
 ## Revoking Certificates
 
 Certificates created with an `ACME` issuer can also be revoked if private key of the certificate
-is not longer safe. This page about [Revoking certificates on Let's Encrypt](https://letsencrypt.org/docs/revoking/)
+is no longer safe. This page about [Revoking certificates on Let's Encrypt](https://letsencrypt.org/docs/revoking/)
 list various reasons:
 > For instance, you might accidentally share the private key on a public website; hackers might copy the private key off 
 > of your servers; or hackers might take temporary control over your servers or your DNS configuration, and use that to
@@ -1113,7 +1117,7 @@ The `cert-controller-manager` will then perform several steps.
 
 With this variant the certificate is renewed, before the old one(s) are revoked. This means the 
 certificate secrets of the `Certificate` objects will contain newly requested certificates and
-the old certificate(s) will be revoked afterwards.
+the old certificate(s) will be revoked afterward.
 
 For this purpose, set `renew: true` in the spec of the `CertificateRevocation` object:
 
@@ -1197,7 +1201,7 @@ With the command line option `--use-dnsrecords`, the cert-controller-manager cre
 
 ## Troubleshooting
 
-Requesting certificates from an ACME provider (like Let's encrypt) is always performed using a DNS01 challenge.
+Requesting certificates from an ACME provider (like Let's Encrypt) is always performed using a DNS01 challenge.
 For this purpose, the `cert-controller-manager` creates an `DNSEntry` for the `dns-controller-manager`
 (see project [external-dns-management](https://github.com/gardener/external-dns-management)).
 Your `dns-controller-manager` needs a suitable `DNSProvider` responsible for the domain(s) of the common name and further
@@ -1220,10 +1224,48 @@ Here are the two most frequent ones.
    LAST SEEN   TYPE      REASON      OBJECT               MESSAGE
    10m         Warning   reconcile   certificate/mycert   obtaining certificate failed: error: one or more domains had a problem: [mycert.<mydomain>] time limit exceeded . Details: DNS TXT record '_acme-challenge.mycert.<mydomain>' is not visible on public (or precheck) name servers. Failed check: DNS record propagation
    ```
-   This means the DNS TXT record could not be looked up by the configurated "precheck" nameservers. With the default configuration, these are some public DNS servers.
+   This means the DNS TXT record could not be looked up by the configured "precheck" nameservers. With the default configuration, these are some public DNS servers.
    In this case, check if the configured `DNSProvider` uses a private hosted zone or if the "precheck" nameservers need to be adjusted to your use case.
    There may also some configuration of the hosted zone itself (i.e. generic CNAME forwarding) which may cause problems. 
 
 ## Development
 
 For development please see [Development documentation](docs/development/getting-started.md)
+
+## Why not use the community [`cert-manager`](https://github.com/cert-manager/cert-manager) solution?
+
+Some of the reasons for developing our own solution relate to Gardener's highly dynamic requirements.
+The following list differentiates reasons based on the effort that would be required to adapt `cert-manager` to our needs.
+
+⚠️ is used to indicate that a difference exists, but it could be resolved with a reasonable effort.
+
+⛔️ is used to indicate that overcoming the difference would require a significant effort.
+
+1. ⚠️ `CertificateSigningRequest`s (CSR) are supported via a custom resource in the `cert-manager` project ([ref](https://cert-manager.io/docs/usage/kube-csr/)).
+   Gardener's `cert-management` supports CSRs via the `csr` spec field of the `Certificate` resource.
+
+2. ⚠️ The `FollowCNAME` options is only supported on the `Issuer` resource in the `cert-manager` project ([ref](https://cert-manager.io/docs/configuration/acme/dns01/#delegated-domains-for-dns01)).
+   Gardener's `cert-management` allows to configure the `followCNAME` option on the `Certificate` resource.
+
+3. ⚠️ `CertificateRevocation`s are not supported in the `cert-manager` project.
+
+4. ⚠️ Only Kubernetes `Gateway` resources can be annotated in the `cert-manager` project ([ref](https://cert-manager.io/docs/usage/gateway/)).
+   Gardener's `cert-management` supports both Kubernetes `Gateway` and Istio `Gateway` resources.
+
+5. ⚠️ It is not possible to annotate `Service` resources of type `LoadBalancer` in the `cert-manager` project ([ref](https://cert-manager.io/docs/usage/)).
+
+6. ⛔️ There is no reuse of existing certificates in the `cert-manager` project.
+   This means that if a certificate is requested multiple times, it will be issued multiple times.
+   Gardener's `cert-management` reuses existing certificates if the common name and DNS names match.
+
+7. ⛔️ The ACME DNS-01 challenge is represented through the custom resources `DNSEntry` and `DNSRecord` in the `cert-manager` project.
+   Gardener's `cert-management` uses the companion `dns-controller-manager` from [external-dns-management](https://github.com/gardener/external-dns-management) to solve DNS-01 challenges (possibly in a separate DNS cluster). 
+   This would require developing a webhook `Issuer` for `cert-manager` to integrate with the `dns-controller-manager` ([ref](https://cert-manager.io/docs/configuration/acme/dns01/webhook/)).
+
+8. ⛔️ Private keys for the ACME `Issuer` have to be stored in the same cluster as the `cert-manager` controller is running in ([ref](https://github.com/cert-manager/cert-manager/issues/756)). This is an essential requirement for a hosted control-plane solution like Gardener, where issuers and especially their secrets should remain opaque to end-users.
+   Gardener's `cert-management` allows to separate `Issuer` and `Certificate` resources in different clusters.
+
+9. ⛔️ There's no dynamic watch support for Istio `Gateway` resources in the `cert-manager` project since it only supports Kubernetes `Gateway`s.
+   In Gardener's `cert-management` the `cert-controller-manager` automatically restarts itself when the Istio `Gateway` CRD is installed to start watching the resources.
+
+The `cert-management` authors are open to align the projects more closely in the future if the gaps can be overcome.
