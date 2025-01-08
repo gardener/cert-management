@@ -97,6 +97,8 @@ type DNSRecordSettings struct {
 	Type string
 	// SecretRef is a reference to a secret that contains the cloud provider specific credentials.
 	SecretRef corev1.SecretReference
+	// Class is the optional extension class for the DNS record.
+	Class string
 }
 
 // ObtainOutput is the result of the certificate obtain request.

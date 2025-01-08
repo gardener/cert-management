@@ -11,6 +11,7 @@ metadata:
     # annotations needed when using DNSRecords
     #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
     #cert.gardener.cloud/dnsrecord-secret-ref: myns/mysecret
+    #cert.gardener.cloud/dnsrecord-class: garden # optional, only required on Garden runtime cluster
   name: cert-simple
   namespace: default
 spec:

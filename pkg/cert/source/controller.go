@@ -51,6 +51,8 @@ const (
 	AnnotDNSRecordProviderType = api.GroupName + "/dnsrecord-provider-type"
 	// AnnotDNSRecordSecretRef is the annotation for providing the secret ref for DNS records.
 	AnnotDNSRecordSecretRef = api.GroupName + "/dnsrecord-secret-ref"
+	// AnnotDNSRecordClass is an optional annotation for providing the extension class for DNS records.
+	AnnotDNSRecordClass = api.GroupName + "/dnsrecord-class"
 
 	// AnnotPrivateKeyAlgorithm is the annotation key to set the PrivateKeyAlgorithm for a Certificate.
 	// If PrivateKeyAlgorithm is specified and `size` is not provided,

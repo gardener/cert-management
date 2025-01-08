@@ -1480,5 +1480,6 @@ func createDNSRecordSettings(cert *api.Certificate) (*legobridge.DNSRecordSettin
 	return &legobridge.DNSRecordSettings{
 		Type:      typ,
 		SecretRef: secretRef,
+		Class:     cert.Annotations[source.AnnotDNSRecordClass],
 	}, nil
 }
