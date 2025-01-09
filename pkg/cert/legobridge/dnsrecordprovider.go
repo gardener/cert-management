@@ -59,6 +59,9 @@ func (p *dnsRecordProvider) present(log logger.LogContext, domain, fqdn string, 
 		e.Spec.Type = p.settings.DNSRecordSettings.Type
 		e.Spec.SecretRef = p.settings.DNSRecordSettings.SecretRef
 		e.Spec.Values = values
+		if p.settings.DNSRecordSettings.Class != "" {
+			e.Spec.Class = ptr.To(extensionsv1alpha.ExtensionClass(p.settings.DNSRecordSettings.Class))
+		}
 		resources.SetAnnotation(e, source.AnnotACMEDNSChallenge, "true")
 	}
 

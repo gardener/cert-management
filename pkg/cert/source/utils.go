@@ -33,7 +33,7 @@ func ExtractSecretLabels(objData resources.ObjectData) (secretLabels map[string]
 
 // CopyDNSRecordsAnnotations extracts DNSRecord related annotations.
 func CopyDNSRecordsAnnotations(data resources.ObjectData) (annotations map[string]string) {
-	for _, annotKey := range []string{AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef} {
+	for _, annotKey := range []string{AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef, AnnotDNSRecordClass} {
 		if value := data.GetAnnotations()[annotKey]; value != "" {
 			if annotations == nil {
 				annotations = map[string]string{}
