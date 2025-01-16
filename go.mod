@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
-	github.com/cert-manager/cert-manager v1.16.2
+	github.com/cert-manager/cert-manager v1.16.3
 	github.com/gardener/controller-manager-library v0.2.1-0.20241212154005-7de194a006b6
 	github.com/gardener/external-dns-management v0.22.2
 	github.com/gardener/gardener v1.110.2
