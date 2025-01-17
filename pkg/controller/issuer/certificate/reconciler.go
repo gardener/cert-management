@@ -1173,7 +1173,7 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 		cn, dnsNames, _ = utils.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
-	utils.AssureStringArray(mod.ModificationState, &status.DNSNames, dnsNames)
+	utils.AssureStringSlice(mod.ModificationState, &status.DNSNames, dnsNames)
 
 	var expirationDate *string
 	notAfter, ok := resources.GetAnnotation(crt, AnnotationNotAfter)

@@ -421,7 +421,7 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		}
 
 		mod.AssureStringPtrPtr(&spec.CommonName, cn)
-		certutils.AssureStringArray(mod, &spec.DNSNames, dnsNames)
+		certutils.AssureStringSlice(mod, &spec.DNSNames, dnsNames)
 		if info.IssuerName != nil {
 			parts := strings.SplitN(*info.IssuerName, "/", 2)
 			var issuerRef *api.IssuerRef
