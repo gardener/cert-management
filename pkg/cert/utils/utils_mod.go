@@ -12,6 +12,9 @@ import (
 
 // AssureStringSlice handles modification of a string slice.
 func AssureStringSlice(mod *abstract.ModificationState, dst *[]string, value []string) {
+	if mod == nil || dst == nil {
+		return
+	}
 	if value == nil {
 		value = []string{}
 	}
