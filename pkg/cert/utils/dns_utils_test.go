@@ -7,10 +7,7 @@ import (
 )
 
 var _ = Describe("DnsUtils", func() {
-
 	Describe("PreparePrecheckNameservers", func() {
-
-		
 		It("should return given nameservers if they are valid", func() {
 			nameservers := []string{"1.1.1.1:53", "1.1.1.2:53"}
 			Expect(utils.PreparePrecheckNameservers(nameservers)).To(Equal(nameservers))
@@ -22,5 +19,4 @@ var _ = Describe("DnsUtils", func() {
 			Expect(utils.PreparePrecheckNameservers(nameservers)).To(Equal(nameserversExpected))
 		})
 	})
-
 })
