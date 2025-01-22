@@ -16,10 +16,12 @@ import (
 )
 
 var _ = Describe("UtilsCertificate", func() {
-	var csr []byte
-	var exampleCn string
-	var exampleSan []string
-	var exampleIPs []net.IP
+	var (
+		csr []byte
+		exampleCn string
+		exampleSan []string
+		exampleIPs []net.IP
+	)
 
 	BeforeEach(func() {
 		exampleCn = "example.com"
