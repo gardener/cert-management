@@ -61,12 +61,8 @@ var _ = Describe("PKI Helpers", func() {
 		})
 
 		It("returns error if TLSCertKey is missing", func() {
-			By("Creating a certificate")
-			priv, err := rsa.GenerateKey(rand.Reader, 2048)
-			Expect(err).To(Succeed())
-			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
-			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
-			Expect(err).To(Succeed())
+			data := createCertificateFromRSAKey()
+			var err error
 
 			By("Removing the TLSCertKey")
 			delete(data, corev1.TLSCertKey)
@@ -76,12 +72,8 @@ var _ = Describe("PKI Helpers", func() {
 		})
 
 		It("returns error if TLSCertKey is empty", func() {
-			By("Creating a certificate")
-			priv, err := rsa.GenerateKey(rand.Reader, 2048)
-			Expect(err).To(Succeed())
-			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
-			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
-			Expect(err).To(Succeed())
+			data := createCertificateFromRSAKey()
+			var err error
 
 			By("Removing the TLSCertKey data")
 			data[corev1.TLSCertKey] = []byte{}
@@ -91,12 +83,8 @@ var _ = Describe("PKI Helpers", func() {
 		})
 
 		It("returns error if TLSPrivateKeyKey is missing", func() {
-			By("Creating a certificate")
-			priv, err := rsa.GenerateKey(rand.Reader, 2048)
-			Expect(err).To(Succeed())
-			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
-			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
-			Expect(err).To(Succeed())
+			data := createCertificateFromRSAKey()
+			var err error
 
 			By("Removing the TLSPrivateKeyKey")
 			delete(data, corev1.TLSPrivateKeyKey)
@@ -106,12 +94,8 @@ var _ = Describe("PKI Helpers", func() {
 		})
 
 		It("returns error if TLSPrivateKeyKey is empty", func() {
-			By("Creating a certificate")
-			priv, err := rsa.GenerateKey(rand.Reader, 2048)
-			Expect(err).To(Succeed())
-			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
-			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
-			Expect(err).To(Succeed())
+			data := createCertificateFromRSAKey()
+			var err error
 
 			By("Removing the TLSPrivateKeyKey data")
 			data[corev1.TLSPrivateKeyKey] = []byte{}
@@ -121,6 +105,17 @@ var _ = Describe("PKI Helpers", func() {
 		})
 	})
 })
+
+func createCertificateFromRSAKey() map[string][]byte {
+	By("Creating a certificate")
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	ExpectWithOffset(1, err).To(Succeed())
+	keyBytes := x509.MarshalPKCS1PrivateKey(priv)
+	data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+	ExpectWithOffset(1, err).To(Succeed())
+
+	return data
+}
 
 func createCertificate(privKey crypto.PrivateKey, pubKey crypto.PublicKey, header string, privKeyBytes []byte) (map[string][]byte, error) {
 	template := &x509.Certificate{
