@@ -59,6 +59,66 @@ var _ = Describe("PKI Helpers", func() {
 			_, err = CAKeyPairFromSecretData(data)
 			Expect(err).To(Succeed())
 		})
+
+		It("returns error if TLSCertKey is missing", func() {
+			By("Creating a certificate")
+			priv, err := rsa.GenerateKey(rand.Reader, 2048)
+			Expect(err).To(Succeed())
+			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
+			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+			Expect(err).To(Succeed())
+
+			By("Removing the TLSCertKey")
+			delete(data, corev1.TLSCertKey)
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("`tls.crt` data not found in secret"))
+		})
+
+		It("returns error if TLSCertKey is empty", func() {
+			By("Creating a certificate")
+			priv, err := rsa.GenerateKey(rand.Reader, 2048)
+			Expect(err).To(Succeed())
+			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
+			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+			Expect(err).To(Succeed())
+
+			By("Removing the TLSCertKey data")
+			data[corev1.TLSCertKey] = []byte{}
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("decoding pem for tls.crt from request secret failed"))
+		})
+
+		It("returns error if TLSPrivateKeyKey is missing", func() {
+			By("Creating a certificate")
+			priv, err := rsa.GenerateKey(rand.Reader, 2048)
+			Expect(err).To(Succeed())
+			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
+			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+			Expect(err).To(Succeed())
+
+			By("Removing the TLSPrivateKeyKey")
+			delete(data, corev1.TLSPrivateKeyKey)
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("`tls.key` data not found in secret"))
+		})
+
+		It("returns error if TLSPrivateKeyKey is empty", func() {
+			By("Creating a certificate")
+			priv, err := rsa.GenerateKey(rand.Reader, 2048)
+			Expect(err).To(Succeed())
+			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
+			data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+			Expect(err).To(Succeed())
+
+			By("Removing the TLSPrivateKeyKey data")
+			data[corev1.TLSPrivateKeyKey] = []byte{}
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("decoding pem block for private key failed"))
+		})
 	})
 })
 
