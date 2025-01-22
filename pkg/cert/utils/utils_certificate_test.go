@@ -29,7 +29,6 @@ var _ = Describe("UtilsCertificate", func() {
 	})
 
 	Describe("ExtractCommonNameAnDNSNames", func() {
-
 		It("should extract cn, san, and IP addresses if Common Name (cn), Subject Alternative Name (san), and IP Addresses are set", func() {
 			csr := _createCSR(exampleCn, exampleSan, exampleIPs)
 			cn, san, err := utils.ExtractCommonNameAnDNSNames(csr)
@@ -110,7 +109,6 @@ var _ = Describe("UtilsCertificate", func() {
 		})
 
 		Context("Neither CommonName nor DNSNames are specified", func() {
-
 			It("should return error if CSR is not specified either", func() {
 				spec := api.CertificateSpec{}
 				dnsNames, err := utils.ExtractDomains(&spec)
