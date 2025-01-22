@@ -17,8 +17,7 @@ import (
 
 var _ = Describe("UtilsCertificate", func() {
 	var (
-		csr []byte
-		exampleCn string
+		exampleCn  string
 		exampleSan []string
 		exampleIPs []net.IP
 	)
@@ -31,42 +30,36 @@ var _ = Describe("UtilsCertificate", func() {
 
 	Describe("ExtractCommonNameAnDNSNames", func() {
 
-		Context("Common Name (cn), Subject Alternative Name (san), and IP Addresses are set", func() {
-			It("should extract cn, san, and IP addresses", func() {
-				csr = _createCSR(exampleCn, exampleSan, exampleIPs)
-				cn, san, err := utils.ExtractCommonNameAnDNSNames(csr)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(*cn).To(Equal(exampleCn))
-				Expect(san).To(ContainElements(append(exampleSan, "192.168.1.1", "10.0.0.1")))
-			})
+		It("should extract cn, san, and IP addresses if Common Name (cn), Subject Alternative Name (san), and IP Addresses are set", func() {
+			csr := _createCSR(exampleCn, exampleSan, exampleIPs)
+			cn, san, err := utils.ExtractCommonNameAnDNSNames(csr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(*cn).To(Equal(exampleCn))
+			Expect(san).To(ContainElements(append(exampleSan, "192.168.1.1", "10.0.0.1")))
 		})
 
-		Context("Common Name is not set", func() {
-			It("should only return the san and IP addresses", func() {
-				csr = _createCSR("", exampleSan, exampleIPs)
-				cn, san, err := utils.ExtractCommonNameAnDNSNames(csr)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(cn).To(BeNil())
-				Expect(san).To(ContainElements(append(exampleSan, "192.168.1.1", "10.0.0.1")))
-			})
+		It("should only return the san and IP addresses if Common Name is not set", func() {
+			csr := _createCSR("", exampleSan, exampleIPs)
+			cn, san, err := utils.ExtractCommonNameAnDNSNames(csr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cn).To(BeNil())
+			Expect(san).To(ContainElements(append(exampleSan, "192.168.1.1", "10.0.0.1")))
 		})
 
-		Context("CSR is not parseable", func() {
-			It("should fail with an error", func() {
-				csr = []byte("invalid csr")
-				cn, san, err := utils.ExtractCommonNameAnDNSNames(csr)
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("parsing CSR failed: decoding CSR failed"))
-				Expect(cn).To(BeNil())
-				Expect(san).To(BeEmpty())
-			})
+		It("should fail with an error if CSR is not parseable", func() {
+			csr := []byte("invalid csr")
+			cn, san, err := utils.ExtractCommonNameAnDNSNames(csr)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("parsing CSR failed: decoding CSR failed"))
+			Expect(cn).To(BeNil())
+			Expect(san).To(BeEmpty())
 		})
 	})
 
 	Describe("ExtractDomains", func() {
 		Context("CommonName or DNSNames are specified", func() {
 			It("should return an error if CSR is not nil", func() {
-				csr = _createCSR("", nil, nil)
+				csr := _createCSR("", nil, nil)
 				spec := api.CertificateSpec{
 					CommonName: &exampleCn,
 					DNSNames:   exampleSan,
@@ -104,7 +97,7 @@ var _ = Describe("UtilsCertificate", func() {
 				Expect(err).To(MatchError("the Common Name is limited to 64 characters (X.509 ASN.1 specification), but first given domain aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa has 65 characters"))
 			})
 
-			It("should return the CommonName and DNSName when both are specified", func ()  {
+			It("should return the CommonName and DNSName when both are specified", func() {
 				spec := api.CertificateSpec{
 					CommonName: &exampleCn,
 					DNSNames:   exampleSan,
@@ -126,7 +119,7 @@ var _ = Describe("UtilsCertificate", func() {
 			})
 
 			It("should extract the DNSNames from the CSR if CRN is specified and valid", func() {
-				csr = _createCSR(exampleCn, exampleSan, exampleIPs)
+				csr := _createCSR(exampleCn, exampleSan, exampleIPs)
 				spec := api.CertificateSpec{
 					CSR: csr,
 				}
