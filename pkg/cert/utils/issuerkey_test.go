@@ -57,6 +57,7 @@ var _ = Describe("IssuerKey", func() {
 			It("should be true for default cluster", func() {
 				Expect(defaultClusterIssuerKey.Secondary()).To(BeTrue())
 			})
+			
 			It("should be false for non default cluster", func() {
 				Expect(targetClusterIssuerKey.Secondary()).To(BeFalse())
 				Expect(randomClusterIssuerKey.Secondary()).To(BeFalse())
@@ -67,9 +68,11 @@ var _ = Describe("IssuerKey", func() {
 			It("should return 'default' for default cluster", func() {
 				Expect(defaultClusterIssuerKey.ClusterName()).To(Equal("default"))
 			})
+			
 			It("should return 'target' for target cluster", func() {
 				Expect(targetClusterIssuerKey.ClusterName()).To(Equal("target"))
 			})
+			
 			It("should return '' for other clusters", func() {
 				Expect(randomClusterIssuerKey.ClusterName()).To(Equal(""))
 			})
