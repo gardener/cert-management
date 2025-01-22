@@ -30,7 +30,6 @@ var _ = Describe("IssuerKey", func() {
 	})
 
 	Describe("IssuerKey Methods", func() {
-
 		var (
 			defaultClusterIssuerKey utils.IssuerKey
 			targetClusterIssuerKey  utils.IssuerKey
