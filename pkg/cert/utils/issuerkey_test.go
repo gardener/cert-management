@@ -74,7 +74,5 @@ var _ = Describe("IssuerKey", func() {
 				Expect(randomClusterIssuerKey.ClusterName()).To(Equal(""))
 			})
 		})
-
 	})
-
 })
