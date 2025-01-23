@@ -14,9 +14,7 @@ import (
 )
 
 var _ = Describe("UtilsMod", func() {
-
 	Describe("AssureStringSlice", func() {
-
 		var mod *abstract.ModificationState
 		BeforeEach(func() {
 			mod = &abstract.ModificationState{
