@@ -59,8 +59,63 @@ var _ = Describe("PKI Helpers", func() {
 			_, err = CAKeyPairFromSecretData(data)
 			Expect(err).To(Succeed())
 		})
+
+		It("returns error if TLSCertKey is missing", func() {
+			data := createCertificateFromRSAKey()
+			var err error
+
+			By("Removing the TLSCertKey")
+			delete(data, corev1.TLSCertKey)
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("`tls.crt` data not found in secret"))
+		})
+
+		It("returns error if TLSCertKey is empty", func() {
+			data := createCertificateFromRSAKey()
+			var err error
+
+			By("Removing the TLSCertKey data")
+			data[corev1.TLSCertKey] = []byte{}
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("decoding pem for tls.crt from request secret failed"))
+		})
+
+		It("returns error if TLSPrivateKeyKey is missing", func() {
+			data := createCertificateFromRSAKey()
+			var err error
+
+			By("Removing the TLSPrivateKeyKey")
+			delete(data, corev1.TLSPrivateKeyKey)
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("`tls.key` data not found in secret"))
+		})
+
+		It("returns error if TLSPrivateKeyKey is empty", func() {
+			data := createCertificateFromRSAKey()
+			var err error
+
+			By("Removing the TLSPrivateKeyKey data")
+			data[corev1.TLSPrivateKeyKey] = []byte{}
+
+			_, err = CAKeyPairFromSecretData(data)
+			Expect(err).To(MatchError("decoding pem block for private key failed"))
+		})
 	})
 })
+
+func createCertificateFromRSAKey() map[string][]byte {
+	By("Creating a certificate")
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	ExpectWithOffset(1, err).To(Succeed())
+	keyBytes := x509.MarshalPKCS1PrivateKey(priv)
+	data, err := createCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+	ExpectWithOffset(1, err).To(Succeed())
+
+	return data
+}
 
 func createCertificate(privKey crypto.PrivateKey, pubKey crypto.PublicKey, header string, privKeyBytes []byte) (map[string][]byte, error) {
 	template := &x509.Certificate{
