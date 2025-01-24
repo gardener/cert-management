@@ -7,9 +7,10 @@
 package utils_test
 
 import (
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/gardener/cert-management/pkg/cert/utils"
 )
 
 var _ = Describe("DomainRange", func() {

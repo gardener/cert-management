@@ -5,12 +5,12 @@
 package utils_test
 
 import (
+	"github.com/gardener/controller-manager-library/pkg/resources/abstract"
+	libUtils "github.com/gardener/controller-manager-library/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/gardener/cert-management/pkg/cert/utils"
-	"github.com/gardener/controller-manager-library/pkg/resources/abstract"
-	libUtils "github.com/gardener/controller-manager-library/pkg/utils"
 )
 
 var _ = Describe("UtilsMod", func() {
