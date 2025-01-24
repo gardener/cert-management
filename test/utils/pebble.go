@@ -23,18 +23,30 @@ import (
 
 // The default values for the Pebble config have been taken from: https://github.com/letsencrypt/pebble/blob/main/test/config/pebble-config.json
 const (
-	listenAddress             = "localhost:14000"
-	ocspResponderURL          = ""
-	alternateRoots            = 0
-	chainLength               = 1
-	certificateValidityPeriod = 0
-	httpPort                  = 5002
-	tlsPort                   = 5001
-	strict                    = true
-	customResolverAddr        = ""
-	requireEAB                = false
-	retryAfterAuthz           = 3
-	retryAfterOrder           = 5
+	listenAddress      = "localhost:14000"
+	ocspResponderURL   = ""
+	alternateRoots     = 0
+	chainLength        = 1
+	httpPort           = 5002
+	tlsPort            = 5001
+	strict             = true
+	customResolverAddr = ""
+	requireEAB         = false
+	retryAfterAuthz    = 3
+	retryAfterOrder    = 5
+)
+
+var (
+	profiles = map[string]ca.Profile{
+		"default": {
+			Description:    "The profile you know and love",
+			ValidityPeriod: 7776000,
+		},
+		"shortlived": {
+			Description:    "A short-lived cert profile, without actual enforcement",
+			ValidityPeriod: 518400,
+		},
+	}
 )
 
 // RunPebble runs a pebble server with the given configuration.
@@ -57,7 +69,7 @@ func RunPebble(logr logr.Logger) (server *http.Server, certificatePath, director
 	log := NewLogBridge(logr)
 
 	database := db.NewMemoryStore()
-	certificateAuthority := ca.New(log, database, ocspResponderURL, alternateRoots, chainLength, certificateValidityPeriod)
+	certificateAuthority := ca.New(log, database, ocspResponderURL, alternateRoots, chainLength, profiles)
 	validationAuthority := va.New(log, httpPort, tlsPort, strict, customResolverAddr, database)
 
 	wfeImpl := wfe.New(log, database, validationAuthority, certificateAuthority, strict, requireEAB, retryAfterAuthz, retryAfterOrder)
