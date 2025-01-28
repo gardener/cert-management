@@ -75,6 +75,10 @@ test: $(GINKGO)
 test-integration: $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
 	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/integration/...
 
+.PHONY: test-cov
+test-cov:
+	@bash $(GARDENER_HACK_DIR)/test-cover.sh $(shell go list ./pkg/... | grep -v /pkg/client) ./cmd/...
+
 .PHONY: generate
 generate: $(VGOPATH) $(CONTROLLER_GEN)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) ./hack/generate-code

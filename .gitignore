@@ -9,5 +9,8 @@ tmp/
 .vscode/
 .kubeconfig-kind-integration
 
+*.coverprofile
+*.html
+
 # gosec
 gosec-report.sarif
