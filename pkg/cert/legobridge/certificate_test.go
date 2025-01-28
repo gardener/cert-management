@@ -11,11 +11,14 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"time"
 
 	"github.com/go-acme/lego/v4/certcrypto"
+	"github.com/go-acme/lego/v4/certificate"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -59,6 +62,33 @@ var _ = Describe("Certificate", func() {
 		Entry("RSA with wrong size", certcrypto.KeyType(""), api.RSAKeyAlgorithm, 8192),
 		Entry("ECDSA with wrong size", certcrypto.KeyType(""), api.ECDSAKeyAlgorithm, 511),
 	)
+
+	DescribeTable("NewCertificatePrivateKeyDefaults",
+		func(algorithmStr string, rsaKeySizeInt, ecdsaKeySizeInt int, expectedError error) {
+			pkAlgorithm := api.PrivateKeyAlgorithm(algorithmStr)
+			rsaKeySize := api.PrivateKeySize(rsaKeySizeInt)
+			ecdsaKeySize := api.PrivateKeySize(ecdsaKeySizeInt)
+			certificate, err := NewCertificatePrivateKeyDefaults(pkAlgorithm, rsaKeySize, ecdsaKeySize)
+
+			if expectedError != nil {
+				Expect(err).To(MatchError(expectedError))
+			} else {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(certificate).ToNot(BeNil())
+				Expect(certificate.algorithm).To(Equal(pkAlgorithm))
+				Expect(certificate.rsaKeySize).To(Equal(rsaKeySize))
+				Expect(certificate.ecdsaKeySize).To(Equal(ecdsaKeySize))
+			}
+		},
+		Entry("unkown algorithm", "NotAnAlgorithm", 0, 0, errors.New("invalid algoritm: 'NotAnAlgorithm' (allowed values: 'RSA' and 'ECDSA')")),
+		Entry("unkown algorithm", "RSA", 1234, 0, errors.New("invalid RSA private key size: 1234 (allowed values: 2048, 3072, 4096)")),
+		Entry("unkown algorithm", "RSA", 2048, 1234, errors.New("invalid ECDSA private key size: 1234 (allowed values: 256, 384)")),
+	)
+
+	It("obtainForDomains should fail with unknown key type", func() {
+		_, err := obtainForDomains(nil, []string{}, ObtainInput{KeyType: "SomeUnknownKeyType"})
+		Expect(err).To(MatchError("invalid KeyType: SomeUnknownKeyType"))
+	})
 
 	Context("#newSelfSignedCertFromCSRinPEMFormat", func() {
 		It("should fail decoding the CSR with empty input", func() {
@@ -123,6 +153,36 @@ var _ = Describe("Certificate", func() {
 			assertRSAPrivateKeySize(cert.PrivateKey, 2048)
 		})
 	})
+
+	Describe("Certificate/SecretData conversion", func() {
+
+		It("CertificateToSecretData should return correct SecretData", func() {
+			certificates := &certificate.Resource{
+				Certificate:       []byte{0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01},
+				PrivateKey:        []byte{0x3a, 0x4e, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f},
+				IssuerCertificate: []byte{0xba, 0xcb, 0xdc, 0xed, 0xfe, 0x0f, 0x1f},
+			}
+
+			secretData := CertificatesToSecretData(certificates)
+			Expect(secretData[corev1.TLSCertKey]).To(Equal(certificates.Certificate))
+			Expect(secretData[corev1.TLSPrivateKeyKey]).To(Equal(certificates.PrivateKey))
+			Expect(secretData[TLSCAKey]).To(Equal(certificates.IssuerCertificate))
+
+		})
+
+		It("SecretDataToCertificates should return correct Certificates", func() {
+			secretData := map[string][]byte{}
+			secretData[corev1.TLSCertKey] = []byte{0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01}
+			secretData[corev1.TLSPrivateKeyKey] = []byte{0x3a, 0x4e, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f}
+			secretData[TLSCAKey] = []byte{0xba, 0xcb, 0xdc, 0xed, 0xfe, 0x0f, 0x1f}
+
+			certificates := SecretDataToCertificates(secretData)
+			Expect(certificates.Certificate).To(Equal(secretData[corev1.TLSCertKey]))
+			Expect(certificates.PrivateKey).To(Equal(secretData[corev1.TLSPrivateKeyKey]))
+			Expect(certificates.IssuerCertificate).To(Equal(secretData[TLSCAKey]))
+		})
+	})
+
 })
 
 func assertRSAPrivateKeySize(keyMaterial []byte, expectedBits int) {
