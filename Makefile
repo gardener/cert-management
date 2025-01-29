@@ -77,7 +77,7 @@ test-integration: $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
 
 .PHONY: test-cov
 test-cov:
-	@bash $(GARDENER_HACK_DIR)/test-cover.sh $(shell go list ./pkg/... | grep -v /pkg/client) ./cmd/...
+	@bash $(GARDENER_HACK_DIR)/test-cover.sh $(shell go list ./pkg/... | grep -v /pkg/client | grep -v /mock) ./cmd/...
 
 .PHONY: generate
 generate: $(VGOPATH) $(CONTROLLER_GEN)
