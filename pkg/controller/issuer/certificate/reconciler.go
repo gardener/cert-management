@@ -429,6 +429,15 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 	return r.failed(logctx, obj, api.StateError, fmt.Errorf("incomplete issuer spec (ACME or CA section must be provided)"))
 }
 
+type notAcceptedError struct {
+	message  string
+	waitTime time.Duration
+}
+
+func (e *notAcceptedError) Error() string {
+	return e.message
+}
+
 func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContext, obj resources.Object,
 	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
 	reguser, err := r.support.RestoreRegUser(issuerKey, issuer)
@@ -456,20 +465,27 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
 	}
 
-	if accepted, requestsPerDayQuota := r.support.TryAcceptCertificateRequest(issuerKey); !accepted {
-		waitMinutes := 1
-		if requestsPerDayQuota == 0 {
-			err := fmt.Errorf("request quota lookup failed for issuer %s. Retrying in %d min. ", issuerKey, waitMinutes)
-			return r.recheck(logctx, obj, api.StatePending, err, time.Duration(waitMinutes)*time.Minute)
+	preflightCheck := func() error {
+		if accepted, requestsPerDayQuota := r.support.TryAcceptCertificateRequest(issuerKey); !accepted {
+			waitMinutes := 1
+			if requestsPerDayQuota == 0 {
+				return &notAcceptedError{
+					message:  fmt.Sprintf("request quota lookup failed for issuer %s. Retrying in %d min. ", issuerKey, waitMinutes),
+					waitTime: time.Duration(waitMinutes) * time.Minute,
+				}
+			}
+			waitMinutes = 1440 / requestsPerDayQuota / 2
+			if waitMinutes < 5 {
+				waitMinutes = 5
+			}
+			return &notAcceptedError{
+				message: fmt.Sprintf("request quota exhausted. Retrying in %d min. "+
+					"Up to %d requests per day are allowed. To change the quota, set `spec.requestsPerDayQuota` for issuer %s",
+					waitMinutes, requestsPerDayQuota, issuerKey),
+				waitTime: time.Duration(waitMinutes) * time.Minute,
+			}
 		}
-		waitMinutes = 1440 / requestsPerDayQuota / 2
-		if waitMinutes < 5 {
-			waitMinutes = 5
-		}
-		err := fmt.Errorf("request quota exhausted. Retrying in %d min. "+
-			"Up to %d requests per day are allowed. To change the quota, set `spec.requestsPerDayQuota` for issuer %s",
-			waitMinutes, requestsPerDayQuota, issuerKey)
-		return r.recheck(logctx, obj, api.StatePending, err, time.Duration(waitMinutes)*time.Minute)
+		return nil
 	}
 
 	objectName := obj.ObjectName()
@@ -539,14 +555,18 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
 		PreferredChain:                 preferredChain,
 		KeyType:                        keyType,
+		PreflightCheck:                 preflightCheck,
 	}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
 		var concurrentObtainError *legobridge.ConcurrentObtainError
+		var notAcceptedError *notAcceptedError
 		switch {
 		case errors.As(err, &concurrentObtainError):
-			return r.delay(logctx, obj, api.StatePending, err)
+			return r.delay(logctx, obj, "", err)
+		case errors.As(err, &notAcceptedError):
+			return r.recheck(logctx, obj, "", err, notAcceptedError.waitTime)
 		default:
 			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
 		}
@@ -1275,7 +1295,7 @@ func (r *certReconciler) status(logctx logger.LogContext, obj resources.Object, 
 }
 
 func (r *certReconciler) delay(logctx logger.LogContext, obj resources.Object, state string, err error) reconcile.Status {
-	return r.status(logctx, obj, state, &core.RecoverableError{Msg: err.Error()}, false)
+	return r.recheck(logctx, obj, state, err, 30*time.Second)
 }
 
 func (r *certReconciler) recheck(logctx logger.LogContext, obj resources.Object, state string, err error, interval time.Duration) reconcile.Status {
