@@ -564,9 +564,9 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		var notAcceptedError *notAcceptedError
 		switch {
 		case errors.As(err, &concurrentObtainError):
-			return r.delay(logctx, obj, "", err)
+			return r.delay(logctx, obj, api.StateWaiting, err)
 		case errors.As(err, &notAcceptedError):
-			return r.recheck(logctx, obj, "", err, notAcceptedError.waitTime)
+			return r.recheck(logctx, obj, api.StateWaiting, err, notAcceptedError.waitTime)
 		default:
 			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
 		}
