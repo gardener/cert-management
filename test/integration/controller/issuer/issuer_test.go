@@ -84,6 +84,83 @@ var _ = Describe("Issuer controller tests", func() {
 			}).Should(Succeed())
 		})
 
+		It("should be able to revoke certificate", func() {
+			issuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "acme1",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					ACME: &v1alpha1.ACMESpec{
+						Email:            "foo@somewhere-foo-123456.com",
+						Server:           acmeDirectoryAddress,
+						AutoRegistration: true,
+						SkipDNSChallengeValidation: ptr.To(true),
+					},
+				},
+			}
+			By("Create ACME issuer")
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Create ACME certificate")
+			certificate := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "acme-certificate",
+				},
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: ptr.To("example.com"),
+					IssuerRef: &v1alpha1.IssuerRef{
+						Name: issuer.Name,
+					},
+				},
+			}
+
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Create CertificateRevocation")
+			revocation := &v1alpha1.CertificateRevocation{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "acme-certificate-revocation",
+				},
+				Spec: v1alpha1.CertificateRevocationSpec{
+					CertificateRef: v1alpha1.CertificateRef{
+						Name:      certificate.Name,
+						Namespace: certificate.Namespace,
+					},
+					QualifyingDate: &metav1.Time{Time: time.Now().Add(48 * time.Hour)},
+				},
+			}
+
+			Expect(testClient.Create(ctx, revocation)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, revocation)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(revocation), revocation)).To(Succeed())
+				g.Expect(revocation.Status.State).To(Equal("Applied"))
+				Expect(revocation.Status.Message).To(PointTo(ContainSubstring("certificate(s) revoked")))
+			}).WithPolling(500 * time.Millisecond).Should(Succeed())
+		})
+
 		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
 			By("Create ACME issuer")
 			issuer := &v1alpha1.Issuer{
@@ -239,6 +316,103 @@ var _ = Describe("Issuer controller tests", func() {
 			Expect(secret.Data).To(HaveKeyWithValue("ca.crt", Not(BeEmpty())))
 			Expect(secret.Data).To(HaveKeyWithValue("tls.crt", Not(BeEmpty())))
 			Expect(secret.Data).To(HaveKeyWithValue("tls.key", Not(BeEmpty())))
+		})
+
+		It("should not be able to create self-signed certificate if the duration is < 720h", func() {
+			By("Create self-signed issuer")
+			issuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "self-signed-issuer",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					SelfSigned: &v1alpha1.SelfSignedSpec{},
+				},
+			}
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Create self-signed certificate")
+			certificate := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "self-signed-certificate",
+				},
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: ptr.To("ca1.mydomain.com"),
+					IsCA:       ptr.To(true),
+					IssuerRef: &v1alpha1.IssuerRef{
+						Name:      issuer.Name,
+						Namespace: issuer.Namespace,
+					},
+					Duration: &metav1.Duration{Duration: 1 * time.Hour},
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Error"))
+				g.Expect(certificate.Status.Message).To(PointTo(ContainSubstring("certificate duration must be greater than 1440h0m0s")))
+			}).Should(Succeed())
+		})
+
+		It("should not be able to create self-signed certificate if IsCA = false", func() {
+			By("Create self-signed issuer")
+			issuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "self-signed-issuer",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					SelfSigned: &v1alpha1.SelfSignedSpec{},
+				},
+			}
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Create self-signed certificate")
+			certificate := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "self-signed-certificate",
+				},
+				Spec: v1alpha1.CertificateSpec{
+					CommonName: ptr.To("ca1.mydomain.com"),
+					IsCA:       ptr.To(false),
+					IssuerRef: &v1alpha1.IssuerRef{
+						Name:      issuer.Name,
+						Namespace: issuer.Namespace,
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Error"))
+				g.Expect(certificate.Status.Message).To(PointTo(ContainSubstring("self signed certificates must set 'spec.isCA: true'")))
+			}).Should(Succeed())
 		})
 	})
 })
