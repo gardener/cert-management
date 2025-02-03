@@ -9,6 +9,8 @@ package v1alpha1
 const (
 	// StatePending is the pending state.
 	StatePending = "Pending"
+	// StateWaiting is the waiting state.
+	StateWaiting = "Waiting"
 	// StateError is the error state.
 	StateError = "Error"
 	// StateReady is the ready state.

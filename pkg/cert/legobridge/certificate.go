@@ -55,6 +55,8 @@ type ObtainInput struct {
 	TargetClass string
 	// Callback is the callback function to return the ObtainOutput.
 	Callback ObtainerCallback
+	// PreflightCheck performs if request is allowed to be processed (e.g. quota check).
+	PreflightCheck func() error
 	// Renew is flag if it is a renew request.
 	Renew bool
 	// AlwaysDeactivateAuthorizations deactivates authorizations to avoid their caching
@@ -168,6 +170,11 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 		PreferredChain:                 input.PreferredChain,
 		PrivateKey:                     privateKey,
 	}
+	if input.PreflightCheck != nil {
+		if err := input.PreflightCheck(); err != nil {
+			return nil, err
+		}
+	}
 	return client.Certificate.Obtain(request)
 }
 
@@ -277,6 +284,11 @@ func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certific
 	cert, err := extractCertificateRequest(csr)
 	if err != nil {
 		return nil, err
+	}
+	if input.PreflightCheck != nil {
+		if err := input.PreflightCheck(); err != nil {
+			return nil, err
+		}
 	}
 	return client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
 		CSR:                            cert,
@@ -443,6 +455,8 @@ func (o *obtainer) setPending(input ObtainInput) error {
 		if ok && t.After(outdated) {
 			return &ConcurrentObtainError{DomainName: name}
 		}
+	}
+	for _, name := range names {
 		o.pendingDomains[name] = now
 	}
 	return nil
