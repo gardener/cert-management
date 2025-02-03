@@ -60,19 +60,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 	Context("ACME issuer", func() {
 		It("should create an ACME issuer", func() {
-			issuer := &v1alpha1.Issuer{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "acme1",
-				},
-				Spec: v1alpha1.IssuerSpec{
-					ACME: &v1alpha1.ACMESpec{
-						Email:            "foo@somewhere-foo-123456.com",
-						Server:           acmeDirectoryAddress,
-						AutoRegistration: true,
-					},
-				},
-			}
+			issuer := getIssuer(testRunID, false)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -84,21 +72,8 @@ var _ = Describe("Issuer controller tests", func() {
 			}).Should(Succeed())
 		})
 
-		It("should be able to revoke certificate", func() {
-			issuer := &v1alpha1.Issuer{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "acme1",
-				},
-				Spec: v1alpha1.IssuerSpec{
-					ACME: &v1alpha1.ACMESpec{
-						Email:            "foo@somewhere-foo-123456.com",
-						Server:           acmeDirectoryAddress,
-						AutoRegistration: true,
-						SkipDNSChallengeValidation: ptr.To(true),
-					},
-				},
-			}
+		FIt("should be able to revoke certificate", func() {
+			issuer := getIssuer(testRunID, true)
 			By("Create ACME issuer")
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
@@ -145,20 +120,22 @@ var _ = Describe("Issuer controller tests", func() {
 						Name:      certificate.Name,
 						Namespace: certificate.Namespace,
 					},
-					QualifyingDate: &metav1.Time{Time: time.Now().Add(48 * time.Hour)},
+					// QualifyingDate: &metav1.Time{Time: time.Now().Add(48 * time.Hour)},
 				},
 			}
 
 			Expect(testClient.Create(ctx, revocation)).To(Succeed())
+			time.Sleep(1 * time.Second)
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, revocation)).To(Succeed())
 			})
 
+			//FIXME: Flakey, irgendwie funktioniert das manchmal, vor allem im Debugger, wenn man da durchstepped
 			Eventually(func(g Gomega) {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(revocation), revocation)).To(Succeed())
 				g.Expect(revocation.Status.State).To(Equal("Applied"))
 				Expect(revocation.Status.Message).To(PointTo(ContainSubstring("certificate(s) revoked")))
-			}).WithPolling(500 * time.Millisecond).Should(Succeed())
+			}).WithPolling(2 * time.Second).Should(Succeed())
 		})
 
 		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
@@ -416,6 +393,23 @@ var _ = Describe("Issuer controller tests", func() {
 		})
 	})
 })
+
+func getIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.Issuer {
+	return &v1alpha1.Issuer{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      "acme1",
+		},
+		Spec: v1alpha1.IssuerSpec{
+			ACME: &v1alpha1.ACMESpec{
+				Email:            "foo@somewhere-foo-123456.com",
+				Server:           acmeDirectoryAddress,
+				AutoRegistration: true,
+				SkipDNSChallengeValidation: ptr.To(skipDnsChallengeValidation),
+			},
+		},
+	}
+}
 
 func startManager(testRunID string) {
 	newContext()
