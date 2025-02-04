@@ -11,7 +11,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"time"
 
 	"github.com/go-acme/lego/v4/certcrypto"
@@ -63,27 +62,22 @@ var _ = Describe("Certificate", func() {
 		Entry("ECDSA with wrong size", certcrypto.KeyType(""), api.ECDSAKeyAlgorithm, 511),
 	)
 
-	DescribeTable("NewCertificatePrivateKeyDefaults",
-		func(algorithm string, rsaKeySize, ecdsaKeySize int, expectedError error) {
-			pkAlgorithm := api.PrivateKeyAlgorithm(algorithmStr)
-			rsaKeySize := api.PrivateKeySize(rsaKeySizeInt)
-			ecdsaKeySize := api.PrivateKeySize(ecdsaKeySizeInt)
-			certificate, err := NewCertificatePrivateKeyDefaults(pkAlgorithm, rsaKeySize, ecdsaKeySize)
+	Describe("NewCertificatePrivateKeyDefaults", func() {
+		It("should return an error for unknown algorithm", func() {
+			_, err := NewCertificatePrivateKeyDefaults(api.PrivateKeyAlgorithm("NotAnAlgorithm"), api.PrivateKeySize(0), api.PrivateKeySize(0))
+			Expect(err).To(MatchError("invalid algoritm: 'NotAnAlgorithm' (allowed values: 'RSA' and 'ECDSA')"))
+		})
 
-			if expectedError != nil {
-				Expect(err).To(MatchError(expectedError))
-			} else {
-				Expect(err).ToNot(HaveOccurred())
-				Expect(certificate).ToNot(BeNil())
-				Expect(certificate.algorithm).To(Equal(pkAlgorithm))
-				Expect(certificate.rsaKeySize).To(Equal(rsaKeySize))
-				Expect(certificate.ecdsaKeySize).To(Equal(ecdsaKeySize))
-			}
-		},
-		Entry("unkown algorithm", "NotAnAlgorithm", 0, 0, errors.New("invalid algoritm: 'NotAnAlgorithm' (allowed values: 'RSA' and 'ECDSA')")),
-		Entry("unkown algorithm", "RSA", 1234, 0, errors.New("invalid RSA private key size: 1234 (allowed values: 2048, 3072, 4096)")),
-		Entry("unkown algorithm", "RSA", 2048, 1234, errors.New("invalid ECDSA private key size: 1234 (allowed values: 256, 384)")),
-	)
+		It("should return an error for invalid RSA key size", func() {
+			_, err := NewCertificatePrivateKeyDefaults(api.PrivateKeyAlgorithm("RSA"), api.PrivateKeySize(1234), api.PrivateKeySize(0))
+			Expect(err).To(MatchError("invalid RSA private key size: 1234 (allowed values: 2048, 3072, 4096)"))
+		})
+
+		It("should return an error for invalid ECDSA key size", func() {
+			_, err := NewCertificatePrivateKeyDefaults(api.PrivateKeyAlgorithm("RSA"), api.PrivateKeySize(2048), api.PrivateKeySize(1234))
+			Expect(err).To(MatchError("invalid ECDSA private key size: 1234 (allowed values: 256, 384)"))
+		})
+	})
 
 	It("obtainForDomains should fail with unknown key type", func() {
 		_, err := obtainForDomains(nil, []string{}, ObtainInput{KeyType: "SomeUnknownKeyType"})
