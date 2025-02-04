@@ -160,9 +160,9 @@ var _ = Describe("Issuer controller tests", func() {
 	})
 
 	Context("Self-signed issuer", func() {
-		It("should be able to create self-signed certificates", func() {
-			By("Create self-signed issuer")
-			issuer := &v1alpha1.Issuer{
+		var issuer *v1alpha1.Issuer
+		BeforeEach(func()  {
+			issuer = &v1alpha1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testRunID,
 					Name:      "self-signed-issuer",
@@ -171,6 +171,7 @@ var _ = Describe("Issuer controller tests", func() {
 					SelfSigned: &v1alpha1.SelfSignedSpec{},
 				},
 			}
+
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -180,7 +181,9 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
 			}).Should(Succeed())
+		})
 
+		It("should be able to create self-signed certificates", func() {
 			By("Create self-signed certificate")
 			certificate := &v1alpha1.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
@@ -217,26 +220,6 @@ var _ = Describe("Issuer controller tests", func() {
 		})
 
 		It("should not be able to create self-signed certificate if the duration is < 720h", func() {
-			By("Create self-signed issuer")
-			issuer := &v1alpha1.Issuer{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "self-signed-issuer",
-				},
-				Spec: v1alpha1.IssuerSpec{
-					SelfSigned: &v1alpha1.SelfSignedSpec{},
-				},
-			}
-			Expect(testClient.Create(ctx, issuer)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
-			})
-
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
-
 			By("Create self-signed certificate")
 			certificate := &v1alpha1.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
@@ -266,26 +249,6 @@ var _ = Describe("Issuer controller tests", func() {
 		})
 
 		It("should not be able to create self-signed certificate if IsCA = false", func() {
-			By("Create self-signed issuer")
-			issuer := &v1alpha1.Issuer{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "self-signed-issuer",
-				},
-				Spec: v1alpha1.IssuerSpec{
-					SelfSigned: &v1alpha1.SelfSignedSpec{},
-				},
-			}
-			Expect(testClient.Create(ctx, issuer)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
-			})
-
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
-
 			By("Create self-signed certificate")
 			certificate := &v1alpha1.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
@@ -312,10 +275,6 @@ var _ = Describe("Issuer controller tests", func() {
 				g.Expect(certificate.Status.Message).To(PointTo(ContainSubstring("self signed certificates must set 'spec.isCA: true'")))
 			}).Should(Succeed())
 		})
-	})
-
-	Context("RequestsPerDayQuota", func()  {
-		
 	})
 })
 
