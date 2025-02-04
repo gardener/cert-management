@@ -12,15 +12,8 @@ import (
 )
 
 var _ = Describe("Pending", func() {
-	var(
-		name resources.ObjectName
-	)
-
-	BeforeEach(func() {
-		name = resources.NewObjectName("test", "test-cert")
-	})
-
 	It("should add an object to PendingCertificateRequests and remove it afterwards", func() {
+		name := resources.NewObjectName("test", "test-cert")
 		pendingRequests := legobridge.NewPendingRequests()
 		By("Adding the Object")
 		pendingRequests.Add(name)
@@ -32,6 +25,7 @@ var _ = Describe("Pending", func() {
 	})
 
 	It("should add an object to PendingResults and remove it afterwards", func() {
+		name := resources.NewObjectName("test", "test-cert")
 		pendingResults := legobridge.NewPendingResults()
 		result := &legobridge.ObtainOutput{}
 
