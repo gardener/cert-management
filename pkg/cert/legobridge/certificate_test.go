@@ -64,7 +64,7 @@ var _ = Describe("Certificate", func() {
 	)
 
 	DescribeTable("NewCertificatePrivateKeyDefaults",
-		func(algorithmStr string, rsaKeySizeInt, ecdsaKeySizeInt int, expectedError error) {
+		func(algorithm string, rsaKeySize, ecdsaKeySize int, expectedError error) {
 			pkAlgorithm := api.PrivateKeyAlgorithm(algorithmStr)
 			rsaKeySize := api.PrivateKeySize(rsaKeySizeInt)
 			ecdsaKeySize := api.PrivateKeySize(ecdsaKeySizeInt)
