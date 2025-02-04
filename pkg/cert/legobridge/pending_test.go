@@ -35,7 +35,7 @@ var _ = Describe("Pending", func() {
 		pendingResults := legobridge.NewPendingResults()
 		result := &legobridge.ObtainOutput{}
 
-		By("Adding the Obeject")
+		By("Adding the Object")
 		pendingResults.Add(name, result)
 		Expect(pendingResults.Peek(name)).To(Equal(result))
 
