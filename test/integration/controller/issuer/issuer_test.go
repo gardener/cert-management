@@ -60,7 +60,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 	Context("ACME issuer", func() {
 		It("should create an ACME issuer", func() {
-			issuer := getIssuer(testRunID, false)
+			issuer := getAcmeIssuer(testRunID, false)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -70,90 +70,11 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
 			}).Should(Succeed())
-		})
-
-		FIt("should be able to revoke certificate", func() {
-			issuer := getIssuer(testRunID, true)
-			By("Create ACME issuer")
-			Expect(testClient.Create(ctx, issuer)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
-			})
-
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
-
-			By("Create ACME certificate")
-			certificate := &v1alpha1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "acme-certificate",
-				},
-				Spec: v1alpha1.CertificateSpec{
-					CommonName: ptr.To("example.com"),
-					IssuerRef: &v1alpha1.IssuerRef{
-						Name: issuer.Name,
-					},
-				},
-			}
-
-			Expect(testClient.Create(ctx, certificate)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
-			})
-
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
-				g.Expect(certificate.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
-
-			By("Create CertificateRevocation")
-			revocation := &v1alpha1.CertificateRevocation{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "acme-certificate-revocation",
-				},
-				Spec: v1alpha1.CertificateRevocationSpec{
-					CertificateRef: v1alpha1.CertificateRef{
-						Name:      certificate.Name,
-						Namespace: certificate.Namespace,
-					},
-					// QualifyingDate: &metav1.Time{Time: time.Now().Add(48 * time.Hour)},
-				},
-			}
-
-			Expect(testClient.Create(ctx, revocation)).To(Succeed())
-			time.Sleep(1 * time.Second)
-			DeferCleanup(func() {
-				Expect(testClient.Delete(ctx, revocation)).To(Succeed())
-			})
-
-			//FIXME: Flakey, irgendwie funktioniert das manchmal, vor allem im Debugger, wenn man da durchstepped
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(revocation), revocation)).To(Succeed())
-				g.Expect(revocation.Status.State).To(Equal("Applied"))
-				Expect(revocation.Status.Message).To(PointTo(ContainSubstring("certificate(s) revoked")))
-			}).WithPolling(2 * time.Second).Should(Succeed())
 		})
 
 		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
 			By("Create ACME issuer")
-			issuer := &v1alpha1.Issuer{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "acme1",
-				},
-				Spec: v1alpha1.IssuerSpec{
-					ACME: &v1alpha1.ACMESpec{
-						Email:                      "foo@somewhere-foo-123456.com",
-						Server:                     acmeDirectoryAddress,
-						AutoRegistration:           true,
-						SkipDNSChallengeValidation: ptr.To(true),
-					},
-				},
-			}
+			issuer := getAcmeIssuer(testRunID, true)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -392,9 +313,13 @@ var _ = Describe("Issuer controller tests", func() {
 			}).Should(Succeed())
 		})
 	})
+
+	Context("RequestsPerDayQuota", func()  {
+		
+	})
 })
 
-func getIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.Issuer {
+func getAcmeIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
