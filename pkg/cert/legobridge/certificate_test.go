@@ -149,7 +149,6 @@ var _ = Describe("Certificate", func() {
 	})
 
 	Describe("Certificate/SecretData conversion", func() {
-
 		It("CertificateToSecretData should return correct SecretData", func() {
 			certificates := &certificate.Resource{
 				Certificate:       []byte{0x30, 0x82, 0x01, 0x0a, 0x02, 0x82, 0x01},
@@ -158,10 +157,10 @@ var _ = Describe("Certificate", func() {
 			}
 
 			secretData := CertificatesToSecretData(certificates)
+			
 			Expect(secretData[corev1.TLSCertKey]).To(Equal(certificates.Certificate))
 			Expect(secretData[corev1.TLSPrivateKeyKey]).To(Equal(certificates.PrivateKey))
 			Expect(secretData[TLSCAKey]).To(Equal(certificates.IssuerCertificate))
-
 		})
 
 		It("SecretDataToCertificates should return correct Certificates", func() {
@@ -171,12 +170,12 @@ var _ = Describe("Certificate", func() {
 			secretData[TLSCAKey] = []byte{0xba, 0xcb, 0xdc, 0xed, 0xfe, 0x0f, 0x1f}
 
 			certificates := SecretDataToCertificates(secretData)
+			
 			Expect(certificates.Certificate).To(Equal(secretData[corev1.TLSCertKey]))
 			Expect(certificates.PrivateKey).To(Equal(secretData[corev1.TLSPrivateKeyKey]))
 			Expect(certificates.IssuerCertificate).To(Equal(secretData[TLSCAKey]))
 		})
 	})
-
 })
 
 func assertRSAPrivateKeySize(keyMaterial []byte, expectedBits int) {
