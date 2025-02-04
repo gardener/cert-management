@@ -15,10 +15,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/utils"
-	mocks "github.com/gardener/cert-management/pkg/cert/utils/mock"
+	"github.com/gardener/cert-management/pkg/cert/utils/mock"
 	"github.com/golang/mock/gomock"
 )
 
@@ -38,12 +39,12 @@ var _ = Describe("UtilsCertificate", func() {
 	Describe("CertificateObject", func() {
 		var (
 			mockCtrl   *gomock.Controller
-			mockObject *mocks.MockObject
+			mockObject *mock.MockObject
 		)
 
 		BeforeEach(func() {
 			mockCtrl = gomock.NewController(GinkgoT())
-			mockObject = mocks.NewMockObject(mockCtrl)
+			mockObject = mock.NewMockObject(mockCtrl)
 		})
 
 		AfterEach(func() {
@@ -73,7 +74,7 @@ var _ = Describe("UtilsCertificate", func() {
 					Expect(certificateObject.SafeFirstDNSName()).To(Equal(expected))
 				},
 				Entry("should return the CommonName if it is defined",
-					&api.Certificate{Spec: api.CertificateSpec{CommonName: strPtr("someCommonName")}},
+					&api.Certificate{Spec: api.CertificateSpec{CommonName: ptr.To("someCommonName")}},
 					"someCommonName",
 				),
 				Entry("should return the first DNSName of DNS Names if DNS names are defined",
@@ -81,7 +82,7 @@ var _ = Describe("UtilsCertificate", func() {
 					"someDnsName",
 				),
 				Entry("should return the CommonName if it is defined in the status",
-					&api.Certificate{Status: api.CertificateStatus{CommonName: strPtr("someCommonName")}},
+					&api.Certificate{Status: api.CertificateStatus{CommonName: ptr.To("someCommonName")}},
 					"someCommonName",
 				),
 				Entry("should return the first DNSName of DNS Names if DNS names are defined in the status",
@@ -227,8 +228,4 @@ func _createCSR(cn string, san []string, ips []net.IP) []byte {
 		Type:  "CERTIFICATE REQUEST",
 		Bytes: csr,
 	})
-}
-
-func strPtr(s string) *string {
-	return &s
 }
