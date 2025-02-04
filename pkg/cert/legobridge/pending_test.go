@@ -22,7 +22,7 @@ var _ = Describe("Pending", func() {
 
 	It("should add an object to PendingCertificateRequests and remove it afterwards", func() {
 		pendingRequests := legobridge.NewPendingRequests()
-		By("Adding the Obeject")
+		By("Adding the Object")
 		pendingRequests.Add(name)
 		Expect(pendingRequests.Contains(name)).To(BeTrue())
 
