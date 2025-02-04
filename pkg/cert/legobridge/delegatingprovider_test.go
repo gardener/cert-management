@@ -58,9 +58,7 @@ var _ = Describe("Delegating Provider", func() {
 		})
 
 		It("should fail after timeout", func() {
-			i := 0
 			err := retryOnUpdateError(func() error {
-				i++
 				return &updateError{"failed"}
 			})
 			Expect(err).To(HaveOccurred())
