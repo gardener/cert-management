@@ -17,6 +17,7 @@ VERSION                           := $(shell cat VERSION)
 IMAGE_TAG                         := $(VERSION)
 GO_MOCKGEN_VERSION ?= $(shell go list -m -f "{{.Version}}" github.com/golang/mock)
 
+.PHONY: install-mockgen
 install-mockgen:
 	@echo "Installing github.com/golang/mock/mockgen@$(GO_MOCKGEN_VERSION)"
 	@go install github.com/golang/mock/mockgen@$(GO_MOCKGEN_VERSION)
