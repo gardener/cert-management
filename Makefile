@@ -15,7 +15,7 @@ PROJECT                           := github.com/gardener/cert-management
 CERT_IMAGE_REPOSITORY             := $(REGISTRY)/cert-controller-manager
 VERSION                           := $(shell cat VERSION)
 IMAGE_TAG                         := $(VERSION)
-GO_MOCKGEN_VERSION ?= $(shell go list -m -f "{{.Version}}" github.com/golang/mock)
+GO_MOCKGEN_VERSION 				  ?= $(shell go list -m -f "{{.Version}}" github.com/golang/mock)
 
 .PHONY: install-mockgen
 install-mockgen:
