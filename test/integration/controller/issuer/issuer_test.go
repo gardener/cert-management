@@ -89,18 +89,7 @@ var _ = Describe("Issuer controller tests", func() {
 			stopManager()
 
 			By("Create orphan pending certificate")
-			cert := &v1alpha1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "orphan-pending-certificate",
-				},
-				Spec: v1alpha1.CertificateSpec{
-					CommonName: ptr.To("example.com"),
-					IssuerRef: &v1alpha1.IssuerRef{
-						Name: issuer.Name,
-					},
-				},
-			}
+			cert := getCertificate(testRunID, "orphan-pending-certificate", "example.com", issuer.Namespace, issuer.Name)
 			ctxLocal := context.Background()
 			Expect(testClient.Create(ctxLocal, cert)).To(Succeed())
 			DeferCleanup(func() {
@@ -130,19 +119,7 @@ var _ = Describe("Issuer controller tests", func() {
 		})
 
 		It("should reconcile a certificate referencing unallowed target issuer", func() {
-			cert := &v1alpha1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "certificate-with-unallowed-issuer",
-				},
-				Spec: v1alpha1.CertificateSpec{
-					CommonName: ptr.To("example.com"),
-					IssuerRef: &v1alpha1.IssuerRef{
-						Namespace: "namespace1",
-						Name:      "foo",
-					},
-				},
-			}
+			cert := getCertificate(testRunID, "certificate-with-unallowed-issuer", "example.com", "namespace1", "foo")
 			Expect(testClient.Create(ctx, cert)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, cert)).To(Succeed())
@@ -177,7 +154,7 @@ var _ = Describe("Issuer controller tests", func() {
 			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 
 			By("Create first certificate")
-			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Name)
+			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
 			Expect(testClient.Create(ctx, cert1)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, cert1)).To(Succeed())
@@ -191,7 +168,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 			By("Create second certificate")
-			cert2 := getCertificate(testRunID, "acme-certificate2", "other.domain.com", issuer.Name)
+			cert2 := getCertificate(testRunID, "acme-certificate2", "other.domain.com", issuer.Namespace, issuer.Name)
 			Expect(testClient.Create(ctx, cert2)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, cert2)).To(Succeed())
@@ -226,7 +203,7 @@ var _ = Describe("Issuer controller tests", func() {
 			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 
 			By("Create first certificate")
-			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Name)
+			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
 			Expect(testClient.Create(ctx, cert1)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, cert1)).To(Succeed())
@@ -241,7 +218,7 @@ var _ = Describe("Issuer controller tests", func() {
 			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 
 			By("Create second certificate")
-			cert2 := getCertificate(testRunID, "acme-certificate2", "example.com", issuer.Name)
+			cert2 := getCertificate(testRunID, "acme-certificate2", "example.com", issuer.Namespace, issuer.Name)
 			Expect(testClient.Create(ctx, cert2)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, cert2)).To(Succeed())
@@ -281,20 +258,8 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should be able to create self-signed certificates", func() {
 			By("Create self-signed certificate")
-			certificate := &v1alpha1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "self-signed-certificate",
-				},
-				Spec: v1alpha1.CertificateSpec{
-					CommonName: ptr.To("ca1.mydomain.com"),
-					IsCA:       ptr.To(true),
-					IssuerRef: &v1alpha1.IssuerRef{
-						Name:      issuer.Name,
-						Namespace: issuer.Namespace,
-					},
-				},
-			}
+			certificate := getCertificate(testRunID, "self-signed-certificate", "ca1.mydomain.com", issuer.Namespace, issuer.Name)
+			certificate.Spec.IsCA = ptr.To(true)
 			Expect(testClient.Create(ctx, certificate)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
@@ -317,21 +282,9 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should not be able to create self-signed certificate if the duration is < 720h", func() {
 			By("Create self-signed certificate")
-			certificate := &v1alpha1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "self-signed-certificate",
-				},
-				Spec: v1alpha1.CertificateSpec{
-					CommonName: ptr.To("ca1.mydomain.com"),
-					IsCA:       ptr.To(true),
-					IssuerRef: &v1alpha1.IssuerRef{
-						Name:      issuer.Name,
-						Namespace: issuer.Namespace,
-					},
-					Duration: &metav1.Duration{Duration: 1 * time.Hour},
-				},
-			}
+			certificate := getCertificate(testRunID, "self-signed-certificate", "ca1.mydomain.com", issuer.Namespace, issuer.Name)
+			certificate.Spec.IsCA = ptr.To(true)
+			certificate.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour}
 			Expect(testClient.Create(ctx, certificate)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
@@ -346,20 +299,8 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should not be able to create self-signed certificate if IsCA = false", func() {
 			By("Create self-signed certificate")
-			certificate := &v1alpha1.Certificate{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testRunID,
-					Name:      "self-signed-certificate",
-				},
-				Spec: v1alpha1.CertificateSpec{
-					CommonName: ptr.To("ca1.mydomain.com"),
-					IsCA:       ptr.To(false),
-					IssuerRef: &v1alpha1.IssuerRef{
-						Name:      issuer.Name,
-						Namespace: issuer.Namespace,
-					},
-				},
-			}
+			certificate := getCertificate(testRunID, "self-signed-certificate", "ca1.mydomain.com", issuer.Namespace, issuer.Name)
+			certificate.Spec.IsCA = ptr.To(false)
 			Expect(testClient.Create(ctx, certificate)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
@@ -391,7 +332,7 @@ func getAcmeIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.
 	}
 }
 
-func getCertificate(certificateNamespace, certificateName, commonName, issuerName string) *v1alpha1.Certificate {
+func getCertificate(certificateNamespace, certificateName, commonName, issuerNamespcae, issuerName string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: certificateNamespace,
@@ -400,6 +341,7 @@ func getCertificate(certificateNamespace, certificateName, commonName, issuerNam
 		Spec: v1alpha1.CertificateSpec{
 			CommonName: ptr.To(commonName),
 			IssuerRef: &v1alpha1.IssuerRef{
+				Namespace: issuerNamespcae,
 				Name: issuerName,
 			},
 		},
