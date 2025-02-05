@@ -151,7 +151,6 @@ var _ = Describe("Issuer controller tests", func() {
 			By("Set the quota to 1")
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Update(ctx, issuer)).To(Succeed())
-			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -166,7 +165,6 @@ var _ = Describe("Issuer controller tests", func() {
 				return cert1.Status.State
 			}).Should(Equal("Ready"))
 
-			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 			By("Create second certificate")
 			cert2 := getCertificate(testRunID, "acme-certificate2", "other.domain.com", issuer.Namespace, issuer.Name)
 			Expect(testClient.Create(ctx, cert2)).To(Succeed())
@@ -200,7 +198,6 @@ var _ = Describe("Issuer controller tests", func() {
 			By("Set the quota to 1")
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Update(ctx, issuer)).To(Succeed())
-			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -214,8 +211,6 @@ var _ = Describe("Issuer controller tests", func() {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert1), cert1)).To(Succeed())
 				return cert1.Status.State
 			}).Should(Equal("Ready"))
-
-			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
 
 			By("Create second certificate")
 			cert2 := getCertificate(testRunID, "acme-certificate2", "example.com", issuer.Namespace, issuer.Name)
