@@ -157,6 +157,102 @@ var _ = Describe("Issuer controller tests", func() {
 				"Message": PointTo(Equal("target issuers not allowed")),
 			}))
 		})
+
+		It("should not be able to create certificate if no quota is left", func()  {
+			By("Create ACME issuer")
+			issuer := getAcmeIssuer(testRunID, true)
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+			
+			By("Set the quota to 1")
+			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
+			Expect(testClient.Update(ctx, issuer)).To(Succeed())
+			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
+
+			By("Create first certificate")
+			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Name)
+			Expect(testClient.Create(ctx, cert1)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert1)).To(Succeed())
+			})
+
+			By("Wait for first certificate to become ready")
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert1), cert1)).To(Succeed())
+				return cert1.Status.State
+			}).Should(Equal("Ready"))
+
+			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
+			By("Create second certificate")
+			cert2 := getCertificate(testRunID, "acme-certificate2", "other.domain.com", issuer.Name)
+			Expect(testClient.Create(ctx, cert2)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert2)).To(Succeed())
+			})
+
+			By("Wait for second certificate to fail")
+			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert2), cert2)).To(Succeed())
+				return cert2.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Pending"),
+				"Message": PointTo(ContainSubstring("request quota exhausted.")),
+			}))
+		})
+
+		It("should reuse certificate if multiple certificates are created for the same domain", func()  {
+			By("Create ACME issuer")
+			issuer := getAcmeIssuer(testRunID, true)
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+			
+			By("Set the quota to 1")
+			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
+			Expect(testClient.Update(ctx, issuer)).To(Succeed())
+			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
+
+			By("Create first certificate")
+			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Name)
+			Expect(testClient.Create(ctx, cert1)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert1)).To(Succeed())
+			})
+
+			By("Wait for first certificate to become ready")
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert1), cert1)).To(Succeed())
+				return cert1.Status.State
+			}).Should(Equal("Ready"))
+
+			testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)
+
+			By("Create second certificate")
+			cert2 := getCertificate(testRunID, "acme-certificate2", "example.com", issuer.Name)
+			Expect(testClient.Create(ctx, cert2)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert2)).To(Succeed())
+			})
+
+			By("Wait for second certificate to become ready")
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert1), cert1)).To(Succeed())
+				return cert1.Status.State
+			}).Should(Equal("Ready"))
+		})
 	})
 
 	Context("Self-signed issuer", func() {
@@ -290,6 +386,21 @@ func getAcmeIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.
 				Server:           acmeDirectoryAddress,
 				AutoRegistration: true,
 				SkipDNSChallengeValidation: ptr.To(skipDnsChallengeValidation),
+			},
+		},
+	}
+}
+
+func getCertificate(certificateNamespace, certificateName, commonName, issuerName string) *v1alpha1.Certificate {
+	return &v1alpha1.Certificate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: certificateNamespace,
+			Name:      certificateName,
+		},
+		Spec: v1alpha1.CertificateSpec{
+			CommonName: ptr.To(commonName),
+			IssuerRef: &v1alpha1.IssuerRef{
+				Name: issuerName,
 			},
 		},
 	}
