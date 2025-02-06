@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
@@ -25,8 +24,6 @@ const (
 	VersionV1 Version = "v1"
 	// VersionV1beta1 is the v1beta1 version of the Kubernetes Gateway API gateway.
 	VersionV1beta1 Version = "v1beta1"
-	// VersionV1alpha2 is the v1alpha2 version of the Kubernetes Gateway API gateway.
-	VersionV1alpha2 Version = "v1alpha2"
 	// VersionNone is zero version of the Kubernetes Gateway API gateway.
 	VersionNone Version = ""
 )
@@ -44,7 +41,7 @@ func GetPreferredVersion(crd *apiextensionsv1.CustomResourceDefinition) Version 
 		}
 		versions.Insert(v.Name)
 	}
-	for _, vv := range []Version{VersionV1, VersionV1beta1, VersionV1alpha2} {
+	for _, vv := range []Version{VersionV1, VersionV1beta1} {
 		if versions.Has(string(vv)) {
 			return vv
 		}
@@ -58,8 +55,6 @@ func newGateway(version Version) client.Object {
 		return &gatewayapisv1.Gateway{}
 	case VersionV1beta1:
 		return &gatewayapisv1beta1.Gateway{}
-	case VersionV1alpha2:
-		return &gatewayapisv1alpha2.Gateway{}
 	default:
 		return nil
 	}
@@ -71,8 +66,6 @@ func newHTTPRoute(version Version) client.Object {
 		return &gatewayapisv1.HTTPRoute{}
 	case VersionV1beta1:
 		return &gatewayapisv1beta1.HTTPRoute{}
-	case VersionV1alpha2:
-		return &gatewayapisv1alpha2.HTTPRoute{}
 	default:
 		return nil
 	}
@@ -84,8 +77,6 @@ func newHTTPRouteList(version Version) client.ObjectList {
 		return &gatewayapisv1.HTTPRouteList{}
 	case VersionV1beta1:
 		return &gatewayapisv1beta1.HTTPRouteList{}
-	case VersionV1alpha2:
-		return &gatewayapisv1alpha2.HTTPRouteList{}
 	default:
 		return nil
 	}

@@ -18,7 +18,6 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
@@ -346,7 +345,6 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 var (
 	_ = Describe("Reconciler-v1", createReconcilerTestFunc(newGateway(VersionV1), VersionV1))
 	_ = Describe("Reconciler-v1beta1", createReconcilerTestFunc(newGateway(VersionV1beta1), VersionV1beta1))
-	_ = Describe("Reconciler-v1alpha2", createReconcilerTestFunc(newGateway(VersionV1alpha2), VersionV1alpha2))
 )
 
 func modifyListeners(gateway client.Object, modifier func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener) {
@@ -366,25 +364,6 @@ func modifyListeners(gateway client.Object, modifier func(listeners []gatewayapi
 			data, err := json.Marshal(output)
 			Expect(err).NotTo(HaveOccurred())
 			var tmp []gatewayapisv1beta1.Listener
-			err = json.Unmarshal(data, &tmp)
-			Expect(err).NotTo(HaveOccurred())
-			g.Spec.Listeners = tmp
-		} else {
-			g.Spec.Listeners = nil
-		}
-	case *gatewayapisv1alpha2.Gateway:
-		var input []gatewayapisv1.Listener
-		if len(g.Spec.Listeners) > 0 {
-			data, err := json.Marshal(g.Spec.Listeners)
-			Expect(err).NotTo(HaveOccurred())
-			err = json.Unmarshal(data, &input)
-			Expect(err).NotTo(HaveOccurred())
-		}
-		output := modifier(input)
-		if len(output) > 0 {
-			data, err := json.Marshal(output)
-			Expect(err).NotTo(HaveOccurred())
-			var tmp []gatewayapisv1alpha2.Listener
 			err = json.Unmarshal(data, &tmp)
 			Expect(err).NotTo(HaveOccurred())
 			g.Spec.Listeners = tmp
