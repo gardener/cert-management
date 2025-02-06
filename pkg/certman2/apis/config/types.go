@@ -3,6 +3,7 @@ package config
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	componentbaseconfig "k8s.io/component-base/config"
+	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -40,7 +41,7 @@ type CertManagerConfiguration struct {
 // ClientConnection contains client connection configurations
 // for the primary cluster (certificates and source resources).
 type ClientConnection struct {
-	componentbaseconfig.ClientConnectionConfiguration
+	componentbaseconfigv1alpha1.ClientConnectionConfiguration
 	// CacheResyncPeriod specifies the duration how often the cache for the cluster is resynced.
 	CacheResyncPeriod *metav1.Duration
 }
@@ -48,7 +49,7 @@ type ClientConnection struct {
 // ControlPlaneClientConnection contains client connection configurations
 // for the cluster containing the provided issuers.
 type ControlPlaneClientConnection struct {
-	componentbaseconfig.ClientConnectionConfiguration
+	componentbaseconfigv1alpha1.ClientConnectionConfiguration
 	// CacheResyncPeriod specifies the duration how often the cache for the cluster is resynced.
 	CacheResyncPeriod *metav1.Duration
 }
@@ -56,7 +57,7 @@ type ControlPlaneClientConnection struct {
 // DNSClientConnection contains client connection configurations
 // for the cluster used to manage DNS resources for DNS challenges.
 type DNSClientConnection struct {
-	componentbaseconfig.ClientConnectionConfiguration
+	componentbaseconfigv1alpha1.ClientConnectionConfiguration
 }
 
 // ServerConfiguration contains details for the HTTP(S) servers.
