@@ -232,7 +232,7 @@ func newSelfSignedCertInPEMFormat(
 	if input.Duration == nil {
 		return nil, nil, fmt.Errorf("duration must be set")
 	}
-	certPrivateKey, certPrivateKeyPEM, err := generateKey(algo, algoSize)
+	certPrivateKey, certPrivateKeyPEM, err := GenerateKey(algo, algoSize)
 	if err != nil {
 		return nil, nil, err
 	}
