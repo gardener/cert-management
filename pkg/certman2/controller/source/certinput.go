@@ -209,7 +209,7 @@ func createPrivateKey(algorithm string, size int) *certmanv1alpha1.CertificatePr
 		obj.Algorithm = ptr.To(certmanv1alpha1.PrivateKeyAlgorithm(algorithm))
 	}
 	if size != 0 {
-		obj.Size = ptr.To(certmanv1alpha1.PrivateKeySize(size))
+		obj.Size = ptr.To(certmanv1alpha1.PrivateKeySize(size)) // #nosec G115 -- only validated values in int32 range are used
 	}
 	return obj
 }
