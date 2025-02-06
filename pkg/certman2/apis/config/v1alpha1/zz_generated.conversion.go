@@ -111,33 +111,9 @@ func RegisterConversions(s *runtime.Scheme) error {
 }
 
 func autoConvert_v1alpha1_CertManagerConfiguration_To_config_CertManagerConfiguration(in *CertManagerConfiguration, out *config.CertManagerConfiguration, s conversion.Scope) error {
-	if in.ClientConnection != nil {
-		in, out := &in.ClientConnection, &out.ClientConnection
-		*out = new(config.ClientConnection)
-		if err := Convert_v1alpha1_ClientConnection_To_config_ClientConnection(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ClientConnection = nil
-	}
-	if in.ControlPlaneClientConnection != nil {
-		in, out := &in.ControlPlaneClientConnection, &out.ControlPlaneClientConnection
-		*out = new(config.ControlPlaneClientConnection)
-		if err := Convert_v1alpha1_ControlPlaneClientConnection_To_config_ControlPlaneClientConnection(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ControlPlaneClientConnection = nil
-	}
-	if in.DNSClientConnection != nil {
-		in, out := &in.DNSClientConnection, &out.DNSClientConnection
-		*out = new(config.DNSClientConnection)
-		if err := Convert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.DNSClientConnection = nil
-	}
+	out.ClientConnection = (*config.ClientConnection)(unsafe.Pointer(in.ClientConnection))
+	out.ControlPlaneClientConnection = (*config.ControlPlaneClientConnection)(unsafe.Pointer(in.ControlPlaneClientConnection))
+	out.DNSClientConnection = (*config.DNSClientConnection)(unsafe.Pointer(in.DNSClientConnection))
 	if err := configv1alpha1.Convert_v1alpha1_LeaderElectionConfiguration_To_config_LeaderElectionConfiguration(&in.LeaderElection, &out.LeaderElection, s); err != nil {
 		return err
 	}
@@ -168,33 +144,9 @@ func Convert_v1alpha1_CertManagerConfiguration_To_config_CertManagerConfiguratio
 }
 
 func autoConvert_config_CertManagerConfiguration_To_v1alpha1_CertManagerConfiguration(in *config.CertManagerConfiguration, out *CertManagerConfiguration, s conversion.Scope) error {
-	if in.ClientConnection != nil {
-		in, out := &in.ClientConnection, &out.ClientConnection
-		*out = new(ClientConnection)
-		if err := Convert_config_ClientConnection_To_v1alpha1_ClientConnection(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ClientConnection = nil
-	}
-	if in.ControlPlaneClientConnection != nil {
-		in, out := &in.ControlPlaneClientConnection, &out.ControlPlaneClientConnection
-		*out = new(ControlPlaneClientConnection)
-		if err := Convert_config_ControlPlaneClientConnection_To_v1alpha1_ControlPlaneClientConnection(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ControlPlaneClientConnection = nil
-	}
-	if in.DNSClientConnection != nil {
-		in, out := &in.DNSClientConnection, &out.DNSClientConnection
-		*out = new(DNSClientConnection)
-		if err := Convert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.DNSClientConnection = nil
-	}
+	out.ClientConnection = (*ClientConnection)(unsafe.Pointer(in.ClientConnection))
+	out.ControlPlaneClientConnection = (*ControlPlaneClientConnection)(unsafe.Pointer(in.ControlPlaneClientConnection))
+	out.DNSClientConnection = (*DNSClientConnection)(unsafe.Pointer(in.DNSClientConnection))
 	if err := configv1alpha1.Convert_config_LeaderElectionConfiguration_To_v1alpha1_LeaderElectionConfiguration(&in.LeaderElection, &out.LeaderElection, s); err != nil {
 		return err
 	}
@@ -225,9 +177,7 @@ func Convert_config_CertManagerConfiguration_To_v1alpha1_CertManagerConfiguratio
 }
 
 func autoConvert_v1alpha1_ClientConnection_To_config_ClientConnection(in *ClientConnection, out *config.ClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
+	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
 	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
 	return nil
 }
@@ -238,9 +188,7 @@ func Convert_v1alpha1_ClientConnection_To_config_ClientConnection(in *ClientConn
 }
 
 func autoConvert_config_ClientConnection_To_v1alpha1_ClientConnection(in *config.ClientConnection, out *ClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_config_ClientConnectionConfiguration_To_v1alpha1_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
+	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
 	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
 	return nil
 }
@@ -251,9 +199,7 @@ func Convert_config_ClientConnection_To_v1alpha1_ClientConnection(in *config.Cli
 }
 
 func autoConvert_v1alpha1_ControlPlaneClientConnection_To_config_ControlPlaneClientConnection(in *ControlPlaneClientConnection, out *config.ControlPlaneClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
+	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
 	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
 	return nil
 }
@@ -264,9 +210,7 @@ func Convert_v1alpha1_ControlPlaneClientConnection_To_config_ControlPlaneClientC
 }
 
 func autoConvert_config_ControlPlaneClientConnection_To_v1alpha1_ControlPlaneClientConnection(in *config.ControlPlaneClientConnection, out *ControlPlaneClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_config_ClientConnectionConfiguration_To_v1alpha1_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
+	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
 	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
 	return nil
 }
@@ -301,9 +245,7 @@ func Convert_config_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(
 }
 
 func autoConvert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(in *DNSClientConnection, out *config.DNSClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_v1alpha1_ClientConnectionConfiguration_To_config_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
+	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
 	return nil
 }
 
@@ -313,9 +255,7 @@ func Convert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(in *DNSC
 }
 
 func autoConvert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(in *config.DNSClientConnection, out *DNSClientConnection, s conversion.Scope) error {
-	if err := configv1alpha1.Convert_config_ClientConnectionConfiguration_To_v1alpha1_ClientConnectionConfiguration(&in.ClientConnectionConfiguration, &out.ClientConnectionConfiguration, s); err != nil {
-		return err
-	}
+	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
 	return nil
 }
 

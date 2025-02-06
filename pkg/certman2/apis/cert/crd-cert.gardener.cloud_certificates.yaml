@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.5
   name: certificates.cert.gardener.cloud
 spec:
   group: cert.gardener.cloud
@@ -83,6 +83,15 @@ spec:
                 items:
                   type: string
                 type: array
+              duration:
+                description: |-
+                  Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
+                  ACME issuer may choose to ignore the requested duration, just like any other
+                  requested attribute.
+                  If unset, this defaults to 90 days (2160h).
+                  Must be greater than twice of the renewal window
+                  Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
+                type: string
               ensureRenewedAfter:
                 description: EnsureRenewedAfter specifies a time stamp in the past.
                   Renewing is only triggered if certificate notBefore date is before
@@ -93,6 +102,12 @@ spec:
                 description: FollowCNAME if true delegated domain for DNS01 challenge
                   is used if CNAME record for DNS01 challange domain `_acme-challenge.<domain>`
                   is set.
+                type: boolean
+              isCA:
+                description: |-
+                  IsCA value is used to set the `isCA` field on the certificate request.
+                  Note that the issuer may choose to ignore the requested isCA value, just
+                  like any other requested attribute.
                 type: boolean
               issuerRef:
                 description: IssuerRef is the reference of the issuer to use.
@@ -191,7 +206,6 @@ spec:
                       Algorithm is the private key algorithm of the corresponding private key
                       for this certificate.
 
-
                       If provided, allowed values are either `RSA` or `ECDSA`.
                       If `algorithm` is specified and `size` is not provided,
                       deployment specific default values will be used.
@@ -202,7 +216,6 @@ spec:
                   size:
                     description: |-
                       Size is the key bit size of the corresponding private key for this certificate.
-
 
                       If `algorithm` is set to `RSA`, valid values are `2048`, `3072` or `4096`,
                       and will default to a deployment specific value if not specified.
@@ -277,16 +290,8 @@ spec:
                   List of status conditions to indicate the status of certificates.
                   Known condition types are `Ready`.
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource.\n---\nThis struct is intended for
-                    direct use as an array at the field path .status.conditions.  For
-                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
-                    observations of a foo's current state.\n\t    // Known .status.conditions.type
-                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
-                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
-                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                    \   // other fields\n\t}"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -327,12 +332,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: |-
-                        type of condition in CamelCase or in foo.example.com/CamelCase.
-                        ---
-                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                        useful (see .node.status.conditions), the ability to deconflict is important.
-                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
