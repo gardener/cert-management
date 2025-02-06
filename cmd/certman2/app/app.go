@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/add"
-	cmdutils "github.com/gardener/gardener/cmd/utils"
+	cmdutils "github.com/gardener/gardener/cmd/utils/initrun"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/controllerutils/routes"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
