@@ -135,7 +135,7 @@ var _ = Describe("Issuer controller tests", func() {
 			}))
 		})
 
-		It("should not be able to create certificate if no quota is left", func()  {
+		It("should not be able to create certificate if no quota is left", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID, true)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
@@ -147,7 +147,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
 			}).Should(Succeed())
-			
+
 			By("Set the quota to 1")
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Update(ctx, issuer)).To(Succeed())
@@ -182,7 +182,7 @@ var _ = Describe("Issuer controller tests", func() {
 			}))
 		})
 
-		It("should reuse certificate if multiple certificates are created for the same domain", func()  {
+		It("should reuse certificate if multiple certificates are created for the same domain", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID, true)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
@@ -194,7 +194,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
 			}).Should(Succeed())
-			
+
 			By("Set the quota to 1")
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Update(ctx, issuer)).To(Succeed())
@@ -225,11 +225,57 @@ var _ = Describe("Issuer controller tests", func() {
 				return cert1.Status.State
 			}).Should(Equal("Ready"))
 		})
+
+		It("should renew a certificate", func() {
+			By("Create ACME issuer")
+			issuer := getAcmeIssuer(testRunID, true)
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			By("Wait for issuer to become ready")
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Create certificate")
+			cert := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
+			cert.Spec.Renew = ptr.To(false)
+			Expect(testClient.Create(ctx, cert)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert)).To(Succeed())
+			})
+
+			By("Wait for certificate to become ready")
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				return cert.Status.State
+			}).Should(Equal("Ready"))
+
+			By("Trigger renewal")
+			oldExpirationDate := cert.Status.ExpirationDate
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				cert.Spec.Renew = ptr.To(true)
+				g.Expect(testClient.Update(ctx, cert)).To(Succeed())
+			}).Should(Succeed())
+
+			By("Wait for renewal")
+			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				return cert.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":          Equal("Ready"),
+				"ExpirationDate": Not(Equal(oldExpirationDate)),
+			}))
+		})
 	})
 
 	Context("Self-signed issuer", func() {
 		var issuer *v1alpha1.Issuer
-		BeforeEach(func()  {
+		BeforeEach(func() {
 			issuer = &v1alpha1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testRunID,
@@ -318,9 +364,9 @@ func getAcmeIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.
 		},
 		Spec: v1alpha1.IssuerSpec{
 			ACME: &v1alpha1.ACMESpec{
-				Email:            "foo@somewhere-foo-123456.com",
-				Server:           acmeDirectoryAddress,
-				AutoRegistration: true,
+				Email:                      "foo@somewhere-foo-123456.com",
+				Server:                     acmeDirectoryAddress,
+				AutoRegistration:           true,
 				SkipDNSChallengeValidation: ptr.To(skipDnsChallengeValidation),
 			},
 		},
@@ -337,7 +383,7 @@ func getCertificate(certificateNamespace, certificateName, commonName, issuerNam
 			CommonName: ptr.To(commonName),
 			IssuerRef: &v1alpha1.IssuerRef{
 				Namespace: issuerNamespcae,
-				Name: issuerName,
+				Name:      issuerName,
 			},
 		},
 	}
