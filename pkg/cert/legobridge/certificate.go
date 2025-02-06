@@ -546,7 +546,7 @@ func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) ([]byte, []byte, err
 	if pubKeySize == 0 {
 		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
 	}
-	certPrivateKey, certPrivateKeyPEM, err := generateKey(csr.PublicKeyAlgorithm, pubKeySize)
+	certPrivateKey, certPrivateKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize)
 	if err != nil {
 		return nil, nil, err
 	}
