@@ -8,7 +8,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
@@ -69,5 +68,4 @@ func createAddTestFunc[T client.Object](obj T) func() {
 var _ = Describe("Add", func() {
 	Describe("#Predicate-v1", createAddTestFunc(&gatewayapisv1.Gateway{}))
 	Describe("#Predicate-v1beta1", createAddTestFunc(&gatewayapisv1beta1.Gateway{}))
-	Describe("#Predicate-v1alpha2", createAddTestFunc(&gatewayapisv1alpha2.Gateway{}))
 })

@@ -11,7 +11,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
@@ -66,17 +65,6 @@ func extractGatewayNames(route client.Object) sets.Set[client.ObjectKey] {
 			}
 		}
 	case *gatewayapisv1beta1.HTTPRoute:
-		for _, ref := range data.Spec.ParentRefs {
-			if (ref.Group == nil || string(*ref.Group) == gatewayapisv1.GroupName) &&
-				(ref.Kind == nil || string(*ref.Kind) == gatewayKind) {
-				namespace := data.Namespace
-				if ref.Namespace != nil {
-					namespace = string(*ref.Namespace)
-				}
-				gatewayNames.Insert(client.ObjectKey{Namespace: namespace, Name: string(ref.Name)})
-			}
-		}
-	case *gatewayapisv1alpha2.HTTPRoute:
 		for _, ref := range data.Spec.ParentRefs {
 			if (ref.Group == nil || string(*ref.Group) == gatewayapisv1.GroupName) &&
 				(ref.Kind == nil || string(*ref.Kind) == gatewayKind) {

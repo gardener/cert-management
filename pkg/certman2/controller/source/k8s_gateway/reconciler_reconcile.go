@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
@@ -52,8 +51,6 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 		case *gatewayapisv1.Gateway:
 			spec = &data.Spec
 		case *gatewayapisv1beta1.Gateway:
-			spec = &data.Spec
-		case *gatewayapisv1alpha2.Gateway:
 			spec = &data.Spec
 		default:
 			return nil, fmt.Errorf("unexpected istio gateway type: %t", obj)
@@ -125,10 +122,6 @@ func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []s
 				hosts = addHost(hosts, string(h))
 			}
 		case *gatewayapisv1beta1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
-			}
-		case *gatewayapisv1alpha2.HTTPRoute:
 			for _, h := range r.Spec.Hostnames {
 				hosts = addHost(hosts, string(h))
 			}
