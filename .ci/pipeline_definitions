@@ -29,6 +29,10 @@ cert-management:
       component_descriptor:
         ocm_repository: europe-docker.pkg.dev/gardener-project/snapshots
       publish:
+        oci-builder: docker-buildx
+        platforms:
+        - linux/amd64
+        - linux/arm64
         dockerimages:
           cert-management:
             dockerfile: 'Dockerfile'
