@@ -151,6 +151,10 @@ var _ = Describe("Issuer controller tests", func() {
 			By("Set the quota to 1")
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Update(ctx, issuer)).To(Succeed())
+			Eventually(func(g Gomega) int {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status.RequestsPerDayQuota
+			}).Should(Equal(1))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
