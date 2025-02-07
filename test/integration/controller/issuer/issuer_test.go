@@ -72,6 +72,33 @@ var _ = Describe("Issuer controller tests", func() {
 			}).Should(Succeed())
 		})
 
+		It("should create a certificate", func() {
+			By("Create ACME issuer")
+			issuer := getAcmeIssuer(testRunID, true)
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+
+			By("Create certificate")
+			cert := getCertificate(testRunID, "acme-certificate", "example.com", issuer.Namespace, issuer.Name)
+			Expect(testClient.Create(ctx, cert)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert)).To(Succeed())
+			})
+
+			By("Wait for certificate to become ready")
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				return cert.Status.State
+			}).Should(Equal("Ready"))
+		})
+
 		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID, true)
