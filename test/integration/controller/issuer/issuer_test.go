@@ -213,7 +213,7 @@ var _ = Describe("Issuer controller tests", func() {
 			}))
 		})
 
-		FIt("should reuse certificate if multiple certificates are created for the same domain", func() {
+		It("should reuse certificate if multiple certificates are created for the same domain", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID, true)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
