@@ -24,8 +24,8 @@ This document is heavily based on the [Testing Strategy and Developer Guideline]
   * [Debugging Unit Tests](#debugging-unit-tests)
   * [Mocking](#mocking)
   * [The Purpose of Unit Tests](#the-purpose-of-unit-tests)
-  * [What should be covered](#what-should-be-covered)
-  * [What should not be covered](#what-should-not-be-covered)
+  * [What should be covered?](#what-should-be-covered)
+  * [What should not be covered?](#what-should-not-be-covered)
   * [Writing Unit Tests](#writing-unit-tests)
 - [Integration Tests](#integration-tests)
   * [Running Integration Tests](#running-integration-tests)
@@ -33,14 +33,14 @@ This document is heavily based on the [Testing Strategy and Developer Guideline]
     + [VS Code](#vs-code-1)
   * [Debugging Integration Tests](#debugging-integration-tests)
   * [The Purpose of Integration Tests](#the-purpose-of-integration-tests)
-  * [What should be covered?](#what-should-be-covered)
-  * [What should not be covered?](#what-should-not-be-covered)
+  * [What should be covered?](#what-should-be-covered-1)
+  * [What should not be covered?](#what-should-not-be-covered-1)
   * [Writing integration tests](#writing-integration-tests)
 - [Functional Tests](#functional-tests)
   * [Running Functional Tests](#running-functional-tests)
   * [The Purpose of Functional Tests](#the-purpose-of-functional-tests)
-  * [What should be covered?](#what-should-be-covered-1)
-  * [What should not be covered?](#what-should-not-be-covered-1)
+  * [What should be covered?](#what-should-be-covered-2)
+  * [What should not be covered?](#what-should-not-be-covered-2)
   * [Writing integration tests](#writing-integration-tests-1)
 - [Best Practices](#best-practices)
 - [Further Information](#further-information)
@@ -140,7 +140,7 @@ Keep in mind to run `make generate` every time you change an interface that is m
 - Example units: functions, structs, predicates, event handlers.
 - Unit tests should always be independent of one another.
 
-### What should be covered
+### What should be covered?
 - Unit tests have to cover **all important cases of input** and cover **edge cases**.
 - While test coverage can be a good tool while writing tests, it is **not required to cover all lines of code**.
     - e.g., unit tests do not have to cover trivial functions like getter functions that only return a value.
@@ -148,7 +148,7 @@ Keep in mind to run `make generate` every time you change an interface that is m
 - Very often it is not even possible to cover all cases of valid input.
 - Always keep in mind to aim for complete coverage of **functionality, edge cases, and error cases** instead of focusing on line coverage.
 
-### What should not be covered
+### What should not be covered?
 - **Large components**, e.g., entire controller `Reconcile` methods.
 - If a component has multiple steps, think about **splitting it into smaller units**.
     - Then cover the units with the unit tests.
