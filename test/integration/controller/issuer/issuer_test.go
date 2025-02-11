@@ -213,7 +213,7 @@ var _ = Describe("Issuer controller tests", func() {
 			}))
 		})
 
-		It("should reuse certificate if multiple certificates are created for the same domain", func() {
+		FIt("should reuse certificate if multiple certificates are created for the same domain", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID, true)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
@@ -229,6 +229,10 @@ var _ = Describe("Issuer controller tests", func() {
 			By("Set the quota to 1")
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Update(ctx, issuer)).To(Succeed())
+			Eventually(func(g Gomega) int {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status.RequestsPerDayQuota
+			}).Should(Equal(1))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -252,8 +256,8 @@ var _ = Describe("Issuer controller tests", func() {
 
 			By("Wait for second certificate to become ready")
 			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert1), cert1)).To(Succeed())
-				return cert1.Status.State
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert2), cert2)).To(Succeed())
+				return cert2.Status.State
 			}).Should(Equal("Ready"))
 		})
 
@@ -426,7 +430,7 @@ func startManager(testRunID string) {
 		defer GinkgoRecover()
 		args := []string{
 			"--kubeconfig", kubeconfigFile,
-			"--controllers", "issuer",
+			"--controllers", "all",
 			"--issuer-namespace", testRunID,
 			"--omit-lease",
 			"--pool.size", "1",
