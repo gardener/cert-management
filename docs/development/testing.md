@@ -55,7 +55,8 @@ You can refer to that document for more information regarding best practices and
 ## General Information
 
 - [Ginkgo](https://onsi.github.io/ginkgo/) is used as the testing framework paired with [Gomega](https://github.com/onsi/gomega) as the matcher library for all tests.
-- We use [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) for [integration tests](#integration-tests), as well as [pebble](https://github.com/letsencrypt/pebble) as a testing ACME Server.
+- We use [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) for [integration tests](#integration-tests), as well as [Pebble](https://github.com/letsencrypt/pebble) as an ACME test server.
+
 - We conform to the general Gardener testing guidelines. Please read the chapter [Writing Tests (Relevant for All Kinds)](https://gardener.cloud/docs/gardener/testing/#writing-tests-relevant-for-all-kinds) in the Documentation.
 
 ## Unit Tests
