@@ -1,4 +1,5 @@
-# Cert-Management Test Design Document
+# Testing Strategy and Developer Guideline
+
 
 This document contains:
 - Guidelines and best practices for writing tests for the [`cert-management`](https://github.com/gardener/cert-management) controller
