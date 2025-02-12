@@ -174,6 +174,7 @@ var _ = Describe("Issuer controller tests", func() {
 		It("should not be able to create certificate if no quota is left", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID, true)
+			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -182,15 +183,8 @@ var _ = Describe("Issuer controller tests", func() {
 			Eventually(func(g Gomega) {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
+				g.Expect(issuer.Status.RequestsPerDayQuota).To(Equal(1))
 			}).Should(Succeed())
-
-			By("Set the quota to 1")
-			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
-			Expect(testClient.Update(ctx, issuer)).To(Succeed())
-			Eventually(func(g Gomega) int {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.RequestsPerDayQuota
-			}).Should(Equal(1))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -217,7 +211,7 @@ var _ = Describe("Issuer controller tests", func() {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert2), cert2)).To(Succeed())
 				return cert2.Status
 			}).Should(MatchFields(IgnoreExtras, Fields{
-				"State":   Equal("Pending"),
+				"State":   Equal("Error"),
 				"Message": PointTo(ContainSubstring("request quota exhausted.")),
 			}))
 		})
