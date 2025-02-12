@@ -15,12 +15,6 @@ PROJECT                           := github.com/gardener/cert-management
 CERT_IMAGE_REPOSITORY             := $(REGISTRY)/cert-controller-manager
 VERSION                           := $(shell cat VERSION)
 IMAGE_TAG                         := $(VERSION)
-GO_MOCKGEN_VERSION                ?= $(shell go list -m -f "{{.Version}}" github.com/golang/mock)
-
-.PHONY: install-mockgen
-install-mockgen:
-	@echo "Installing github.com/golang/mock/mockgen@$(GO_MOCKGEN_VERSION)"
-	@go install github.com/golang/mock/mockgen@$(GO_MOCKGEN_VERSION)
 
 #########################################
 # Tools                                 #
@@ -86,7 +80,7 @@ test-cov:
 	@bash $(GARDENER_HACK_DIR)/test-cover.sh $(shell go list ./pkg/... | grep -v -E "/pkg/client|/mock") ./cmd/...
 
 .PHONY: generate
-generate: $(VGOPATH) $(CONTROLLER_GEN) install-mockgen
+generate: $(VGOPATH) $(CONTROLLER_GEN) $(MOCKGEN)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) ./hack/generate-code
 	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/...
 	@./hack/copy-crds.sh

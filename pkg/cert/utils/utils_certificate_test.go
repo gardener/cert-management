@@ -20,7 +20,7 @@ import (
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/cert-management/pkg/cert/utils/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("UtilsCertificate", func() {
