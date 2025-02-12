@@ -271,7 +271,7 @@ Generally, the same guidelines as stated in the [Writing Integration Tests](http
 ## Functional Tests
 
 The functional tests are the E2E tests of this component.
-Functional tests **run in a Kind Cluster under "real world" conditions**, e.g., they communicate with the **Staging Service of Let's Encrypt** for the certificate retrieval.
+Functional tests **run in a [KinD](https://kind.sigs.k8s.io/) Cluster under "real world" conditions**, e.g., they communicate with the [**Staging Environment of Let's Encrypt**](https://letsencrypt.org/docs/staging-environment/) for the certificate retrieval.
 
 ### Running Functional Tests
 
