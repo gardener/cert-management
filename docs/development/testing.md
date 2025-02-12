@@ -1,8 +1,8 @@
 # Cert-Management Test Design Document
 
 This document contains:
-- Guidelines and best practices for writing tests for the [Cert Management](https://github.com/gardener/cert-management) repository
-- The types of tests used (Unit Tests, Integration Tests, Functional Tests)
+- Guidelines and best practices for writing tests for the [`cert-management`](https://github.com/gardener/cert-management) controller
+- The types of tests used (Unit Tests, Integration Tests, and Functional Tests)
 - The setup and execution process for each type of test
 - The purpose of each type of test
 
