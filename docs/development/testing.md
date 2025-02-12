@@ -206,7 +206,8 @@ make test-integration
 
 This will automatically set up everything you need for the integration tests.
 
-### Set the KUBEBUILDER_ASSETS environment variable
+### Set the `KUBEBUILDER_ASSETS` environment variable
+
 
 If you want to execute or debug the integration tests **within your IDE instead of the terminal**, you have to set the `KUBEBUILDER_ASSETS` environment variable. 
 
@@ -306,7 +307,7 @@ This will execute the following make targets:
 - Generally, functional tests should cover the "straight-forward-cases".
 - Negative cases should be covered **if they are important to the user**.
 - Functional tests should cover everything that **cannot be covered with integration tests**.
-    - e.g., the revocation of a certificate because that is not supported by pebble.
+    - e.g., the revocation of a certificate because that is not supported by the Pebble ACME server.
 
 ### What should not be covered?
 
