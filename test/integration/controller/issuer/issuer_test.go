@@ -8,6 +8,13 @@ package issuer_test
 
 import (
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/ctxutil"
@@ -16,6 +23,8 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
+
+	// networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -389,6 +398,56 @@ var _ = Describe("Issuer controller tests", func() {
 			}).Should(Succeed())
 		})
 	})
+
+	Context("Certificate Authority issuer", func() {
+		It("should be able to create CA issuer", func() {
+			By("Get Certificate")
+			priv, err := rsa.GenerateKey(rand.Reader, 2048)
+			Expect(err).NotTo(HaveOccurred())
+			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
+			data, err := createPemCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Create Secret")
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "issuer-ca-secret",
+					Namespace: testRunID,
+				},
+				Data: data,
+				Type: corev1.SecretTypeTLS,
+			}
+			Expect(testClient.Create(ctx, secret)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, secret)).To(Succeed())
+			})
+
+			By("Create CA Issuer")
+			issuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "issuer-ca",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					CA: &v1alpha1.CASpec{
+						PrivateKeySecretRef: &corev1.SecretReference{
+							Name:      secret.Name,
+							Namespace: secret.Namespace,
+						},
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			Eventually(func(g Gomega) {
+				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+		})
+	})
 })
 
 func getAcmeIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.Issuer {
@@ -424,13 +483,36 @@ func getCertificate(certificateNamespace, certificateName, commonName, issuerNam
 	}
 }
 
+func createPemCertificate(privKey crypto.PrivateKey, pubKey crypto.PublicKey, header string, privKeyBytes []byte) (map[string][]byte, error) {
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1234),
+		Subject:               pkix.Name{CommonName: "example.com"},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour * 24 * 365),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, pubKey, privKey)
+	if err != nil {
+		return nil, err
+	}
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: header, Bytes: privKeyBytes})
+	return map[string][]byte{
+		corev1.TLSCertKey:       certPEM,
+		corev1.TLSPrivateKeyKey: keyPEM,
+	}, nil
+}
+
 func startManager(testRunID string) {
 	newContext()
 	go func() {
 		defer GinkgoRecover()
 		args := []string{
 			"--kubeconfig", kubeconfigFile,
-			"--controllers", "all",
+			"--controllers", "issuer",
 			"--issuer-namespace", testRunID,
 			"--omit-lease",
 			"--pool.size", "1",
