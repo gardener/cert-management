@@ -283,7 +283,7 @@ make test-e2e-local
 
 This will execute the following make targets:
 - **kind-up**
-    - Create the KIND cluster needed for the functional tests.
+    - Create the KinD cluster needed for the functional tests.
 - **certman-up**
     - Set-Up the Cert-Manager.
 - **test-functional-local**
