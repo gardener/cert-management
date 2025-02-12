@@ -8,7 +8,7 @@ This document contains:
 - The purpose of each type of test
 
 **Tests are a strict requirement.**
-Furthermore, please follow the `Boy Scouts Rule`:
+Furthermore, please follow the `Boy Scout Rule`:
 If you touch code for which either no tests exist or coverage is insufficient, then it is expected that **you will add relevant tests**.
 
 This document is heavily based on the [Testing Strategy and Developer Guideline](https://gardener.cloud/docs/gardener/testing/) document of the Gardener repository.
@@ -57,7 +57,7 @@ You can refer to that document for more information regarding best practices and
 - [Ginkgo](https://onsi.github.io/ginkgo/) is used as the testing framework paired with [Gomega](https://github.com/onsi/gomega) as the matcher library for all tests.
 - We use [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) for [integration tests](#integration-tests), as well as [Pebble](https://github.com/letsencrypt/pebble) as an ACME test server.
 
-- We conform to the general Gardener testing guidelines. Please read the chapter [Writing Tests (Relevant for All Kinds)](https://gardener.cloud/docs/gardener/testing/#writing-tests-relevant-for-all-kinds) in the Documentation.
+- We conform to the general Gardener testing guidelines. Please read the chapter [Writing Tests (Relevant for All Kinds)](https://gardener.cloud/docs/gardener/testing/#writing-tests-relevant-for-all-kinds) in the documentation.
 
 ## Unit Tests
 
@@ -73,7 +73,7 @@ make test
 make test-cov
 ```
 
-This will create the machine-readable `./test.coverprofile` as well as a human-readable `test.coverage.html` file, which can be opened with a browser.
+This will create a machine-readable `./test.coverprofile` and a human-readable `test.coverage.html` file, which can be opened with a browser.
 
 ### Show Coverage in IDE
 
@@ -110,7 +110,9 @@ You can add the following entries to your `settings.json` file:
 
 This will automatically run all unit tests on save and display bars on the left side of the editor to visualize the covered lines of code.
 
-[//]: <> (TODO: Add GoLand Documentation here)
+#### GoLand
+
+GoLand includes built-in support for running code with coverage analysis. For more details, refer to the official [GoLand Code Coverage documentation](https://www.jetbrains.com/help/go/code-coverage.html).
 
 ### Debugging Unit Tests
 
@@ -118,7 +120,7 @@ You can debug the unit tests with similar methods displayed in the [Debugging Un
 
 ### Mocking
 
-You can use [gomock](https://github.com/golang/mock) for easy mocking of interfaces.
+You can use [GoMock](https://github.com/uber-go/mock) for easy mocking of interfaces.
 The convention is to create a `mock` directory inside the package where the mocked interface is needed.
 
 For example, the mock of an interface used in `project-root/pkg/cert/utils/utils_certificate.go` is now located inside the `project-root/pkg/cert/utils/mock/mocks.go` file.
@@ -161,10 +163,11 @@ Keep in mind to run `make generate` every time you change an interface that is m
 ### What should be covered?
 
 - Unit tests have to cover **all important cases of input** and cover **edge cases**.
-- While test coverage can be a good tool while writing tests, it is **not required to cover all lines of code**.
+- Unit tests should **also cover "unhappy" paths**, for example by using invalid/problematic input.
+- While test coverage can be a good tool when writing tests, it is **not required to cover all lines of code**.
     - e.g., unit tests do not have to cover trivial functions like getter functions that only return a value.
 - Furthermore, full line coverage does not necessarily mean that you have covered all cases of valid input.
-- Very often it is not even possible to cover all cases of valid input.
+- Often it is not possible to cover all cases of valid input.
 - Always keep in mind to aim for complete coverage of **functionality, edge cases, and error cases** instead of focusing on line coverage.
 
 ### What should not be covered?
@@ -186,7 +189,7 @@ For more information regarding best practices while writing unit tests, have a l
 ## Integration Tests
 
 - We use [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) for the integration tests.
-- `envtest` provides you with a local control plane, ETCD, etc.
+- `envtest` provides you with a local, minimal control plane by running an instance of etcd and the Kubernetes API server.
     - Keep in mind that `envtest` does **not provide full cluster functionality**.
     - e.g., there is no garbage collector.
 - We use [pebble](https://github.com/letsencrypt/pebble) to test the functionality of the ACME issuer.
@@ -234,7 +237,10 @@ With the example from above, the `settings.json` would look like this:
 }
 ```
 
-[//]: <> (TODO: Add GoLand Documentation here)
+
+#### GoLand
+
+Please have a look at the [GoLand documentation for Run/debug configurations](https://www.jetbrains.com/help/go/run-debug-configuration.html).
 
 ### Debugging Integration Tests
 
@@ -264,10 +270,8 @@ Generally, the same guidelines as stated in the [Writing Integration Tests](http
 
 ## Functional Tests
 
-Instead of E2E tests, we use functional tests.
-Similar to E2E tests, functional tests **run in a Kind Cluster under "real world" conditions**, e.g., they do communicate with the **Staging Service of Let's Encrypt**.
-As opposed to E2E tests, functional tests test **single features and not the End-To-End usage**.
-In the Cert-Management project, functional tests replace the classical E2E tests.
+The functional tests are the E2E tests of this component.
+Functional tests **run in a Kind Cluster under "real world" conditions**, e.g., they communicate with the **Staging Service of Let's Encrypt** for the certificate retrieval.
 
 ### Running Functional Tests
 
@@ -307,8 +311,7 @@ This will execute the following make targets:
 ### What should not be covered?
 
 - **Small units**.
-- **Details of the system**:
-    - e.g., the user also wouldn’t expect that there is a kube-apiserver deployment in the seed; they rather expect that they can talk to it no matter how it is deployed.
+- **Details of the system**.
 
 ### Writing integration tests
 
