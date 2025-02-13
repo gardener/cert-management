@@ -26,6 +26,7 @@ You can refer to that document for more information regarding best practices and
   * [Running Unit Tests with Coverage](#running-unit-tests-with-coverage)
   * [Show Coverage in IDE](#show-coverage-in-ide)
     + [VS Code](#vs-code)
+    + [GoLand](#goland)
   * [Debugging Unit Tests](#debugging-unit-tests)
   * [Mocking](#mocking)
   * [The Purpose of Unit Tests](#the-purpose-of-unit-tests)
@@ -34,8 +35,9 @@ You can refer to that document for more information regarding best practices and
   * [Writing Unit Tests](#writing-unit-tests)
 - [Integration Tests](#integration-tests)
   * [Running Integration Tests](#running-integration-tests)
-  * [Set the KUBEBUILDER_ASSETS environment variable](#set-the-kubebuilder_assets-environment-variable)
+  * [Set the `KUBEBUILDER_ASSETS` environment variable](#set-the-kubebuilder_assets-environment-variable)
     + [VS Code](#vs-code-1)
+    + [GoLand](#goland-1)
   * [Debugging Integration Tests](#debugging-integration-tests)
   * [The Purpose of Integration Tests](#the-purpose-of-integration-tests)
   * [What should be covered?](#what-should-be-covered-1)
@@ -56,7 +58,6 @@ You can refer to that document for more information regarding best practices and
 
 - [Ginkgo](https://onsi.github.io/ginkgo/) is used as the testing framework paired with [Gomega](https://github.com/onsi/gomega) as the matcher library for all tests.
 - We use [envtest](https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest) for [integration tests](#integration-tests), as well as [Pebble](https://github.com/letsencrypt/pebble) as an ACME test server.
-
 - We conform to the general Gardener testing guidelines. Please read the chapter [Writing Tests (Relevant for All Kinds)](https://gardener.cloud/docs/gardener/testing/#writing-tests-relevant-for-all-kinds) in the documentation.
 
 ## Unit Tests
@@ -238,7 +239,6 @@ With the example from above, the `settings.json` would look like this:
 }
 ```
 
-
 #### GoLand
 
 Please have a look at the [GoLand documentation for Run/debug configurations](https://www.jetbrains.com/help/go/run-debug-configuration.html).
@@ -276,7 +276,7 @@ Functional tests **run in a [KinD](https://kind.sigs.k8s.io/) Cluster under "rea
 
 ### Running Functional Tests
 
-For the functional tests, use the test-e2e-local Make target by executing the following command:
+For the functional tests, use the `test-e2e-local` Make target by executing the following command:
 
 ```shell
 make test-e2e-local
