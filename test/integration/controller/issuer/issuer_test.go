@@ -219,6 +219,7 @@ var _ = Describe("Issuer controller tests", func() {
 		It("should reuse certificate if multiple certificates are created for the same domain", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID, true)
+			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -227,15 +228,8 @@ var _ = Describe("Issuer controller tests", func() {
 			Eventually(func(g Gomega) {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
+				g.Expect(issuer.Status.RequestsPerDayQuota).To(Equal(1))
 			}).Should(Succeed())
-
-			By("Set the quota to 1")
-			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
-			Expect(testClient.Update(ctx, issuer)).To(Succeed())
-			Eventually(func(g Gomega) int {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.RequestsPerDayQuota
-			}).Should(Equal(1))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
