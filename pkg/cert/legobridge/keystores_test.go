@@ -29,9 +29,12 @@ var _ = Describe("Pending", func() {
 		It("should remove the keystore data from the secret", func() {
 			secret := &corev1.Secret{
 				Data: map[string][]byte{
-					"Field1":                   []byte("Field1"),
-					"Field2":                   []byte("Field2"),
-					legobridge.PKCS12SecretKey: []byte(legobridge.PKCS12SecretKey),
+					"Field1":                       []byte("Field1"),
+					"Field2":                       []byte("Field2"),
+					legobridge.PKCS12SecretKey:     []byte(legobridge.PKCS12SecretKey),
+					legobridge.PKCS12TruststoreKey: []byte(legobridge.PKCS12TruststoreKey),
+					legobridge.JKSSecretKey:		[]byte(legobridge.JKSSecretKey),
+					legobridge.JKSTruststoreKey:	[]byte(legobridge.JKSTruststoreKey),
 				},
 			}
 			legobridge.RemoveKeystoresFromSecret(secret)
