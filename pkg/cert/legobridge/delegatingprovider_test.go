@@ -33,7 +33,7 @@ var _ = Describe("Delegating Provider", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should succeed after a few retries if updateError occures", func() {
+		It("should succeed after a few retries if updateError occurs", func() {
 			var i int
 			err := retryOnUpdateError(func() error {
 				i++
@@ -45,7 +45,7 @@ var _ = Describe("Delegating Provider", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should fail if some other error occures and return the error", func() {
+		It("should fail if some other error occurs and return the error", func() {
 			var i int
 			err := retryOnUpdateError(func() error {
 				i++
