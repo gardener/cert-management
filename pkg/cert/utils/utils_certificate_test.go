@@ -15,9 +15,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/cert-management/pkg/cert/utils/mock"
+	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("UtilsCertificate", func() {
@@ -31,6 +34,74 @@ var _ = Describe("UtilsCertificate", func() {
 		exampleCn = "example.com"
 		exampleSan = []string{"www.example.com", "example.org"}
 		exampleIPs = []net.IP{net.ParseIP("192.168.1.1"), net.ParseIP("10.0.0.1")}
+	})
+
+	Describe("CertificateObject", func() {
+		var (
+			mockCtrl   *gomock.Controller
+			mockObject *mock.MockObject
+		)
+
+		BeforeEach(func() {
+			mockCtrl = gomock.NewController(GinkgoT())
+			mockObject = mock.NewMockObject(mockCtrl)
+		})
+
+		AfterEach(func() {
+			mockCtrl.Finish()
+		})
+
+		Describe("Certificate", func() {
+			It("should return a CertificateObject if input Object is a CertificateObject", func() {
+				mockObject.EXPECT().IsA(gomock.Any()).Return(true)
+				certObj := utils.Certificate(mockObject)
+				Expect(certObj).ToNot(BeNil())
+				Expect(certObj.Object).To(Equal(mockObject))
+			})
+
+			It("should return nil if input Object is not a CertificateObject", func() {
+				mockObject.EXPECT().IsA(gomock.Any()).Return(false)
+				certObj := utils.Certificate(mockObject)
+				Expect(certObj).To(BeNil())
+			})
+		})
+
+		Context("SafeFirstDNSName", func() {
+			DescribeTable("No error cases",
+				func(cert *api.Certificate, expected string) {
+					mockObject.EXPECT().Data().Return(cert).AnyTimes()
+					certificateObject := utils.CertificateObject{Object: mockObject}
+					Expect(certificateObject.SafeFirstDNSName()).To(Equal(expected))
+				},
+				Entry("should return the CommonName if it is defined",
+					&api.Certificate{Spec: api.CertificateSpec{CommonName: ptr.To("someCommonName")}},
+					"someCommonName",
+				),
+				Entry("should return the first DNSName of DNS Names if DNS names are defined",
+					&api.Certificate{Spec: api.CertificateSpec{DNSNames: []string{"someDnsName", "anotherDnsName"}}},
+					"someDnsName",
+				),
+				Entry("should return the CommonName if it is defined in the status",
+					&api.Certificate{Status: api.CertificateStatus{CommonName: ptr.To("someCommonName")}},
+					"someCommonName",
+				),
+				Entry("should return the first DNSName of DNS Names if DNS names are defined in the status",
+					&api.Certificate{Status: api.CertificateStatus{DNSNames: []string{"someDnsName", "anotherDnsName"}}},
+					"someDnsName",
+				),
+				Entry("should return empty string for empty certificate object",
+					&api.Certificate{},
+					"",
+				),
+			)
+		})
+
+		It("should panic if the Object has no data", func() {
+			certificateObject := utils.CertificateObject{}
+			Expect(func() {
+				certificateObject.SafeFirstDNSName()
+			}).To(Panic())
+		})
 	})
 
 	Describe("ExtractCommonNameAnDNSNames", func() {

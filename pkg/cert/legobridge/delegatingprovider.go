@@ -107,7 +107,7 @@ func retryOnUpdateError(fn func() error) error {
 			return false, err
 		}
 	})
-	if err == wait.ErrWaitTimeout {
+	if wait.Interrupted(err) {
 		err = lastUpdateErr
 	}
 	return err
