@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
@@ -127,8 +126,6 @@ var _ = BeforeSuite(func() {
 
 	testClient, err = client.New(restConfig, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
-
-	SetDefaultEventuallyTimeout(120 * time.Second)
 })
 
 func createKubeconfigFile(cfg *rest.Config) string {
