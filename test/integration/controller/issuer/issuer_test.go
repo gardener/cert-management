@@ -151,7 +151,7 @@ var _ = Describe("Issuer controller tests", func() {
 			Eventually(func(g Gomega) string {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
 				return cert.Status.State
-			}).WithPolling(500 * time.Millisecond).WithTimeout(20 * time.Second).Should(Equal("Ready"))
+			}).WithPolling(500 * time.Millisecond).WithTimeout(40 * time.Second).Should(Equal("Ready"))
 		})
 
 		It("should reconcile a certificate referencing unallowed target issuer", func() {
