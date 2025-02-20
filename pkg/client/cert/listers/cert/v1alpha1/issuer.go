@@ -7,10 +7,10 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // IssuerLister helps list Issuers.
@@ -18,7 +18,7 @@ import (
 type IssuerLister interface {
 	// List lists all Issuers in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.Issuer, err error)
+	List(selector labels.Selector) (ret []*certv1alpha1.Issuer, err error)
 	// Issuers returns an object that can list and get Issuers.
 	Issuers(namespace string) IssuerNamespaceLister
 	IssuerListerExpansion
@@ -26,17 +26,17 @@ type IssuerLister interface {
 
 // issuerLister implements the IssuerLister interface.
 type issuerLister struct {
-	listers.ResourceIndexer[*v1alpha1.Issuer]
+	listers.ResourceIndexer[*certv1alpha1.Issuer]
 }
 
 // NewIssuerLister returns a new IssuerLister.
 func NewIssuerLister(indexer cache.Indexer) IssuerLister {
-	return &issuerLister{listers.New[*v1alpha1.Issuer](indexer, v1alpha1.Resource("issuer"))}
+	return &issuerLister{listers.New[*certv1alpha1.Issuer](indexer, certv1alpha1.Resource("issuer"))}
 }
 
 // Issuers returns an object that can list and get Issuers.
 func (s *issuerLister) Issuers(namespace string) IssuerNamespaceLister {
-	return issuerNamespaceLister{listers.NewNamespaced[*v1alpha1.Issuer](s.ResourceIndexer, namespace)}
+	return issuerNamespaceLister{listers.NewNamespaced[*certv1alpha1.Issuer](s.ResourceIndexer, namespace)}
 }
 
 // IssuerNamespaceLister helps list and get Issuers.
@@ -44,15 +44,15 @@ func (s *issuerLister) Issuers(namespace string) IssuerNamespaceLister {
 type IssuerNamespaceLister interface {
 	// List lists all Issuers in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.Issuer, err error)
+	List(selector labels.Selector) (ret []*certv1alpha1.Issuer, err error)
 	// Get retrieves the Issuer from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.Issuer, error)
+	Get(name string) (*certv1alpha1.Issuer, error)
 	IssuerNamespaceListerExpansion
 }
 
 // issuerNamespaceLister implements the IssuerNamespaceLister
 // interface.
 type issuerNamespaceLister struct {
-	listers.ResourceIndexer[*v1alpha1.Issuer]
+	listers.ResourceIndexer[*certv1alpha1.Issuer]
 }

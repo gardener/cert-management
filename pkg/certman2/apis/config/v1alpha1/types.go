@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package v1alpha1
 
 import (
@@ -40,7 +44,7 @@ type CertManagerConfiguration struct {
 	// Controllers defines the configuration of the controllers.
 	Controllers ControllerConfiguration `json:"controllers"`
 	// Class is the "cert.gardener.cloud/class" the cert-controller-manager is responsible for.
-	// Empty class is equivalent to default class "gardencert".
+	// If not set, the default class "gardencert" is used.
 	Class string `json:"class"`
 }
 
@@ -112,5 +116,5 @@ const (
 	// DefaultLockObjectNamespace is the default lock namespace for leader election.
 	DefaultLockObjectNamespace = "kube-system"
 	// DefaultLockObjectName is the default lock name for leader election.
-	DefaultLockObjectName = "gardener-cert-manager-leader-election"
+	DefaultLockObjectName = "gardener-cert-controller-manager-leader-election"
 )

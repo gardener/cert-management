@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package v1alpha1_test
 
 import (
@@ -117,7 +121,7 @@ var _ = Describe("Defaults", func() {
 				Expect(obj.LeaderElection.RetryPeriod).To(Equal(metav1.Duration{Duration: 2 * time.Second}))
 				Expect(obj.LeaderElection.ResourceLock).To(Equal("leases"))
 				Expect(obj.LeaderElection.ResourceNamespace).To(Equal("kube-system"))
-				Expect(obj.LeaderElection.ResourceName).To(Equal("gardener-cert-manager-leader-election"))
+				Expect(obj.LeaderElection.ResourceName).To(Equal("gardener-cert-controller-manager-leader-election"))
 			})
 
 			It("should not overwrite custom settings", func() {

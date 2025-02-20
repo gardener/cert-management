@@ -7,13 +7,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	apiscertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	versioned "github.com/gardener/cert-management/pkg/client/cert/clientset/versioned"
 	internalinterfaces "github.com/gardener/cert-management/pkg/client/cert/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/gardener/cert-management/pkg/client/cert/listers/cert/v1alpha1"
+	certv1alpha1 "github.com/gardener/cert-management/pkg/client/cert/listers/cert/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -24,7 +24,7 @@ import (
 // Certificates.
 type CertificateInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.CertificateLister
+	Lister() certv1alpha1.CertificateLister
 }
 
 type certificateInformer struct {
@@ -59,7 +59,7 @@ func NewFilteredCertificateInformer(client versioned.Interface, namespace string
 				return client.CertV1alpha1().Certificates(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&certv1alpha1.Certificate{},
+		&apiscertv1alpha1.Certificate{},
 		resyncPeriod,
 		indexers,
 	)
@@ -70,9 +70,9 @@ func (f *certificateInformer) defaultInformer(client versioned.Interface, resync
 }
 
 func (f *certificateInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&certv1alpha1.Certificate{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscertv1alpha1.Certificate{}, f.defaultInformer)
 }
 
-func (f *certificateInformer) Lister() v1alpha1.CertificateLister {
-	return v1alpha1.NewCertificateLister(f.Informer().GetIndexer())
+func (f *certificateInformer) Lister() certv1alpha1.CertificateLister {
+	return certv1alpha1.NewCertificateLister(f.Informer().GetIndexer())
 }

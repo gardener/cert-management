@@ -7,9 +7,9 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
-	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	scheme "github.com/gardener/cert-management/pkg/client/cert/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -25,33 +25,34 @@ type CertificateRevocationsGetter interface {
 
 // CertificateRevocationInterface has methods to work with CertificateRevocation resources.
 type CertificateRevocationInterface interface {
-	Create(ctx context.Context, certificateRevocation *v1alpha1.CertificateRevocation, opts v1.CreateOptions) (*v1alpha1.CertificateRevocation, error)
-	Update(ctx context.Context, certificateRevocation *v1alpha1.CertificateRevocation, opts v1.UpdateOptions) (*v1alpha1.CertificateRevocation, error)
+	Create(ctx context.Context, certificateRevocation *certv1alpha1.CertificateRevocation, opts v1.CreateOptions) (*certv1alpha1.CertificateRevocation, error)
+	Update(ctx context.Context, certificateRevocation *certv1alpha1.CertificateRevocation, opts v1.UpdateOptions) (*certv1alpha1.CertificateRevocation, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, certificateRevocation *v1alpha1.CertificateRevocation, opts v1.UpdateOptions) (*v1alpha1.CertificateRevocation, error)
+	UpdateStatus(ctx context.Context, certificateRevocation *certv1alpha1.CertificateRevocation, opts v1.UpdateOptions) (*certv1alpha1.CertificateRevocation, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.CertificateRevocation, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.CertificateRevocationList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*certv1alpha1.CertificateRevocation, error)
+	List(ctx context.Context, opts v1.ListOptions) (*certv1alpha1.CertificateRevocationList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.CertificateRevocation, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *certv1alpha1.CertificateRevocation, err error)
 	CertificateRevocationExpansion
 }
 
 // certificateRevocations implements CertificateRevocationInterface
 type certificateRevocations struct {
-	*gentype.ClientWithList[*v1alpha1.CertificateRevocation, *v1alpha1.CertificateRevocationList]
+	*gentype.ClientWithList[*certv1alpha1.CertificateRevocation, *certv1alpha1.CertificateRevocationList]
 }
 
 // newCertificateRevocations returns a CertificateRevocations
 func newCertificateRevocations(c *CertV1alpha1Client, namespace string) *certificateRevocations {
 	return &certificateRevocations{
-		gentype.NewClientWithList[*v1alpha1.CertificateRevocation, *v1alpha1.CertificateRevocationList](
+		gentype.NewClientWithList[*certv1alpha1.CertificateRevocation, *certv1alpha1.CertificateRevocationList](
 			"certificaterevocations",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.CertificateRevocation { return &v1alpha1.CertificateRevocation{} },
-			func() *v1alpha1.CertificateRevocationList { return &v1alpha1.CertificateRevocationList{} }),
+			func() *certv1alpha1.CertificateRevocation { return &certv1alpha1.CertificateRevocation{} },
+			func() *certv1alpha1.CertificateRevocationList { return &certv1alpha1.CertificateRevocationList{} },
+		),
 	}
 }

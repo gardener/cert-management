@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // +k8s:deepcopy-gen=package
 // +k8s:conversion-gen=github.com/gardener/cert-management/pkg/certman2/apis/config
 // +k8s:openapi-gen=true

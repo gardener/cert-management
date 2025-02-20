@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package config
 
 import (
@@ -22,7 +26,8 @@ type CertManagerConfiguration struct {
 	// for the cluster used to manage DNS resources for DNS challenges.
 	// If not set, the secondary cluster is used.
 	DNSClientConnection *DNSClientConnection
-	LeaderElection      componentbaseconfig.LeaderElectionConfiguration
+	// LeaderElection defines the configuration of leader election client.
+	LeaderElection componentbaseconfig.LeaderElectionConfiguration
 	// LogLevel is the level/severity for the logs. Must be one of [info,debug,error].
 	LogLevel string
 	// LogFormat is the output format for the logs. Must be one of [text,json].

@@ -17,15 +17,15 @@ type FakeCertV1alpha1 struct {
 }
 
 func (c *FakeCertV1alpha1) Certificates(namespace string) v1alpha1.CertificateInterface {
-	return &FakeCertificates{c, namespace}
+	return newFakeCertificates(c, namespace)
 }
 
 func (c *FakeCertV1alpha1) CertificateRevocations(namespace string) v1alpha1.CertificateRevocationInterface {
-	return &FakeCertificateRevocations{c, namespace}
+	return newFakeCertificateRevocations(c, namespace)
 }
 
 func (c *FakeCertV1alpha1) Issuers(namespace string) v1alpha1.IssuerInterface {
-	return &FakeIssuers{c, namespace}
+	return newFakeIssuers(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate
