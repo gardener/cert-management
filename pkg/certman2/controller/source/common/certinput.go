@@ -83,8 +83,8 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 	algorithm := annotations[AnnotPrivateKeyAlgorithm]
 	keySize := 0
 	if keySizeStr, ok := annotations[AnnotPrivateKeySize]; ok {
-		if value, err := strconv.Atoi(keySizeStr); err == nil {
-			keySize = value
+		if value, err := strconv.ParseInt(keySizeStr, 10, 32); err == nil {
+			keySize = int(value)
 		}
 	}
 
