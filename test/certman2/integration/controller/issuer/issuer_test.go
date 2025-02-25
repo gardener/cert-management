@@ -23,9 +23,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	componentbaseconfig "k8s.io/component-base/config"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	controllerconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -81,6 +83,9 @@ var _ = Describe("Issuer controller tests", func() {
 					},
 				},
 			},
+			Controller: controllerconfig.Controller{
+				SkipNameValidation: ptr.To(true),
+			},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -88,7 +93,7 @@ var _ = Describe("Issuer controller tests", func() {
 			LeaderElection: componentbaseconfig.LeaderElectionConfiguration{
 				LeaderElect: false,
 			},
-			Class:    testRunID,
+			Class:    "class-" + testRunID,
 			LogLevel: "debug",
 			Controllers: config.ControllerConfiguration{
 				Issuer: config.IssuerControllerConfig{
@@ -123,6 +128,9 @@ var _ = Describe("Issuer controller tests", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "acme-issuer",
 					Namespace: testRunID,
+					Annotations: map[string]string{
+						"cert.gardener.cloud/class": "class-" + testRunID,
+					},
 				},
 				Spec: v1alpha1.IssuerSpec{
 					ACME: &v1alpha1.ACMESpec{
@@ -133,6 +141,7 @@ var _ = Describe("Issuer controller tests", func() {
 				},
 			}
 			Expect(testClient.Create(ctx, acmeIssuer)).To(Succeed())
+
 			By("Wait for issuer")
 			var secretName string
 			Eventually(func(g Gomega) {
@@ -156,12 +165,16 @@ var _ = Describe("Issuer controller tests", func() {
 			Expect(testClient.Delete(ctx, secret)).To(Succeed())
 		})
 	})
+
 	Context("ACME Issuer", func() {
 		It("Changing secret should reconcile issuer and update secretHash of issuer status", func() {
 			acmeIssuer := &v1alpha1.Issuer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "acme-issuer",
 					Namespace: testRunID,
+					Annotations: map[string]string{
+						"cert.gardener.cloud/class": "class-" + testRunID,
+					},
 				},
 				Spec: v1alpha1.IssuerSpec{
 					ACME: &v1alpha1.ACMESpec{
