@@ -12,3 +12,8 @@ const (
 	// CAType is the type name for CA.
 	CAType = "ca"
 )
+
+const (
+	// AnnotationClass is the annotation to set the cert class.
+	AnnotationClass = "cert.gardener.cloud/class"
+)

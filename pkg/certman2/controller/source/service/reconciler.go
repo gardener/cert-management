@@ -1,20 +1,25 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package service
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 // Reconciler is a reconciler for provided Certificate resources.
 type Reconciler struct {
-	source.ReconcilerBase
+	common.ReconcilerBase
 }
 
 // Complete implements the option completer.

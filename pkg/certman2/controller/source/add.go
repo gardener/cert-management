@@ -4,17 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package add
+package source
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/cert-management/pkg/certman2/apis/config"
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/gardener/cert-management/pkg/certman2/apis/config"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/gateways_crd_watchdog"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/ingress"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/istio_gateway"
@@ -36,7 +36,7 @@ func AddToManager(mgr manager.Manager, cfg *config.CertManagerConfiguration, pre
 	}
 
 	if err := (&service.Reconciler{
-		ReconcilerBase: source.ReconcilerBase{
+		ReconcilerBase: common.ReconcilerBase{
 			Class: cfg.Class,
 		},
 	}).AddToManager(mgr); err != nil {
@@ -44,7 +44,7 @@ func AddToManager(mgr manager.Manager, cfg *config.CertManagerConfiguration, pre
 	}
 
 	if err := (&ingress.Reconciler{
-		ReconcilerBase: source.ReconcilerBase{
+		ReconcilerBase: common.ReconcilerBase{
 			Class: cfg.Class,
 		},
 	}).AddToManager(mgr); err != nil {
@@ -57,7 +57,7 @@ func AddToManager(mgr manager.Manager, cfg *config.CertManagerConfiguration, pre
 		mgr.GetLogger().Info("source istio-gateway controller disabled")
 	} else {
 		if err := (&istio_gateway.Reconciler{
-			ReconcilerBase: source.ReconcilerBase{
+			ReconcilerBase: common.ReconcilerBase{
 				Class: cfg.Class,
 			},
 			ActiveVersion: version,
@@ -72,7 +72,7 @@ func AddToManager(mgr manager.Manager, cfg *config.CertManagerConfiguration, pre
 		mgr.GetLogger().Info("source k8s-gateway controller disabled")
 	} else {
 		if err := (&k8s_gateway.Reconciler{
-			ReconcilerBase: source.ReconcilerBase{
+			ReconcilerBase: common.ReconcilerBase{
 				Class: cfg.Class,
 			},
 			ActiveVersion: version,

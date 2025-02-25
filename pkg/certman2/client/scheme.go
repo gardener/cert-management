@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package client
 
 import (
-	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	dnsmanv1alpha1 "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
@@ -15,6 +18,8 @@ import (
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 )
 
 var (

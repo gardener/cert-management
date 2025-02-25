@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source/add"
 	cmdutils "github.com/gardener/gardener/cmd/utils/initrun"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/controllerutils/routes"
@@ -42,6 +41,7 @@ import (
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
 	"github.com/gardener/cert-management/pkg/certman2/controller/certificate"
 	issuercontrolplane "github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 )
 
 // Name is the name of the Cert Controller-Manager.
@@ -243,7 +243,7 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 	if err != nil {
 		return fmt.Errorf("creating prestart client failed: %w", err)
 	}
-	if err := add.AddToManager(mgr, cfg, tmpClient); err != nil {
+	if err := source.AddToManager(mgr, cfg, tmpClient); err != nil {
 		return fmt.Errorf("could not add source controllers to manager: %w", err)
 	}
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package service_test
 
 import (
@@ -8,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 	. "github.com/gardener/cert-management/pkg/certman2/controller/source/service"
 )
 
@@ -23,7 +27,7 @@ var _ = Describe("Add", func() {
 		)
 
 		BeforeEach(func() {
-			servicePredicate = Predicate(source.DefaultClass)
+			servicePredicate = Predicate(common.DefaultClass)
 
 			svc = &corev1.Service{}
 			svcNew = &corev1.Service{}
@@ -51,9 +55,9 @@ var _ = Describe("Add", func() {
 
 		It("should handle services of type LoadBalancer and secret name annotation as expected", func() {
 			svc.Spec.Type = corev1.ServiceTypeLoadBalancer
-			svc.Annotations = map[string]string{source.AnnotSecretname: "foo"}
+			svc.Annotations = map[string]string{common.AnnotSecretname: "foo"}
 			svcNew.Spec.Type = corev1.ServiceTypeLoadBalancer
-			svcNew.Annotations = map[string]string{source.AnnotSecretname: "foo"}
+			svcNew.Annotations = map[string]string{common.AnnotSecretname: "foo"}
 			test(svc, svcNew, BeTrue(), BeTrue())
 		})
 
@@ -65,19 +69,19 @@ var _ = Describe("Add", func() {
 
 		It("should handle services of irrelevant type as expected", func() {
 			svc.Spec.Type = corev1.ServiceTypeClusterIP
-			svc.Annotations = map[string]string{source.AnnotSecretname: "foo"}
+			svc.Annotations = map[string]string{common.AnnotSecretname: "foo"}
 			svcNew.Spec.Type = corev1.ServiceTypeClusterIP
-			svcNew.Annotations = map[string]string{source.AnnotSecretname: "foo"}
+			svcNew.Annotations = map[string]string{common.AnnotSecretname: "foo"}
 			test(svc, svcNew, BeFalse(), BeFalse())
 		})
 
 		It("should handle services of wrong class as expected", func() {
 			svc.Spec.Type = corev1.ServiceTypeLoadBalancer
-			svc.Annotations = map[string]string{source.AnnotSecretname: "foo"}
-			svc.Annotations[source.AnnotClass] = "bar"
+			svc.Annotations = map[string]string{common.AnnotSecretname: "foo"}
+			svc.Annotations[common.AnnotClass] = "bar"
 			svcNew.Spec.Type = corev1.ServiceTypeLoadBalancer
-			svcNew.Annotations = map[string]string{source.AnnotSecretname: "foo"}
-			svcNew.Annotations[source.AnnotClass] = source.DefaultClass
+			svcNew.Annotations = map[string]string{common.AnnotSecretname: "foo"}
+			svcNew.Annotations[common.AnnotClass] = common.DefaultClass
 			test(svc, svcNew, BeFalse(), BeTrue())
 		})
 	})

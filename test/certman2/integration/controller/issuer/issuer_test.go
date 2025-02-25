@@ -14,11 +14,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/certman2/apis/config"
-	issuercontrolplane "github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane"
-	"github.com/gardener/cert-management/pkg/certman2/core"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,6 +28,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/apis/config"
+	issuercontrolplane "github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 var (
@@ -190,7 +191,8 @@ var _ = Describe("Issuer controller tests", func() {
 			oldPrivateKeyPEM := secret.Data["privateKey"]
 			_, newPrivateKeyPEM, err := legobridge.GenerateKey(x509.ECDSA, 256)
 			Expect(err).NotTo(HaveOccurred())
-			changeKeyInBackend(ctx, oldPrivateKeyPEM, newPrivateKeyPEM)
+			_, err = changeKeyInBackend(ctx, oldPrivateKeyPEM, newPrivateKeyPEM)
+			Expect(err).NotTo(HaveOccurred())
 			secret.Data["privateKey"] = newPrivateKeyPEM
 			err = testClient.Update(ctx, secret)
 			Expect(err).NotTo(HaveOccurred())

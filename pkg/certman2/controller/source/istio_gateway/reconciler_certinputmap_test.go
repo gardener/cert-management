@@ -17,19 +17,19 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 var _ = Describe("Reconciler", func() {
 	var (
 		ctx                = context.Background()
 		log                = logr.Discard()
-		emptyMap           = source.CertInputMap{}
+		emptyMap           = common.CertInputMap{}
 		standardObjectMeta = metav1.ObjectMeta{
 			Namespace: "test",
 			Name:      "g1",
 			Annotations: map[string]string{
-				source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
+				common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
 			},
 		}
 		fakeClient client.Client
@@ -79,7 +79,7 @@ var _ = Describe("Reconciler", func() {
 	})
 
 	_ = DescribeTable("#getCertificateInputMap",
-		func(gateway *istionetworkingv1.Gateway, virtualServices []*istionetworkingv1.VirtualService, expectedMap source.CertInputMap) {
+		func(gateway *istionetworkingv1.Gateway, virtualServices []*istionetworkingv1.VirtualService, expectedMap common.CertInputMap) {
 			for _, vs := range virtualServices {
 				Expect(fakeClient.Create(ctx, vs)).NotTo(HaveOccurred(), vs.Name)
 			}
@@ -95,7 +95,7 @@ var _ = Describe("Reconciler", func() {
 				return
 			}
 			if len(actualMap) == 0 {
-				actualMap = source.CertInputMap{}
+				actualMap = common.CertInputMap{}
 			}
 			Expect(actualMap).To(Equal(expectedMap))
 		},
@@ -187,8 +187,8 @@ var _ = Describe("Reconciler", func() {
 				Namespace: "test",
 				Name:      "g1",
 				Annotations: map[string]string{
-					source.AnnotDnsnames:        "a.example.com,c.example.com",
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
+					common.AnnotDnsnames:        "a.example.com,c.example.com",
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
 				},
 			},
 			Spec: apinetworkingv1.Gateway{
@@ -208,8 +208,8 @@ var _ = Describe("Reconciler", func() {
 				Namespace: "test",
 				Name:      "g1",
 				Annotations: map[string]string{
-					source.AnnotCertDNSNames:    "a.example.com,c.example.com",
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
+					common.AnnotCertDNSNames:    "a.example.com,c.example.com",
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
 				},
 			},
 			Spec: apinetworkingv1.Gateway{
@@ -229,8 +229,8 @@ var _ = Describe("Reconciler", func() {
 				Namespace: "test",
 				Name:      "g1",
 				Annotations: map[string]string{
-					source.AnnotCommonName:      "cn.example.com",
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
+					common.AnnotCommonName:      "cn.example.com",
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
 				},
 			},
 			Spec: apinetworkingv1.Gateway{
@@ -276,21 +276,21 @@ var _ = Describe("Reconciler", func() {
 	)
 })
 
-func singleCertInput(secretName string, names ...string) source.CertInputMap {
+func singleCertInput(secretName string, names ...string) common.CertInputMap {
 	info := makeCertInput(secretName, names...)
 	return toMap(info)
 }
 
-func toMap(inputs ...source.CertInput) source.CertInputMap {
-	result := source.CertInputMap{}
+func toMap(inputs ...common.CertInput) common.CertInputMap {
+	result := common.CertInputMap{}
 	for _, input := range inputs {
 		result[input.SecretObjectKey] = input
 	}
 	return result
 }
 
-func makeCertInput(secretName string, names ...string) source.CertInput {
-	return source.CertInput{
+func makeCertInput(secretName string, names ...string) common.CertInput {
+	return common.CertInput{
 		SecretObjectKey: client.ObjectKey{Namespace: "test", Name: secretName},
 		Domains:         names,
 	}

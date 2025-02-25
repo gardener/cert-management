@@ -4,15 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package source
+package common
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/cert-management/pkg/cert/source"
 )
 
 // TLSDataCollector collects TLS secret names for hosts.

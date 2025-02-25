@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package istio_gateway
 
 import (
@@ -13,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 // ControllerName is the name of this controller.
@@ -85,10 +89,10 @@ func isRelevant(obj client.Object, class string) bool {
 		return false
 	}
 
-	if !source.EquivalentClass(obj.GetAnnotations()[source.AnnotClass], class) {
+	if !common.EquivalentClass(obj.GetAnnotations()[common.AnnotClass], class) {
 		return false
 	}
-	if obj.GetAnnotations()[source.AnnotationPurposeKey] != source.AnnotationPurposeValueManaged {
+	if obj.GetAnnotations()[common.AnnotationPurposeKey] != common.AnnotationPurposeValueManaged {
 		return false
 	}
 	return true

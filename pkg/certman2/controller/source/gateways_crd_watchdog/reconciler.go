@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package gateways_crd_watchdog
 
 import (
@@ -7,7 +11,6 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source/k8s_gateway"
 	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -16,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/istio_gateway"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/k8s_gateway"
 )
 
 // ShutdownFunc is a function called to shut down with message

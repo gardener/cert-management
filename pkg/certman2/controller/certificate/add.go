@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package certificate
 
 import (
@@ -9,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certcontroller "github.com/gardener/cert-management/pkg/certman2/controller"
 )
 
 // ControllerName is the name of this controller.
@@ -29,7 +34,10 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		Named(ControllerName).
 		For(
 			&v1alpha1.Certificate{},
-			builder.WithPredicates(Predicate()), // TODO check predicate
+			builder.WithPredicates(
+				certcontroller.CertClassPredicate(r.Config.Class),
+				Predicate(), // TODO check predicate
+			),
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 1,

@@ -1,15 +1,15 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package ca
 
 import (
 	"context"
-	"crypto"
-	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -140,30 +140,4 @@ func NewSelfSignedCertInPEMFormat(algo x509.PublicKeyAlgorithm, algoSize int) ([
 	certDerBytes, _ := x509.CreateCertificate(rand.Reader, &template, &template, certPrivateKey.Public(), certPrivateKey)
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDerBytes})
 	return certPEM, certPrivateKeyPEM, nil
-}
-
-// TODO replace with existing method if SelfSigned certificate feature is merged
-func privateKeyToBytes(key crypto.PrivateKey) ([]byte, error) {
-	block, err := pemBlockForKey(key)
-	if err != nil {
-		return nil, err
-	}
-	return pem.EncodeToMemory(block), nil
-}
-
-// TODO replace with existing method if SelfSigned certificate feature is merged
-func pemBlockForKey(priv interface{}) (*pem.Block, error) {
-	switch k := priv.(type) {
-	case *ecdsa.PrivateKey:
-		b, err := x509.MarshalECPrivateKey(k)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal ECDSA private key: %v", err)
-		}
-		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
-	case *rsa.PrivateKey:
-		b := x509.MarshalPKCS1PrivateKey(k)
-		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: b}, nil
-	default:
-		return nil, fmt.Errorf("unsupported private key type: %t", priv)
-	}
 }

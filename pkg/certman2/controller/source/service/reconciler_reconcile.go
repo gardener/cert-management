@@ -1,13 +1,18 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package service
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 func (r *Reconciler) reconcile(
@@ -20,7 +25,7 @@ func (r *Reconciler) reconcile(
 ) {
 	log.Info("reconcile")
 
-	var certInputMap source.CertInputMap
+	var certInputMap common.CertInputMap
 	if isRelevant(service, r.Class) {
 		// build certificate from service annotations
 		var err error
@@ -34,8 +39,8 @@ func (r *Reconciler) reconcile(
 	return r.DoReconcile(ctx, log, service, certInputMap)
 }
 
-func (r *Reconciler) getCertificateInputMap(log logr.Logger, service *corev1.Service) (source.CertInputMap, error) {
-	inputMap, err := source.GetCertSourceSpecForService(log, service)
+func (r *Reconciler) getCertificateInputMap(log logr.Logger, service *corev1.Service) (common.CertInputMap, error) {
+	inputMap, err := common.GetCertSourceSpecForService(log, service)
 	if err != nil {
 		return nil, err
 	}

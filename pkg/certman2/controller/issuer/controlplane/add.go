@@ -9,10 +9,6 @@ package controlplane
 import (
 	"context"
 
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/acme"
-	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/ca"
-	"github.com/gardener/cert-management/pkg/certman2/core"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/clock"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -24,6 +20,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certcontroller "github.com/gardener/cert-management/pkg/certman2/controller"
+	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane/acme"
+	"github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane/ca"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 // ControllerName is the name of this controller.
@@ -64,9 +66,12 @@ func (r *Reconciler) AddToManager(mgr manager.Manager, controlPlaneCluster clust
 		Named(ControllerName).
 		For(
 			&v1alpha1.Issuer{},
-			builder.WithPredicates(predicate.NewPredicateFuncs(func(obj client.Object) bool {
-				return obj.GetNamespace() == r.Config.Controllers.Issuer.Namespace
-			})),
+			builder.WithPredicates(
+				predicate.NewPredicateFuncs(func(obj client.Object) bool {
+					return obj.GetNamespace() == r.Config.Controllers.Issuer.Namespace
+				}),
+				certcontroller.CertClassPredicate(r.Config.Class),
+			),
 		).
 		Watches(
 			&corev1.Secret{},

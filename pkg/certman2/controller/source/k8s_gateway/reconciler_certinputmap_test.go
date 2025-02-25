@@ -7,8 +7,6 @@ package k8s_gateway
 import (
 	"context"
 
-	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,19 +16,20 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 var _ = Describe("Reconciler", func() {
 	var (
 		ctx                = context.Background()
 		log                = logr.Discard()
-		emptyMap           = source.CertInputMap{}
+		emptyMap           = common.CertInputMap{}
 		standardObjectMeta = metav1.ObjectMeta{
 			Namespace: "test",
 			Name:      "g1",
 			Annotations: map[string]string{
-				source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
+				common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
 			},
 		}
 		fakeClient client.Client
@@ -95,7 +94,7 @@ var _ = Describe("Reconciler", func() {
 	})
 
 	_ = DescribeTable("#getCertificateInputMap",
-		func(gateway *gatewayapisv1.Gateway, httpRoutes []*gatewayapisv1.HTTPRoute, expectedMap source.CertInputMap) {
+		func(gateway *gatewayapisv1.Gateway, httpRoutes []*gatewayapisv1.HTTPRoute, expectedMap common.CertInputMap) {
 			for _, route := range httpRoutes {
 				Expect(fakeClient.Create(ctx, route)).NotTo(HaveOccurred(), route.Name)
 			}
@@ -111,7 +110,7 @@ var _ = Describe("Reconciler", func() {
 				return
 			}
 			if len(actualMap) == 0 {
-				actualMap = source.CertInputMap{}
+				actualMap = common.CertInputMap{}
 			}
 			Expect(actualMap).To(Equal(expectedMap))
 		},
@@ -290,8 +289,8 @@ var _ = Describe("Reconciler", func() {
 				Namespace: "test",
 				Name:      "g1",
 				Annotations: map[string]string{
-					source.AnnotCertDNSNames:        "a.example.com,c.example.com",
-					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+					common.AnnotCertDNSNames:    "a.example.com,c.example.com",
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
 				},
 			},
 			Spec: gatewayapisv1.GatewaySpec{
@@ -313,16 +312,16 @@ var _ = Describe("Reconciler", func() {
 				Namespace: "test",
 				Name:      "g1",
 				Annotations: map[string]string{
-					ctrlsource.AnnotationPurposeKey:   ctrlsource.AnnotationPurposeValueManaged,
-					source.AnnotPreferredChain:        "chain2",
-					source.AnnotCommonName:            "a.example.com",
-					source.AnnotCertDNSNames:          "c.example.com,d.example.com",
-					source.AnnotIssuer:                "test-issuer",
-					source.AnnotPrivateKeyAlgorithm:   "ECDSA",
-					source.AnnotPrivateKeySize:        "384",
-					source.AnnotCertSecretLabels:      "a=b, c=bar42",
-					source.AnnotDNSRecordProviderType: "dummy-type",
-					source.AnnotDNSRecordSecretRef:    "dummy",
+					common.AnnotationPurposeKey:       common.AnnotationPurposeValueManaged,
+					common.AnnotPreferredChain:        "chain2",
+					common.AnnotCommonName:            "a.example.com",
+					common.AnnotCertDNSNames:          "c.example.com,d.example.com",
+					common.AnnotIssuer:                "test-issuer",
+					common.AnnotPrivateKeyAlgorithm:   "ECDSA",
+					common.AnnotPrivateKeySize:        "384",
+					common.AnnotCertSecretLabels:      "a=b, c=bar42",
+					common.AnnotDNSRecordProviderType: "dummy-type",
+					common.AnnotDNSRecordSecretRef:    "dummy",
 				},
 			},
 			Spec: gatewayapisv1.GatewaySpec{
@@ -338,44 +337,44 @@ var _ = Describe("Reconciler", func() {
 					},
 				},
 			},
-		}, allRoutes(), toMap(modifyCertInput(makeCertInput("foo", nil, "a.example.com", "c.example.com", "d.example.com"), func(info source.CertInput) source.CertInput {
+		}, allRoutes(), toMap(modifyCertInput(makeCertInput("foo", nil, "a.example.com", "c.example.com", "d.example.com"), func(info common.CertInput) common.CertInput {
 			info.PreferredChain = "chain2"
 			info.PrivateKeyAlgorithm = "ECDSA"
 			info.PrivateKeySize = 384
 			info.IssuerName = ptr.To("test-issuer")
 			info.SecretLabels = map[string]string{"a": "b", "c": "bar42"}
 			info.Annotations = map[string]string{
-				source.AnnotDNSRecordProviderType: "dummy-type",
-				source.AnnotDNSRecordSecretRef:    "dummy",
+				common.AnnotDNSRecordProviderType: "dummy-type",
+				common.AnnotDNSRecordSecretRef:    "dummy",
 			}
 			return info
 		}))))
 })
 
-func singleCertInput(secretName string, ns *string, names ...string) source.CertInputMap {
+func singleCertInput(secretName string, ns *string, names ...string) common.CertInputMap {
 	info := makeCertInput(secretName, ns, names...)
 	return toMap(info)
 }
 
-func toMap(inputs ...source.CertInput) source.CertInputMap {
-	result := source.CertInputMap{}
+func toMap(inputs ...common.CertInput) common.CertInputMap {
+	result := common.CertInputMap{}
 	for _, input := range inputs {
 		result[input.SecretObjectKey] = input
 	}
 	return result
 }
 
-func makeCertInput(secretName string, ns *string, names ...string) source.CertInput {
+func makeCertInput(secretName string, ns *string, names ...string) common.CertInput {
 	namespace := "test"
 	if ns != nil {
 		namespace = *ns
 	}
-	return source.CertInput{
+	return common.CertInput{
 		SecretObjectKey: client.ObjectKey{Namespace: namespace, Name: secretName},
 		Domains:         names,
 	}
 }
 
-func modifyCertInput(input source.CertInput, modifier func(source.CertInput) source.CertInput) source.CertInput {
+func modifyCertInput(input common.CertInput, modifier func(common.CertInput) common.CertInput) common.CertInput {
 	return modifier(input)
 }

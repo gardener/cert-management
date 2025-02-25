@@ -1,14 +1,13 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package acme
 
 import (
 	"context"
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
-	"fmt"
 
 	"github.com/go-acme/lego/v4/registration"
 	"github.com/go-logr/logr"
@@ -169,27 +168,3 @@ var _ = Describe("Handler", func() {
 		})
 	})
 })
-
-func privateKeyToBytes(key crypto.PrivateKey) ([]byte, error) {
-	block, err := pemBlockForKey(key)
-	if err != nil {
-		return nil, err
-	}
-	return pem.EncodeToMemory(block), nil
-}
-
-func pemBlockForKey(priv interface{}) (*pem.Block, error) {
-	switch k := priv.(type) {
-	case *ecdsa.PrivateKey:
-		b, err := x509.MarshalECPrivateKey(k)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal ECDSA private key: %v", err)
-		}
-		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
-	case *rsa.PrivateKey:
-		b := x509.MarshalPKCS1PrivateKey(k)
-		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: b}, nil
-	default:
-		return nil, fmt.Errorf("unsupported private key type: %t", priv)
-	}
-}

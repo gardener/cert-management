@@ -1,13 +1,18 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package ingress
 
 import (
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 	networkingv1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 // ControllerName is the name of this controller.
@@ -70,10 +75,10 @@ func Predicate(class string) predicate.Predicate {
 }
 
 func isRelevant(ingress *networkingv1.Ingress, class string) bool {
-	if !source.EquivalentClass(ingress.Annotations[source.AnnotClass], class) {
+	if !common.EquivalentClass(ingress.Annotations[common.AnnotClass], class) {
 		return false
 	}
-	if ingress.Annotations[source.AnnotationPurposeKey] != source.AnnotationPurposeValueManaged {
+	if ingress.Annotations[common.AnnotationPurposeKey] != common.AnnotationPurposeValueManaged {
 		return false
 	}
 	return true

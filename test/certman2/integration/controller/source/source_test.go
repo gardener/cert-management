@@ -32,7 +32,7 @@ import (
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
-	"github.com/gardener/cert-management/pkg/certman2/controller/source/add"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 var _ = Describe("Source controller tests", func() {
@@ -117,7 +117,7 @@ var _ = Describe("Source controller tests", func() {
 			Scheme: certmanclient.ClusterScheme,
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(add.AddToManager(mgr, cfg, tmpClient)).To(Succeed())
+		Expect(source.AddToManager(mgr, cfg, tmpClient)).To(Succeed())
 
 		By("Start manager")
 		mgrContext, mgrCancel := context.WithCancel(ctx)
@@ -139,9 +139,9 @@ var _ = Describe("Source controller tests", func() {
 				Name:      "test-service",
 				Namespace: testRunID,
 				Annotations: map[string]string{
-					source.AnnotSecretname: "test-service-secret",
-					source.AnnotDnsnames:   "test.example.com,test.alt.example.com",
-					source.AnnotClass:      testRunID,
+					common.AnnotSecretname: "test-service-secret",
+					common.AnnotDnsnames:   "test.example.com,test.alt.example.com",
+					common.AnnotClass:      testRunID,
 				},
 			},
 			Spec: corev1.ServiceSpec{
@@ -180,8 +180,8 @@ var _ = Describe("Source controller tests", func() {
 				Name:      "test-ingress",
 				Namespace: testRunID,
 				Annotations: map[string]string{
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
-					source.AnnotClass:           testRunID,
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
+					common.AnnotClass:           testRunID,
 				},
 			},
 			Spec: networkingv1.IngressSpec{
@@ -229,8 +229,8 @@ var _ = Describe("Source controller tests", func() {
 				Name:      "test-gateway",
 				Namespace: testRunID,
 				Annotations: map[string]string{
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
-					source.AnnotClass:           testRunID,
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
+					common.AnnotClass:           testRunID,
 				},
 			},
 			Spec: istioapinetworkingv1.Gateway{
@@ -276,8 +276,8 @@ var _ = Describe("Source controller tests", func() {
 				Name:      "test-gateway",
 				Namespace: testRunID,
 				Annotations: map[string]string{
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
-					source.AnnotClass:           testRunID,
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
+					common.AnnotClass:           testRunID,
 				},
 			},
 			Spec: istioapinetworkingv1.Gateway{
@@ -381,8 +381,8 @@ var _ = Describe("Source controller tests", func() {
 				Name:      "test-gateway",
 				Namespace: testRunID,
 				Annotations: map[string]string{
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
-					source.AnnotClass:           testRunID,
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
+					common.AnnotClass:           testRunID,
 				},
 			},
 			Spec: gatewayapisv1.GatewaySpec{
@@ -427,8 +427,8 @@ var _ = Describe("Source controller tests", func() {
 				Name:      "test-gateway",
 				Namespace: testRunID,
 				Annotations: map[string]string{
-					source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
-					source.AnnotClass:           testRunID,
+					common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
+					common.AnnotClass:           testRunID,
 				},
 			},
 			Spec: gatewayapisv1.GatewaySpec{

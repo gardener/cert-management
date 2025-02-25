@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package k8s_gateway
 
 import (
@@ -13,14 +17,14 @@ import (
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 const gatewayKind = "Gateway"
 
 // Reconciler is a reconciler for provided Certificate resources.
 type Reconciler struct {
-	source.ReconcilerBase
+	common.ReconcilerBase
 
 	ActiveVersion Version
 }
@@ -43,7 +47,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
-	if gateway.GetAnnotations()[source.AnnotationPurposeKey] != source.AnnotationPurposeValueManaged {
+	if gateway.GetAnnotations()[common.AnnotationPurposeKey] != common.AnnotationPurposeValueManaged {
 		return r.DoDelete(ctx, log, gateway)
 	} else {
 		return r.reconcile(ctx, log, gateway)

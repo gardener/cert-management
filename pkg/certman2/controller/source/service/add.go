@@ -1,13 +1,18 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package service
 
 import (
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 // ControllerName is the name of this controller.
@@ -70,10 +75,10 @@ func Predicate(class string) predicate.Predicate {
 }
 
 func isRelevant(svc *corev1.Service, class string) bool {
-	if svc.Spec.Type != corev1.ServiceTypeLoadBalancer || !source.EquivalentClass(svc.Annotations[source.AnnotClass], class) {
+	if svc.Spec.Type != corev1.ServiceTypeLoadBalancer || !common.EquivalentClass(svc.Annotations[common.AnnotClass], class) {
 		return false
 	}
-	if _, ok := svc.Annotations[source.AnnotSecretname]; !ok {
+	if _, ok := svc.Annotations[common.AnnotSecretname]; !ok {
 		return false
 	}
 	return true

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package istio_gateway
 
 import (
@@ -11,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 func createAddTestFunc[T client.Object](obj T) func() {
@@ -25,7 +29,7 @@ func createAddTestFunc[T client.Object](obj T) func() {
 		)
 
 		BeforeEach(func() {
-			gatewayPredicate = Predicate(obj, source.DefaultClass)
+			gatewayPredicate = Predicate(obj, common.DefaultClass)
 
 			gateway = obj.DeepCopyObject().(T)
 			gatewayNew = obj.DeepCopyObject().(T)
@@ -59,8 +63,8 @@ func createAddTestFunc[T client.Object](obj T) func() {
 		})
 
 		It("should handle services of wrong class as expected", func() {
-			gateway.SetAnnotations(map[string]string{"cert.gardener.cloud/purpose": "managed", source.AnnotClass: "bar"})
-			gatewayNew.SetAnnotations(map[string]string{"cert.gardener.cloud/purpose": "managed", source.AnnotClass: source.DefaultClass})
+			gateway.SetAnnotations(map[string]string{"cert.gardener.cloud/purpose": "managed", common.AnnotClass: "bar"})
+			gatewayNew.SetAnnotations(map[string]string{"cert.gardener.cloud/purpose": "managed", common.AnnotClass: common.DefaultClass})
 			test(gateway, gatewayNew, BeFalse(), BeTrue())
 		})
 	}

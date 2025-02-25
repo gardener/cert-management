@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package k8s_gateway
 
 import (
@@ -5,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -16,7 +19,7 @@ import (
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 func (r *Reconciler) reconcile(
@@ -29,7 +32,7 @@ func (r *Reconciler) reconcile(
 ) {
 	log.Info("reconcile")
 
-	var certInputMap source.CertInputMap
+	var certInputMap common.CertInputMap
 	if isRelevant(gateway, r.Class) {
 		var err error
 		certInputMap, err = r.getCertificateInputMap(ctx, log, gateway)
@@ -42,9 +45,9 @@ func (r *Reconciler) reconcile(
 	return r.DoReconcile(ctx, log, gateway, certInputMap)
 }
 
-func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger, gateway client.Object) (source.CertInputMap, error) {
-	return source.GetCertInputByCollector(ctx, log, gateway, func(ctx context.Context, obj client.Object) ([]*source.TLSData, error) {
-		var array []*source.TLSData
+func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger, gateway client.Object) (common.CertInputMap, error) {
+	return common.GetCertInputByCollector(ctx, log, gateway, func(ctx context.Context, obj client.Object) ([]*common.TLSData, error) {
+		var array []*common.TLSData
 
 		var spec *gatewayapisv1.GatewaySpec
 		switch data := obj.(type) {
@@ -61,19 +64,19 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 				if listener.Protocol == gatewayapisv1.HTTPSProtocolType || listener.Protocol == gatewayapisv1.TLSProtocolType {
 					if listener.TLS != nil && (listener.TLS.Mode == nil || *listener.TLS.Mode == gatewayapisv1.TLSModeTerminate) {
 						if len(listener.TLS.CertificateRefs) != 1 {
-							logger.Warnf("unexpected number %d of listeners[%d].tls.certificateRefs: cannot select secret for storing certificate",
-								len(listener.TLS.CertificateRefs), i)
+							log.Info(fmt.Sprintf("warn: unexpected number %d of listeners[%d].tls.certificateRefs: cannot select secret for storing certificate",
+								len(listener.TLS.CertificateRefs), i))
 							continue
 						}
 						ref := listener.TLS.CertificateRefs[0]
 						if !(ref.Group == nil || *ref.Group == "") && (ref.Kind == nil || *ref.Kind == "Secret") {
-							logger.Warnf("unexpected group/kind of listeners[%d].tls.certificateRefs: cannot select secret for storing certificate", i)
+							log.Info(fmt.Sprintf("warn: unexpected group/kind of listeners[%d].tls.certificateRefs: cannot select secret for storing certificate", i))
 							continue
 						}
 						if len(ref.Name) == 0 {
 							continue
 						}
-						tlsData := &source.TLSData{SecretName: string(ref.Name)}
+						tlsData := &common.TLSData{SecretName: string(ref.Name)}
 						if ref.Namespace != nil {
 							tlsData.SecretNamespace = string(*ref.Namespace)
 						} else {

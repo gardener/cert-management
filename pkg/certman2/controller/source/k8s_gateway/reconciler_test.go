@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package k8s_gateway
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/cert-management/pkg/certman2/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -22,7 +25,8 @@ import (
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
+	"github.com/gardener/cert-management/pkg/certman2/testutils"
 )
 
 const longDomain = "a-long-long-domain-name-with-more-than-63-characters.example.com"
@@ -110,8 +114,8 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			gateway.SetNamespace("test")
 			gateway.SetName("foo")
 			gateway.SetAnnotations(map[string]string{
-				source.AnnotationPurposeKey: source.AnnotationPurposeValueManaged,
-				source.AnnotDnsnames:        "*",
+				common.AnnotationPurposeKey: common.AnnotationPurposeValueManaged,
+				common.AnnotDnsnames:        "*",
 			})
 			modifyListeners(gateway, func([]gatewayapisv1.Listener) []gatewayapisv1.Listener {
 				return []gatewayapisv1.Listener{
@@ -179,7 +183,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			})
 
 			It("should succeed if '*' dnsnames is overwritten by cert dnsnames", func() {
-				gateway.GetAnnotations()[source.AnnotCertDNSNames] = "foo.cert.example.com,foo-alt.cert.example.com"
+				gateway.GetAnnotations()[common.AnnotCertDNSNames] = "foo.cert.example.com,foo-alt.cert.example.com"
 				test(&certmanv1alpha1.CertificateSpec{
 					CommonName: ptr.To("foo.cert.example.com"),
 					DNSNames:   []string{"foo-alt.cert.example.com"},
@@ -189,8 +193,8 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			})
 
 			It("should create correct certificate object  with common name", func() {
-				gateway.GetAnnotations()[source.AnnotDnsnames] = "*"
-				gateway.GetAnnotations()[source.AnnotCommonName] = "foo.example.com"
+				gateway.GetAnnotations()[common.AnnotDnsnames] = "*"
+				gateway.GetAnnotations()[common.AnnotCommonName] = "foo.example.com"
 				test(&certmanv1alpha1.CertificateSpec{
 					CommonName: ptr.To("foo.example.com"),
 					DNSNames:   []string{"host1.example.com"},
@@ -200,8 +204,8 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			})
 
 			It("should create correct certificate object if common name with cert annotation", func() {
-				gateway.GetAnnotations()[source.AnnotCommonName] = "foo.cert.example.com"
-				gateway.GetAnnotations()[source.AnnotCertDNSNames] = "foo-alt.cert.example.com"
+				gateway.GetAnnotations()[common.AnnotCommonName] = "foo.cert.example.com"
+				gateway.GetAnnotations()[common.AnnotCertDNSNames] = "foo-alt.cert.example.com"
 				test(&certmanv1alpha1.CertificateSpec{
 					CommonName: ptr.To("foo.cert.example.com"),
 					DNSNames:   []string{"foo-alt.cert.example.com"},
@@ -211,16 +215,16 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 
 			It("should update certificate object for service of type load balancer with additional fields", func() {
 				annotations := gateway.GetAnnotations()
-				annotations[source.AnnotCertDNSNames] = fmt.Sprintf("foo1.%s,foo2.%s", longDomain, longDomain)
-				annotations[source.AnnotClass] = source.DefaultClass
-				annotations[source.AnnotIssuer] = "my-ns/my-issuer"
-				annotations[source.AnnotFollowCNAME] = "true"
-				annotations[source.AnnotCertSecretLabels] = "key1=value1,key2=value2"
-				annotations[source.AnnotDNSRecordProviderType] = "local"
-				annotations[source.AnnotDNSRecordSecretRef] = "my-provider-ns/my-provider-secret"
-				annotations[source.AnnotPreferredChain] = "my-chain"
-				annotations[source.AnnotPrivateKeyAlgorithm] = "ECDSA"
-				annotations[source.AnnotPrivateKeySize] = "384"
+				annotations[common.AnnotCertDNSNames] = fmt.Sprintf("foo1.%s,foo2.%s", longDomain, longDomain)
+				annotations[common.AnnotClass] = common.DefaultClass
+				annotations[common.AnnotIssuer] = "my-ns/my-issuer"
+				annotations[common.AnnotFollowCNAME] = "true"
+				annotations[common.AnnotCertSecretLabels] = "key1=value1,key2=value2"
+				annotations[common.AnnotDNSRecordProviderType] = "local"
+				annotations[common.AnnotDNSRecordSecretRef] = "my-provider-ns/my-provider-secret"
+				annotations[common.AnnotPreferredChain] = "my-chain"
+				annotations[common.AnnotPrivateKeyAlgorithm] = "ECDSA"
+				annotations[common.AnnotPrivateKeySize] = "384"
 				cert.Spec.SecretName = ptr.To("host1-secret")
 				Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 				test(&certmanv1alpha1.CertificateSpec{
@@ -240,7 +244,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 					},
 				})
 				Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).NotTo(HaveOccurred())
-				Expect(cert.Annotations).To(Equal(map[string]string{source.AnnotClass: "gardencert", source.AnnotDNSRecordProviderType: "local", source.AnnotDNSRecordSecretRef: "my-provider-ns/my-provider-secret"}))
+				Expect(cert.Annotations).To(Equal(map[string]string{common.AnnotClass: "gardencert", common.AnnotDNSRecordProviderType: "local", common.AnnotDNSRecordSecretRef: "my-provider-ns/my-provider-secret"}))
 				testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateUpdated ")
 			})
 

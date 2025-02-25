@@ -5,11 +5,11 @@
 package legobridge_test
 
 import (
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	corev1 "k8s.io/api/core/v1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 )
 
 var _ = Describe("Pending", func() {
@@ -33,8 +33,8 @@ var _ = Describe("Pending", func() {
 					"Field2":                       []byte("Field2"),
 					legobridge.PKCS12SecretKey:     []byte(legobridge.PKCS12SecretKey),
 					legobridge.PKCS12TruststoreKey: []byte(legobridge.PKCS12TruststoreKey),
-					legobridge.JKSSecretKey:		[]byte(legobridge.JKSSecretKey),
-					legobridge.JKSTruststoreKey:	[]byte(legobridge.JKSTruststoreKey),
+					legobridge.JKSSecretKey:        []byte(legobridge.JKSSecretKey),
+					legobridge.JKSTruststoreKey:    []byte(legobridge.JKSTruststoreKey),
 				},
 			}
 			legobridge.RemoveKeystoresFromSecret(secret)

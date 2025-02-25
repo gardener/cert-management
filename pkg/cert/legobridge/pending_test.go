@@ -5,10 +5,11 @@
 package legobridge_test
 
 import (
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/gardener/cert-management/pkg/cert/legobridge"
 )
 
 var _ = Describe("Pending", func() {

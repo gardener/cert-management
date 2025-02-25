@@ -1,11 +1,13 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package service_test
 
 import (
 	"context"
 	"fmt"
 
-	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/certman2/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -18,9 +20,11 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 	. "github.com/gardener/cert-management/pkg/certman2/controller/source/service"
+	"github.com/gardener/cert-management/pkg/certman2/testutils"
 )
 
 const longDomain = "a-long-long-domain-name-with-more-than-63-characters.example.com"
@@ -90,8 +94,8 @@ var _ = Describe("Reconciler", func() {
 				Name:      "foo",
 				Namespace: "test",
 				Annotations: map[string]string{
-					source.AnnotSecretname: "foo-secret",
-					source.AnnotDnsnames:   "foo.example.com",
+					common.AnnotSecretname: "foo-secret",
+					common.AnnotDnsnames:   "foo.example.com",
 				},
 			},
 			Spec: corev1.ServiceSpec{
@@ -131,26 +135,26 @@ var _ = Describe("Reconciler", func() {
 
 		It("should drop certificate object if secretname not set", func() {
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
-			delete(svc.Annotations, source.AnnotSecretname)
+			delete(svc.Annotations, common.AnnotSecretname)
 			test(nil)
 			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateDeleted ")
 		})
 
 		It("should fail if no domain name set", func() {
-			delete(svc.Annotations, source.AnnotDnsnames)
+			delete(svc.Annotations, common.AnnotDnsnames)
 			test(nil, "no valid domain name annotations found")
 			testutils.AssertEvents(fakeRecorder.Events, "Warning Invalid ")
 		})
 
 		It("should fail if dnsnames are set to '*'", func() {
-			svc.Annotations[source.AnnotDnsnames] = "*"
+			svc.Annotations[common.AnnotDnsnames] = "*"
 			test(nil, "no valid domain name annotations found")
 			testutils.AssertEvents(fakeRecorder.Events, "Warning Invalid ")
 		})
 
 		It("should succeed if '*' dnsnames is overwritten by common name", func() {
-			svc.Annotations[source.AnnotDnsnames] = "*"
-			svc.Annotations[source.AnnotCommonName] = "foo.example.com"
+			svc.Annotations[common.AnnotDnsnames] = "*"
+			svc.Annotations[common.AnnotCommonName] = "foo.example.com"
 			test(&certmanv1alpha1.CertificateSpec{
 				CommonName: ptr.To("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
@@ -159,7 +163,7 @@ var _ = Describe("Reconciler", func() {
 		})
 
 		It("should create correct certificate object if domain name with cert annotation", func() {
-			svc.Annotations[source.AnnotCertDNSNames] = "foo.cert.example.com,foo-alt.cert.example.com"
+			svc.Annotations[common.AnnotCertDNSNames] = "foo.cert.example.com,foo-alt.cert.example.com"
 			test(&certmanv1alpha1.CertificateSpec{
 				CommonName: ptr.To("foo.cert.example.com"),
 				DNSNames:   []string{"foo-alt.cert.example.com"},
@@ -168,8 +172,8 @@ var _ = Describe("Reconciler", func() {
 		})
 
 		It("should create correct certificate object if common name with cert annotation", func() {
-			svc.Annotations[source.AnnotCommonName] = "foo.cert.example.com"
-			svc.Annotations[source.AnnotCertDNSNames] = "foo-alt.cert.example.com"
+			svc.Annotations[common.AnnotCommonName] = "foo.cert.example.com"
+			svc.Annotations[common.AnnotCertDNSNames] = "foo-alt.cert.example.com"
 			test(&certmanv1alpha1.CertificateSpec{
 				CommonName: ptr.To("foo.cert.example.com"),
 				DNSNames:   []string{"foo-alt.cert.example.com"},
@@ -178,7 +182,7 @@ var _ = Describe("Reconciler", func() {
 		})
 
 		It("should create correct certificate object with overwritten secret namespace", func() {
-			svc.Annotations[source.AnnotSecretNamespace] = "other"
+			svc.Annotations[common.AnnotSecretNamespace] = "other"
 			test(&certmanv1alpha1.CertificateSpec{
 				CommonName: ptr.To("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "other"},
@@ -186,16 +190,16 @@ var _ = Describe("Reconciler", func() {
 		})
 
 		It("should update certificate object for service of type load balancer with additional fields", func() {
-			svc.Annotations[source.AnnotDnsnames] = fmt.Sprintf("foo1.%s,foo2.%s", longDomain, longDomain)
-			svc.Annotations[source.AnnotClass] = source.DefaultClass
-			svc.Annotations[source.AnnotIssuer] = "my-ns/my-issuer"
-			svc.Annotations[source.AnnotFollowCNAME] = "true"
-			svc.Annotations[source.AnnotCertSecretLabels] = "key1=value1,key2=value2"
-			svc.Annotations[source.AnnotDNSRecordProviderType] = "local"
-			svc.Annotations[source.AnnotDNSRecordSecretRef] = "my-provider-ns/my-provider-secret"
-			svc.Annotations[source.AnnotPreferredChain] = "my-chain"
-			svc.Annotations[source.AnnotPrivateKeyAlgorithm] = "ECDSA"
-			svc.Annotations[source.AnnotPrivateKeySize] = "384"
+			svc.Annotations[common.AnnotDnsnames] = fmt.Sprintf("foo1.%s,foo2.%s", longDomain, longDomain)
+			svc.Annotations[common.AnnotClass] = common.DefaultClass
+			svc.Annotations[common.AnnotIssuer] = "my-ns/my-issuer"
+			svc.Annotations[common.AnnotFollowCNAME] = "true"
+			svc.Annotations[common.AnnotCertSecretLabels] = "key1=value1,key2=value2"
+			svc.Annotations[common.AnnotDNSRecordProviderType] = "local"
+			svc.Annotations[common.AnnotDNSRecordSecretRef] = "my-provider-ns/my-provider-secret"
+			svc.Annotations[common.AnnotPreferredChain] = "my-chain"
+			svc.Annotations[common.AnnotPrivateKeyAlgorithm] = "ECDSA"
+			svc.Annotations[common.AnnotPrivateKeySize] = "384"
 			cert.Spec.SecretName = ptr.To("foo-secret")
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			test(&certmanv1alpha1.CertificateSpec{
@@ -215,7 +219,7 @@ var _ = Describe("Reconciler", func() {
 				},
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).NotTo(HaveOccurred())
-			Expect(cert.Annotations).To(Equal(map[string]string{source.AnnotClass: "gardencert", source.AnnotDNSRecordProviderType: "local", source.AnnotDNSRecordSecretRef: "my-provider-ns/my-provider-secret"}))
+			Expect(cert.Annotations).To(Equal(map[string]string{common.AnnotClass: "gardencert", common.AnnotDNSRecordProviderType: "local", common.AnnotDNSRecordSecretRef: "my-provider-ns/my-provider-secret"}))
 			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateUpdated ")
 		})
 

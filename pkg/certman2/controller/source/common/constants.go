@@ -4,17 +4,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package source
+package common
 
 import (
 	configv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/config/v1alpha1"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 const (
 	// AnnotDnsnames annotation is shared with dns controller manager
 	AnnotDnsnames = "dns.gardener.cloud/dnsnames"
 	// AnnotClass is the annotation for the cert class
-	AnnotClass = "cert.gardener.cloud/class"
+	AnnotClass = core.AnnotationClass
 	// AnnotSecretname is the annotation for the secret name
 	AnnotSecretname = "cert.gardener.cloud/secretname" // #nosec G101 -- this is no credential
 	// AnnotSecretNamespace is the annotation for the TLS secret namespace (only used for Istio Gateways source resources)

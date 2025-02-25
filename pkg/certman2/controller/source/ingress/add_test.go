@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package ingress_test
 
 import (
@@ -8,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 	. "github.com/gardener/cert-management/pkg/certman2/controller/source/ingress"
 )
 
@@ -23,7 +27,7 @@ var _ = Describe("Add", func() {
 		)
 
 		BeforeEach(func() {
-			ingressPredicate = Predicate(source.DefaultClass)
+			ingressPredicate = Predicate(common.DefaultClass)
 
 			ingress = &networkingv1.Ingress{}
 			ingressNew = &networkingv1.Ingress{}
@@ -57,9 +61,9 @@ var _ = Describe("Add", func() {
 
 		It("should handle services of wrong class as expected", func() {
 			ingress.Annotations = map[string]string{"cert.gardener.cloud/purpose": "managed"}
-			ingress.Annotations[source.AnnotClass] = "bar"
+			ingress.Annotations[common.AnnotClass] = "bar"
 			ingressNew.Annotations = map[string]string{"cert.gardener.cloud/purpose": "managed"}
-			ingressNew.Annotations[source.AnnotClass] = source.DefaultClass
+			ingressNew.Annotations[common.AnnotClass] = common.DefaultClass
 			test(ingress, ingressNew, BeFalse(), BeTrue())
 		})
 	})

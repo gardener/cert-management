@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package istio_gateway
 
 import (
@@ -15,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/gardener/cert-management/pkg/certman2/controller/source"
+	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
 
 func (r *Reconciler) reconcile(
@@ -28,7 +32,7 @@ func (r *Reconciler) reconcile(
 ) {
 	log.Info("reconcile")
 
-	var certInputMap source.CertInputMap
+	var certInputMap common.CertInputMap
 	if isRelevant(gateway, r.Class) {
 		var err error
 		certInputMap, err = r.getCertificateInputMap(ctx, log, gateway)
@@ -41,11 +45,11 @@ func (r *Reconciler) reconcile(
 	return r.DoReconcile(ctx, log, gateway, certInputMap)
 }
 
-func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger, gateway client.Object) (source.CertInputMap, error) {
-	return source.GetCertInputByCollector(ctx, log, gateway, func(ctx context.Context, obj client.Object) ([]*source.TLSData, error) {
-		var array []*source.TLSData
+func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger, gateway client.Object) (common.CertInputMap, error) {
+	return common.GetCertInputByCollector(ctx, log, gateway, func(ctx context.Context, obj client.Object) ([]*common.TLSData, error) {
+		var array []*common.TLSData
 
-		namespace := gateway.GetAnnotations()[source.AnnotSecretNamespace]
+		namespace := gateway.GetAnnotations()[common.AnnotSecretNamespace]
 		if namespace == "" {
 			namespace = gateway.GetNamespace()
 		}
@@ -54,7 +58,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 		case *istionetworkingv1.Gateway:
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
-					array = append(array, &source.TLSData{
+					array = append(array, &common.TLSData{
 						SecretNamespace: namespace,
 						SecretName:      server.Tls.CredentialName,
 						Hosts:           parsedHosts(server.Hosts),
@@ -64,7 +68,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 		case *istionetworkingv1beta1.Gateway:
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
-					array = append(array, &source.TLSData{
+					array = append(array, &common.TLSData{
 						SecretNamespace: namespace,
 						SecretName:      server.Tls.CredentialName,
 						Hosts:           parsedHosts(server.Hosts),
@@ -74,7 +78,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 		case *istionetworkingv1alpha3.Gateway:
 			for _, server := range data.Spec.Servers {
 				if server.Tls != nil && server.Tls.CredentialName != "" {
-					array = append(array, &source.TLSData{
+					array = append(array, &common.TLSData{
 						SecretNamespace: namespace,
 						SecretName:      server.Tls.CredentialName,
 						Hosts:           parsedHosts(server.Hosts),
