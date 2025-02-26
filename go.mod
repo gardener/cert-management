@@ -65,7 +65,7 @@ require (
 	github.com/gardener/etcd-druid v0.26.1 // indirect
 	github.com/gardener/machine-controller-manager v0.56.1 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.6 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.8 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/errors v0.22.0 // indirect
