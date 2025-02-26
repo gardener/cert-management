@@ -10,9 +10,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/cert-management/pkg/certman2/core"
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 // TLSDataCollector collects TLS secret names for hosts.

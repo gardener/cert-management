@@ -18,7 +18,7 @@ import (
 	"github.com/go-acme/lego/v4/registration"
 
 	"github.com/gardener/cert-management/pkg/cert/metrics"
-	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 const (
@@ -77,7 +77,7 @@ func (u *RegistrationUser) NewConfig(caDirURL string) *lego.Config {
 }
 
 // NewRegistrationUserFromEmail generates a private key and requests a new registration for the user.
-func NewRegistrationUserFromEmail(issuerKey utils.IssuerKeyItf,
+func NewRegistrationUserFromEmail(issuerKey shared.IssuerKeyItf,
 	email string, caDirURL string, secretData map[string][]byte, eabKeyID, eabHmacKey string,
 ) (*RegistrationUser, error) {
 	privateKey, err := ExtractOrGeneratePrivateKey(secretData)
@@ -106,7 +106,7 @@ func ExtractOrGeneratePrivateKey(secretData map[string][]byte) (crypto.PrivateKe
 }
 
 // NewRegistrationUserFromEmailAndPrivateKey requests a user registration.
-func NewRegistrationUserFromEmailAndPrivateKey(issuerKey utils.IssuerKeyItf,
+func NewRegistrationUserFromEmailAndPrivateKey(issuerKey shared.IssuerKeyItf,
 	email string, caDirURL string, privateKey crypto.PrivateKey, eabKid, eabHmacKey string,
 ) (*RegistrationUser, error) {
 	user := &RegistrationUser{email: email, key: privateKey, caDirURL: caDirURL, eabKeyID: eabKid, eabHmacKey: eabHmacKey}
@@ -157,7 +157,7 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 }
 
 // RegistrationUserFromSecretData restores a RegistrationUser from a secret data map.
-func RegistrationUserFromSecretData(issuerKey utils.IssuerKeyItf,
+func RegistrationUserFromSecretData(issuerKey shared.IssuerKeyItf,
 	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string,
 ) (*RegistrationUser, error) {
 	privkeyBytes, ok := data[KeyPrivateKey]

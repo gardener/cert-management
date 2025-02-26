@@ -19,6 +19,7 @@ import (
 
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 // ProviderWithCount is an extended Provider interface.
@@ -43,7 +44,7 @@ func newDelegatingProvider(
 	settings DNSControllerSettings,
 	certificateName resources.ObjectName,
 	targetClass string,
-	issuerKey utils.IssuerKeyItf,
+	issuerKey shared.IssuerKeyItf,
 ) (ProviderWithCount, error) {
 	n := atomic.AddUint32(&serial, 1)
 	var internalPrvdr internalProvider
@@ -66,7 +67,7 @@ func newDelegatingProvider(
 type delegatingProvider struct {
 	logger      logger.LogContext
 	settings    DNSControllerSettings
-	issuerKey   utils.IssuerKeyItf
+	issuerKey   shared.IssuerKeyItf
 	count       int32
 	presenting  map[string][]string
 	initialWait bool

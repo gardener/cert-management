@@ -25,6 +25,7 @@ import (
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 // TLSCAKey is the secret data key for the CA key.
@@ -42,7 +43,7 @@ type ObtainInput struct {
 	// DNSSettings are the settings for the DNSController.
 	DNSSettings *DNSControllerSettings
 	// IssuerKey is a cluster-aware key of the issuer to use.
-	IssuerKey utils.IssuerKeyItf
+	IssuerKey shared.IssuerKeyItf
 	// CommonName is the CN.
 	CommonName *string
 	// DNSNames are optional domain names.

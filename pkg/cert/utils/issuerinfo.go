@@ -6,6 +6,8 @@
 
 package utils
 
+import "github.com/gardener/cert-management/pkg/shared"
+
 const (
 	// IssuerTypeACME is the issuer type ACME
 	IssuerTypeACME = "acme"
@@ -17,27 +19,27 @@ const (
 
 // IssuerInfo provides name and type of an issuer
 type IssuerInfo struct {
-	key        IssuerKeyItf
+	key        shared.IssuerKeyItf
 	issuertype string
 }
 
 // NewACMEIssuerInfo creates info for an ACME issuer
-func NewACMEIssuerInfo(key IssuerKeyItf) IssuerInfo {
+func NewACMEIssuerInfo(key shared.IssuerKeyItf) IssuerInfo {
 	return IssuerInfo{key: key, issuertype: IssuerTypeACME}
 }
 
 // NewCAIssuerInfo creates info for an CA issuer
-func NewCAIssuerInfo(key IssuerKeyItf) IssuerInfo {
+func NewCAIssuerInfo(key shared.IssuerKeyItf) IssuerInfo {
 	return IssuerInfo{key: key, issuertype: IssuerTypeCA}
 }
 
 // NewSelfSignedIssuerInfo creates info for a selfSigned issuer.
-func NewSelfSignedIssuerInfo(key IssuerKeyItf) IssuerInfo {
+func NewSelfSignedIssuerInfo(key shared.IssuerKeyItf) IssuerInfo {
 	return IssuerInfo{key: key, issuertype: IssuerTypeSelfSigned}
 }
 
 // Key returns the issuer key
-func (i *IssuerInfo) Key() IssuerKeyItf {
+func (i *IssuerInfo) Key() shared.IssuerKeyItf {
 	return i.key
 }
 
