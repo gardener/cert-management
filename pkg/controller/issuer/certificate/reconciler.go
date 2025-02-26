@@ -37,6 +37,7 @@ import (
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
+	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/cert-management/pkg/shared/legobridge"
 	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
@@ -457,7 +458,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewACMEIssuerInfo(issuerKey)
+		issuerInfo := shared.NewACMEIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -629,7 +630,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewSelfSignedIssuerInfo(issuerKey)
+		issuerInfo := shared.NewSelfSignedIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -703,7 +704,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewCAIssuerInfo(issuerKey)
+		issuerInfo := shared.NewCAIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -1021,7 +1022,7 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 	return ref, specHash, &bestNotAfter
 }
 
-func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo utils.IssuerInfo,
+func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo shared.IssuerInfo,
 	objectMeta metav1.ObjectMeta, secretRef *corev1.SecretReference, specHash string, spec *api.CertificateSpec) (*corev1.SecretReference, error) {
 	ns := core.NormalizeNamespace(objectMeta.Namespace)
 	specSecretRef, _ := r.determineSecretRef(ns, spec)
@@ -1039,7 +1040,7 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 	return r.writeCertificateSecret(logctx, issuerInfo, objectMeta, certificates, specHash, specSecretRef, requestedAt, spec.Keystores, spec.SecretLabels)
 }
 
-func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo utils.IssuerInfo, objectMeta metav1.ObjectMeta,
+func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo shared.IssuerInfo, objectMeta metav1.ObjectMeta,
 	certificates *certificate.Resource, specHash string, specSecretRef *corev1.SecretReference,
 	requestedAt *time.Time, keystores *api.CertificateKeystores,
 	secretLabels map[string]string) (*corev1.SecretReference, error) {

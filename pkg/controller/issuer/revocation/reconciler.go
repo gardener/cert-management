@@ -31,6 +31,7 @@ import (
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
+	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
@@ -195,7 +196,7 @@ func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext,
 	}
 
 	// secret is already backed up on certificate creation, only needed for backwards compatibility
-	issuerInfo := utils.NewACMEIssuerInfo(issuerKey)
+	issuerInfo := shared.NewACMEIssuerInfo(issuerKey)
 	_, _, err = certificate.BackupSecret(r.certSecretResources, secret, hashKey, issuerInfo)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("secret backup failed: %w", err))

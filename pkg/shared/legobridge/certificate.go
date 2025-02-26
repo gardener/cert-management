@@ -109,7 +109,7 @@ type ObtainOutput struct {
 	// Certificates contains the certificates.
 	Certificates *certificate.Resource
 	// IssuerInfo is the name and type of the issuer.
-	IssuerInfo utils.IssuerInfo
+	IssuerInfo shared.IssuerInfo
 	// CommonName is the copy from the input.
 	CommonName *string
 	// DNSNames are the copies from the input.
@@ -399,7 +399,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 		metrics.AddACMEOrder(input.IssuerKey, err == nil, count, input.Renew)
 		output := &ObtainOutput{
 			Certificates: certificates,
-			IssuerInfo:   utils.NewACMEIssuerInfo(input.IssuerKey),
+			IssuerInfo:   shared.NewACMEIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			KeyType:      input.KeyType,
@@ -427,7 +427,7 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 		certificates, err = newCASignedCertFromInput(input)
 		output := &ObtainOutput{
 			Certificates: certificates,
-			IssuerInfo:   utils.NewCAIssuerInfo(input.IssuerKey),
+			IssuerInfo:   shared.NewCAIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			CSR:          input.CSR,
@@ -496,7 +496,7 @@ func (o *obtainer) ObtainFromSelfSigned(input ObtainInput) error {
 		certificates, err := newSelfSignedCertFromInput(input)
 		output := &ObtainOutput{
 			Certificates: certificates,
-			IssuerInfo:   utils.NewSelfSignedIssuerInfo(input.IssuerKey),
+			IssuerInfo:   shared.NewSelfSignedIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			KeyType:      input.KeyType,

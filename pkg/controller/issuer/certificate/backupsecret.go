@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
@@ -27,13 +27,13 @@ func BackupSecret(
 	res resources.Interface,
 	secret *corev1.Secret,
 	hashKey string,
-	issuerInfo utils.IssuerInfo,
+	issuerInfo shared.IssuerInfo,
 ) (
 	ref *api.CertificateSecretRef,
 	created bool,
 	err error,
 ) {
-	if issuerInfo.IssuerType() != utils.IssuerTypeACME {
+	if issuerInfo.IssuerType() != shared.IssuerTypeACME {
 		return
 	}
 
