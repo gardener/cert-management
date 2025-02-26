@@ -17,7 +17,7 @@ import (
 	"github.com/gardener/external-dns-management/pkg/dns"
 	"k8s.io/utils/ptr"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func newDNSControllerProvider(settings DNSControllerSettings, targetClass string) (internalProvider, error) {
@@ -49,9 +49,9 @@ func (p *dnsControllerProvider) present(log logger.LogContext, domain, fqdn stri
 		e.Spec.TTL = ptr.To(int64(p.settings.PropagationTimeout.Seconds()))
 		e.Spec.Text = values
 		if p.targetClass != "" {
-			resources.SetAnnotation(e, source.AnnotDNSClass, p.targetClass)
+			resources.SetAnnotation(e, shared.AnnotDNSClass, p.targetClass)
 		}
-		resources.SetAnnotation(e, source.AnnotACMEDNSChallenge, "true")
+		resources.SetAnnotation(e, shared.AnnotACMEDNSChallenge, "true")
 	}
 
 	entry := p.prepareEntry(domain)

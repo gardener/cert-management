@@ -1357,8 +1357,8 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() error {
 		expectedClass = *r.dnsClass
 	}
 	for _, obj := range objects {
-		class, _ := resources.GetAnnotation(obj.Data(), source.AnnotDNSClass)
-		challenge, _ := resources.GetAnnotation(obj.Data(), source.AnnotACMEDNSChallenge)
+		class, _ := resources.GetAnnotation(obj.Data(), shared.AnnotDNSClass)
+		challenge, _ := resources.GetAnnotation(obj.Data(), shared.AnnotACMEDNSChallenge)
 		if challenge != "" && class == expectedClass {
 			err = entriesResource.Delete(obj.Data())
 			if err != nil {
@@ -1391,7 +1391,7 @@ func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() error {
 	}
 	count := 0
 	for _, obj := range objects {
-		challenge, _ := resources.GetAnnotation(obj.Data(), source.AnnotACMEDNSChallenge)
+		challenge, _ := resources.GetAnnotation(obj.Data(), shared.AnnotACMEDNSChallenge)
 		if challenge != "" {
 			if resources.SetAnnotation(obj.Data(), v1beta1constants.ConfirmationDeletion, "true") {
 				if _, err := recordsResource.Update(obj.Data()); err != nil {

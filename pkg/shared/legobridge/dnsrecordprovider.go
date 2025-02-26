@@ -19,7 +19,7 @@ import (
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"k8s.io/utils/ptr"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func newDNSRecordProvider(settings DNSControllerSettings) (internalProvider, error) {
@@ -62,7 +62,7 @@ func (p *dnsRecordProvider) present(log logger.LogContext, domain, fqdn string, 
 		if p.settings.DNSRecordSettings.Class != "" {
 			e.Spec.Class = ptr.To(extensionsv1alpha.ExtensionClass(p.settings.DNSRecordSettings.Class))
 		}
-		resources.SetAnnotation(e, source.AnnotACMEDNSChallenge, "true")
+		resources.SetAnnotation(e, shared.AnnotACMEDNSChallenge, "true")
 	}
 
 	entry := p.prepareEntry(domain)

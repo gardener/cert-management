@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 var certificateType = (*api.Certificate)(nil)
