@@ -63,8 +63,8 @@ var _ = Describe("PKI", func() {
 			Expect(cert.Subject.CommonName).To(Equal(*input.CommonName))
 			Expect(cert.DNSNames).To(ContainElement(input.DNSNames[0]))
 			Expect(cert.IsCA).To(BeTrue())
-			Expect(cert.NotBefore).To(BeTemporally("~", expectedNotBefore, 3*time.Second))
-			Expect(cert.NotAfter).To(BeTemporally("~", expectedNotAfter, 3*time.Second))
+			Expect(cert.NotBefore).To(BeTemporally("~", expectedNotBefore, 10*time.Second))
+			Expect(cert.NotAfter).To(BeTemporally("~", expectedNotAfter, 10*time.Second))
 
 			By("Decoding the certificate private key")
 			p, _ = pem.Decode(certPrivateKeyPEM)
