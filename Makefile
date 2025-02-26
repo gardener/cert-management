@@ -84,8 +84,9 @@ test: $(GINKGO)
 	# $(GINKGO) -r ./pkg
 
 .PHONY: test-integration
-test-integration: $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
+test-integration: $(GINKGO) $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
 	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/integration/...
+	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/certman2/integration/...
 
 .PHONY: test-cov
 test-cov:
@@ -156,10 +157,6 @@ certman-dnsrecords-up: $(SKAFFOLD) $(HELM) kind-issuer-up skaffold-run-dnsrecord
 certman-dnsrecords-down:
 	@hack/kind/certman/issuer-down.sh
 	@hack/kind/certman/certman-down.sh
-
-.PHONY: test-integration
-test-integration: $(GINKGO) $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
-	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/certman2/integration/...
 
 .PHONY: test-functional-local
 test-functional-local: $(GINKGO)
