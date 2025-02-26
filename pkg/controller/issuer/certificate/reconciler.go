@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	certclient "github.com/gardener/cert-management/pkg/cert/client"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
@@ -96,12 +97,12 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	c.Infof(defaults.String())
 
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
-	dnsClient, err := client.New(ptr.To(dnsCluster.Config()), client.Options{})
+	dnsClient, err := client.New(ptr.To(dnsCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
 	if err != nil {
 		return nil, fmt.Errorf("creating client for DNS controller failed: %w", err)
 	}
 
-	targetClient, err := client.New(ptr.To(targetCluster.Config()), client.Options{})
+	targetClient, err := client.New(ptr.To(targetCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
 	if err != nil {
 		return nil, fmt.Errorf("creating client for target cluster failed: %w", err)
 	}

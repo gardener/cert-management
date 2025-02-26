@@ -29,8 +29,11 @@ type ProviderWithCount interface {
 	GetPendingTXTRecordError() error
 }
 
+// LoggerFactory is a function that creates a LoggerInfof interface.
+// It has been introduced temporarily to avoid dependency on controller-manager-library.
 type LoggerFactory func(key client.ObjectKey, serial uint32) LoggerInfof
 
+// LoggerInfof is a minimal interface for logging the DNS challenges.
 type LoggerInfof interface {
 	Info(msg ...interface{})
 	Infof(msgfmt string, args ...interface{})

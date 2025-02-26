@@ -14,11 +14,14 @@ import (
 	"github.com/gardener/cert-management/pkg/shared"
 )
 
+// Cluster is the cluster type
 type Cluster = shared.Cluster
 
 const (
+	// ClusterDefault is the default cluster
 	ClusterDefault = shared.ClusterDefault
-	ClusterTarget  = shared.ClusterTarget
+	// ClusterTarget is the target cluster
+	ClusterTarget = shared.ClusterTarget
 )
 
 // IssuerKey provides cluster, name and namespace of an issuer
