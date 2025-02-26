@@ -24,9 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
 
