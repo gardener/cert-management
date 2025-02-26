@@ -7,10 +7,10 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // CertificateLister helps list Certificates.
@@ -18,7 +18,7 @@ import (
 type CertificateLister interface {
 	// List lists all Certificates in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.Certificate, err error)
+	List(selector labels.Selector) (ret []*certv1alpha1.Certificate, err error)
 	// Certificates returns an object that can list and get Certificates.
 	Certificates(namespace string) CertificateNamespaceLister
 	CertificateListerExpansion
@@ -26,17 +26,17 @@ type CertificateLister interface {
 
 // certificateLister implements the CertificateLister interface.
 type certificateLister struct {
-	listers.ResourceIndexer[*v1alpha1.Certificate]
+	listers.ResourceIndexer[*certv1alpha1.Certificate]
 }
 
 // NewCertificateLister returns a new CertificateLister.
 func NewCertificateLister(indexer cache.Indexer) CertificateLister {
-	return &certificateLister{listers.New[*v1alpha1.Certificate](indexer, v1alpha1.Resource("certificate"))}
+	return &certificateLister{listers.New[*certv1alpha1.Certificate](indexer, certv1alpha1.Resource("certificate"))}
 }
 
 // Certificates returns an object that can list and get Certificates.
 func (s *certificateLister) Certificates(namespace string) CertificateNamespaceLister {
-	return certificateNamespaceLister{listers.NewNamespaced[*v1alpha1.Certificate](s.ResourceIndexer, namespace)}
+	return certificateNamespaceLister{listers.NewNamespaced[*certv1alpha1.Certificate](s.ResourceIndexer, namespace)}
 }
 
 // CertificateNamespaceLister helps list and get Certificates.
@@ -44,15 +44,15 @@ func (s *certificateLister) Certificates(namespace string) CertificateNamespaceL
 type CertificateNamespaceLister interface {
 	// List lists all Certificates in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.Certificate, err error)
+	List(selector labels.Selector) (ret []*certv1alpha1.Certificate, err error)
 	// Get retrieves the Certificate from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.Certificate, error)
+	Get(name string) (*certv1alpha1.Certificate, error)
 	CertificateNamespaceListerExpansion
 }
 
 // certificateNamespaceLister implements the CertificateNamespaceLister
 // interface.
 type certificateNamespaceLister struct {
-	listers.ResourceIndexer[*v1alpha1.Certificate]
+	listers.ResourceIndexer[*certv1alpha1.Certificate]
 }

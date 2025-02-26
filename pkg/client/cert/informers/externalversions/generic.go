@@ -7,7 +7,7 @@
 package externalversions
 
 import (
-	"fmt"
+	fmt "fmt"
 
 	v1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

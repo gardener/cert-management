@@ -182,27 +182,35 @@ var _ resources.Cluster = &testCluster{}
 func (t testCluster) Resources() resources.Resources {
 	panic("unsupported")
 }
+
 func (t testCluster) GetCluster() resources.Cluster {
 	panic("unsupported")
 }
+
 func (t testCluster) GetServerVersion() *semver.Version {
 	panic("unsupported")
 }
+
 func (t testCluster) GetName() string {
 	panic("unsupported")
 }
+
 func (t testCluster) GetId() string {
 	return t.id
 }
+
 func (t testCluster) GetMigrationIds() utils.StringSet {
 	panic("unsupported")
 }
+
 func (t testCluster) Config() rest.Config {
 	panic("unsupported")
 }
+
 func (t testCluster) GetAttr(_ interface{}) interface{} {
 	panic("unsupported")
 }
+
 func (t testCluster) SetAttr(_, _ interface{}) {
 	panic("unsupported")
 }

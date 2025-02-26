@@ -7,13 +7,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	apiscertv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	versioned "github.com/gardener/cert-management/pkg/client/cert/clientset/versioned"
 	internalinterfaces "github.com/gardener/cert-management/pkg/client/cert/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/gardener/cert-management/pkg/client/cert/listers/cert/v1alpha1"
+	certv1alpha1 "github.com/gardener/cert-management/pkg/client/cert/listers/cert/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -24,7 +24,7 @@ import (
 // Issuers.
 type IssuerInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.IssuerLister
+	Lister() certv1alpha1.IssuerLister
 }
 
 type issuerInformer struct {
@@ -59,7 +59,7 @@ func NewFilteredIssuerInformer(client versioned.Interface, namespace string, res
 				return client.CertV1alpha1().Issuers(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&certv1alpha1.Issuer{},
+		&apiscertv1alpha1.Issuer{},
 		resyncPeriod,
 		indexers,
 	)
@@ -70,9 +70,9 @@ func (f *issuerInformer) defaultInformer(client versioned.Interface, resyncPerio
 }
 
 func (f *issuerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&certv1alpha1.Issuer{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscertv1alpha1.Issuer{}, f.defaultInformer)
 }
 
-func (f *issuerInformer) Lister() v1alpha1.IssuerLister {
-	return v1alpha1.NewIssuerLister(f.Informer().GetIndexer())
+func (f *issuerInformer) Lister() certv1alpha1.IssuerLister {
+	return certv1alpha1.NewIssuerLister(f.Informer().GetIndexer())
 }

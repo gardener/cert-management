@@ -15,12 +15,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/cert-management/pkg/cert/utils/mock"
-	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("UtilsCertificate", func() {

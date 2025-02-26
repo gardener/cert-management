@@ -68,7 +68,7 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 	algorithm, _ := resources.GetAnnotation(objData, source.AnnotPrivateKeyAlgorithm)
 	var keySize api.PrivateKeySize
 	if keySizeStr, ok := resources.GetAnnotation(objData, source.AnnotPrivateKeySize); ok {
-		if value, err := strconv.Atoi(keySizeStr); err == nil {
+		if value, err := strconv.ParseInt(keySizeStr, 10, 32); err == nil {
 			keySize = api.PrivateKeySize(value) // #nosec G115 -- values are validated anyway
 		}
 	}

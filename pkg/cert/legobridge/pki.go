@@ -25,13 +25,11 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-var (
-	// DefaultCertExtKeyUsage are the default Extended KeyUsage (letsencrypt default).
-	DefaultCertExtKeyUsage []x509.ExtKeyUsage = []x509.ExtKeyUsage{
-		x509.ExtKeyUsageClientAuth,
-		x509.ExtKeyUsageServerAuth,
-	}
-)
+// DefaultCertExtKeyUsage are the default Extended KeyUsage (letsencrypt default).
+var DefaultCertExtKeyUsage []x509.ExtKeyUsage = []x509.ExtKeyUsage{
+	x509.ExtKeyUsageClientAuth,
+	x509.ExtKeyUsageServerAuth,
+}
 
 const (
 	// DefaultPubKeyAlgo is the default Public Key Algorithm (letsencrypt default).
@@ -97,8 +95,8 @@ func defaultKeySize(algo x509.PublicKeyAlgorithm) int {
 	return ECCurve521
 }
 
-// generateKey generates a crypto.Signer key and its PEM encoded format.
-func generateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte, error) {
+// GenerateKey generates a crypto.Signer key and its PEM encoded format.
+func GenerateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte, error) {
 	var key crypto.Signer
 	var err error
 
@@ -184,7 +182,7 @@ func generateCSRPEM(csr *x509.CertificateRequest, privateKey crypto.Signer) ([]b
 
 // generateCertFromCSR generates an x509.Certificate based on a PEM encoded CSR.
 func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
-	var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 
 	csr, err := extractCertificateRequest(csrPEM)
 	if err != nil {
@@ -234,7 +232,7 @@ func newSelfSignedCertInPEMFormat(
 	if input.Duration == nil {
 		return nil, nil, fmt.Errorf("duration must be set")
 	}
-	certPrivateKey, certPrivateKeyPEM, err := generateKey(algo, algoSize)
+	certPrivateKey, certPrivateKeyPEM, err := GenerateKey(algo, algoSize)
 	if err != nil {
 		return nil, nil, err
 	}

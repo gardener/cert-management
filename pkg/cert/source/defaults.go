@@ -191,7 +191,7 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 	algorithm, _ := resources.GetAnnotation(objData, AnnotPrivateKeyAlgorithm)
 	var keySize api.PrivateKeySize
 	if keySizeStr, ok := resources.GetAnnotation(objData, AnnotPrivateKeySize); ok {
-		if value, err := strconv.Atoi(keySizeStr); err == nil {
+		if value, err := strconv.ParseInt(keySizeStr, 10, 32); err == nil {
 			keySize = api.PrivateKeySize(value) // #nosec G115 -- values are validated anyway
 		}
 	}
