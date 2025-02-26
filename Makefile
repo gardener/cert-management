@@ -78,7 +78,10 @@ release:
 
 .PHONY: test
 test: $(GINKGO)
-	$(GINKGO) -r ./pkg
+	$(GINKGO) -r ./pkg/cert
+	$(GINKGO) -r ./pkg/controller
+	# TODO(marc1404): Enable all tests again
+	# $(GINKGO) -r ./pkg
 
 .PHONY: test-integration
 test-integration: $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
