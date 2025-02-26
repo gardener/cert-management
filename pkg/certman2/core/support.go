@@ -20,8 +20,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
 
 // RecoverableError is a recoverable error, i.e. reconcile after same backoff may help

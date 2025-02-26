@@ -17,8 +17,8 @@ import (
 	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/registration"
 
-	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/shared"
+	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
 
 const (

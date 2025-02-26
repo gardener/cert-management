@@ -23,9 +23,9 @@ import (
 	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/cert-management/pkg/shared"
+	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
 
 // TLSCAKey is the secret data key for the CA key.

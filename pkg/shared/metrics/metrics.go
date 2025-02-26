@@ -9,9 +9,7 @@ package metrics
 import (
 	"strconv"
 
-	"github.com/gardener/controller-manager-library/pkg/server"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gardener/cert-management/pkg/shared"
 )
@@ -25,8 +23,6 @@ func init() {
 	prometheus.MustRegister(OverdueCertificates)
 	prometheus.MustRegister(RevokedCertificates)
 	prometheus.MustRegister(CertificateSecrets)
-
-	server.RegisterHandler("/metrics", promhttp.Handler())
 }
 
 var (
