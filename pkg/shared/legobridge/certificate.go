@@ -368,7 +368,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 		}
 		err = client.Challenge.SetDNS01Provider(provider,
 			dns01.AddRecursiveNameservers(input.DNSSettings.PrecheckNameservers),
-			utils.CreateWrapPreCheckOption(input.DNSSettings.PrecheckNameservers))
+			shared.CreateWrapPreCheckOption(input.DNSSettings.PrecheckNameservers))
 		if err != nil {
 			o.releasePending(input)
 			return err
@@ -376,7 +376,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 	} else {
 		// skipDNSChallengeValidation
 		provider = &dummyProvider{}
-		err = client.Challenge.SetDNS01Provider(provider, utils.NoPropagationCheckOption())
+		err = client.Challenge.SetDNS01Provider(provider, shared.NoPropagationCheckOption())
 		if err != nil {
 			o.releasePending(input)
 			return err

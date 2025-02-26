@@ -17,7 +17,6 @@ import (
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
@@ -124,7 +123,7 @@ func (p *delegatingProvider) Present(domain, _, keyAuth string) error {
 	if p.settings.FollowCNAME {
 		var err error
 		orgfqdn := fqdn
-		fqdn, err = utils.FollowCNAMEs(fqdn, p.settings.PrecheckNameservers)
+		fqdn, err = shared.FollowCNAMEs(fqdn, p.settings.PrecheckNameservers)
 		if err != nil {
 			return fmt.Errorf("following CNAME for DNS01 challenge for %s failed: %w", orgfqdn, err)
 		}
@@ -231,6 +230,6 @@ func (p *delegatingProvider) waitFor(msgfunc func(bool) string, isReady func(dom
 
 func (p *delegatingProvider) isDNSTxtRecordReady(domain string, values []string) bool {
 	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
-	found, _ := utils.CheckDNSPropagation(p.settings.PrecheckNameservers, fqdn, values...)
+	found, _ := shared.CheckDNSPropagation(p.settings.PrecheckNameservers, fqdn, values...)
 	return found
 }
