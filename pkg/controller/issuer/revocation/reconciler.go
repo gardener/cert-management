@@ -57,7 +57,7 @@ func RevokeReconciler(c controller.Interface, support *core.Support) (reconcile.
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &revokeReconciler{
 		support:                 support,
-		obtainer:                legobridge.NewObtainer(),
+		obtainer:                legobridge.NewObtainer(utils.LoggerFactory),
 		classes:                 classes,
 		dnsCluster:              dnsCluster,
 		certResources:           certResources,

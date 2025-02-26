@@ -7,26 +7,22 @@
 package legobridge
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/gardener/controller-manager-library/pkg/logger"
-	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/external-dns-management/pkg/dns"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func newDNSRecordProvider(settings DNSControllerSettings) (internalProvider, error) {
-	itf, err := settings.Cluster.Resources().GetByExample(&extensionsv1alpha.DNSRecord{})
-	if err != nil {
-		return nil, fmt.Errorf("cannot get DNSRecord resources: %w", err)
-	}
 	if settings.DNSRecordSettings == nil {
 		return nil, fmt.Errorf("missing DNSRecord specific settings")
 	}
@@ -37,21 +33,19 @@ func newDNSRecordProvider(settings DNSControllerSettings) (internalProvider, err
 		return nil, fmt.Errorf("missing DNSRecord secret reference")
 	}
 	return &dnsRecordProvider{
-		settings:           settings,
-		dnsrecordResources: itf,
-		entries:            map[string]*extensionsv1alpha.DNSRecord{},
+		settings: settings,
+		entries:  map[string]*extensionsv1alpha.DNSRecord{},
 	}, nil
 }
 
 type dnsRecordProvider struct {
-	settings           DNSControllerSettings
-	dnsrecordResources resources.Interface
-	entries            map[string]*extensionsv1alpha.DNSRecord
+	settings DNSControllerSettings
+	entries  map[string]*extensionsv1alpha.DNSRecord
 }
 
 var _ internalProvider = &dnsRecordProvider{}
 
-func (p *dnsRecordProvider) present(log logger.LogContext, domain, fqdn string, values []string) (error, bool) {
+func (p *dnsRecordProvider) present(ctx context.Context, log LoggerInfof, domain, fqdn string, values []string) (error, bool) {
 	setSpec := func(e *extensionsv1alpha.DNSRecord) {
 		e.Spec.Name = dns.NormalizeHostname(fqdn)
 		e.Spec.TTL = ptr.To(int64(p.settings.PropagationTimeout.Seconds()))
@@ -62,7 +56,7 @@ func (p *dnsRecordProvider) present(log logger.LogContext, domain, fqdn string, 
 		if p.settings.DNSRecordSettings.Class != "" {
 			e.Spec.Class = ptr.To(extensionsv1alpha.ExtensionClass(p.settings.DNSRecordSettings.Class))
 		}
-		resources.SetAnnotation(e, shared.AnnotACMEDNSChallenge, "true")
+		addAnnotation(e, shared.AnnotACMEDNSChallenge, "true")
 	}
 
 	entry := p.prepareEntry(domain)
@@ -70,24 +64,22 @@ func (p *dnsRecordProvider) present(log logger.LogContext, domain, fqdn string, 
 	if len(values) == 1 {
 		setSpec(entry)
 		log.Infof("presenting DNSRecord %s/%s", entry.Namespace, entry.Name)
-		if p.existsBlockingEntry(entry) {
+		if p.existsBlockingEntry(ctx, entry) {
 			return fmt.Errorf("already existing DNSRecord %s/%s", entry.Namespace, entry.Name), true
 		}
-		if _, err := p.dnsrecordResources.Create(entry); err != nil {
+		if err := p.settings.Client.Create(ctx, entry); err != nil {
 			return fmt.Errorf("creating DNSRecord %s/%s failed: %w", entry.Namespace, entry.Name, err), false
 		}
 		return nil, false
 	}
 
 	err := retryOnUpdateError(func() error {
-		obj, err := p.dnsrecordResources.Get_(entry)
-		if err != nil {
+		if err := p.settings.Client.Get(ctx, client.ObjectKeyFromObject(entry), entry); err != nil {
 			return fmt.Errorf("getting DNSRecord %s/%s failed: %w", entry.Namespace, entry.Name, err)
 		}
-		entry = obj.Data().(*extensionsv1alpha.DNSRecord)
 		setSpec(entry)
 		log.Infof("presenting DNSRecord %s/%s with %d values", entry.Namespace, entry.Name, len(values))
-		if _, err = p.dnsrecordResources.Update(entry); err != nil {
+		if err := p.settings.Client.Update(ctx, entry); err != nil {
 			return &updateError{msg: fmt.Sprintf("updating DNSRecord %s/%s failed: %s", entry.Namespace, entry.Name, err)}
 		}
 		return nil
@@ -95,33 +87,31 @@ func (p *dnsRecordProvider) present(log logger.LogContext, domain, fqdn string, 
 	return err, false
 }
 
-func (p *dnsRecordProvider) existsBlockingEntry(entry *extensionsv1alpha.DNSRecord) bool {
-	objectName := resources.NewObjectName(entry.Namespace, entry.Name)
-	obj, err := p.dnsrecordResources.Get_(objectName)
-	if err != nil {
+func (p *dnsRecordProvider) existsBlockingEntry(ctx context.Context, entry *extensionsv1alpha.DNSRecord) bool {
+	if err := p.settings.Client.Get(ctx, client.ObjectKeyFromObject(entry), entry); err != nil {
 		return false
 	}
 
-	keep := obj.GetCreationTimestamp().Add(3 * time.Minute).After(time.Now())
+	keep := entry.CreationTimestamp.Add(3 * time.Minute).After(time.Now())
 	if !keep {
 		// delete outdated or foreign DNSRecord
-		_ = p.dnsrecordResources.DeleteByName(objectName)
+		_ = p.settings.Client.Delete(ctx, entry)
 	}
 	return keep
 }
 
-func (p *dnsRecordProvider) cleanup(log logger.LogContext, domain string) error {
+func (p *dnsRecordProvider) cleanup(ctx context.Context, log LoggerInfof, domain string) error {
 	entry := p.prepareEntry(domain)
 	log.Infof("cleanup DNSRecord %s/%s", entry.Namespace, entry.Name)
-	if _, err := p.dnsrecordResources.GetInto1(entry); err != nil {
+	if err := p.settings.Client.Get(ctx, client.ObjectKeyFromObject(entry), entry); err != nil {
 		return fmt.Errorf("getting DNSRecord %s/%s failed: %w", entry.Namespace, entry.Name, err)
 	}
-	if resources.SetAnnotation(entry, v1beta1constants.ConfirmationDeletion, "true") {
-		if _, err := p.dnsrecordResources.Update(entry); err != nil {
+	if addAnnotation(entry, v1beta1constants.ConfirmationDeletion, "true") {
+		if err := p.settings.Client.Update(ctx, entry); err != nil {
 			return fmt.Errorf("annotating DNSRecord %s/%s failed: %w", entry.Namespace, entry.Name, err)
 		}
 	}
-	if err := p.dnsrecordResources.Delete(entry); err != nil {
+	if err := p.settings.Client.Delete(ctx, entry); err != nil {
 		return fmt.Errorf("deleting DNSRecord %s/%s failed: %w", entry.Namespace, entry.Name, err)
 	}
 	return nil
@@ -134,13 +124,11 @@ func (p *dnsRecordProvider) prepareEntry(domain string) *extensionsv1alpha.DNSRe
 	return entry
 }
 
-func (p *dnsRecordProvider) checkDNSResourceReady(domain string, _ []string) bool {
+func (p *dnsRecordProvider) checkDNSResourceReady(ctx context.Context, domain string, _ []string) bool {
 	entry := p.prepareEntry(domain)
-	obj, err := p.dnsrecordResources.Get_(entry)
-	if err != nil {
+	if err := p.settings.Client.Get(ctx, client.ObjectKeyFromObject(entry), entry); err != nil {
 		return true // no more waiting
 	}
-	entry = obj.Data().(*extensionsv1alpha.DNSRecord)
 	p.entries[domain] = entry
 	return entry.Status.LastOperation != nil && entry.Status.LastOperation.State == gardencorev1beta1.LastOperationStateSucceeded &&
 		entry.Generation == entry.Status.ObservedGeneration

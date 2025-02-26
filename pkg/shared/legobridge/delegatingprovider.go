@@ -7,15 +7,15 @@
 package legobridge
 
 import (
+	"context"
 	"fmt"
 	"sync/atomic"
 	"time"
 
-	"github.com/gardener/controller-manager-library/pkg/logger"
-	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/go-acme/lego/v4/challenge"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/cert-management/pkg/shared/metrics"
@@ -29,21 +29,29 @@ type ProviderWithCount interface {
 	GetPendingTXTRecordError() error
 }
 
+type LoggerFactory func(key client.ObjectKey, serial uint32) LoggerInfof
+
+type LoggerInfof interface {
+	Info(msg ...interface{})
+	Infof(msgfmt string, args ...interface{})
+}
+
 type internalProvider interface {
-	present(log logger.LogContext, domain, fqdn string, values []string) (error, bool)
-	cleanup(log logger.LogContext, domain string) error
+	present(ctx context.Context, log LoggerInfof, domain, fqdn string, values []string) (error, bool)
+	cleanup(ctx context.Context, log LoggerInfof, domain string) error
 
 	failedDNSResourceReadyMessage(final bool) string
-	checkDNSResourceReady(domain string, values []string) bool
+	checkDNSResourceReady(ctx context.Context, domain string, values []string) bool
 }
 
 var serial uint32
 
 func newDelegatingProvider(
 	settings DNSControllerSettings,
-	certificateName resources.ObjectName,
+	certificateName client.ObjectKey,
 	targetClass string,
 	issuerKey shared.IssuerKeyItf,
+	loggerFactory LoggerFactory,
 ) (ProviderWithCount, error) {
 	n := atomic.AddUint32(&serial, 1)
 	var internalPrvdr internalProvider
@@ -53,8 +61,9 @@ func newDelegatingProvider(
 	} else {
 		internalPrvdr, err = newDNSRecordProvider(settings)
 	}
+
 	return &delegatingProvider{
-		logger:           logger.NewContext("DNSChallengeProvider", fmt.Sprintf("dns-challenge-provider: %s-%d", certificateName, n)),
+		logger:           loggerFactory(certificateName, n),
 		settings:         settings,
 		issuerKey:        issuerKey,
 		initialWait:      true,
@@ -64,7 +73,7 @@ func newDelegatingProvider(
 }
 
 type delegatingProvider struct {
-	logger      logger.LogContext
+	logger      LoggerInfof
 	settings    DNSControllerSettings
 	issuerKey   shared.IssuerKeyItf
 	count       int32
@@ -131,7 +140,8 @@ func (p *delegatingProvider) Present(domain, _, keyAuth string) error {
 
 	values := p.addPresentingDomainValue(domain, value)
 
-	err, remove := p.internalProvider.present(p.logger, domain, fqdn, values)
+	ctx := context.Background()
+	err, remove := p.internalProvider.present(ctx, p.logger, domain, fqdn, values)
 	if remove {
 		p.removePresentingDomain(domain)
 	}
@@ -159,7 +169,8 @@ func (p *delegatingProvider) CleanUp(domain, _, _ string) error {
 		return nil
 	}
 
-	return p.internalProvider.cleanup(p.logger, domain)
+	ctx := context.Background()
+	return p.internalProvider.cleanup(ctx, p.logger, domain)
 }
 
 func (p *delegatingProvider) GetChallengesCount() int {
@@ -187,9 +198,10 @@ func (p *delegatingProvider) Timeout() (timeout, interval time.Duration) {
 	// until all entries are ready
 
 	prepareWaitTimeout := 30*time.Second + 5*time.Second*time.Duration(len(p.presenting))
-	ok := p.waitFor(p.internalProvider.failedDNSResourceReadyMessage, p.internalProvider.checkDNSResourceReady, prepareWaitTimeout)
+	ctx := context.Background()
+	ok := p.waitFor(ctx, p.internalProvider.failedDNSResourceReadyMessage, p.internalProvider.checkDNSResourceReady, prepareWaitTimeout)
 	if ok {
-		ok = p.waitFor(func(bool) string { return "DNS record propagation" }, p.isDNSTxtRecordReady, waitTimeout)
+		ok = p.waitFor(ctx, func(bool) string { return "DNS record propagation" }, p.isDNSTxtRecordReady, waitTimeout)
 	}
 	if ok {
 		// wait some additional seconds to enlarge probability of record propagation to DNS server use by ACME server
@@ -200,7 +212,7 @@ func (p *delegatingProvider) Timeout() (timeout, interval time.Duration) {
 	return waitTimeout / 2, dns01.DefaultPollingInterval
 }
 
-func (p *delegatingProvider) waitFor(msgfunc func(bool) string, isReady func(domain string, values []string) bool, timeout time.Duration) bool {
+func (p *delegatingProvider) waitFor(ctx context.Context, msgfunc func(bool) string, isReady func(ctx context.Context, domain string, values []string) bool, timeout time.Duration) bool {
 	p.failedPendingDomain = ""
 	p.failedPendingCheck = ""
 
@@ -210,7 +222,7 @@ func (p *delegatingProvider) waitFor(msgfunc func(bool) string, isReady func(dom
 	for time.Now().Before(endTime) {
 		ready := true
 		for domain, values := range p.presenting {
-			if !isReady(domain, values) {
+			if !isReady(ctx, domain, values) {
 				pendingDomain = domain
 				ready = false
 				break
@@ -228,7 +240,7 @@ func (p *delegatingProvider) waitFor(msgfunc func(bool) string, isReady func(dom
 	return false
 }
 
-func (p *delegatingProvider) isDNSTxtRecordReady(domain string, values []string) bool {
+func (p *delegatingProvider) isDNSTxtRecordReady(_ context.Context, domain string, values []string) bool {
 	fqdn := fmt.Sprintf("_acme-challenge.%s.", domain)
 	found, _ := shared.CheckDNSPropagation(p.settings.PrecheckNameservers, fqdn, values...)
 	return found

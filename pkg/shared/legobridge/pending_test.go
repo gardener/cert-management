@@ -5,16 +5,16 @@
 package legobridge_test
 
 import (
-	"github.com/gardener/controller-manager-library/pkg/resources"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 var _ = Describe("Pending", func() {
 	It("should add an object to PendingCertificateRequests and remove it afterwards", func() {
-		name := resources.NewObjectName("test", "test-cert")
+		name := client.ObjectKey{Namespace: "test", Name: "test-cert"}
 		pendingRequests := legobridge.NewPendingRequests()
 		By("Adding the Object")
 		pendingRequests.Add(name)
@@ -26,7 +26,7 @@ var _ = Describe("Pending", func() {
 	})
 
 	It("should add an object to PendingResults and remove it afterwards", func() {
-		name := resources.NewObjectName("test", "test-cert")
+		name := client.ObjectKey{Namespace: "test", Name: "test-cert"}
 		pendingResults := legobridge.NewPendingResults()
 		result := &legobridge.ObtainOutput{}
 

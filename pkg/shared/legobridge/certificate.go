@@ -14,13 +14,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/shared"
@@ -50,7 +50,7 @@ type ObtainInput struct {
 	// CSR is the optional Certificate Signing Request.
 	CSR []byte
 	// Request name is the request object name.
-	RequestName resources.ObjectName
+	RequestName client.ObjectKey
 	// TargetClass is the target class of the DNSEntry.
 	TargetClass string
 	// Callback is the callback function to return the ObtainOutput.
@@ -73,8 +73,8 @@ type ObtainInput struct {
 
 // DNSControllerSettings are the settings for the DNSController.
 type DNSControllerSettings struct {
-	// Cluster is the cluster where the DNSEntries will be created
-	Cluster resources.Cluster
+	// Client is the client to the cluster where the DNSEntries will be created
+	Client client.Client
 	// Namespace to set for challenge DNSEntry
 	Namespace string
 	// OwnerID to set for challenge DNSEntry
@@ -150,12 +150,16 @@ func (d *ConcurrentObtainError) Error() string {
 
 type obtainer struct {
 	lock           sync.Mutex
+	factory        LoggerFactory
 	pendingDomains map[string]time.Time
 }
 
 // NewObtainer creates a new Obtainer
-func NewObtainer() Obtainer {
-	return &obtainer{pendingDomains: map[string]time.Time{}}
+func NewObtainer(factory LoggerFactory) Obtainer {
+	return &obtainer{
+		pendingDomains: map[string]time.Time{},
+		factory:        factory,
+	}
 }
 
 func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) (*certificate.Resource, error) {
@@ -351,7 +355,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 	config := input.User.NewConfig(input.User.CADirURL())
 
 	// A client facilitates communication with the CA server.
-	client, err := lego.NewClient(config)
+	legoClient, err := lego.NewClient(config)
 	if err != nil {
 		o.releasePending(input)
 		return err
@@ -359,13 +363,18 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 
 	var provider ProviderWithCount
 	if input.DNSSettings != nil {
-		provider, err = newDelegatingProvider(*input.DNSSettings, input.RequestName,
-			input.TargetClass, input.IssuerKey)
+		provider, err = newDelegatingProvider(
+			*input.DNSSettings,
+			input.RequestName,
+			input.TargetClass,
+			input.IssuerKey,
+			o.factory,
+		)
 		if err != nil {
 			o.releasePending(input)
 			return err
 		}
-		err = client.Challenge.SetDNS01Provider(provider,
+		err = legoClient.Challenge.SetDNS01Provider(provider,
 			dns01.AddRecursiveNameservers(input.DNSSettings.PrecheckNameservers),
 			shared.CreateWrapPreCheckOption(input.DNSSettings.PrecheckNameservers))
 		if err != nil {
@@ -375,7 +384,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 	} else {
 		// skipDNSChallengeValidation
 		provider = &dummyProvider{}
-		err = client.Challenge.SetDNS01Provider(provider, shared.NoPropagationCheckOption())
+		err = legoClient.Challenge.SetDNS01Provider(provider, shared.NoPropagationCheckOption())
 		if err != nil {
 			o.releasePending(input)
 			return err
@@ -390,9 +399,9 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			if input.CommonName != nil {
 				domains = append([]string{*input.CommonName}, domains...)
 			}
-			certificates, err = obtainForDomains(client, domains, input)
+			certificates, err = obtainForDomains(legoClient, domains, input)
 		} else {
-			certificates, err = obtainForCSR(client, input.CSR, input)
+			certificates, err = obtainForCSR(legoClient, input.CSR, input)
 		}
 		count := provider.GetChallengesCount()
 		metrics.AddACMEOrder(input.IssuerKey, err == nil, count, input.Renew)
