@@ -7,6 +7,7 @@ package source_test
 import (
 	"context"
 	"reflect"
+	"time"
 
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
@@ -35,6 +36,11 @@ import (
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 )
+
+func init() {
+	// Set the default timeout for Eventually calls to 10 seconds
+	SetDefaultEventuallyTimeout(10 * time.Second)
+}
 
 var _ = Describe("Source controller tests", func() {
 	var (
@@ -493,7 +499,7 @@ var _ = Describe("Source controller tests", func() {
 		}
 
 		By("Wait for certificate")
-		Eventually(func(g Gomega) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			checkCertificateSpec(g, gateway, expectedCertSpec)
 		}).Should(Succeed())
 
@@ -523,7 +529,7 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = []string{"route2.example.com"}
-		Eventually(func(g Gomega) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			checkCertificateSpec(g, gateway, expectedCertSpec)
 		}).Should(Succeed())
 
@@ -532,7 +538,7 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = []string{"route2.example.com", "route2b.example.com"}
-		Eventually(func(g Gomega) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			checkCertificateSpec(g, gateway, expectedCertSpec)
 		}).Should(Succeed())
 
@@ -540,14 +546,14 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = nil
-		Eventually(func(g Gomega) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			checkCertificateSpec(g, gateway, expectedCertSpec)
 		}).Should(Succeed())
 
 		Expect(testClient.Delete(ctx, route1)).To(Succeed())
 
 		expectedCertSpec.CommonName = nil
-		Eventually(func(g Gomega) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			checkCertificateSpec(g, gateway, expectedCertSpec)
 		}).Should(Succeed())
 
