@@ -1191,7 +1191,7 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	cn := crt.Spec.CommonName
 	dnsNames := crt.Spec.DNSNames
 	if crt.Spec.CSR != nil {
-		cn, dnsNames, _ = utils.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
+		cn, dnsNames, _ = shared.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
 	utils.AssureStringSlice(mod.ModificationState, &status.DNSNames, dnsNames)

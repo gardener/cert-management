@@ -23,7 +23,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/utils"
 	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
@@ -480,7 +479,7 @@ func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
 		}
 		return input.DNSNames, nil
 	}
-	cn, san, err := utils.ExtractCommonNameAnDNSNames(input.CSR)
+	cn, san, err := shared.ExtractCommonNameAnDNSNames(input.CSR)
 	if err != nil {
 		return nil, err
 	}

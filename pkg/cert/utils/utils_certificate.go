@@ -7,11 +7,10 @@
 package utils
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"unicode/utf8"
 
+	"github.com/gardener/cert-management/pkg/shared"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -95,7 +94,7 @@ func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
 		if spec.CSR == nil {
 			return nil, fmt.Errorf("either domains or csr must be specified")
 		}
-		cn, dnsNames, err = ExtractCommonNameAnDNSNames(spec.CSR)
+		cn, dnsNames, err = shared.ExtractCommonNameAnDNSNames(spec.CSR)
 		if err != nil {
 			return nil, err
 		}
@@ -105,30 +104,4 @@ func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
 		dnsNames = append([]string{*cn}, dnsNames...)
 	}
 	return dnsNames, nil
-}
-
-// ExtractCommonNameAnDNSNames extracts values from a CSR (Certificate Signing Request).
-func ExtractCommonNameAnDNSNames(csr []byte) (cn *string, san []string, err error) {
-	certificateRequest, err := extractCertificateRequest(csr)
-	if err != nil {
-		err = fmt.Errorf("parsing CSR failed: %w", err)
-		return
-	}
-	cnvalue := certificateRequest.Subject.CommonName
-	if cnvalue != "" {
-		cn = &cnvalue
-	}
-	san = certificateRequest.DNSNames[:]
-	for _, ip := range certificateRequest.IPAddresses {
-		san = append(san, ip.String())
-	}
-	return
-}
-
-func extractCertificateRequest(csr []byte) (*x509.CertificateRequest, error) {
-	block, _ := pem.Decode(csr)
-	if block == nil {
-		return nil, fmt.Errorf("decoding CSR failed")
-	}
-	return x509.ParseCertificateRequest(block.Bytes)
 }
