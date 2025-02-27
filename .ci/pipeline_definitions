@@ -45,11 +45,10 @@ cert-management:
 
     steps:
       build:
-        image: golang:1.24.0
+        image: golang:1.24
         output_dir: binary
       check:
-        image: golang:1.24.0
-
+        image: golang:1.24
   jobs:
     head-update:
       traits:
