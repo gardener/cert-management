@@ -26,12 +26,13 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
+	"github.com/gardener/cert-management/pkg/shared"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 // RevokeReconciler creates a certificate revocation reconciler.
@@ -56,7 +57,7 @@ func RevokeReconciler(c controller.Interface, support *core.Support) (reconcile.
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
 	reconciler := &revokeReconciler{
 		support:                 support,
-		obtainer:                legobridge.NewObtainer(),
+		obtainer:                legobridge.NewObtainer(utils.LoggerFactory),
 		classes:                 classes,
 		dnsCluster:              dnsCluster,
 		certResources:           certResources,
@@ -195,7 +196,7 @@ func (r *revokeReconciler) collectSecretsRefsAndRepeat(logctx logger.LogContext,
 	}
 
 	// secret is already backed up on certificate creation, only needed for backwards compatibility
-	issuerInfo := utils.NewACMEIssuerInfo(issuerKey)
+	issuerInfo := shared.NewACMEIssuerInfo(issuerKey)
 	_, _, err = certificate.BackupSecret(r.certSecretResources, secret, hashKey, issuerInfo)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("secret backup failed: %w", err))

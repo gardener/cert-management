@@ -10,15 +10,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/gardener/cert-management/pkg/apis/cert"
 )
 
 const (
 	// Version is the version of the API.
 	Version = "v1alpha1"
 	// GroupName is the group name of the API.
-	GroupName = cert.GroupName
+	GroupName = "cert.gardener.cloud"
 
 	// IssuerKind is the issuer kind.
 	IssuerKind = "Issuer"
@@ -31,7 +29,7 @@ const (
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: cert.GroupName, Version: Version}
+var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: Version}
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func Kind(kind string) schema.GroupKind {

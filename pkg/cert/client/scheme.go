@@ -18,6 +18,7 @@ import (
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	gardenerextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 
 	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
@@ -43,6 +44,7 @@ func init() {
 		gatewayapisv1.AddToScheme,
 		gatewayapisv1alpha2.AddToScheme,
 		gatewayapisv1beta1.AddToScheme,
+		gardenerextensionsv1alpha1.AddToScheme,
 	)
 
 	utilruntime.Must(clusterSchemeBuilder.AddToScheme(ClusterScheme))

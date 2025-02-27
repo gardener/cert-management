@@ -78,10 +78,7 @@ release:
 
 .PHONY: test
 test: $(GINKGO)
-	$(GINKGO) -r ./pkg/cert
-	$(GINKGO) -r ./pkg/controller
-	# TODO(marc1404): Enable all tests again
-	# $(GINKGO) -r ./pkg
+	go test -race -timeout=3m ./pkg/... | grep -v 'no test files'
 
 .PHONY: test-integration
 test-integration: $(GINKGO) $(REPORT_COLLECTOR) $(SETUP_ENVTEST)

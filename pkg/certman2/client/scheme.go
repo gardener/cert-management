@@ -6,6 +6,7 @@ package client
 
 import (
 	dnsmanv1alpha1 "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
+	gardenerextensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -43,6 +44,7 @@ func init() {
 		gatewayapisv1.AddToScheme,
 		gatewayapisv1alpha2.AddToScheme,
 		gatewayapisv1beta1.AddToScheme,
+		gardenerextensionsv1alpha1.AddToScheme,
 	)
 
 	utilruntime.Must(clusterSchemeBuilder.AddToScheme(ClusterScheme))
