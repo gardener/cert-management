@@ -8,20 +8,20 @@ require (
 	github.com/cert-manager/cert-manager v1.17.1
 	github.com/gardener/controller-manager-library v0.2.1-0.20241212154005-7de194a006b6
 	github.com/gardener/external-dns-management v0.23.1
-	github.com/gardener/gardener v1.113.1
+	github.com/gardener/gardener v1.114.0
 	github.com/go-acme/lego/v4 v4.22.2
 	github.com/go-logr/logr v1.4.2
 	github.com/letsencrypt/pebble/v2 v2.7.0
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.63
 	github.com/onsi/ginkgo/v2 v2.22.1
 	github.com/onsi/gomega v1.36.2
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
-	github.com/prometheus/client_golang v1.20.5
+	github.com/prometheus/client_golang v1.21.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	go.uber.org/mock v0.5.0
-	golang.org/x/crypto v0.33.0
-	golang.org/x/exp v0.0.0-20250218142911-aa4b98e5adaa
+	golang.org/x/crypto v0.35.0
+	golang.org/x/exp v0.0.0-20250228200357-dead58393ab7
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
 	istio.io/api v1.24.3
 	istio.io/client-go v1.24.2
@@ -77,7 +77,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2 // indirect
