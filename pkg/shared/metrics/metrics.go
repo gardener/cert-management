@@ -9,11 +9,9 @@ package metrics
 import (
 	"strconv"
 
-	"github.com/gardener/controller-manager-library/pkg/server"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func init() {
@@ -25,8 +23,6 @@ func init() {
 	prometheus.MustRegister(OverdueCertificates)
 	prometheus.MustRegister(RevokedCertificates)
 	prometheus.MustRegister(CertificateSecrets)
-
-	server.RegisterHandler("/metrics", promhttp.Handler())
 }
 
 var (
@@ -102,12 +98,12 @@ var (
 )
 
 // AddACMEAccountRegistration increments the ACMEAccountRegistrations counter.
-func AddACMEAccountRegistration(issuerKey utils.IssuerKeyItf, uri, email string) {
+func AddACMEAccountRegistration(issuerKey shared.IssuerKeyItf, uri, email string) {
 	ACMEAccountRegistrations.WithLabelValues(uri, email, issuerKey.String()).Set(1)
 }
 
 // AddACMEOrder increments the ACMETotalOrders counter.
-func AddACMEOrder(issuerKey utils.IssuerKeyItf, success bool, count int, renew bool) {
+func AddACMEOrder(issuerKey shared.IssuerKeyItf, success bool, count int, renew bool) {
 	if count > 0 {
 		name := issuerKey.String()
 		ACMETotalOrders.WithLabelValues(name, strconv.FormatBool(success), strconv.FormatInt(int64(count), 10), strconv.FormatBool(renew)).Inc()
@@ -115,23 +111,23 @@ func AddACMEOrder(issuerKey utils.IssuerKeyItf, success bool, count int, renew b
 }
 
 // AddActiveACMEDNSChallenge increments the ACMEActiveDNSChallenges gauge.
-func AddActiveACMEDNSChallenge(issuerKey utils.IssuerKeyItf) {
+func AddActiveACMEDNSChallenge(issuerKey shared.IssuerKeyItf) {
 	name := issuerKey.String()
 	ACMEActiveDNSChallenges.WithLabelValues(name).Inc()
 }
 
 // RemoveActiveACMEDNSChallenge decrements the ACMEActiveDNSChallenges gauge.
-func RemoveActiveACMEDNSChallenge(issuerKey utils.IssuerKeyItf) {
+func RemoveActiveACMEDNSChallenge(issuerKey shared.IssuerKeyItf) {
 	ACMEActiveDNSChallenges.WithLabelValues(issuerKey.String()).Dec()
 }
 
 // ReportCertEntries sets the CertEntries gauge
-func ReportCertEntries(issuertype string, issuerKey utils.IssuerKeyItf, count int) {
+func ReportCertEntries(issuertype string, issuerKey shared.IssuerKeyItf, count int) {
 	CertEntries.WithLabelValues(issuertype, issuerKey.String()).Set(float64(count))
 }
 
 // DeleteCertEntries deletes a CertEntries gauge entry.
-func DeleteCertEntries(issuertype string, issuerKey utils.IssuerKeyItf) {
+func DeleteCertEntries(issuertype string, issuerKey shared.IssuerKeyItf) {
 	CertEntries.DeleteLabelValues(issuertype, issuerKey.String())
 }
 

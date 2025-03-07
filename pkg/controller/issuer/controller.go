@@ -14,7 +14,6 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	"github.com/gardener/controller-manager-library/pkg/resources/apiextensions"
 
-	"github.com/gardener/cert-management/pkg/apis/cert"
 	"github.com/gardener/cert-management/pkg/apis/cert/crds"
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/source"
@@ -52,7 +51,7 @@ func init() {
 		DefaultedIntOption(core.OptDefaultECDSAPrivateKeySize, 256,
 			"Default certificate private key size for 'ecdsa' algorithm.").
 		DefaultedStringOption(core.OptDefaultPrivateKeyAlgorithm, "RSA", "default algorithm for certificate private keys").
-		FinalizerDomain(cert.GroupName).
+		FinalizerDomain(api.GroupName).
 		Cluster(ctrl.TargetCluster).
 		DefaultWorkerPool(2, 24*time.Hour).
 		MainResource(api.GroupName, api.CertificateKind).

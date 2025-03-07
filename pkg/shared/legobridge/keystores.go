@@ -8,15 +8,17 @@ package legobridge
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/x509"
 	"fmt"
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/gardener/controller-manager-library/pkg/resources"
 	jks "github.com/pavlo-v-chernykh/keystore-go/v4"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkcs12 "software.sslmate.com/src/go-pkcs12"
 
 	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -47,28 +49,28 @@ func RemoveKeystoresFromSecret(secret *corev1.Secret) {
 }
 
 // AddKeystoresToSecret adds keystore data entries in the secret if requested.
-func AddKeystoresToSecret(secretResources resources.Interface, secret *corev1.Secret, keystores *certv1alpha1.CertificateKeystores) error {
-	_, err := updateKeystoresToSecret(secretResources, secret, keystores, false)
+func AddKeystoresToSecret(ctx context.Context, cl client.Client, secret *corev1.Secret, keystores *certv1alpha1.CertificateKeystores) error {
+	_, err := updateKeystoresToSecret(ctx, cl, secret, keystores, false)
 	return err
 }
 
 // UpdateKeystoresToSecret adds, updates, or deletes keystore data entries in the secret.
 // Return value `modified` is true if the secret was changed.
-func UpdateKeystoresToSecret(secretResources resources.Interface, secret *corev1.Secret, keystores *certv1alpha1.CertificateKeystores) (modified bool, err error) {
-	return updateKeystoresToSecret(secretResources, secret, keystores, true)
+func UpdateKeystoresToSecret(ctx context.Context, cl client.Client, secret *corev1.Secret, keystores *certv1alpha1.CertificateKeystores) (modified bool, err error) {
+	return updateKeystoresToSecret(ctx, cl, secret, keystores, true)
 }
 
-func updateKeystoresToSecret(secretResources resources.Interface, secret *corev1.Secret, keystores *certv1alpha1.CertificateKeystores, keepExisting bool) (modified bool, err error) {
+func updateKeystoresToSecret(ctx context.Context, cl client.Client, secret *corev1.Secret, keystores *certv1alpha1.CertificateKeystores, keepExisting bool) (modified bool, err error) {
 	var jks *certv1alpha1.JKSKeystore
 	var pkcs12 *certv1alpha1.PKCS12Keystore
 	if keystores != nil {
 		jks = keystores.JKS
 		pkcs12 = keystores.PKCS12
 	}
-	if err = updateJKSKeystore(secretResources, secret, jks, keepExisting, &modified); err != nil {
+	if err = updateJKSKeystore(ctx, cl, secret, jks, keepExisting, &modified); err != nil {
 		return
 	}
-	if err = updatePKCS12Keystore(secretResources, secret, pkcs12, keepExisting, &modified); err != nil {
+	if err = updatePKCS12Keystore(ctx, cl, secret, pkcs12, keepExisting, &modified); err != nil {
 		return
 	}
 	return
@@ -76,7 +78,7 @@ func updateKeystoresToSecret(secretResources resources.Interface, secret *corev1
 
 // updateJKSKeystore updates `keystore.jks` and `truststore.jks` data entries to the secret or removes them
 // if not requested anymore
-func updateJKSKeystore(secretResources resources.Interface, secret *corev1.Secret, jksKeystore *certv1alpha1.JKSKeystore,
+func updateJKSKeystore(ctx context.Context, cl client.Client, secret *corev1.Secret, jksKeystore *certv1alpha1.JKSKeystore,
 	keepExisting bool, modified *bool,
 ) error {
 	if jksKeystore == nil || !jksKeystore.Create {
@@ -94,7 +96,7 @@ func updateJKSKeystore(secretResources resources.Interface, secret *corev1.Secre
 		return nil
 	}
 
-	password, err := loadPassword(secretResources.Namespace(secret.Namespace), jksKeystore.PasswordSecretRef)
+	password, err := loadPassword(ctx, cl, secret.Namespace, jksKeystore.PasswordSecretRef)
 	if err != nil {
 		return fmt.Errorf("loading JKS password from data key %s of secret %s/%s failed: %w",
 			jksKeystore.PasswordSecretRef.Key, secret.Namespace, jksKeystore.PasswordSecretRef.SecretName, err)
@@ -118,7 +120,7 @@ func updateJKSKeystore(secretResources resources.Interface, secret *corev1.Secre
 
 // updatePKCS12Keystore updates `keystore.p12` and `truststore.p12` data entries to the secret or removes them
 // if not requested anymore
-func updatePKCS12Keystore(secretResources resources.Interface, secret *corev1.Secret, pkcs12Keystore *certv1alpha1.PKCS12Keystore,
+func updatePKCS12Keystore(ctx context.Context, cl client.Client, secret *corev1.Secret, pkcs12Keystore *certv1alpha1.PKCS12Keystore,
 	keepExisting bool, modified *bool,
 ) error {
 	if pkcs12Keystore == nil || !pkcs12Keystore.Create {
@@ -136,7 +138,7 @@ func updatePKCS12Keystore(secretResources resources.Interface, secret *corev1.Se
 		return nil
 	}
 
-	password, err := loadPassword(secretResources.Namespace(secret.Namespace), pkcs12Keystore.PasswordSecretRef)
+	password, err := loadPassword(ctx, cl, secret.Namespace, pkcs12Keystore.PasswordSecretRef)
 	if err != nil {
 		return fmt.Errorf("loading PKCS#12 password from data key %s of secret %s/%s failed: %w",
 			pkcs12Keystore.PasswordSecretRef.Key, secret.Namespace, pkcs12Keystore.PasswordSecretRef.SecretName, err)
@@ -174,12 +176,15 @@ func update(secret *corev1.Secret, key string, value []byte, modified *bool) {
 	*modified = true
 }
 
-func loadPassword(namespacedSecretResource resources.Namespaced, passwordSecretRef certv1alpha1.SecretKeySelector) ([]byte, error) {
-	obj, err := namespacedSecretResource.Get(passwordSecretRef.SecretName)
-	if err != nil {
+func loadPassword(ctx context.Context, cl client.Client, namespace string, passwordSecretRef certv1alpha1.SecretKeySelector) ([]byte, error) {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: passwordSecretRef.SecretName},
+	}
+
+	if err := cl.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
 		return nil, err
 	}
-	data := obj.Data().(*corev1.Secret).Data
+	data := secret.Data
 	if data == nil || data[passwordSecretRef.Key] == nil {
 		return nil, fmt.Errorf("key %s not found in secret", passwordSecretRef.Key)
 	}

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package utils
+package shared
 
 import (
 	"fmt"

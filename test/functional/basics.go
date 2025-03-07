@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 	"github.com/gardener/cert-management/test/functional/config"
 )
 

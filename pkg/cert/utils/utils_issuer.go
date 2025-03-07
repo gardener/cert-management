@@ -7,9 +7,14 @@
 package utils
 
 import (
+	"fmt"
+
+	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 var issuerType = (*api.Issuer)(nil)
@@ -40,4 +45,9 @@ func (o *IssuerObject) Spec() *api.IssuerSpec {
 // Status returns the issuer resource object status.
 func (o *IssuerObject) Status() *api.IssuerStatus {
 	return &o.Issuer().Status
+}
+
+// LoggerFactory is the logger factory for DNS challenges.
+func LoggerFactory(key client.ObjectKey, serial uint32) legobridge.LoggerInfof {
+	return logger.NewContext("DNSChallengeProvider", fmt.Sprintf("dns-challenge-provider: %s-%d", key, serial))
 }

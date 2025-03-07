@@ -14,9 +14,11 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/mappings"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	"github.com/gardener/controller-manager-library/pkg/server"
 	"github.com/gardener/controller-manager-library/pkg/utils"
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -76,6 +78,8 @@ func init() {
 	utils.Must(resources.Register(istionetworkingv1.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1beta1.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1.SchemeBuilder))
+
+	server.RegisterHandler("/metrics", promhttp.Handler())
 }
 
 func main() {

@@ -10,22 +10,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gardener/controller-manager-library/pkg/resources"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // PendingCertificateRequests contains the pending certificate requests.
 type PendingCertificateRequests struct {
 	lock     sync.Mutex
-	requests map[resources.ObjectName]time.Time
+	requests map[client.ObjectKey]time.Time
 }
 
 // NewPendingRequests creates a new PendingCertificateRequests
 func NewPendingRequests() *PendingCertificateRequests {
-	return &PendingCertificateRequests{requests: map[resources.ObjectName]time.Time{}}
+	return &PendingCertificateRequests{requests: map[client.ObjectKey]time.Time{}}
 }
 
 // Add adds a certificate object name.
-func (pr *PendingCertificateRequests) Add(name resources.ObjectName) {
+func (pr *PendingCertificateRequests) Add(name client.ObjectKey) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 
@@ -33,7 +33,7 @@ func (pr *PendingCertificateRequests) Add(name resources.ObjectName) {
 }
 
 // Contains check if a certificate object name is pending.
-func (pr *PendingCertificateRequests) Contains(name resources.ObjectName) bool {
+func (pr *PendingCertificateRequests) Contains(name client.ObjectKey) bool {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 
@@ -42,7 +42,7 @@ func (pr *PendingCertificateRequests) Contains(name resources.ObjectName) bool {
 }
 
 // Remove removes a certificate object name from the pending list.
-func (pr *PendingCertificateRequests) Remove(name resources.ObjectName) {
+func (pr *PendingCertificateRequests) Remove(name client.ObjectKey) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 
@@ -52,16 +52,16 @@ func (pr *PendingCertificateRequests) Remove(name resources.ObjectName) {
 // PendingResults caches the ObtainOutput results.
 type PendingResults struct {
 	lock    sync.Mutex
-	results map[resources.ObjectName]*ObtainOutput
+	results map[client.ObjectKey]*ObtainOutput
 }
 
 // NewPendingResults creates a new PendingResults.
 func NewPendingResults() *PendingResults {
-	return &PendingResults{results: map[resources.ObjectName]*ObtainOutput{}}
+	return &PendingResults{results: map[client.ObjectKey]*ObtainOutput{}}
 }
 
 // Add adds a object name / ObtainOutput pair.
-func (pr *PendingResults) Add(name resources.ObjectName, result *ObtainOutput) {
+func (pr *PendingResults) Add(name client.ObjectKey, result *ObtainOutput) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 
@@ -69,7 +69,7 @@ func (pr *PendingResults) Add(name resources.ObjectName, result *ObtainOutput) {
 }
 
 // Peek fetches a pending result by object name.
-func (pr *PendingResults) Peek(name resources.ObjectName) *ObtainOutput {
+func (pr *PendingResults) Peek(name client.ObjectKey) *ObtainOutput {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 
@@ -77,7 +77,7 @@ func (pr *PendingResults) Peek(name resources.ObjectName) *ObtainOutput {
 }
 
 // Remove removes a pending result by object name.
-func (pr *PendingResults) Remove(name resources.ObjectName) {
+func (pr *PendingResults) Remove(name client.ObjectKey) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
 

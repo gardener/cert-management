@@ -24,10 +24,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
+	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
 
 // RecoverableError is a recoverable error, i.e. reconcile after same backoff may help
@@ -780,7 +780,7 @@ func (s *Support) LoadIssuer(issuerKey utils.IssuerKey) (*api.Issuer, error) {
 		return nil, err
 	}
 	issuer := &api.Issuer{}
-	_, err = issuerResources.GetInto(issuerKey.ObjectName(s.IssuerNamespace()), issuer)
+	_, err = issuerResources.GetInto(issuerKeyToObjectName(issuerKey, s.IssuerNamespace()), issuer)
 	if err != nil {
 		return nil, fmt.Errorf("fetching issuer failed: %w", err)
 	}
@@ -887,4 +887,10 @@ func (s *Support) toObjectNameSet(keyset utils.IssuerKeySet) resources.ObjectNam
 		nameset.Add(resources.NewObjectName(namespace, key.Name()))
 	}
 	return nameset
+}
+
+// issuerKeyToObjectName returns the object name for the issuer key.
+// If it is on the default cluster, the given namespace is used.
+func issuerKeyToObjectName(k utils.IssuerKey, def string) resources.ObjectName {
+	return resources.NewObjectName(k.NamespaceOrDefault(def), k.Name())
 }
