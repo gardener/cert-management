@@ -61,6 +61,22 @@ func RunPebble(logr logr.Logger) (server *http.Server, certificatePath, director
 		return nil, "", "", fmt.Errorf("failed to set environment variable: %v", err)
 	}
 
+	// By default, Pebble sleeps between 0 and 15 seconds between challenge validation attempts.
+	// We don't want/need this in a testing environment.
+	// See the Pebble documentation: https://github.com/letsencrypt/pebble#testing-at-full-speed
+	err = os.Setenv("PEBBLE_VA_NOSLEEP", "1")
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to set environment variable: %v", err)
+	}
+
+	// By default, Pebble rejects 5% of valid nonces.
+	// We don't want this in a testing environment.
+	// See the Pebble documentation: https://github.com/letsencrypt/pebble#invalid-anti-replay-nonce-errors
+	err = os.Setenv("PEBBLE_WFE_NONCEREJECT", "0")
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to set environment variable: %v", err)
+	}
+
 	certificatePath, privateKeyPath, err := generateCertificate()
 	if err != nil {
 		return nil, "", "", err
