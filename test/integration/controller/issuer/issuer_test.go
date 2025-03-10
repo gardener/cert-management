@@ -365,7 +365,7 @@ var _ = Describe("Issuer controller tests", func() {
 			Eventually(func(g Gomega) {
 				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
 				g.Expect(certificate.Status.State).To(Equal("Error"))
-				g.Expect(certificate.Status.Message).To(PointTo(ContainSubstring("certificate duration must be greater than 1440h0m0s")))
+				g.Expect(certificate.Status.Message).To(PointTo(ContainSubstring("certificate duration must be greater than 48h0m0s")))
 			}).Should(Succeed())
 		})
 
@@ -503,6 +503,7 @@ func startManager(testRunID string) {
 			"--issuer-namespace", testRunID,
 			"--omit-lease",
 			"--pool.size", "1",
+			"--issuer.renewal-window", "24h",
 		}
 		runControllerManager(ctx, args)
 	}()
