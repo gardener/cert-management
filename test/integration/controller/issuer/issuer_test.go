@@ -252,10 +252,16 @@ var _ = Describe("Issuer controller tests", func() {
 			})
 
 			By("Wait for second certificate to become ready")
-			Eventually(func(g Gomega) string {
+			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert2), cert2)).To(Succeed())
-				return cert2.Status.State
-			}).Should(Equal("Ready"))
+				return cert2.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State": Equal("Ready"),
+				// The message of a provisioned certificate looks like this:
+				// certificate (SN 45:11:fb:59:68:54:49:d4:c3:ab:26:f1:35:09:3c:29:f4:7) valid from 2025-01-29 15:46:32 +0000 UTC to 2025-04-29 15:46:31 +0000 UTC
+				// As it contains the serial number (SN) we can assert that the SN is the same between both certificate resources.
+				"Message": Equal(cert1.Status.Message),
+			}))
 		})
 
 		It("should renew a certificate", func() {
