@@ -286,12 +286,9 @@ var _ = Describe("Issuer controller tests", func() {
 			}).Should(Equal("Ready"))
 
 			By("Trigger renewal")
-			oldExpirationDate := cert.Status.ExpirationDate
-			Eventually(func(g Gomega) {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
-				cert.Spec.Renew = ptr.To(true)
-				g.Expect(testClient.Update(ctx, cert)).To(Succeed())
-			}).Should(Succeed())
+			oldExpirationDate := &cert.Status.ExpirationDate
+			cert.Spec.Renew = ptr.To(true)
+			Expect(testClient.Update(ctx, cert)).To(Succeed())
 
 			By("Wait for renewal")
 			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
