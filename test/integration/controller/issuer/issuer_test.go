@@ -14,6 +14,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -68,7 +69,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 	Context("ACME issuer", func() {
 		It("should create an ACME issuer", func() {
-			issuer := getAcmeIssuer(testRunID, false)
+			issuer := getAcmeIssuer(testRunID)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -82,7 +83,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should create a certificate", func() {
 			By("Create ACME issuer")
-			issuer := getAcmeIssuer(testRunID, true)
+			issuer := getAcmeIssuer(testRunID)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -109,7 +110,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
 			By("Create ACME issuer")
-			issuer := getAcmeIssuer(testRunID, true)
+			issuer := getAcmeIssuer(testRunID)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -172,7 +173,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should not be able to create certificate if no quota is left", func() {
 			By("Create ACME issuer")
-			issuer := getAcmeIssuer(testRunID, true)
+			issuer := getAcmeIssuer(testRunID)
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
@@ -217,7 +218,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should reuse certificate if multiple certificates are created for the same domain", func() {
 			By("Create ACME issuer")
-			issuer := getAcmeIssuer(testRunID, true)
+			issuer := getAcmeIssuer(testRunID)
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
@@ -259,7 +260,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 		It("should renew a certificate", func() {
 			By("Create ACME issuer")
-			issuer := getAcmeIssuer(testRunID, true)
+			issuer := getAcmeIssuer(testRunID)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -273,7 +274,6 @@ var _ = Describe("Issuer controller tests", func() {
 
 			By("Create certificate")
 			cert := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
-			cert.Spec.Renew = ptr.To(false)
 			Expect(testClient.Create(ctx, cert)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, cert)).To(Succeed())
@@ -437,33 +437,33 @@ var _ = Describe("Issuer controller tests", func() {
 	})
 })
 
-func getAcmeIssuer(namespace string, skipDnsChallengeValidation bool) *v1alpha1.Issuer {
+func getAcmeIssuer(namespace string) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      "acme1",
+			Namespace:    namespace,
+			GenerateName: "acme-",
 		},
 		Spec: v1alpha1.IssuerSpec{
 			ACME: &v1alpha1.ACMESpec{
 				Email:                      "foo@somewhere-foo-123456.com",
 				Server:                     acmeDirectoryAddress,
 				AutoRegistration:           true,
-				SkipDNSChallengeValidation: ptr.To(skipDnsChallengeValidation),
+				SkipDNSChallengeValidation: ptr.To(true),
 			},
 		},
 	}
 }
 
-func getCertificate(certificateNamespace, certificateName, commonName, issuerNamespcae, issuerName string) *v1alpha1.Certificate {
+func getCertificate(certificateNamespace, certificateName, commonName, issuerNamespace, issuerName string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: certificateNamespace,
-			Name:      certificateName,
+			Namespace:    certificateNamespace,
+			GenerateName: fmt.Sprintf("%v-", certificateName),
 		},
 		Spec: v1alpha1.CertificateSpec{
 			CommonName: ptr.To(commonName),
 			IssuerRef: &v1alpha1.IssuerRef{
-				Namespace: issuerNamespcae,
+				Namespace: issuerNamespace,
 				Name:      issuerName,
 			},
 		},
