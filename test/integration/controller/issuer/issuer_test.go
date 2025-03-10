@@ -268,7 +268,7 @@ var _ = Describe("Issuer controller tests", func() {
 
 			By("Wait for issuer to become ready")
 			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
 			}).Should(Succeed())
 
