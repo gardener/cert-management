@@ -30,7 +30,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certmanv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"

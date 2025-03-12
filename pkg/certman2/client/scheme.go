@@ -20,7 +20,7 @@ import (
 	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certmanv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 var (
