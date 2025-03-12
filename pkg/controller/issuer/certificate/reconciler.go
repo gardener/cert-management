@@ -7,6 +7,7 @@
 package certificate
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/x509"
 	"errors"
@@ -31,14 +32,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
-	"github.com/gardener/cert-management/pkg/cert/metrics"
+	certclient "github.com/gardener/cert-management/pkg/cert/client"
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
+	"github.com/gardener/cert-management/pkg/shared"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
+	"github.com/gardener/cert-management/pkg/shared/metrics"
 )
 
 const (
@@ -93,14 +97,26 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	c.Infof(defaults.String())
 
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
+	dnsClient, err := client.New(ptr.To(dnsCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
+	if err != nil {
+		return nil, fmt.Errorf("creating client for DNS controller failed: %w", err)
+	}
+
+	targetClient, err := client.New(ptr.To(targetCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
+	if err != nil {
+		return nil, fmt.Errorf("creating client for target cluster failed: %w", err)
+	}
+
 	reconciler := &certReconciler{
 		support:                        support,
-		obtainer:                       legobridge.NewObtainer(),
+		obtainer:                       legobridge.NewObtainer(utils.LoggerFactory),
 		classes:                        classes,
 		targetCluster:                  targetCluster,
 		dnsCluster:                     dnsCluster,
+		dnsClient:                      dnsClient,
 		certResources:                  certResources,
 		certSecretResources:            certSecretResources,
+		certSecretClient:               targetClient,
 		rateLimiting:                   120 * time.Second,
 		pendingRequests:                legobridge.NewPendingRequests(),
 		pendingResults:                 legobridge.NewPendingResults(),
@@ -135,7 +151,7 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	reconciler.renewalOverdueWindow = renewalOverdueWindow
 
 	precheckNameservers, _ := c.GetStringOption(core.OptPrecheckNameservers)
-	reconciler.precheckNameservers = utils.PreparePrecheckNameservers(strings.Split(precheckNameservers, ","))
+	reconciler.precheckNameservers = shared.PreparePrecheckNameservers(strings.Split(precheckNameservers, ","))
 	c.Infof("Using these default nameservers for DNS propagation checks: %s", strings.Join(reconciler.precheckNameservers, ","))
 
 	reconciler.propagationTimeout, _ = c.GetDurationOption(core.OptPropagationTimeout)
@@ -152,8 +168,10 @@ type certReconciler struct {
 	obtainer               legobridge.Obtainer
 	targetCluster          cluster.Interface
 	dnsCluster             cluster.Interface
+	dnsClient              client.Client
 	certResources          resources.Interface
 	certSecretResources    resources.Interface
+	certSecretClient       client.Client
 	rateLimiting           time.Duration
 	pendingRequests        *legobridge.PendingCertificateRequests
 	pendingResults         *legobridge.PendingResults
@@ -244,7 +262,7 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 }
 
 func (r *certReconciler) isOrphanedPendingCertificate(cert *api.Certificate) bool {
-	return cert.Status.State == api.StatePending && !r.challengePending(cert) && r.pendingResults.Peek(resources.NewObjectName(cert.Namespace, cert.Name)) == nil
+	return cert.Status.State == api.StatePending && !r.challengePending(cert) && r.pendingResults.Peek(client.ObjectKeyFromObject(cert)) == nil
 }
 
 func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) reconcile.Status {
@@ -254,10 +272,10 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 		return reconcile.Recheck(logctx, fmt.Errorf("challenge pending for at least one domain of certificate"), 30*time.Second)
 	}
 
-	if result := r.pendingResults.Peek(obj.ObjectName()); result != nil {
+	if result := r.pendingResults.Peek(client.ObjectKeyFromObject(cert)); result != nil {
 		status, remove := r.handleObtainOutput(logctx, obj, result)
 		if remove {
-			r.pendingResults.Remove(obj.ObjectName())
+			r.pendingResults.Remove(client.ObjectKeyFromObject(cert))
 		}
 		return status
 	}
@@ -400,8 +418,7 @@ func (r *certReconciler) lastPendingRateLimitingSeconds(timestamp *metav1.Time) 
 }
 
 func (r *certReconciler) challengePending(crt *api.Certificate) bool {
-	name := resources.NewObjectName(crt.Namespace, crt.Name)
-	return r.pendingRequests.Contains(name)
+	return r.pendingRequests.Contains(client.ObjectKeyFromObject(crt))
 }
 
 func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, obj resources.Object, renew bool) reconcile.Status {
@@ -457,7 +474,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewACMEIssuerInfo(issuerKey)
+		issuerInfo := shared.NewACMEIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -488,15 +505,15 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		return nil
 	}
 
-	objectName := obj.ObjectName()
+	objectKey := client.ObjectKeyFromObject(cert)
 	sublogctx := logctx.NewContext("callback", cert.Name)
 	callback := func(output *legobridge.ObtainOutput) {
-		r.pendingRequests.Remove(objectName)
-		r.pendingResults.Add(objectName, output)
-		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectName.Namespace(), objectName.Name())
+		r.pendingRequests.Remove(objectKey)
+		r.pendingResults.Add(objectKey, output)
+		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectKey.Namespace, objectKey.Name)
 		err := r.support.EnqueueKey(key)
 		if err != nil {
-			sublogctx.Warnf("Enqueue %s failed with %s", objectName, err.Error())
+			sublogctx.Warnf("Enqueue %s failed with %s", objectKey, err.Error())
 		}
 	}
 	var dnsSettings *legobridge.DNSControllerSettings
@@ -507,10 +524,10 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		}
 		precheckNameservers := r.precheckNameservers
 		if issuer.Spec.ACME.PrecheckNameservers != nil {
-			precheckNameservers = utils.PreparePrecheckNameservers(issuer.Spec.ACME.PrecheckNameservers)
+			precheckNameservers = shared.PreparePrecheckNameservers(issuer.Spec.ACME.PrecheckNameservers)
 		}
 		dnsSettings = &legobridge.DNSControllerSettings{
-			Cluster:             r.dnsCluster,
+			Client:              r.dnsClient,
 			Namespace:           cert.Namespace,
 			OwnerID:             r.dnsOwnerID,
 			PrecheckNameservers: precheckNameservers,
@@ -550,7 +567,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		CSR:                            cert.Spec.CSR,
 		TargetClass:                    targetDNSClass,
 		Callback:                       callback,
-		RequestName:                    objectName,
+		RequestName:                    client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()},
 		Renew:                          renew,
 		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
 		PreferredChain:                 preferredChain,
@@ -571,7 +588,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
 		}
 	}
-	r.pendingRequests.Add(objectName)
+	r.pendingRequests.Add(objectKey)
 	msg := "certificate requested, preparing/waiting for successful DNS01 challenge"
 	return r.pending(logctx, obj, msg)
 }
@@ -629,7 +646,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewSelfSignedIssuerInfo(issuerKey)
+		issuerInfo := shared.NewSelfSignedIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -637,15 +654,15 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
 	}
 
-	objectName := obj.ObjectName()
+	objectKey := client.ObjectKeyFromObject(cert)
 	sublogctx := logctx.NewContext("callback", cert.Name)
 	callback := func(output *legobridge.ObtainOutput) {
-		r.pendingResults.Add(objectName, output)
-		r.pendingRequests.Remove(objectName)
-		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectName.Namespace(), objectName.Name())
+		r.pendingResults.Add(objectKey, output)
+		r.pendingRequests.Remove(objectKey)
+		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectKey.Namespace, objectKey.Name)
 		err := r.support.EnqueueKey(key)
 		if err != nil {
-			sublogctx.Warnf("Enqueue %s failed with %s", objectName, err.Error())
+			sublogctx.Warnf("Enqueue %s failed with %s", objectKey, err.Error())
 		}
 	}
 
@@ -670,7 +687,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("obtaining self signed certificate failed: %w", err))
 	}
 
-	r.pendingRequests.Add(objectName)
+	r.pendingRequests.Add(objectKey)
 	msg := "self signed certificate requested, waiting for creation"
 	return r.pending(logctx, obj, msg)
 }
@@ -703,7 +720,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
 		// reuse found certificate
-		issuerInfo := utils.NewCAIssuerInfo(issuerKey)
+		issuerInfo := shared.NewCAIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
@@ -711,15 +728,15 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
 	}
 
-	objectName := obj.ObjectName()
+	objectKey := client.ObjectKeyFromObject(cert)
 	sublogctx := logctx.NewContext("callback", cert.Name)
 	callback := func(output *legobridge.ObtainOutput) {
-		r.pendingRequests.Remove(objectName)
-		r.pendingResults.Add(objectName, output)
-		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectName.Namespace(), objectName.Name())
+		r.pendingRequests.Remove(objectKey)
+		r.pendingResults.Add(objectKey, output)
+		key := resources.NewClusterKey(r.targetCluster.GetId(), api.Kind(api.CertificateKind), objectKey.Namespace, objectKey.Name)
 		err := r.support.EnqueueKey(key)
 		if err != nil {
-			sublogctx.Warnf("Enqueue %s failed with %s", objectName, err.Error())
+			sublogctx.Warnf("Enqueue %s failed with %s", objectKey, err.Error())
 		}
 	}
 
@@ -737,7 +754,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 			return r.failed(logctx, obj, api.StateError, fmt.Errorf("preparing obtaining certificates failed: %w", err))
 		}
 	}
-	r.pendingRequests.Add(objectName)
+	r.pendingRequests.Add(objectKey)
 
 	msg := "certificate requested, waiting for creation by CA"
 	return r.pending(logctx, obj, msg)
@@ -1021,7 +1038,7 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 	return ref, specHash, &bestNotAfter
 }
 
-func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo utils.IssuerInfo,
+func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo shared.IssuerInfo,
 	objectMeta metav1.ObjectMeta, secretRef *corev1.SecretReference, specHash string, spec *api.CertificateSpec) (*corev1.SecretReference, error) {
 	ns := core.NormalizeNamespace(objectMeta.Namespace)
 	specSecretRef, _ := r.determineSecretRef(ns, spec)
@@ -1039,7 +1056,7 @@ func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo
 	return r.writeCertificateSecret(logctx, issuerInfo, objectMeta, certificates, specHash, specSecretRef, requestedAt, spec.Keystores, spec.SecretLabels)
 }
 
-func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo utils.IssuerInfo, objectMeta metav1.ObjectMeta,
+func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuerInfo shared.IssuerInfo, objectMeta metav1.ObjectMeta,
 	certificates *certificate.Resource, specHash string, specSecretRef *corev1.SecretReference,
 	requestedAt *time.Time, keystores *api.CertificateKeystores,
 	secretLabels map[string]string) (*corev1.SecretReference, error) {
@@ -1099,11 +1116,11 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 }
 
 func (r *certReconciler) addKeystores(secret *corev1.Secret, keystores *api.CertificateKeystores) error {
-	return legobridge.AddKeystoresToSecret(r.certSecretResources, secret, keystores)
+	return legobridge.AddKeystoresToSecret(context.Background(), r.certSecretClient, secret, keystores)
 }
 
 func (r *certReconciler) updateKeystoresIfSpecChanged(logctx logger.LogContext, secret *corev1.Secret, keystores *api.CertificateKeystores) error {
-	modified, err := legobridge.UpdateKeystoresToSecret(r.certSecretResources, secret, keystores)
+	modified, err := legobridge.UpdateKeystoresToSecret(context.Background(), r.certSecretClient, secret, keystores)
 	if err != nil {
 		return err
 	}
@@ -1190,7 +1207,7 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	cn := crt.Spec.CommonName
 	dnsNames := crt.Spec.DNSNames
 	if crt.Spec.CSR != nil {
-		cn, dnsNames, _ = utils.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
+		cn, dnsNames, _ = shared.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
 	utils.AssureStringSlice(mod.ModificationState, &status.DNSNames, dnsNames)
@@ -1356,8 +1373,8 @@ func (r *certReconciler) cleanupOrphanDNSEntriesFromOldChallenges() error {
 		expectedClass = *r.dnsClass
 	}
 	for _, obj := range objects {
-		class, _ := resources.GetAnnotation(obj.Data(), source.AnnotDNSClass)
-		challenge, _ := resources.GetAnnotation(obj.Data(), source.AnnotACMEDNSChallenge)
+		class, _ := resources.GetAnnotation(obj.Data(), shared.AnnotDNSClass)
+		challenge, _ := resources.GetAnnotation(obj.Data(), shared.AnnotACMEDNSChallenge)
 		if challenge != "" && class == expectedClass {
 			err = entriesResource.Delete(obj.Data())
 			if err != nil {
@@ -1390,7 +1407,7 @@ func (r *certReconciler) cleanupOrphanDNSRecordsFromOldChallenges() error {
 	}
 	count := 0
 	for _, obj := range objects {
-		challenge, _ := resources.GetAnnotation(obj.Data(), source.AnnotACMEDNSChallenge)
+		challenge, _ := resources.GetAnnotation(obj.Data(), shared.AnnotACMEDNSChallenge)
 		if challenge != "" {
 			if resources.SetAnnotation(obj.Data(), v1beta1constants.ConfirmationDeletion, "true") {
 				if _, err := recordsResource.Update(obj.Data()); err != nil {

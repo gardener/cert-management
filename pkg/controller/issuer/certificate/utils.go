@@ -16,7 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	"github.com/gardener/cert-management/pkg/cert/legobridge"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 // ExtractRequestedAtFromAnnotation extracts the requestedAt timestamp from the annotation cert.gardener.cloud/requestedAt

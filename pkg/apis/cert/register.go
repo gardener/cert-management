@@ -7,8 +7,3 @@
 //go:generate sh -c "CONTROLLER_GEN=$CONTROLLER_GEN bash $CONTROLLER_MANAGER_LIB_HACK_DIR/generate-crds"
 
 package cert
-
-const (
-	// GroupName is the name of the certificate API group.
-	GroupName = "cert.gardener.cloud"
-)

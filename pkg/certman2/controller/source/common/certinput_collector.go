@@ -13,7 +13,7 @@ import (
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/gardener/cert-management/pkg/cert/source"
+	"github.com/gardener/cert-management/pkg/certman2/core"
 )
 
 // TLSDataCollector collects TLS secret names for hosts.
@@ -46,7 +46,7 @@ func GetCertInputByCollector(ctx context.Context, log logr.Logger, obj client.Ob
 	annotatedDomains, cn := getDomainsFromAnnotations(obj.GetAnnotations(), false)
 	for _, tls := range tlsDataArray {
 		if tls.SecretName == "" {
-			err = fmt.Errorf("tls entry for hosts %s has no secretName", source.DomainsString(tls.Hosts))
+			err = fmt.Errorf("tls entry for hosts %s has no secretName", core.DomainsString(tls.Hosts))
 			continue
 		}
 		var domains []string

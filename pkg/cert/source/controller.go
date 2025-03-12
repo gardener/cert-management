@@ -21,12 +21,8 @@ import (
 const (
 	// AnnotDnsnames annotation is shared with dns controller manager
 	AnnotDnsnames = "dns.gardener.cloud/dnsnames"
-	// AnnotDNSClass is the annotation for the dns class
-	AnnotDNSClass = "dns.gardener.cloud/class"
 	// AnnotClass is the annotation for the cert class
 	AnnotClass = "cert.gardener.cloud/class"
-	// AnnotACMEDNSChallenge is the annotation for marking DNSEntries for DNS challenges
-	AnnotACMEDNSChallenge = "cert.gardener.cloud/acme-dns-challenge"
 	// AnnotForwardOwnerRefs is the annotation for the forward owner references
 	AnnotForwardOwnerRefs = "cert.gardener.cloud/forward-owner-refs"
 	// AnnotSecretname is the annotation for the secret name

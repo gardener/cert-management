@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/gardener/cert-management/pkg/cert/utils"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 // IssuerKey provides object key and cluster of an issuer.
@@ -30,11 +30,11 @@ func (k IssuerKey) Namespace() string {
 }
 
 // Cluster provides cluster (from CML).
-func (k IssuerKey) Cluster() utils.Cluster {
+func (k IssuerKey) Cluster() shared.Cluster {
 	if k.secondary {
-		return utils.ClusterDefault
+		return shared.ClusterDefault
 	}
-	return utils.ClusterTarget
+	return shared.ClusterTarget
 }
 
 // Secondary returns true if issuer is from secondary cluster.
@@ -49,7 +49,7 @@ func (k IssuerKey) String() string {
 	return "target:" + k.ObjectKey.String()
 }
 
-var _ utils.IssuerKeyItf = IssuerKey{}
+var _ shared.IssuerKeyItf = IssuerKey{}
 
 // NewIssuerKey creates key for an issuer.
 func NewIssuerKey(key client.ObjectKey, secondary bool) IssuerKey {

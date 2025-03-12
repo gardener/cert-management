@@ -10,26 +10,19 @@ import (
 	"fmt"
 
 	"github.com/gardener/controller-manager-library/pkg/resources"
+
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
-// Cluster is an enum for default and target cluster
-type Cluster int
+// Cluster is the cluster type
+type Cluster = shared.Cluster
 
 const (
-	// ClusterDefault is the default cluster (= secondary)
-	ClusterDefault Cluster = iota
-	// ClusterTarget is the target cluster (= primary)
-	ClusterTarget
+	// ClusterDefault is the default cluster
+	ClusterDefault = shared.ClusterDefault
+	// ClusterTarget is the target cluster
+	ClusterTarget = shared.ClusterTarget
 )
-
-// IssuerKeyItf abstracts IssuerKey to simplify code reuse.
-type IssuerKeyItf interface {
-	Name() string
-	Namespace() string
-	Cluster() Cluster
-	Secondary() bool
-	String() string
-}
 
 // IssuerKey provides cluster, name and namespace of an issuer
 type IssuerKey struct {
