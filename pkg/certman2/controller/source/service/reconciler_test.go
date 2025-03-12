@@ -20,7 +20,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certmanv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
 	. "github.com/gardener/cert-management/pkg/certman2/controller/source/service"

@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
 	issuercontrolplane "github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane"
 	"github.com/gardener/cert-management/pkg/certman2/core"
