@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	certclient "github.com/gardener/cert-management/pkg/cert/client"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/cluster"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
@@ -36,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	certclient "github.com/gardener/cert-management/pkg/cert/client"
 	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
