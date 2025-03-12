@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	certmanv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	certmanv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 // ReconcilerBase is base for source reconcilers.

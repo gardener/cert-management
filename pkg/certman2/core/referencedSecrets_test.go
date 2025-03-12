@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/gardener/cert-management/pkg/certman2/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 func TestRobustRemember(t *testing.T) {
