@@ -85,7 +85,7 @@ func (r *caIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Obje
 func validateSecretCA(secret *corev1.Secret) ([]byte, error) {
 	// Validate correct type
 	if secret.Type != corev1.SecretTypeTLS {
-		return nil, fmt.Errorf("Secret is not if type %s", corev1.SecretTypeTLS)
+		return nil, fmt.Errorf("Secret is not of type %s", corev1.SecretTypeTLS)
 	}
 
 	// Validate it can be used as a CAKeyPair
