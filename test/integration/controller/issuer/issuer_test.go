@@ -218,7 +218,7 @@ var _ = Describe("Issuer controller tests", func() {
 			}))
 		})
 
-		It("should reuse certificate if multiple certificates are created for the same domain", func() {
+		It("should reuse certificate and not consume quota if multiple certificates are created for the same domain", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID)
 			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
