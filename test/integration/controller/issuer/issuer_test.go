@@ -75,10 +75,10 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status.State
+			}).Should(Equal("Ready"))
 		})
 
 		It("should create a certificate", func() {
@@ -89,10 +89,10 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status.State
+			}).Should(Equal("Ready"))
 
 			By("Create certificate")
 			cert := getCertificate(testRunID, "acme-certificate", "example.com", issuer.Namespace, issuer.Name)
@@ -116,10 +116,10 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status.State
+			}).Should(Equal("Ready"))
 
 			By("Stop manager")
 			stopManager()
@@ -180,10 +180,11 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.State).To(Equal("Ready"))
 				g.Expect(issuer.Status.RequestsPerDayQuota).To(Equal(1))
+				return issuer.Status
 			}).Should(Succeed())
 
 			By("Create first certificate")
@@ -225,11 +226,13 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-				g.Expect(issuer.Status.RequestsPerDayQuota).To(Equal(1))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":               Equal("Ready"),
+				"RequestsPerDayQuota": Equal(1),
+			}))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -273,10 +276,10 @@ var _ = Describe("Issuer controller tests", func() {
 			})
 
 			By("Wait for issuer to become ready")
-			Eventually(func(g Gomega) {
+			Eventually(func(g Gomega) string {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
+				return issuer.Status.State
+			}).Should(Equal("Ready"))
 
 			By("Create certificate")
 			cert := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -325,10 +328,10 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status.State
+			}).Should(Equal("Ready"))
 		})
 
 		It("should be able to create self-signed certificates", func() {
@@ -340,10 +343,10 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
-				g.Expect(certificate.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				return certificate.Status.State
+			}).Should(Equal("Ready"))
 
 			By("Resolve certificate secret reference")
 			secretReference := certificate.Spec.SecretRef
@@ -365,11 +368,13 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
-				g.Expect(certificate.Status.State).To(Equal("Error"))
-				g.Expect(certificate.Status.Message).To(PointTo(ContainSubstring("certificate duration must be greater than 48h0m0s")))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				return certificate.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(ContainSubstring("certificate duration must be greater than 48h0m0s")),
+			}))
 		})
 
 		It("should not be able to create self-signed certificate if IsCA = false", func() {
@@ -381,11 +386,13 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
-				g.Expect(certificate.Status.State).To(Equal("Error"))
-				g.Expect(certificate.Status.Message).To(PointTo(ContainSubstring("self signed certificates must set 'spec.isCA: true'")))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				return certificate.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(ContainSubstring("self signed certificates must set 'spec.isCA: true'")),
+			}))
 		})
 	})
 
@@ -432,10 +439,10 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) {
-				Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-			}).Should(Succeed())
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				return issuer.Status.State
+			}).Should(Equal("Ready"))
 		})
 	})
 })
