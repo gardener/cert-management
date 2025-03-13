@@ -182,10 +182,11 @@ var _ = Describe("Issuer controller tests", func() {
 
 			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				g.Expect(issuer.Status.State).To(Equal("Ready"))
-				g.Expect(issuer.Status.RequestsPerDayQuota).To(Equal(1))
 				return issuer.Status
-			}).Should(Succeed())
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":               Equal("Ready"),
+				"RequestsPerDayQuota": Equal(1),
+			}))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
