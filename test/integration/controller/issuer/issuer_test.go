@@ -399,10 +399,10 @@ var _ = Describe("Issuer controller tests", func() {
 	Context("Certificate Authority issuer", func() {
 		It("should be able to create CA issuer", func() {
 			By("Get Certificate")
-			priv, err := rsa.GenerateKey(rand.Reader, 2048)
+			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 			Expect(err).NotTo(HaveOccurred())
-			keyBytes := x509.MarshalPKCS1PrivateKey(priv)
-			data, err := createPemCertificate(priv, priv.Public(), "RSA PRIVATE KEY", keyBytes)
+			keyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+			data, err := createPemCertificate(privateKey, privateKey.Public(), "RSA PRIVATE KEY", keyBytes)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Create Secret")
@@ -480,7 +480,7 @@ func getCertificate(certificateNamespace, certificateName, commonName, issuerNam
 	}
 }
 
-func createPemCertificate(privKey crypto.PrivateKey, pubKey crypto.PublicKey, header string, privKeyBytes []byte) (map[string][]byte, error) {
+func createPemCertificate(privateKey crypto.PrivateKey, pubKey crypto.PublicKey, header string, privateKeyBytes []byte) (map[string][]byte, error) {
 	template := &x509.Certificate{
 		SerialNumber:          big.NewInt(1234),
 		Subject:               pkix.Name{CommonName: "example.com"},
@@ -491,12 +491,12 @@ func createPemCertificate(privKey crypto.PrivateKey, pubKey crypto.PublicKey, he
 		BasicConstraintsValid: true,
 		IsCA:                  true,
 	}
-	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, pubKey, privKey)
+	derBytes, err := x509.CreateCertificate(rand.Reader, template, template, pubKey, privateKey)
 	if err != nil {
 		return nil, err
 	}
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: header, Bytes: privKeyBytes})
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: header, Bytes: privateKeyBytes})
 	return map[string][]byte{
 		corev1.TLSCertKey:       certPEM,
 		corev1.TLSPrivateKeyKey: keyPEM,
