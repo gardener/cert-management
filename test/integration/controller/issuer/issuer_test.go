@@ -359,7 +359,7 @@ var _ = Describe("Issuer controller tests", func() {
 			Expect(secret.Data).To(HaveKeyWithValue("tls.key", Not(BeEmpty())))
 		})
 
-		It("should not be able to create self-signed certificate if the duration is < 720h", func() {
+		It("should not be able to create self-signed certificate if the duration is < 48h", func() {
 			By("Create self-signed certificate")
 			certificate := getCertificate(testRunID, "self-signed-certificate", "ca1.mydomain.com", issuer.Namespace, issuer.Name)
 			certificate.Spec.IsCA = ptr.To(true)
