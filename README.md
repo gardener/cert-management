@@ -323,8 +323,8 @@ project.
 If any domain name (`commonName` or any item from `dnsNames`) needs to be validated, it creates a custom resource
 `DNSEntry` in the `dns` cluster.
 When the certificate authority sees the temporary DNS record, the certificate is stored in a secret finally.
-The name of the secret can be specified explicitly with `secretName` and will be stored in the same namespace as the 
-certificate on the `source` cluster.
+The name of the secret can be specified explicitly with `secretRef.name` and its namespace with `secretRef.namespace`.
+By default, it will be stored in the same namespace as the certificate on the `source` cluster
 
 The certificate is checked for renewal periodically. The renewal is performed automatically and the secret is updated.
 Default values for periodical check is daily, the certificate is renewed if its validity expires within 60 days.
@@ -415,7 +415,8 @@ metadata:
   namespace: default
 spec:
   commonName: my-service.example-domain.com
-  secretName: my-secret
+  secretRef:
+    name: my-secret
   secretLabels:
     key1: value1
     key2: value2
@@ -446,7 +447,8 @@ metadata:
   namespace: default
 spec:
   commonName: my-service.example-domain.com
-  secretName: my-secret
+  secretRef:
+    name: my-secret
   privateKey:
     algorithm: ECDSA
     size: 384
