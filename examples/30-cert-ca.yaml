@@ -6,8 +6,8 @@ apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
 metadata:
   annotations:
-  name: cert-ca
-  namespace: default
+    name: cert-ca
+    namespace: default
 spec:
   commonName: cert1.mydomain.com
   dnsNames:
