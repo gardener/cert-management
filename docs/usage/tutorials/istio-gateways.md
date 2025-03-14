@@ -90,7 +90,8 @@ items:
       name: httpbin-gateway
   spec:
     commonName: httpbin.example.com
-    secretName: my-tls-secret
+    secretRef:
+      name: my-tls-secret
   status:
     ...
 kind: List

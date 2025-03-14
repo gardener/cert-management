@@ -106,7 +106,8 @@ items:
       name: gateway
   spec:
     commonName: '*.example.com'
-    secretName: foo-example-com
+    secretRef:
+      name: foo-example-com
   status:
     ...
 kind: List
