@@ -49,7 +49,6 @@
     'github.com/emicklei/go-restful/v3',
     'github.com/evanphx/json-patch/v5',
     'github.com/fatih/color',
-    'github.com/fluent/fluent-operator/v2',
     'github.com/fsnotify/fsnotify',
     'github.com/fxamacker/cbor/v2',
     'github.com/gardener/etcd-druid',
