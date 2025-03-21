@@ -49,6 +49,8 @@ cert-management:
         output_dir: binary
       check:
         image: golang:1.24
+      verify:
+        image: golang:1.24
   jobs:
     head-update:
       traits:
