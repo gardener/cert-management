@@ -35,6 +35,10 @@ clean:
 	bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./pkg/...
 	@rm -f $(REPO_ROOT)/pkg/apis/cert/crds/*
 
+.PHONY: check-generate
+check-generate:
+	@bash $(GARDENER_HACK_DIR)/check-generate.sh $(REPO_ROOT)
+
 .PHONY: check
 check: sast-report fastcheck
 
@@ -88,6 +92,10 @@ test-integration: $(GINKGO) $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
 .PHONY: test-cov
 test-cov:
 	@bash $(GARDENER_HACK_DIR)/test-cover.sh $(shell go list ./pkg/... | grep -v -E "/pkg/client|/mock") ./cmd/...
+
+.PHONY: test-clean
+test-clean:
+	@bash $(GARDENER_HACK_DIR)/test-cover-clean.sh
 
 .PHONY: generate
 generate: $(VGOPATH) $(CONTROLLER_GEN) $(MOCKGEN)
@@ -173,3 +181,9 @@ sast: $(GOSEC)
 .PHONY: sast-report
 sast-report: $(GOSEC)
 	@./hack/sast.sh --gosec-report true
+
+.PHONY: verify
+verify: check format test sast
+
+.PHONY: verify-extended
+verify-extended: check-generate check format test-cov test-clean test-integration test-e2e-local sast-report
