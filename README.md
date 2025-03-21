@@ -1060,6 +1060,8 @@ spec:
   ensureRenewedAfter: null # mandatory if a manual renewal was already triggered 
 ```
 
+If the field `.spec.ensureRenewedAfter` is set and you want to trigger the renewal again, make sure to remove it (e.g. by setting the value explicitly to `null`).
+
 ## Revoking Certificates
 
 Certificates created with an `ACME` issuer can also be revoked if private key of the certificate
