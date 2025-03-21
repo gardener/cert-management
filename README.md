@@ -43,6 +43,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Using the cert-controller-manager](#using-the-cert-controller-manager)
     - [Usage](#usage)
   - [Renewal of Certificates](#renewal-of-certificates)
+    - [Triggering a manual Certificate renewal](#triggering-a-manual-certificate-renewal) 
   - [Revoking Certificates](#revoking-certificates)
     - [Revoking certificates with renewal](#revoking-certificates-with-renewal)
     - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
@@ -1041,6 +1042,25 @@ For example, if [Let's Encrypt](https://letsencrypt.org/) is used as certificate
 is always valid for 90 days and will be rolled 30 days before it expires by updating the referenced `Secret`
 in the `Certificate` object.  
 The configuration can be changed with the command line parameter `--issuer.renewal-window`.
+
+### Triggering a manual Certificate renewal
+
+You can trigger a manual renewal of a `Certificate` by setting `.spec.renew` to `true`.
+The controller will then renew the certificate with the next reconciliation and remove the field.
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: renew-sample
+  namespace: default
+spec:
+  commonName: cert1.mydomain.com
+  renew: true # trigger a renewal with the next reconciliation, the field will be removed
+  ensureRenewedAfter: null # mandatory if a manual renewal was already triggered 
+```
+
+If the field `.spec.ensureRenewedAfter` is set and you want to trigger the renewal again, make sure to remove it (e.g. by setting the value explicitly to `null`).
 
 ## Revoking Certificates
 
