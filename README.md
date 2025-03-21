@@ -1057,6 +1057,7 @@ metadata:
 spec:
   commonName: cert1.mydomain.com
   renew: true # trigger a renewal with the next reconciliation, the field will be removed
+  ensureRenewedAfter: null # mandatory if a manual renewal was already triggered 
 ```
 
 ## Revoking Certificates
