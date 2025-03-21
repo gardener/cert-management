@@ -94,7 +94,7 @@ generate: $(VGOPATH) $(CONTROLLER_GEN) $(MOCKGEN)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) ./hack/generate-code
 	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/...
 	@./hack/copy-crds.sh
-	@go fmt ./pkg/...
+	@(MAKE) format
 
 .PHONY: generate-renovate-ignore-deps
 generate-renovate-ignore-deps:
