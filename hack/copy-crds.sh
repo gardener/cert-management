@@ -13,7 +13,7 @@ destination_dir="$(dirname "$0")/../charts/cert-management/templates/"
 # Function to update the metadata section and copy to destination
 update_and_copy() {
     local source_file="$1"
-    local dest_file="$destination_dir/$(basename "$source_file")"
+    local dest_file="$2"
 
     # Use awk to update the metadata and copy to destination
     awk '/^metadata:/ {
@@ -32,9 +32,31 @@ update_and_copy() {
     {print}' "$source_file" > "$dest_file"
 }
 
+# Function to add header and footer lines
+add_header_and_footer() {
+    local source_file="$1"
+    local temp_file="$(mktemp)"
+
+    # Add header, original content, and footer to a temporary file
+    {
+        if [[ "$source_file" == *"cert.gardener.cloud_issuers.yaml" ]]; then
+            echo '{{- if .Values.createCRDs.issuers }}'
+        else
+            echo '{{- if .Values.createCRDs.certificates }}'
+        fi
+        cat "$source_file"
+        echo '{{- end }}'
+    } > "$temp_file"
+
+    # Move the temporary file to the original source file
+    mv "$temp_file" "$source_file"
+}
+
 # Iterate through each YAML file in the source directory
 for source_file in "$source_dir"/*.yaml; do
     if [ -f "$source_file" ]; then
-        update_and_copy "$source_file"
+        dest_file="$destination_dir/$(basename "$source_file")"
+        update_and_copy "$source_file" "$dest_file"
+        add_header_and_footer "$dest_file"
     fi
 done
