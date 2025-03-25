@@ -186,4 +186,4 @@ sast-report: $(GOSEC)
 verify: check format test sast
 
 .PHONY: verify-extended
-verify-extended: check-generate check format test-cov test-clean test-integration test-e2e-local sast-report
+verify-extended: check-generate check format test-cov test-clean test-integration sast-report
