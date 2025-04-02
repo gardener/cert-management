@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	"k8s.io/utils/ptr"
 )
@@ -145,10 +146,15 @@ func GenerateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte,
 // to generate a PEM encoded CSR.
 func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 	subjectCA := &input.CAKeyPair.Cert.Subject
+	privateKey, err := generatePrivateKey(input.KeyType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate private key for type %v: %w", input.KeyType, err)
+	}
 
 	return &x509.CertificateRequest{
 		Version:            3,
-		PublicKeyAlgorithm: DefaultPubKeyAlgo,
+		PublicKeyAlgorithm: getPublicKeyAlgorithm(privateKey),
+		PublicKey:          privateKey.Public(),
 		Subject: pkix.Name{
 			CommonName:         ptr.Deref(input.CommonName, ""),
 			Country:            subjectCA.Country,
@@ -162,6 +168,34 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 		DNSNames:       input.DNSNames,
 		EmailAddresses: input.CAKeyPair.Cert.EmailAddresses,
 	}, nil
+}
+
+func generatePrivateKey(keyType certcrypto.KeyType) (crypto.Signer, error) {
+	switch keyType {
+	case certcrypto.EC256:
+		return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	case certcrypto.EC384:
+		return ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	case certcrypto.RSA2048:
+		return rsa.GenerateKey(rand.Reader, 2048)
+	case certcrypto.RSA3072:
+		return rsa.GenerateKey(rand.Reader, 3072)
+	case certcrypto.RSA4096:
+		return rsa.GenerateKey(rand.Reader, 4096)
+	default:
+		return nil, fmt.Errorf("invalid key type: %v", keyType)
+	}
+}
+
+func getPublicKeyAlgorithm(privateKey crypto.Signer) x509.PublicKeyAlgorithm {
+	switch privateKey.(type) {
+	case *ecdsa.PrivateKey:
+		return x509.ECDSA
+	case *rsa.PrivateKey:
+		return x509.RSA
+	default:
+		return x509.UnknownPublicKeyAlgorithm
+	}
 }
 
 // generateCSRPEM generates a PEM encoded CSR based on an x509.CertificateRequest and crypto.Signer
