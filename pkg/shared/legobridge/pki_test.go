@@ -5,10 +5,14 @@
 package legobridge
 
 import (
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"time"
 
+	"github.com/go-acme/lego/v4/certcrypto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -76,6 +80,49 @@ var _ = Describe("PKI", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(privateKey).NotTo(BeNil())
 			Expect(privateKey.Size()).To(Equal(keySize / 8))
+		})
+	})
+
+	Context("#generatePrivateKey", func() {
+		DescribeTable("should generate a private key of the expected type and size",
+			func(keyType certcrypto.KeyType, expectedKeySize int) {
+				key, err := generatePrivateKey(keyType)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(key).NotTo(BeNil())
+				Expect(pubKeySize(key.Public())).To(Equal(expectedKeySize))
+				switch keyType {
+				case certcrypto.EC256, certcrypto.EC384:
+					Expect(key).To(BeAssignableToTypeOf(&ecdsa.PrivateKey{}))
+				case certcrypto.RSA2048, certcrypto.RSA3072, certcrypto.RSA4096, certcrypto.RSA8192:
+					Expect(key).To(BeAssignableToTypeOf(&rsa.PrivateKey{}))
+				}
+			},
+			Entry("ECDSA 256", certcrypto.EC256, 256),
+			Entry("ECDSA 384", certcrypto.EC384, 384),
+			Entry("RSA 2048", certcrypto.RSA2048, 2048),
+			Entry("RSA 3072", certcrypto.RSA3072, 3072),
+			Entry("RSA 4096", certcrypto.RSA4096, 4096),
+		)
+
+		It("should fail on an invalid key type", func() {
+			key, err := generatePrivateKey("invalid")
+			Expect(err).To(HaveOccurred())
+			Expect(key).To(BeNil())
+		})
+	})
+
+	Context("#getPublicKeyAlgorithm", func() {
+		It("should recognize ECDSA", func() {
+			Expect(getPublicKeyAlgorithm(&ecdsa.PrivateKey{})).To(Equal(x509.ECDSA))
+		})
+
+		It("should recognize RSA", func() {
+			Expect(getPublicKeyAlgorithm(&rsa.PrivateKey{})).To(Equal(x509.RSA))
+		})
+
+		// ED25519 is a valid algorithm but currently not supported by cert-management.
+		It("should return unknown for ED25519", func() {
+			Expect(getPublicKeyAlgorithm(&ed25519.PrivateKey{})).To(Equal(x509.UnknownPublicKeyAlgorithm))
 		})
 	})
 })
