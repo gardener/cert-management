@@ -709,6 +709,10 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 	if duration == nil {
 		duration = ptr.To(2 * legobridge.DefaultCertDuration)
 	}
+	keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(cert.Spec.PrivateKey)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
 	err = r.validateCertDuration(duration, CAKeyPair)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
@@ -742,7 +746,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
-		Callback: callback, Renew: renew, Duration: duration}
+		Callback: callback, Renew: renew, Duration: duration, KeyType: keyType}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {
