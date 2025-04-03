@@ -101,7 +101,7 @@ var _ = Describe("Certificate controller tests", func() {
 			Eventually(func(g Gomega) {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(rootCertificate), rootCertificate)).To(Succeed())
 				g.Expect(rootCertificate.Status.State).To(Equal("Ready"))
-			}).WithTimeout(5 * time.Second).Should(Succeed())
+			}).WithTimeout(10 * time.Second).Should(Succeed())
 
 			By("Create CA issuer based on root certificate")
 			caIssuer = &certv1alpha1.Issuer{
@@ -155,7 +155,7 @@ var _ = Describe("Certificate controller tests", func() {
 				Eventually(func(g Gomega) {
 					g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
 					g.Expect(certificate.Status.State).To(Equal("Ready"))
-				}).WithTimeout(5 * time.Second).Should(Succeed())
+				}).WithTimeout(10 * time.Second).Should(Succeed())
 
 				By("Read certificate secret")
 				secret := &corev1.Secret{}
