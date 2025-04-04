@@ -438,6 +438,7 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 			IssuerInfo:   shared.NewCAIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
+			KeyType:      input.KeyType,
 			CSR:          input.CSR,
 			Err:          err,
 		}
