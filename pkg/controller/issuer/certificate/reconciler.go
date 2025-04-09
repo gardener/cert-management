@@ -883,7 +883,7 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		r.support.ClearCertRenewalOverdue(obj.ObjectName())
 	}
 	requestedAt := ExtractRequestedAtFromAnnotation(secret)
-	if cert == nil || r.explictRenewalRequested(cert, requestedAt, crt.Spec.EnsureRenewedAfter) || !revoked && r.needsRenewal(cert) {
+	if cert == nil || r.explicitRenewalRequested(cert, requestedAt, crt.Spec.EnsureRenewedAfter) || !revoked && r.needsRenewal(cert) {
 		if crt.Status.State == api.StatePending && r.lastPendingRateLimiting(crt.Status.LastPendingTimestamp) {
 			return reconcile.Succeeded(logctx)
 		}
@@ -965,7 +965,7 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func (r *certReconciler) explictRenewalRequested(cert *x509.Certificate, requestedAt *time.Time, ensureRenewalAfter *metav1.Time) bool {
+func (r *certReconciler) explicitRenewalRequested(cert *x509.Certificate, requestedAt *time.Time, ensureRenewalAfter *metav1.Time) bool {
 	return ensureRenewalAfter != nil && WasRequestedBefore(cert, requestedAt, ensureRenewalAfter.Time)
 }
 
@@ -1026,7 +1026,7 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 		}
 
 		requestedAt := ExtractRequestedAtFromAnnotation(secret)
-		if !r.needsRenewal(cert) && !r.explictRenewalRequested(cert, requestedAt, spec.EnsureRenewedAfter) {
+		if !r.needsRenewal(cert) && !r.explicitRenewalRequested(cert, requestedAt, spec.EnsureRenewedAfter) {
 			if best == nil ||
 				bestNotAfter.Before(cert.NotAfter) ||
 				secretRef != nil && bestNotAfter.Equal(cert.NotAfter) && obj.GetName() == secretRef.Name && core.NormalizeNamespace(obj.GetNamespace()) == core.NormalizeNamespace(secretRef.Namespace) {
