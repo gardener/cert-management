@@ -47,8 +47,6 @@ cert-management:
       build:
         image: golang:1.24
         output_dir: binary
-      check:
-        image: golang:1.24
       verify:
         image: golang:1.24
   jobs:
@@ -86,7 +84,7 @@ cert-management:
           release_callback: '.ci/prepare_release'
           assets:
           - type: build-step-log
-            step_name: check
+            step_name: verify
             purposes:
             - lint
             - sast
@@ -128,7 +126,7 @@ cert-management:
           release_callback: '.ci/prepare_release'
           assets:
           - type: build-step-log
-            step_name: check
+            step_name: verify
             purposes:
             - lint
             - sast
@@ -151,7 +149,7 @@ cert-management:
           release_callback: .ci/prepare_release
           assets:
           - type: build-step-log
-            step_name: check
+            step_name: verify
             purposes:
             - lint
             - sast
