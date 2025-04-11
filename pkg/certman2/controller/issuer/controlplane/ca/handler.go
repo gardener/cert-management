@@ -138,7 +138,7 @@ func (h *caIssuerHandler) updateStatusSucceeded(ctx context.Context, issuer *v1a
 func validateSecretCA(secret *corev1.Secret) ([]byte, error) {
 	// Validate correct type
 	if secret.Type != corev1.SecretTypeTLS {
-		return nil, fmt.Errorf("Secret is not if type %s", corev1.SecretTypeTLS)
+		return nil, fmt.Errorf("secret is not if type %s", corev1.SecretTypeTLS)
 	}
 
 	// Validate it can be used as a CAKeyPair

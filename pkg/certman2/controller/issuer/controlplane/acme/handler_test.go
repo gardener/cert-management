@@ -142,7 +142,7 @@ var _ = Describe("Handler", func() {
 				wrappedReg := wrappedRegistration{}
 				err = json.Unmarshal(raw.Raw, &wrappedReg)
 				Expect(err).ToNot(HaveOccurred())
-				oldUri := wrappedReg.Resource.URI
+				oldUri := wrappedReg.URI
 				// second reconcile
 				reconcileResult, err = acmeIssuerHandler.Reconcile(ctx, log, acmeIssuer)
 				Expect(reconcileResult.IsZero()).To(BeTrue())
@@ -152,7 +152,7 @@ var _ = Describe("Handler", func() {
 				wrappedReg = wrappedRegistration{}
 				err = json.Unmarshal(raw.Raw, &wrappedReg)
 				Expect(err).ToNot(HaveOccurred())
-				newUri := wrappedReg.Resource.URI
+				newUri := wrappedReg.URI
 				Expect(newUri).To(Equal(oldUri))
 			})
 		})

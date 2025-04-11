@@ -79,7 +79,7 @@ var _ = Describe("Reconciler", func() {
 			Expect(lastShutdown).To(BeNil())
 
 			By("update")
-			newCRD.ObjectMeta.ResourceVersion = oldCRD.ObjectMeta.ResourceVersion
+			newCRD.ResourceVersion = oldCRD.ResourceVersion
 			Expect(fakeClient.Update(ctx, newCRD)).NotTo(HaveOccurred())
 			_, err = reconciler.Reconcile(ctx, req)
 			Expect(err).NotTo(HaveOccurred())

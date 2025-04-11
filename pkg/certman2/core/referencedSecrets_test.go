@@ -83,7 +83,7 @@ func TestRobustRemember(t *testing.T) {
 func testContent(data *ReferencedSecrets) string {
 	secrets := []string{}
 	for s := range data.secretToIssuers {
-		secrets = append(secrets, s.ObjectKey.Name)
+		secrets = append(secrets, s.Name)
 	}
 	sort.Strings(secrets)
 

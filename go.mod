@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.17.1
 	github.com/gardener/controller-manager-library v0.2.1-0.20250313111425-e11f72e87e1f
 	github.com/gardener/external-dns-management v0.23.1
-	github.com/gardener/gardener v1.115.1
+	github.com/gardener/gardener v1.116.1
 	github.com/go-acme/lego/v4 v4.22.2
 	github.com/go-logr/logr v1.4.2
 	github.com/letsencrypt/pebble/v2 v2.7.0
@@ -23,7 +23,7 @@ require (
 	golang.org/x/crypto v0.36.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
-	istio.io/api v1.24.3
+	istio.io/api v1.24.4
 	istio.io/client-go v1.24.2
 	k8s.io/api v0.32.3
 	k8s.io/apiextensions-apiserver v0.32.3
@@ -32,8 +32,8 @@ require (
 	k8s.io/code-generator v0.32.3
 	k8s.io/component-base v0.32.3
 	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7
-	k8s.io/utils v0.0.0-20241210054802-24370beab758
-	sigs.k8s.io/controller-runtime v0.20.3
+	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
+	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231015215740-bf15e44028f9
 	sigs.k8s.io/gateway-api v1.2.1
 	sigs.k8s.io/kind v0.27.0
@@ -60,7 +60,7 @@ require (
 	github.com/fluent/fluent-operator/v3 v3.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/gardener/etcd-druid v0.27.0 // indirect
+	github.com/gardener/etcd-druid/api v0.28.0 // indirect
 	github.com/gardener/machine-controller-manager v0.57.1 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.6 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
@@ -147,7 +147,7 @@ require (
 	k8s.io/kube-aggregator v0.32.3 // indirect
 	k8s.io/kubelet v0.32.3 // indirect
 	k8s.io/metrics v0.32.3 // indirect
-	sigs.k8s.io/controller-tools v0.17.2 // indirect
+	sigs.k8s.io/controller-tools v0.17.3 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect

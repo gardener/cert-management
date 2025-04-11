@@ -27,7 +27,7 @@ func GetSecretName(_ logger.LogContext, objData resources.ObjectData) (types.Nam
 
 	secretName, _ := resources.GetAnnotation(svc, source.AnnotSecretname)
 	if secretName == "" {
-		return zero, fmt.Errorf("Missing annotation '%s'", source.AnnotSecretname)
+		return zero, fmt.Errorf("missing annotation '%s'", source.AnnotSecretname)
 	}
 	secretNamespace, _ := resources.GetAnnotation(svc, source.AnnotSecretNamespace)
 	if secretNamespace == "" {
