@@ -342,7 +342,7 @@ func (o *obtainer) Obtain(input ObtainInput) error {
 	case input.IsCA:
 		return o.ObtainFromSelfSigned(input)
 	default:
-		return fmt.Errorf("Certificate obtention not valid, neither ACME, CA  or selfSigned values were provided")
+		return fmt.Errorf("certificate obtention not valid, neither ACME, CA  or selfSigned values were provided")
 	}
 }
 

@@ -115,7 +115,7 @@ func FollowCNAMEs(fqdn string, nameservers []string, fqdnChain ...string) (strin
 			if cn.Target != fqdnInChain {
 				continue
 			}
-			return "", fmt.Errorf("Found recursive CNAME record to %q when looking up %q", cn.Target, fqdn)
+			return "", fmt.Errorf("found recursive CNAME record to %q when looking up %q", cn.Target, fqdn)
 		}
 		return FollowCNAMEs(cn.Target, nameservers, append(fqdnChain, fqdn)...)
 	}

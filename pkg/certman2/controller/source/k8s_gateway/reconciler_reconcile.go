@@ -69,7 +69,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 							continue
 						}
 						ref := listener.TLS.CertificateRefs[0]
-						if !(ref.Group == nil || *ref.Group == "") && (ref.Kind == nil || *ref.Kind == "Secret") {
+						if ptr.Deref(ref.Group, "") != "" || ptr.Deref(ref.Kind, "Secret") != "Secret" {
 							log.Info(fmt.Sprintf("warn: unexpected group/kind of listeners[%d].tls.certificateRefs: cannot select secret for storing certificate", i))
 							continue
 						}

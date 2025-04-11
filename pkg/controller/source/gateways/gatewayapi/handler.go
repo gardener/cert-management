@@ -82,7 +82,7 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 							continue
 						}
 						ref := listener.TLS.CertificateRefs[0]
-						if !(ref.Group == nil || *ref.Group == "") && (ref.Kind == nil || *ref.Kind == "Secret") {
+						if ptr.Deref(ref.Group, "") != "" || ptr.Deref(ref.Kind, "Secret") != "Secret" {
 							logger.Warnf("unexpected group/kind of listeners[%d].tls.certificateRefs: cannot select secret for storing certificate", i)
 							continue
 						}

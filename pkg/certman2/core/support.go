@@ -257,7 +257,7 @@ func (s *Support) LoadEABHmacKey(ctx context.Context, client client.Client, issu
 
 	hmacEncoded, ok := secret.Data[legobridge.KeyHmacKey]
 	if !ok {
-		return "", "", fmt.Errorf("Key %s not found in EAB secret %s/%s", legobridge.KeyHmacKey,
+		return "", "", fmt.Errorf("key %s not found in EAB secret %s/%s", legobridge.KeyHmacKey,
 			eab.KeySecretRef.Namespace, eab.KeySecretRef.Name)
 	}
 

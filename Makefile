@@ -40,10 +40,7 @@ check-generate:
 	@bash $(GARDENER_HACK_DIR)/check-generate.sh $(REPO_ROOT)
 
 .PHONY: check
-check: sast-report fastcheck
-
-.PHONY: fastcheck
-fastcheck: format $(GOIMPORTS) $(GOLANGCI_LINT) $(GO_ADD_LICENSE)
+check: format $(GOIMPORTS) $(GOLANGCI_LINT) $(GO_ADD_LICENSE)
 	@TOOLS_BIN_DIR="$(TOOLS_BIN_DIR)" bash $(CONTROLLER_MANAGER_LIB_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@bash $(GARDENER_HACK_DIR)/check-license-header.sh
 	@echo "Running go vet..."

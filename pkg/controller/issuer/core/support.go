@@ -107,7 +107,7 @@ func NewHandlerSupport(c controller.Interface) (*Support, error) {
 
 	s.defaultRequestsPerDayQuota, _ = c.GetIntOption(OptDefaultRequestsPerDayQuota)
 	if s.defaultRequestsPerDayQuota < 1 {
-		return nil, fmt.Errorf("Invalid value for %s: %d", OptDefaultRequestsPerDayQuota, s.defaultRequestsPerDayQuota)
+		return nil, fmt.Errorf("invalid value for %s: %d", OptDefaultRequestsPerDayQuota, s.defaultRequestsPerDayQuota)
 	}
 	return s, err
 }
@@ -854,7 +854,7 @@ func (s *Support) LoadEABHmacKey(objKey *resources.ClusterObjectKey, issuerKey u
 
 	hmacEncoded, ok := secret.Data[legobridge.KeyHmacKey]
 	if !ok {
-		return "", "", fmt.Errorf("Key %s not found in EAB secret %s/%s", legobridge.KeyHmacKey,
+		return "", "", fmt.Errorf("key %s not found in EAB secret %s/%s", legobridge.KeyHmacKey,
 			eab.KeySecretRef.Namespace, eab.KeySecretRef.Name)
 	}
 
