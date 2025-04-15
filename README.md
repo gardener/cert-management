@@ -1036,9 +1036,9 @@ Flags:
 
 ## Renewal of Certificates
 
-Certificates created with an `ACME` issuer are automatically renewed. With the standard configuration,
-the certificate is renewed 30 days before it validity expires.
-For example, if [Let's Encrypt](https://letsencrypt.org/) is used as certificate authority, a certificate
+Certificates are automatically renewed. With the standard configuration,
+the certificate is renewed 30 days before its validity expires.
+For example, if [Let's Encrypt](https://letsencrypt.org/) is used as certificate authority of an ACME issuer, a certificate
 is always valid for 90 days and will be rolled 30 days before it expires by updating the referenced `Secret`
 in the `Certificate` object.  
 The configuration can be changed with the command line parameter `--issuer.renewal-window`.
