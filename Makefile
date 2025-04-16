@@ -95,14 +95,11 @@ test-clean:
 	@bash $(GARDENER_HACK_DIR)/test-cover-clean.sh
 
 .PHONY: generate
-generate: $(VGOPATH) $(CONTROLLER_GEN) $(MOCKGEN)
+generate: $(VGOPATH) $(CONTROLLER_GEN) $(MOCKGEN) $(YQ)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) ./hack/generate-code
 	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/...
 	@./hack/copy-crds.sh
 	$(MAKE) format
-
-.PHONY: generate-renovate-ignore-deps
-generate-renovate-ignore-deps:
 	@./hack/generate-renovate-ignore-deps.sh
 
 .PHONY: docker-images

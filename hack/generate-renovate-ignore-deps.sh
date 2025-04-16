@@ -15,6 +15,7 @@ extract_dependencies() {
     done <<< "$go_mod"
 }
 
+echo "🪧 Generating ignoreDeps section for 'renovate.json5'"
 echo "🛜 Downloading the latest 'go.mod' from gardener/gardener..."
 
 # Only the dependencies in a `go.mod` file are indented with a tab.
@@ -46,13 +47,6 @@ echo "☯️ Found ${#common_dependencies[@]} common dependencies."
 
 ignore_deps=$(printf ',"%s"' "${common_dependencies[@]}") # Add a comma to the beginning of each element and concatenate them.
 ignore_deps="[${ignore_deps:1}]" # Remove the leading comma and wrap the string in square brackets to format it as a JSON array.
-clipboard_content=$(echo "$ignore_deps" | jq) # Format the JSON array as a string to copy it to the clipboard.
 
-printf '\n'
-echo "{\"ignoreDeps\":$ignore_deps}" | jq # Output the full JSON object to the shell.
-printf '\n'
-
-pbcopy <<< "$clipboard_content" # Copy the formatted JSON array to the clipboard.
-
-echo "📋 Please paste the value of the generated 'ignoreDeps' into the 'renovate.json5' configuration file. The content has been copied to your clipboard."
-exit 0
+# Format the JSON array as a string, indent it, and use sed to replace the lines between the markers
+echo "$ignore_deps" | yq -o json '.[]' | sed 's/^/    /; s/$/,/' | sed -i -e '  /  ignoreDeps: \[/,  /\]/{//!d;}' -e '  /  ignoreDeps: \[/r /dev/stdin' renovate.json5
