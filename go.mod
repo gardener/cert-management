@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/cert-manager/cert-manager v1.17.1
-	github.com/gardener/controller-manager-library v0.2.1-0.20250313111425-e11f72e87e1f
+	github.com/gardener/controller-manager-library c1db37df45c5
 	github.com/gardener/external-dns-management v0.23.1
 	github.com/gardener/gardener v1.117.0
 	github.com/go-acme/lego/v4 v4.23.1
