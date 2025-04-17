@@ -483,6 +483,8 @@ spec:
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          allowPrivilegeEscalation: false
         {{- if .Values.configuration.caCertificates }}
         volumeMounts:
         - name: ca-certificates
