@@ -83,8 +83,7 @@ test: $(GINKGO)
 
 .PHONY: test-integration
 test-integration: $(GINKGO) $(REPORT_COLLECTOR) $(SETUP_ENVTEST)
-	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/integration/...
-	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/certman2/integration/...
+	@bash $(GARDENER_HACK_DIR)/test-integration.sh ./test/integration/... ./test/certman2/integration/...
 
 .PHONY: test-cov
 test-cov:
