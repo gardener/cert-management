@@ -7,6 +7,7 @@ package certificate
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -45,12 +46,10 @@ func (r *Reconciler) handleOrphanedPendingCertificate(ctx context.Context, cert 
 	return reconcile.Result{}, nil
 }
 
-func (r *Reconciler) hasPendingChallenge(_ *v1alpha1.Certificate) bool {
-	// TODO
-	return false
+func (r *Reconciler) hasPendingChallenge(cert *v1alpha1.Certificate) bool {
+	return r.pendingRequests.Contains(client.ObjectKeyFromObject(cert))
 }
 
-func (r *Reconciler) hasResultPending(_ *v1alpha1.Certificate) bool {
-	// TODO
-	return false
+func (r *Reconciler) hasResultPending(cert *v1alpha1.Certificate) bool {
+	return r.pendingResults.Peek(client.ObjectKeyFromObject(cert)) != nil
 }

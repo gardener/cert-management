@@ -7,6 +7,7 @@ package certificate
 import (
 	"context"
 	"fmt"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -25,6 +26,9 @@ type Reconciler struct {
 	Clock    clock.Clock
 	Recorder record.EventRecorder
 	Config   config.CertManagerConfiguration
+
+	pendingRequests *legobridge.PendingCertificateRequests
+	pendingResults  *legobridge.PendingResults
 }
 
 // Reconcile reconciles Certificate resources.
