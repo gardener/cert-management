@@ -88,4 +88,66 @@ var _ = Describe("Certificate reconcile", func() {
 			Expect(cert.Status.State).To(Equal(""))
 		})
 	})
+
+	Context("#hasPendingChallenge", func() {
+		var reconciler *Reconciler
+
+		BeforeEach(func() {
+			reconciler = &Reconciler{
+				pendingRequests: legobridge.NewPendingRequests(),
+			}
+		})
+
+		It("should return true if the certificate has a pending requests", func() {
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "cert",
+				},
+			}
+			reconciler.pendingRequests.Add(client.ObjectKeyFromObject(cert))
+			Expect(reconciler.hasPendingChallenge(cert)).To(BeTrue())
+		})
+
+		It("should return false if the certificate does not have a pending requests", func() {
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "cert",
+				},
+			}
+			Expect(reconciler.hasPendingChallenge(cert)).To(BeFalse())
+		})
+	})
+
+	Context("#hasResultPending", func() {
+		var reconciler *Reconciler
+
+		BeforeEach(func() {
+			reconciler = &Reconciler{
+				pendingResults: legobridge.NewPendingResults(),
+			}
+		})
+
+		It("should return true if the certificate has a pending result", func() {
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "cert",
+				},
+			}
+			reconciler.pendingResults.Add(client.ObjectKeyFromObject(cert), &legobridge.ObtainOutput{})
+			Expect(reconciler.hasResultPending(cert)).To(BeTrue())
+		})
+
+		It("should return false if the certificate does not have a pending results", func() {
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "cert",
+				},
+			}
+			Expect(reconciler.hasResultPending(cert)).To(BeFalse())
+		})
+	})
 })
