@@ -39,6 +39,7 @@ func (r *Reconciler) isOrphanedPendingCertificate(cert *v1alpha1.Certificate) bo
 // handleOrphanedPendingCertificate cleans up invalid orphaned pending state unfinished from former controller instance, resets status to trigger a retry.
 func (r *Reconciler) handleOrphanedPendingCertificate(ctx context.Context, cert *v1alpha1.Certificate) (reconcile.Result, error) {
 	cert.Status.LastPendingTimestamp = nil
+	cert.Status.State = ""
 	err := r.Client.Update(ctx, cert)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to update certificate status: %w", err)
