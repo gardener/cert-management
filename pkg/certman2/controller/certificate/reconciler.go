@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gardener/cert-management/pkg/shared/legobridge"
+	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -47,9 +48,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
 	}
 
+	var (
+		result     reconcile.Result
+		err        error
+		oldMessage = *cert.Status.Message
+	)
 	if cert.DeletionTimestamp != nil {
-		return r.delete(ctx, log, cert)
+		result, err = r.delete(ctx, log, cert)
 	} else {
-		return r.reconcile(ctx, log, cert)
+		result, err = r.reconcile(ctx, log, cert)
 	}
+
+	r.handleChangedMessage(cert, oldMessage, err)
+
+	return result, err
+}
+
+func (r *Reconciler) handleChangedMessage(cert *v1alpha1.Certificate, oldMessage string, err error) {
+	newMessage := *cert.Status.Message
+	if newMessage == oldMessage {
+		return
+	}
+
+	eventType := corev1.EventTypeNormal
+	if err != nil {
+		eventType = corev1.EventTypeWarning
+		newMessage = fmt.Sprintf("%s, error: %s", newMessage, err)
+	}
+
+	r.Recorder.Event(cert, eventType, "StatusChanged", newMessage)
 }
