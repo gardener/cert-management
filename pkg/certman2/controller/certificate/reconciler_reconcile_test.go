@@ -150,4 +150,46 @@ var _ = Describe("Certificate reconcile", func() {
 			Expect(reconciler.hasResultPending(cert)).To(BeFalse())
 		})
 	})
+
+	Context("#shouldBackoff", func() {
+		var (
+			reconciler *Reconciler
+			cert       *v1alpha1.Certificate
+		)
+
+		BeforeEach(func() {
+			reconciler = &Reconciler{}
+			cert = &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Generation: 1,
+				},
+				Status: v1alpha1.CertificateStatus{
+					BackOff: &v1alpha1.BackOffState{
+						ObservedGeneration: 1,
+						RetryAfter:         metav1.NewTime(time.Now().Add(42 * time.Hour)),
+					},
+				},
+			}
+		})
+
+		It("should return true if the certificate has a backoff, the generation matches, and it's too early", func() {
+			Expect(reconciler.shouldBackoff(cert)).To(BeTrue())
+		})
+
+		It("should return false if the certificate has no backoff", func() {
+			cert.Status.BackOff = nil
+			Expect(reconciler.shouldBackoff(cert)).To(BeFalse())
+		})
+
+		It("should return false if the generation does not match", func() {
+			cert.Generation = 2
+			cert.Status.BackOff.ObservedGeneration = 1
+			Expect(reconciler.shouldBackoff(cert)).To(BeFalse())
+		})
+
+		It("should return false if it's time to retry", func() {
+			cert.Status.BackOff.RetryAfter = metav1.NewTime(time.Now().Add(-42 * time.Hour))
+			Expect(reconciler.shouldBackoff(cert)).To(BeFalse())
+		})
+	})
 })
