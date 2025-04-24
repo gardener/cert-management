@@ -192,4 +192,32 @@ var _ = Describe("Certificate reconcile", func() {
 			Expect(reconciler.shouldBackoff(cert)).To(BeFalse())
 		})
 	})
+
+	Context("#handleBackoff", func() {
+		var (
+			reconciler *Reconciler
+			cert       *v1alpha1.Certificate
+		)
+
+		BeforeEach(func() {
+			reconciler = &Reconciler{}
+			cert = &v1alpha1.Certificate{
+				Status: v1alpha1.CertificateStatus{
+					BackOff: &v1alpha1.BackOffState{},
+				},
+			}
+		})
+
+		It("should return requeue after the appropriate time", func() {
+			cert.Status.BackOff.RetryAfter = metav1.NewTime(time.Now().Add(42 * time.Hour))
+			result := reconciler.handleBackoff(cert)
+			Expect(result.RequeueAfter).To(BeNumerically(">", 41*time.Hour))
+		})
+
+		It("should requeue in 1 second if retry after is close or in the past", func() {
+			cert.Status.BackOff.RetryAfter = metav1.NewTime(time.Now().Add(-42 * time.Hour))
+			result := reconciler.handleBackoff(cert)
+			Expect(result.RequeueAfter).To(BeNumerically("==", 1*time.Second))
+		})
+	})
 })
