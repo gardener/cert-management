@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -26,10 +27,16 @@ func (r *Reconciler) reconcile(
 	log.Info("reconcile cert")
 
 	if r.isOrphanedPendingCertificate(cert) {
+		log.Info("orphaned pending certificate detected")
 		return r.handleOrphanedPendingCertificate(ctx, cert)
 	}
 
-	return reconcile.Result{}, fmt.Errorf("not yet supported")
+	if r.shouldBackoff(cert) {
+		log.Info("backoff triggered")
+		return r.handleBackoff(cert), nil
+	}
+
+	return reconcile.Result{}, nil
 }
 
 func (r *Reconciler) isOrphanedPendingCertificate(cert *v1alpha1.Certificate) bool {
@@ -53,4 +60,21 @@ func (r *Reconciler) hasPendingChallenge(cert *v1alpha1.Certificate) bool {
 
 func (r *Reconciler) hasResultPending(cert *v1alpha1.Certificate) bool {
 	return r.pendingResults.Peek(client.ObjectKeyFromObject(cert)) != nil
+}
+
+func (r *Reconciler) shouldBackoff(cert *v1alpha1.Certificate) bool {
+	return cert.Status.BackOff != nil &&
+		cert.Generation == cert.Status.BackOff.ObservedGeneration &&
+		time.Now().Before(cert.Status.BackOff.RetryAfter.Time)
+}
+
+func (r *Reconciler) handleBackoff(cert *v1alpha1.Certificate) reconcile.Result {
+	interval := time.Until(cert.Status.BackOff.RetryAfter.Time)
+	minInterval := 1 * time.Second
+	if interval < minInterval {
+		interval = minInterval
+	}
+	return reconcile.Result{
+		RequeueAfter: interval,
+	}
 }

@@ -33,7 +33,10 @@ type Reconciler struct {
 
 // Reconcile reconciles Certificate resources.
 func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	log := logf.FromContext(ctx).WithName(ControllerName)
+	log := logf.FromContext(ctx).WithName(ControllerName).WithValues(
+		"namespace", req.Namespace,
+		"name", req.Name,
+	)
 
 	cert := &v1alpha1.Certificate{}
 	if err := r.Client.Get(ctx, req.NamespacedName, cert); err != nil {
