@@ -98,7 +98,6 @@
     "github.com/russross/blackfriday/v2",
     "github.com/shopspring/decimal",
     "github.com/sirupsen/logrus",
-    "github.com/spf13/afero",
     "github.com/spf13/cast",
     "github.com/x448/float16",
     "github.com/xeipuuv/gojsonpointer",
