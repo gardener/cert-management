@@ -54,6 +54,8 @@ const (
 	LabelCertificateBackup = api.GroupName + "/backup"
 	// LabelCertificateSerialNumber is the label for the certificate serial number
 	LabelCertificateSerialNumber = api.GroupName + "/certificate-serialnumber"
+	// AnnotationNotBefore is the annotation for storing the not-before timestamp
+	AnnotationNotBefore = api.GroupName + "/not-before"
 	// AnnotationNotAfter is the annotation for storing the not-after timestamp
 	AnnotationNotAfter = api.GroupName + "/not-after"
 	// AnnotationRevoked is the label for marking revoked secrets
@@ -69,6 +71,13 @@ const (
 	boIncrease
 	boStop
 )
+
+type secretLookupResult struct {
+	ref       *corev1.SecretReference
+	specHash  string
+	notBefore *time.Time
+	notAfter  *time.Time
+}
 
 // CertReconciler creates a certReconciler.
 func CertReconciler(c controller.Interface, support *core.Support) (reconcile.Interface, error) {
@@ -372,13 +381,17 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 	}
 	logctx.Infof("certificate written in secret %s/%s", secretRef.Namespace, secretRef.Name)
 
-	var notAfter *time.Time
+	var (
+		notBefore *time.Time
+		notAfter  *time.Time
+	)
 	x509cert, err := legobridge.DecodeCertificate(result.Certificates.Certificate)
 	if err == nil {
+		notBefore = &x509cert.NotBefore
 		notAfter = &x509cert.NotAfter
 	}
 
-	status := r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
+	status := r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notBefore, notAfter)
 	return status, status.Error == nil
 }
 
@@ -472,14 +485,14 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
-	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
+	if result, _ := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); result != nil {
 		// reuse found certificate
 		issuerInfo := shared.NewACMEIssuerInfo(issuerKey)
-		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
+		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, result.ref, result.specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
 		}
-		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
+		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, result.specHash, result.notBefore, result.notAfter)
 	}
 
 	preflightCheck := func() error {
@@ -644,14 +657,14 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
-	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
+	if result, _ := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); result != nil {
 		// reuse found certificate
 		issuerInfo := shared.NewSelfSignedIssuerInfo(issuerKey)
-		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
+		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, result.ref, result.specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
 		}
-		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
+		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, result.specHash, result.notBefore, result.notAfter)
 	}
 
 	objectKey := client.ObjectKeyFromObject(cert)
@@ -722,14 +735,14 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
-	if secretRef, specHash, notAfter := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secretRef != nil {
+	if result, _ := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); result != nil {
 		// reuse found certificate
 		issuerInfo := shared.NewCAIssuerInfo(issuerKey)
-		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secretRef, specHash, &cert.Spec)
+		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, result.ref, result.specHash, &cert.Spec)
 		if err != nil {
 			return r.failed(logctx, obj, api.StateError, err)
 		}
-		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, specHash, notAfter)
+		return r.updateSecretRefAndSucceeded(logctx, obj, secretRef, result.specHash, result.notBefore, result.notAfter)
 	}
 
 	objectKey := client.ObjectKeyFromObject(cert)
@@ -1004,17 +1017,20 @@ func (r *certReconciler) determineSecretRef(namespace string, spec *api.Certific
 	return nil, nil
 }
 
-func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.CertificateSpec) (*corev1.SecretReference, string, *time.Time) {
+func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.CertificateSpec) (*secretLookupResult, error) {
 	issuerKey := r.support.IssuerClusterObjectKey(namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
 	objs, err := FindAllCertificateSecretsByNewHashLabel(r.certSecretResources, specHash)
 	if err != nil {
-		return nil, "", nil
+		return nil, fmt.Errorf("failed to find all certificate secrets by new hash label: %w", err)
 	}
 
 	secretRef, _ := r.determineSecretRef(namespace, spec)
 	var best resources.Object
-	var bestNotAfter time.Time
+	var (
+		notBefore    time.Time
+		bestNotAfter time.Time
+	)
 	for _, obj := range objs {
 		if obj.GetAnnotation(AnnotationRevoked) != "" {
 			continue
@@ -1031,15 +1047,16 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 				bestNotAfter.Before(cert.NotAfter) ||
 				secretRef != nil && bestNotAfter.Equal(cert.NotAfter) && obj.GetName() == secretRef.Name && core.NormalizeNamespace(obj.GetNamespace()) == core.NormalizeNamespace(secretRef.Namespace) {
 				best = obj
+				notBefore = cert.NotBefore
 				bestNotAfter = cert.NotAfter
 			}
 		}
 	}
 	if best == nil {
-		return nil, "", nil
+		return nil, fmt.Errorf("could not determine a best match in the certificate secrets with the hash: %s", specHash)
 	}
 	ref := &corev1.SecretReference{Namespace: best.GetNamespace(), Name: best.GetName()}
-	return ref, specHash, &bestNotAfter
+	return &secretLookupResult{ref, specHash, &notBefore, &bestNotAfter}, nil
 }
 
 func (r *certReconciler) copySecretIfNeeded(logctx logger.LogContext, issuerInfo shared.IssuerInfo,
@@ -1140,13 +1157,18 @@ func (r *certReconciler) updateKeystoresIfSpecChanged(logctx logger.LogContext, 
 }
 
 func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, obj resources.Object,
-	secretRef *corev1.SecretReference, specHash string, notAfter *time.Time) reconcile.Status {
+	secretRef *corev1.SecretReference, specHash string, notBefore, notAfter *time.Time) reconcile.Status {
 	crt := obj.Data().(*api.Certificate)
 	crt.Spec.SecretRef = secretRef
 	if crt.Labels == nil {
 		crt.Labels = map[string]string{}
 	}
 	crt.Labels[LabelCertificateNewHashKey] = specHash
+	if notBefore != nil {
+		resources.SetAnnotation(crt, AnnotationNotBefore, notBefore.Format(time.RFC3339))
+	} else {
+		resources.RemoveAnnotation(crt, AnnotationNotBefore)
+	}
 	if notAfter != nil {
 		resources.SetAnnotation(crt, AnnotationNotAfter, notAfter.Format(time.RFC3339))
 	} else {
@@ -1215,6 +1237,13 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
 	utils.AssureStringSlice(mod.ModificationState, &status.DNSNames, dnsNames)
+
+	var issuanceDate *string
+	notBefore, ok := resources.GetAnnotation(crt, AnnotationNotBefore)
+	if ok {
+		issuanceDate = &notBefore
+	}
+	mod.AssureStringPtrPtr(&status.IssuanceDate, issuanceDate)
 
 	var expirationDate *string
 	notAfter, ok := resources.GetAnnotation(crt, AnnotationNotAfter)
