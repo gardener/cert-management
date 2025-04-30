@@ -30,6 +30,7 @@ type CertificateList struct {
 // +kubebuilder:printcolumn:name=COMMON NAME,description="Subject domain name of certificate",JSONPath=".status.commonName",type=string
 // +kubebuilder:printcolumn:name=ISSUER,description="Issuer name",JSONPath=".status.issuerRef.name",type=string
 // +kubebuilder:printcolumn:name=STATUS,JSONPath=".status.state",type=string,description="Status of registration"
+// +kubebuilder:printcolumn:name=ISSUANCE_DATE,JSONPath=".status.issuanceDate",priority=500,type=string,description="Issuance date (not valid before this date)"
 // +kubebuilder:printcolumn:name=EXPIRATION_DATE,JSONPath=".status.expirationDate",priority=500,type=string,description="Expiration date (not valid anymore after this date)"
 // +kubebuilder:printcolumn:name=DNS_NAMES,JSONPath=".status.dnsNames",priority=2000,type=string,description="Domains names in subject alternative names"
 // +kubebuilder:printcolumn:name=AGE,JSONPath=".metadata.creationTimestamp",type=date,description="object creation timestamp"
@@ -180,6 +181,9 @@ type CertificateStatus struct {
 	// IssuerRef is the used issuer.
 	// +optional
 	IssuerRef *QualifiedIssuerRef `json:"issuerRef,omitempty"`
+	// IssuanceDate shows the notBefore validity date.
+	// +optional
+	IssuanceDate *string `json:"issuanceDate,omitempty"`
 	// ExpirationDate shows the notAfter validity date.
 	// +optional
 	ExpirationDate *string `json:"expirationDate,omitempty"`
