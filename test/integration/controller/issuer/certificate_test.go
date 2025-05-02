@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	certctrl "github.com/gardener/cert-management/pkg/controller/issuer/certificate"
 )
 
 var _ = Describe("Certificate controller tests", func() {
@@ -53,6 +54,74 @@ var _ = Describe("Certificate controller tests", func() {
 		DeferCleanup(func() {
 			By("Stop manager")
 			stopManager()
+		})
+	})
+
+	Context("Self-signed certificates", func() {
+		var selfSignedIssuer *certv1alpha1.Issuer
+
+		BeforeEach(func() {
+			selfSignedIssuer = &certv1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testNamespace.Name,
+					GenerateName: "self-signed-issuer-",
+				},
+				Spec: certv1alpha1.IssuerSpec{
+					SelfSigned: &certv1alpha1.SelfSignedSpec{},
+				},
+			}
+			Expect(testClient.Create(ctx, selfSignedIssuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, selfSignedIssuer)).To(Succeed())
+			})
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(selfSignedIssuer), selfSignedIssuer)).To(Succeed())
+				g.Expect(selfSignedIssuer.Status.State).To(Equal("Ready"))
+			}).Should(Succeed())
+		})
+
+		It("should have appropriate not-before and not-after timestamps", func() {
+			By("Create self-signed certificate")
+			certificate := &certv1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testNamespace.Name,
+					GenerateName: "self-signed-certificate-",
+				},
+				Spec: certv1alpha1.CertificateSpec{
+					IssuerRef: &certv1alpha1.IssuerRef{
+						Namespace: selfSignedIssuer.Namespace,
+						Name:      selfSignedIssuer.Name,
+					},
+					IsCA:       ptr.To(true),
+					CommonName: ptr.To("example.com"),
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Ready"))
+			}).WithTimeout(10 * time.Second).Should(Succeed())
+
+			By("Read not-before and not-after timestamps")
+			var (
+				notBefore      = certificate.Annotations[certctrl.AnnotationNotBefore]
+				notAfter       = certificate.Annotations[certctrl.AnnotationNotAfter]
+				issuanceDate   = certificate.Status.IssuanceDate
+				expirationDate = certificate.Status.ExpirationDate
+			)
+			Expect(notBefore).ToNot(BeEmpty())
+			Expect(notAfter).ToNot(BeEmpty())
+			Expect(issuanceDate).NotTo(BeNil())
+			Expect(expirationDate).NotTo(BeNil())
+			Expect(notBefore).To(Equal(*issuanceDate))
+			Expect(notAfter).To(Equal(*expirationDate))
+
+			issued, _ := time.Parse(time.RFC3339, *issuanceDate)
+			expired, _ := time.Parse(time.RFC3339, *expirationDate)
+			Expect(issued).To(BeTemporally("<", expired))
 		})
 	})
 
