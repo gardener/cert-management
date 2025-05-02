@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.17.2
 	github.com/gardener/controller-manager-library v0.2.1-0.20250417064119-c1db37df45c5
 	github.com/gardener/external-dns-management v0.23.5
-	github.com/gardener/gardener v1.117.2
+	github.com/gardener/gardener v1.118.0
 	github.com/go-acme/lego/v4 v4.23.1
 	github.com/go-logr/logr v1.4.2
 	github.com/letsencrypt/pebble/v2 v2.7.0
@@ -25,12 +25,12 @@ require (
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
 	istio.io/api v1.25.2
 	istio.io/client-go v1.25.1
-	k8s.io/api v0.32.3
-	k8s.io/apiextensions-apiserver v0.32.3
+	k8s.io/api v0.32.4
+	k8s.io/apiextensions-apiserver v0.32.4
 	k8s.io/apimachinery v0.33.0-beta.0
-	k8s.io/client-go v0.32.3
-	k8s.io/code-generator v0.32.3
-	k8s.io/component-base v0.32.3
+	k8s.io/client-go v0.32.4
+	k8s.io/code-generator v0.32.4
+	k8s.io/component-base v0.32.4
 	k8s.io/kube-openapi v0.0.0-20250304201544-e5f78fe3ede9
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
 	sigs.k8s.io/controller-runtime v0.20.4
@@ -58,9 +58,9 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fluent/fluent-operator/v3 v3.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/gardener/etcd-druid/api v0.29.0 // indirect
-	github.com/gardener/machine-controller-manager v0.57.2 // indirect
+	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
+	github.com/gardener/etcd-druid/api v0.29.1 // indirect
+	github.com/gardener/machine-controller-manager v0.58.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.6 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.0 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.8 // indirect
@@ -102,7 +102,7 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.81.0 // indirect
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.82.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.63.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -135,14 +135,14 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.17.3 // indirect
-	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.0 // indirect
+	k8s.io/autoscaler/vertical-pod-autoscaler v1.3.1 // indirect
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240911193312-2b36238f13e9 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-aggregator v0.32.3 // indirect
-	k8s.io/kubelet v0.32.3 // indirect
-	k8s.io/metrics v0.32.3 // indirect
+	k8s.io/kube-aggregator v0.32.4 // indirect
+	k8s.io/kubelet v0.32.4 // indirect
+	k8s.io/metrics v0.32.4 // indirect
 	sigs.k8s.io/controller-tools v0.17.3 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
