@@ -1171,20 +1171,20 @@ func (r *certReconciler) updateKeystoresIfSpecChanged(logctx logger.LogContext, 
 	return nil
 }
 
-func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, obj resources.Object, secret *secretRecord) reconcile.Status {
+func (r *certReconciler) updateSecretRefAndSucceeded(logctx logger.LogContext, obj resources.Object, secretRec *secretRecord) reconcile.Status {
 	crt := obj.Data().(*api.Certificate)
-	crt.Spec.SecretRef = secret.ref
+	crt.Spec.SecretRef = secretRec.ref
 	if crt.Labels == nil {
 		crt.Labels = map[string]string{}
 	}
-	crt.Labels[LabelCertificateNewHashKey] = secret.specHash
-	if secret.notBefore != nil {
-		resources.SetAnnotation(crt, AnnotationNotBefore, secret.notBefore.Format(time.RFC3339))
+	crt.Labels[LabelCertificateNewHashKey] = secretRec.specHash
+	if secretRec.notBefore != nil {
+		resources.SetAnnotation(crt, AnnotationNotBefore, secretRec.notBefore.Format(time.RFC3339))
 	} else {
 		resources.RemoveAnnotation(crt, AnnotationNotBefore)
 	}
-	if secret.notAfter != nil {
-		resources.SetAnnotation(crt, AnnotationNotAfter, secret.notAfter.Format(time.RFC3339))
+	if secretRec.notAfter != nil {
+		resources.SetAnnotation(crt, AnnotationNotAfter, secretRec.notAfter.Format(time.RFC3339))
 	} else {
 		resources.RemoveAnnotation(crt, AnnotationNotAfter)
 	}
