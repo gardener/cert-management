@@ -485,7 +485,11 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
-	if secret, _ := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secret != nil {
+	secret, err := r.findSecretByHashLabel(cert.Namespace, &cert.Spec)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
+	if secret != nil {
 		// reuse found certificate
 		issuerInfo := shared.NewACMEIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secret.ref, secret.specHash, &cert.Spec)
@@ -658,7 +662,11 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
-	if secret, _ := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secret != nil {
+	secret, err := r.findSecretByHashLabel(cert.Namespace, &cert.Spec)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
+	if secret != nil {
 		// reuse found certificate
 		issuerInfo := shared.NewSelfSignedIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secret.ref, secret.specHash, &cert.Spec)
@@ -737,7 +745,11 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
-	if secret, _ := r.findSecretByHashLabel(cert.Namespace, &cert.Spec); secret != nil {
+	secret, err := r.findSecretByHashLabel(cert.Namespace, &cert.Spec)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, err)
+	}
+	if secret != nil {
 		// reuse found certificate
 		issuerInfo := shared.NewCAIssuerInfo(issuerKey)
 		secretRef, err := r.copySecretIfNeeded(logctx, issuerInfo, cert.ObjectMeta, secret.ref, secret.specHash, &cert.Spec)
