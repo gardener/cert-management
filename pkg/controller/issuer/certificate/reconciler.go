@@ -1053,7 +1053,7 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 		}
 	}
 	if best == nil {
-		return nil, fmt.Errorf("could not determine a best match in the certificate secrets with the hash: %s", specHash)
+		return nil, nil
 	}
 	ref := &corev1.SecretReference{Namespace: best.GetNamespace(), Name: best.GetName()}
 	return &secretLookupResult{ref, specHash, &notBefore, &bestNotAfter}, nil
