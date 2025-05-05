@@ -503,6 +503,11 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 		*out = new(QualifiedIssuerRef)
 		**out = **in
 	}
+	if in.IssuanceDate != nil {
+		in, out := &in.IssuanceDate, &out.IssuanceDate
+		*out = new(string)
+		**out = **in
+	}
 	if in.ExpirationDate != nil {
 		in, out := &in.ExpirationDate, &out.ExpirationDate
 		*out = new(string)
