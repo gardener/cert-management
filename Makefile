@@ -39,8 +39,12 @@ clean:
 check-generate:
 	@bash $(GARDENER_HACK_DIR)/check-generate.sh $(REPO_ROOT)
 
+.PHONY: check-imports
+check-imports: $(IMPORT_BOSS)
+	$(IMPORT_BOSS) ./cmd/... ./pkg/... ./test/...
+
 .PHONY: check
-check: format $(GOIMPORTS) $(GOLANGCI_LINT) $(GO_ADD_LICENSE)
+check: format check-imports $(GOIMPORTS) $(GOLANGCI_LINT) $(GO_ADD_LICENSE)
 	@TOOLS_BIN_DIR="$(TOOLS_BIN_DIR)" bash $(CONTROLLER_MANAGER_LIB_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@bash $(GARDENER_HACK_DIR)/check-license-header.sh
 	@echo "Running go vet..."
