@@ -285,7 +285,7 @@ spec:
 Create a certificate ([examples/30-cert-selfsigned.yaml](./examples/30-cert-selfsigned.yaml)).
 Please note that `spec.isCA` must be set to `true` to create a self-signed certificate. The duration (life-time) of the certificate
 as well as the private key algorithm and key size may be specified. Duration value must be in units accepted by Go `time.ParseDuration`
-([see here](https://golang.org/pkg/time/#ParseDurationThe)), and it must be greater than 720h (30 days).
+([see here](https://golang.org/pkg/time/#ParseDurationThe)), and it must be at least 1440h (60 days) with the default renewal window of 30 days.
 ```yaml
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
@@ -295,8 +295,8 @@ metadata:
 spec:
   commonName: cert1.mydomain.com
   isCA: true
-  # optional: default is 90 days (2160h). Must be greater 30 days (720h)
-  # duration: 720h1m
+  # optional: default is 90 days (2160h). Must be at least 60 days (1440h) with the default renewal window of 30 days.
+  # duration: 1440h
   # optional defaults to RSA 2048
   #privateKey:
   #  algorithm: ECDSA
