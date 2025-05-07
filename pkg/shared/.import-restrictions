@@ -1,0 +1,8 @@
+rules:
+  - selectorRegexp: github[.]com/gardener/cert-management
+    allowedPrefixes:
+      - github.com/gardener/cert-management/pkg/apis
+      - github.com/gardener/cert-management/pkg/shared
+  - selectorRegexp: github[.]com/gardener/controller-manager-library
+    forbiddenPrefixes:
+      - ''

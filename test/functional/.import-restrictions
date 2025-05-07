@@ -1,0 +1,6 @@
+rules:
+  - selectorRegexp: github[.]com/gardener/cert-management
+    allowedPrefixes:
+      - ''
+    forbiddenPrefixes:
+      - github.com/gardener/cert-management/pkg/certman2
