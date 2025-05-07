@@ -1,0 +1,10 @@
+rules:
+  - selectorRegexp: github[.]com/gardener/cert-management
+    allowedPrefixes:
+      - ''
+    forbiddenPrefixes:
+      - github.com/gardener/cert-management
+# TODO(marc1404): controller-manager-library references should be removed
+#  - selectorRegexp: github[.]com/gardener/controller-manager-library
+#    forbiddenPrefixes:
+#      - ''
