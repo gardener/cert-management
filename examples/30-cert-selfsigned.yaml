@@ -6,8 +6,8 @@ metadata:
 spec:
   commonName: ca1.mydomain.com
   isCA: true
-  # optional: default is 90 days (2160h). Must be greater 2*30 days (1440h)
-  # duration: 1441h
+  # optional: default is 90 days (2160h). Must be at least 2*30 days (1440h) with the default renewal window of 30 days.
+  # duration: 1440h
   # optional defaults to RSA 2048
   # privateKey:
   #   algorithm: ECDSA
