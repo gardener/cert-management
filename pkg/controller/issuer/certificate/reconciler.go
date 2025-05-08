@@ -839,7 +839,7 @@ func (r *certReconciler) getDuration(cert *api.Certificate) (*time.Duration, err
 	}
 	duration := cert.Spec.Duration.Duration
 	if duration < 2*r.renewalWindow {
-		return nil, fmt.Errorf("certificate duration must be greater than %v", 2*r.renewalWindow)
+		return nil, fmt.Errorf("certificate duration must be at least %v", 2*r.renewalWindow)
 	}
 	return ptr.To(duration), nil
 }
