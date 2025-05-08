@@ -95,7 +95,7 @@ type CertificateSpec struct {
 	// ACME issuer may choose to ignore the requested duration, just like any other
 	// requested attribute.
 	// If unset, this defaults to 90 days (2160h).
-	// Must be greater than twice of the renewal window
+	// Must be at least twice the renewal window.
 	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
 	// +optional
 	Duration *metav1.Duration `json:"duration,omitempty"`
