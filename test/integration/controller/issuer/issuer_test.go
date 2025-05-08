@@ -373,7 +373,7 @@ var _ = Describe("Issuer controller tests", func() {
 				return certificate.Status
 			}).Should(MatchFields(IgnoreExtras, Fields{
 				"State":   Equal("Error"),
-				"Message": PointTo(ContainSubstring("certificate duration must be greater than 48h0m0s")),
+				"Message": PointTo(ContainSubstring("certificate duration must be at least 48h0m0s")),
 			}))
 		})
 
