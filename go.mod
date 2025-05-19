@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.17.2
 	github.com/gardener/controller-manager-library v0.2.1-0.20250417064119-c1db37df45c5
 	github.com/gardener/external-dns-management v0.24.0
-	github.com/gardener/gardener v1.118.1
+	github.com/gardener/gardener v1.119.0
 	github.com/go-acme/lego/v4 v4.23.1
 	github.com/go-logr/logr v1.4.2
 	github.com/letsencrypt/pebble/v2 v2.7.0
@@ -20,10 +20,10 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	go.uber.org/mock v0.5.0
-	golang.org/x/crypto v0.37.0
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
+	golang.org/x/crypto v0.38.0
+	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
-	istio.io/api v1.25.2
+	istio.io/api v1.25.3
 	istio.io/client-go v1.25.1
 	k8s.io/api v0.32.4
 	k8s.io/apiextensions-apiserver v0.32.4
@@ -32,7 +32,7 @@ require (
 	k8s.io/code-generator v0.32.4
 	k8s.io/component-base v0.32.4
 	k8s.io/kube-openapi v0.0.0-20250304201544-e5f78fe3ede9
-	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e
+	k8s.io/utils v0.0.0-20250502105355-0f33e8f1c979
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/gateway-api v1.3.0
 	sigs.k8s.io/kind v0.27.0
@@ -102,7 +102,7 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.82.0 // indirect
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.82.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.63.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -119,14 +119,14 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/term v0.31.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.32.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250106144421-5f5ef82da422 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
