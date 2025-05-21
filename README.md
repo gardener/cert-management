@@ -55,10 +55,10 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
 
 ## Quick start using certificates in a Gardener shoot cluster
 
-This component is typically deployed by the [Gardener Extension for certificate services](https://github.com/gardener/gardener-extension-shoot-cert-service/blob/master/docs/installation/setup.md)
+This component is typically deployed by the [Gardener Extension for certificate services](https://github.com/gardener/gardener-extension-shoot-cert-service/blob/master/docs/operations/deployment.md)
 to simplify requesting certificates for Gardener shoot clusters.
 
-For a quick start please see [Request X.509 Certificates](https://gardener.cloud/docs/extensions/others/gardener-extension-shoot-cert-service/docs/usage/request_cert/)
+For a quick start please see [Request X.509 Certificates](https://gardener.cloud/docs/extensions/others/gardener-extension-shoot-cert-service/request_cert/)
 
 ## Setting up Issuers
 
