@@ -272,8 +272,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/letsencrypt/challtestsrv v1.3.2 h1:pIDLBCLXR3B1DLmOmkkqg29qVa7DDozBnsOpL9PxmAY=
 github.com/letsencrypt/challtestsrv v1.3.2/go.mod h1:Ur4e4FvELUXLGhkMztHOsPIsvGxD/kzSJninOrkM+zc=
-github.com/letsencrypt/pebble/v2 v2.7.0 h1:3fqfs8+5lUooQSqZtXtYB4Jd+TPsQXBPaS8TBXOSzpY=
-github.com/letsencrypt/pebble/v2 v2.7.0/go.mod h1:BEYL/3lMsnIkKhJhieHZi3psEGt6hJV9T45058rTjGc=
+github.com/letsencrypt/pebble/v2 v2.8.0 h1:WCyePNx72fgguyozp33B4Avu2p7ZqMBywKg9Uw/40yw=
+github.com/letsencrypt/pebble/v2 v2.8.0/go.mod h1:/InUwQEtCyi9jh9iLEvoefC2UdbdkXlMjBD3Mw8h6vE=
 github.com/mailru/easyjson v0.0.0-20160728113105-d5b7844b561a/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
 github.com/mailru/easyjson v0.0.0-20190614124828-94de47d64c63/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
 github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
