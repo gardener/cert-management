@@ -36,7 +36,7 @@ func init() {
 		BoolOption(core.OptUseDNSRecords, "if true, DNSRecords (using Gardener Provider extensions) are created instead of DNSEntries").
 		BoolOption(core.OptCascadeDelete, "If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted").
 		BoolOption(core.OptACMEDeactivateAuthorizations, "if true authorizations are always deactivated after each ACME certificate request").
-		StringOption(source.OptClass, "Identifier used to differentiate responsible controllers for entries").
+		StringOption(source.OptClass, "Identifier used to differentiate responsible controllers for certificates and issuers").
 		DefaultedDurationOption(core.OptRenewalWindow, 30*24*time.Hour, "certificate is renewed if its validity period is shorter").
 		DefaultedDurationOption(core.OptRenewalOverdueWindow, 25*24*time.Hour, "certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates)").
 		DefaultedStringOption(core.OptPrecheckNameservers, "8.8.8.8:53,8.8.4.4:53",
