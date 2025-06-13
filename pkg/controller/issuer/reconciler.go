@@ -17,6 +17,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/cert/source"
 	"github.com/gardener/cert-management/pkg/cert/utils"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
 	"github.com/gardener/cert-management/pkg/controller/issuer/acme"
@@ -45,11 +46,15 @@ func newCompoundReconciler(c controller.Interface) (reconcile.Interface, error) 
 		return nil, fmt.Errorf("command line option '--%s' is only supported if default cluster != target cluster", core.OptAllowTargetIssuers)
 	}
 
+	copt, _ := c.GetStringOption(source.OptClass)
+	classes := controller.NewClasses(c, copt, source.AnnotClass, source.DefaultClass)
+
 	return &compoundReconciler{
 		handler:                         handler,
 		certificateReconciler:           certReconciler,
 		certificateRevocationReconciler: revokeReconciler,
 		watchTargetIssuers:              allowTargetIssuers,
+		classes:                         classes,
 	}, nil
 }
 
@@ -59,6 +64,7 @@ type compoundReconciler struct {
 	certificateReconciler           reconcile.Interface
 	certificateRevocationReconciler reconcile.Interface
 	watchTargetIssuers              bool
+	classes                         *controller.Classes
 }
 
 func (r *compoundReconciler) Setup() error {
@@ -102,6 +108,10 @@ func (r *compoundReconciler) Reconcile(logger logger.LogContext, obj resources.O
 	switch {
 	case obj.IsA(&api.Issuer{}):
 		logger.Infof("reconciling")
+		if !r.classes.IsResponsibleFor(logger, obj) {
+			logger.Infof("not responsible")
+			return reconcile.Succeeded(logger)
+		}
 		return r.handler.ReconcileIssuer(logger, obj)
 	case obj.IsA(&corev1.Secret{}):
 		return r.handler.ReconcileSecret(logger, obj)

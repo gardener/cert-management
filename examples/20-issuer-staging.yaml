@@ -7,6 +7,9 @@ kind: Issuer
 metadata:
   name: issuer-staging
   namespace: default
+  annotations:
+  # class annotation only needed if cert-controller-manager is started with --cert-class=myclass
+  #cert.gardener.cloud/class: myclass
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
