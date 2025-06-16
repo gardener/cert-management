@@ -16,6 +16,9 @@ kind: Issuer
 metadata:
   name: issuer-ca
   namespace: default
+  annotations:
+    # class annotation only needed if cert-controller-manager is started with --cert-class=myclass
+    #cert.gardener.cloud/class: myclass
 spec:
   ca:
     privateKeySecretRef:
