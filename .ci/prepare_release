@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 #
 # SPDX-FileCopyrightText: 2019 SAP SE or an SAP affiliate company and Gardener contributors
 #
@@ -6,23 +6,9 @@
 
 set -e
 
+own_dir="$(dirname "${BASH_SOURCE[0]}")"
+repo_root="${own_dir}/.."
 
-# add full-fleshed tar and helm
-BASE_URL="https://get.helm.sh"
-HELM_VERSION=v2.17.0
-TAR_FILE="helm-${HELM_VERSION}-linux-amd64.tar.gz"
-
-apk add --update --no-cache curl ca-certificates tar 
-curl -L ${BASE_URL}/${TAR_FILE} |tar xvz 
-mv linux-amd64/helm /usr/bin/helm 
-chmod +x /usr/bin/helm 
-
-
-if [[ -z "${SOURCE_PATH}" ]]; then
-  export SOURCE_PATH="$(readlink -f "$(dirname ${0})/..")"
-else
-  export SOURCE_PATH="$(readlink -f "${SOURCE_PATH}")"
-fi
 
 ## currently disabled, as controller registration happens per shoot by extension-shoot-cert-service
 #"${SOURCE_PATH}/hack/generate-controller-registration.sh" \
@@ -31,8 +17,8 @@ fi
 #  "${SOURCE_PATH}/examples/gardener-controllerregistration.yaml" \
 #  Issuer:gardener
 
-VERSION_FILE="$(readlink -f "${SOURCE_PATH}/VERSION")"
+VERSION_FILE="${repo_root}/VERSION"
 VERSION="$(cat "${VERSION_FILE}")"
 VERSIONTAG="${VERSION//-dev/-master}"
 
-sed -i -e "s/  tag: .*/  tag: ${VERSIONTAG}/" "${SOURCE_PATH}/charts/cert-management/values.yaml"
+sed -i -e "s/  tag: .*/  tag: ${VERSIONTAG}/" "${repo_root}/charts/cert-management/values.yaml"
