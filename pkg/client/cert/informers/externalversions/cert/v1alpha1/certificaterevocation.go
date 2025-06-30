@@ -50,13 +50,25 @@ func NewFilteredCertificateRevocationInformer(client versioned.Interface, namesp
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertV1alpha1().CertificateRevocations(namespace).List(context.TODO(), options)
+				return client.CertV1alpha1().CertificateRevocations(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CertV1alpha1().CertificateRevocations(namespace).Watch(context.TODO(), options)
+				return client.CertV1alpha1().CertificateRevocations(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CertV1alpha1().CertificateRevocations(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.CertV1alpha1().CertificateRevocations(namespace).Watch(ctx, options)
 			},
 		},
 		&apiscertv1alpha1.CertificateRevocation{},
