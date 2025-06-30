@@ -7,7 +7,7 @@ require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/cert-manager/cert-manager v1.18.1
 	github.com/gardener/controller-manager-library v0.2.1-0.20250528062543-a441a28ac225
-	github.com/gardener/external-dns-management v0.25.1
+	github.com/gardener/external-dns-management v0.25.2
 	github.com/gardener/gardener v1.121.2
 	github.com/go-acme/lego/v4 v4.23.1
 	github.com/go-logr/logr v1.4.2
