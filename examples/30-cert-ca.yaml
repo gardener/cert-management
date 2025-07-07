@@ -11,6 +11,15 @@ spec:
   commonName: cert1.mydomain.com
   dnsNames:
   - cert1.my-other-domain.com
+  # optional: list of email addresses to be included in the certificate as subject alternative names (SANs).
+  # emailAddresses:
+  #   - foo@example.com
+  # optional: list of IP addresses to be included in the certificate as subject alternative names (SANs).
+  # ipAddresses:
+  #   - 1.1.1.1
+  # optional: list of URIs to be included in the certificate as subject alternative names (SANs).
+  # uris:
+  #   - spiffe://example.com/foo
   # if issuer is not specified, the default issuer is used
   issuerRef:
     name: issuer-ca
