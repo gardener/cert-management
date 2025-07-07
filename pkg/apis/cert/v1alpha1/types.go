@@ -53,6 +53,15 @@ type CertificateSpec struct {
 	// DNSNames are the optional additional domain names of the certificate.
 	// +optional
 	DNSNames []string `json:"dnsNames,omitempty"`
+	// EmailAddresses are the optional requested email subject alternative names.
+	// +optional
+	EmailAddresses []string `json:"emailAddresses,omitempty"`
+	// IPAddresses are the optional requested IP address subject alternative names.
+	// +optional
+	IPAddresses []string `json:"ipAddresses,omitempty"`
+	// URIs are the optional requested URI subject alternative names.
+	// +optional
+	URIs []string `json:"uris,omitempty"`
 	// CSR is the alternative way to provide CN,DNSNames and other information.
 	// +optional
 	CSR []byte `json:"csr,omitempty"`

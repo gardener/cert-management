@@ -10,6 +10,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -47,6 +49,12 @@ type ObtainInput struct {
 	CommonName *string
 	// DNSNames are optional domain names.
 	DNSNames []string
+	// EmailAddresses are optional email subject alternative names.
+	EmailAddresses []string
+	// IPAddresses are optional IP address subject alternative names.
+	IPAddresses []net.IP
+	// URIs are optional URI subject alternative names.
+	URIs []*url.URL
 	// CSR is the optional Certificate Signing Request.
 	CSR []byte
 	// Request name is the request object name.

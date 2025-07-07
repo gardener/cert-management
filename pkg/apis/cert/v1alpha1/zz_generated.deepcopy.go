@@ -397,6 +397,21 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.EmailAddresses != nil {
+		in, out := &in.EmailAddresses, &out.EmailAddresses
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.IPAddresses != nil {
+		in, out := &in.IPAddresses, &out.IPAddresses
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.URIs != nil {
+		in, out := &in.URIs, &out.URIs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.CSR != nil {
 		in, out := &in.CSR, &out.CSR
 		*out = make([]byte, len(*in))
