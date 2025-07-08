@@ -9,6 +9,7 @@ import (
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
 	"github.com/gardener/cert-management/pkg/shared/legobridge"
+	"github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -148,6 +149,64 @@ var _ = Describe("Certificate reconcile", func() {
 				},
 			}
 			Expect(reconciler.hasResultPending(cert)).To(BeFalse())
+		})
+	})
+
+	Context("#hasReconcileAnnotation", func() {
+		var reconciler *Reconciler
+
+		BeforeEach(func() {
+			reconciler = &Reconciler{}
+		})
+
+		It("should return true if the certificate has a reconcile annotation", func() {
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						constants.GardenerOperationReconcile: "true",
+					},
+				},
+			}
+			Expect(reconciler.hasReconcileAnnotation(cert)).To(BeTrue())
+		})
+
+		It("should return false if the certificate does not have a reconcile annotation", func() {
+			cert := &v1alpha1.Certificate{}
+			Expect(reconciler.hasReconcileAnnotation(cert)).To(BeFalse())
+		})
+	})
+
+	Context("#handleReconcileAnnotation", func() {
+		var (
+			reconciler *Reconciler
+			cert       *v1alpha1.Certificate
+		)
+
+		BeforeEach(func() {
+			reconciler = &Reconciler{
+				Client: fakeclient.NewClientBuilder().WithScheme(certmanclient.ClusterScheme).Build(),
+			}
+			cert = &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "cert",
+					Annotations: map[string]string{
+						constants.GardenerOperationReconcile: "true",
+					},
+				},
+			}
+			Expect(reconciler.Client.Create(context.TODO(), cert)).To(Succeed())
+		})
+
+		It("should remove the reconcile annotation", func() {
+			result, err := reconciler.handleReconcileAnnotation(context.TODO(), cert)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(reconcile.Result{}))
+			Expect(cert.Annotations).NotTo(HaveKey(constants.GardenerOperationReconcile))
+
+			fetchedCert := &v1alpha1.Certificate{}
+			Expect(reconciler.Client.Get(context.TODO(), client.ObjectKeyFromObject(cert), fetchedCert)).To(Succeed())
+			Expect(fetchedCert.Annotations).NotTo(HaveKey(constants.GardenerOperationReconcile))
 		})
 	})
 

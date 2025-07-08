@@ -7,6 +7,7 @@ package certificate
 import (
 	"context"
 	"fmt"
+	"github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
@@ -29,6 +30,11 @@ func (r *Reconciler) reconcile(
 	if r.isOrphanedPendingCertificate(cert) {
 		log.Info("orphaned pending certificate detected")
 		return r.handleOrphanedPendingCertificate(ctx, cert)
+	}
+
+	if r.hasReconcileAnnotation(cert) {
+		log.Info("reconcile annotation found, removing it and reconciling again")
+		return r.handleReconcileAnnotation(ctx, cert)
 	}
 
 	if r.shouldBackoff(cert) {
@@ -60,6 +66,19 @@ func (r *Reconciler) hasPendingChallenge(cert *v1alpha1.Certificate) bool {
 
 func (r *Reconciler) hasResultPending(cert *v1alpha1.Certificate) bool {
 	return r.pendingResults.Peek(client.ObjectKeyFromObject(cert)) != nil
+}
+
+func (r *Reconciler) hasReconcileAnnotation(cert *v1alpha1.Certificate) bool {
+	_, ok := cert.Annotations[constants.GardenerOperationReconcile]
+	return ok
+}
+
+func (r *Reconciler) handleReconcileAnnotation(ctx context.Context, cert *v1alpha1.Certificate) (reconcile.Result, error) {
+	delete(cert.Annotations, constants.GardenerOperationReconcile)
+	if err := r.Client.Update(ctx, cert); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to remove reconcile annotation: %w", err)
+	}
+	return reconcile.Result{}, nil
 }
 
 func (r *Reconciler) shouldBackoff(cert *v1alpha1.Certificate) bool {
