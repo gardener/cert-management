@@ -662,6 +662,20 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
+	if err := ValidateEmailAddresses(cert.Spec.EmailAddresses); err != nil {
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("invalid email address in 'spec.emailAddresses': %w", err))
+	}
+
+	ipAddresses, err := ParseIPAddresses(cert.Spec.IPAddresses)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("invalid IP address in 'spec.IPAddresses': %w", err))
+	}
+
+	uris, err := ParseURIs(cert.Spec.URIs)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("invalid URI in 'spec.URIs': %w", err))
+	}
+
 	secret, err := r.findSecretByHashLabel(cert.Namespace, &cert.Spec)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
@@ -694,15 +708,18 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 	input := legobridge.ObtainInput{
-		IssuerKey:  issuerKey,
-		CommonName: cert.Spec.CommonName,
-		DNSNames:   cert.Spec.DNSNames,
-		Callback:   callback,
-		Renew:      renew,
-		KeyType:    keyType,
-		IsCA:       true,
-		Duration:   duration,
-		CSR:        cert.Spec.CSR,
+		IssuerKey:      issuerKey,
+		CommonName:     cert.Spec.CommonName,
+		DNSNames:       cert.Spec.DNSNames,
+		EmailAddresses: cert.Spec.EmailAddresses,
+		IPAddresses:    ipAddresses,
+		URIs:           uris,
+		Callback:       callback,
+		Renew:          renew,
+		KeyType:        keyType,
+		IsCA:           true,
+		Duration:       duration,
+		CSR:            cert.Spec.CSR,
 	}
 
 	err = r.obtainer.Obtain(input)
@@ -745,6 +762,16 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
 
+	ipAddresses, err := ParseIPAddresses(cert.Spec.IPAddresses)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("invalid IP address in 'spec.IPAddresses': %w", err))
+	}
+
+	uris, err := ParseURIs(cert.Spec.URIs)
+	if err != nil {
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("invalid URI in 'spec.URIs': %w", err))
+	}
+
 	secret, err := r.findSecretByHashLabel(cert.Namespace, &cert.Spec)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
@@ -773,7 +800,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 	}
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
-		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, CSR: cert.Spec.CSR,
+		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, EmailAddresses: cert.Spec.EmailAddresses, IPAddresses: ipAddresses, URIs: uris, CSR: cert.Spec.CSR,
 		Callback: callback, Renew: renew, Duration: duration, KeyType: keyType}
 
 	err = r.obtainer.Obtain(input)
@@ -976,6 +1003,18 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 		h.Write([]byte{0})
 	}
 	for _, domain := range spec.DNSNames {
+		h.Write([]byte(domain))
+		h.Write([]byte{0})
+	}
+	for _, domain := range spec.EmailAddresses {
+		h.Write([]byte(domain))
+		h.Write([]byte{0})
+	}
+	for _, domain := range spec.IPAddresses {
+		h.Write([]byte(domain))
+		h.Write([]byte{0})
+	}
+	for _, domain := range spec.URIs {
 		h.Write([]byte(domain))
 		h.Write([]byte{0})
 	}

@@ -33,6 +33,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Specifying private key algorithm and size](#specifying-private-key-algorithm-and-size)
     - [Using a certificate signing request (CSR)](#using-a-certificate-signing-request-csr)
     - [Creating JKS or PKCS#12 keystores](#creating-jks-or-pkcs12-keystores)
+    - [Subject Alternative Names (SANs)](#subject-alternative-names-sans)
   - [Requesting a Certificate for Ingress](#requesting-a-certificate-for-ingress)
     - [Process](#process)
   - [Requesting a Certificate for Service](#requesting-a-certificate-for-service)
@@ -518,6 +519,40 @@ spec:
       passwordSecretRef:
         secretName: keystore-secret
         key: password  
+```
+
+### Subject Alternative Names (SANs)
+
+> [!NOTE]  
+> [ACME](https://datatracker.ietf.org/doc/html/rfc8555/) providers such as [Let's Encrypt](https://letsencrypt.org/) typically only support DNS names as SANs.
+> Avoid specifying email addresses, IP addresses, or URIs as SANs when using an ACME `Issuer`.
+> You can use all SANs with a self-signed `Issuer` or CA `Issuer`.
+
+You can **specify subject alternative names (SANs)** in the `Certificate` spec or by using a [Certificate Signing Request (CSR)](#using-a-certificate-signing-request-csr).
+The supported SANs are:
+* DNS names – `.spec.dnsNames`
+* Email addresses – `.spec.emailAddresses`
+* IP addresses – `.spec.ipAddresses`
+* URIs – `.spec.uris`
+
+An example of a `Certificate` with SANs is shown below:
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: cert-with-sans
+  namespace: default
+spec:
+  commonName: foo.example.com
+  dnsNames:
+    - bar.example.com
+  emailAddresses:
+    - foo@example.com
+  ipAddresses:
+    - 1.1.1.1
+  uris:
+    - spiffe://example.com/foo 
 ```
 
 ## Requesting a Certificate for Ingress

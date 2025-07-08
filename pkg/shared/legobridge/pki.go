@@ -151,6 +151,10 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 		return nil, fmt.Errorf("failed to generate private key for type %v: %w", input.KeyType, err)
 	}
 
+	var emailAddresses []string
+	emailAddresses = append(emailAddresses, input.CAKeyPair.Cert.EmailAddresses...)
+	emailAddresses = append(emailAddresses, input.EmailAddresses...)
+
 	return &x509.CertificateRequest{
 		Version:            3,
 		PublicKeyAlgorithm: getPublicKeyAlgorithm(privateKey),
@@ -166,7 +170,9 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 			PostalCode:         subjectCA.PostalCode,
 		},
 		DNSNames:       input.DNSNames,
-		EmailAddresses: input.CAKeyPair.Cert.EmailAddresses,
+		EmailAddresses: emailAddresses,
+		IPAddresses:    input.IPAddresses,
+		URIs:           input.URIs,
 	}, nil
 }
 
@@ -254,6 +260,8 @@ func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x50
 		ExtKeyUsage:           DefaultCertExtKeyUsage,
 		DNSNames:              csr.DNSNames,
 		EmailAddresses:        csr.EmailAddresses,
+		IPAddresses:           csr.IPAddresses,
+		URIs:                  csr.URIs,
 	}, nil
 }
 
@@ -281,6 +289,9 @@ func newSelfSignedCertInPEMFormat(
 			CommonName: *input.CommonName,
 		},
 		DNSNames:              input.DNSNames,
+		EmailAddresses:        input.EmailAddresses,
+		IPAddresses:           input.IPAddresses,
+		URIs:                  input.URIs,
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(*input.Duration),
 		KeyUsage:              keyUsage,

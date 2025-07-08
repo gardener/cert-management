@@ -12,6 +12,15 @@ spec:
   # privateKey:
   #   algorithm: ECDSA
   #   size: 384
+  # optional: list of email addresses to be included in the certificate as subject alternative names (SANs).
+  # emailAddresses:
+  #   - foo@example.com
+  # optional: list of IP addresses to be included in the certificate as subject alternative names (SANs).
+  # ipAddresses:
+  #   - 1.1.1.1
+  # optional: list of URIs to be included in the certificate as subject alternative names (SANs).
+  # uris:
+  #   - spiffe://example.com/foo
   # CSR can also be specified
   # csr: ...
   issuerRef:

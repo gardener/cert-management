@@ -8,7 +8,11 @@ package certificate
 
 import (
 	"crypto/x509"
+	"fmt"
 	"math/big"
+	"net"
+	"net/mail"
+	"net/url"
 	"strings"
 	"time"
 
@@ -84,6 +88,54 @@ func LookupSerialNumber(res resources.Interface, ref *corev1.SecretReference) (s
 		return "", err
 	}
 	return SerialNumberToString(cert.SerialNumber, false), nil
+}
+
+// ValidateEmailAddresses checks if the provided email addresses are valid.
+func ValidateEmailAddresses(emails []string) error {
+	if len(emails) == 0 {
+		return nil
+	}
+	for _, email := range emails {
+		if _, err := mail.ParseAddress(email); err != nil {
+			return fmt.Errorf("invalid email address: %s, error: %w", email, err)
+		}
+	}
+	return nil
+}
+
+// ParseIPAddresses parses a list of IP addresses and returns a slice of net.IP objects.
+func ParseIPAddresses(ips []string) ([]net.IP, error) {
+	if len(ips) == 0 {
+		return nil, nil
+	}
+	var parsedIPs []net.IP
+	for _, ip := range ips {
+		parsedIP := net.ParseIP(ip)
+		if parsedIP == nil {
+			return nil, fmt.Errorf("invalid IP address: %s", ip)
+		}
+		parsedIPs = append(parsedIPs, parsedIP)
+	}
+	return parsedIPs, nil
+}
+
+// ParseURIs parses a list of URIs and returns a slice of parsed *url.URL objects.
+func ParseURIs(uris []string) ([]*url.URL, error) {
+	if len(uris) == 0 {
+		return nil, nil
+	}
+	var parsedURIs []*url.URL
+	for _, uri := range uris {
+		parsedURI, err := url.Parse(uri)
+		if err != nil {
+			return nil, fmt.Errorf("invalid URI: %s, error: %w", uri, err)
+		}
+		if parsedURI.Scheme == "" {
+			return nil, fmt.Errorf("invalid URI: %s, scheme is missing", uri)
+		}
+		parsedURIs = append(parsedURIs, parsedURI)
+	}
+	return parsedURIs, nil
 }
 
 func hasMultipleIssuerTypes(issuer *api.Issuer) bool {
