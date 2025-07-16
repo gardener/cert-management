@@ -58,12 +58,6 @@ add-license-headers: $(GO_ADD_LICENSE)
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./pkg ./test
 
-.PHONY: build
-build:
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(EXECUTABLE) \
-	    -ldflags "-X main.version=$(VERSION)-$(shell git rev-parse HEAD)"\
-	    ./cmd/cert-controller-manager
-
 .PHONY: build-local
 build-local:
 	@CGO_ENABLED=0 go build -o $(EXECUTABLE) \
@@ -76,7 +70,7 @@ build-local:
 
 .PHONY: release
 release:
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(EXECUTABLE) \
+	@CGO_ENABLED=0 go build -o $(EXECUTABLE) \
 	    -a \
 	    -ldflags "-w -X main.version=$(VERSION)" \
 	    ./cmd/cert-controller-manager
