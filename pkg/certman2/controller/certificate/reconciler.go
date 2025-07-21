@@ -7,9 +7,8 @@ package certificate
 import (
 	"context"
 	"fmt"
-	"github.com/gardener/cert-management/pkg/shared/legobridge"
-	corev1 "k8s.io/api/core/v1"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/clock"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 // Reconciler is a reconciler for provided Certificate resources.

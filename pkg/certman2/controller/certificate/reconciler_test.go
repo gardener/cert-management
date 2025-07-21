@@ -6,9 +6,8 @@ package certificate
 
 import (
 	"context"
-	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
-	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
-	"github.com/gardener/cert-management/pkg/shared/legobridge"
+	"time"
+
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,7 +16,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
+
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 var _ = Describe("#Reconcile", func() {

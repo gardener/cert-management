@@ -5,10 +5,11 @@
 package certificate
 
 import (
-	"github.com/gardener/cert-management/pkg/certman2/controller"
-	"github.com/gardener/cert-management/pkg/shared/legobridge"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	"github.com/gardener/cert-management/pkg/certman2/controller"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 // PendingCertificateRequestPredicate returns a predicate that filters objects if they have a pending certificate request.

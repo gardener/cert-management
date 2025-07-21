@@ -7,11 +7,11 @@ package certificate
 import (
 	"context"
 	"fmt"
-	"github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
+	"github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
