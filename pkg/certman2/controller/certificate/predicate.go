@@ -15,9 +15,6 @@ import (
 // PendingCertificateRequestPredicate returns a predicate that filters objects if they have a pending certificate request.
 func PendingCertificateRequestPredicate(pendingRequests *legobridge.PendingCertificateRequests) predicate.Predicate {
 	return controller.FilterPredicate(func(obj client.Object) bool {
-		return !pendingRequests.Contains(client.ObjectKey{
-			Namespace: obj.GetNamespace(),
-			Name:      obj.GetName(),
-		})
+		return !pendingRequests.Contains(client.ObjectKeyFromObject(obj))
 	})
 }

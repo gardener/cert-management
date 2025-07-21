@@ -25,7 +25,7 @@ func (r *Reconciler) reconcile(
 	reconcile.Result,
 	error,
 ) {
-	log.Info("reconcile cert")
+	log.Info("reconcile certificate")
 
 	if r.isOrphanedPendingCertificate(cert) {
 		log.Info("orphaned pending certificate detected")

@@ -7,6 +7,7 @@ package certificate
 import (
 	"context"
 	"fmt"
+	"k8s.io/utils/ptr"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,7 +52,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	var (
 		result     reconcile.Result
 		err        error
-		oldMessage = *cert.Status.Message
+		oldMessage = ptr.Deref(cert.Status.Message, "")
 	)
 	if cert.DeletionTimestamp != nil {
 		result, err = r.delete(ctx, log, cert)
@@ -65,7 +66,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 }
 
 func (r *Reconciler) handleChangedMessage(cert *v1alpha1.Certificate, oldMessage string, err error) {
-	newMessage := *cert.Status.Message
+	newMessage := ptr.Deref(cert.Status.Message, "")
 	if newMessage == oldMessage {
 		return
 	}
