@@ -34,6 +34,7 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 			&v1alpha1.Certificate{},
 			builder.WithPredicates(
 				certcontroller.CertClassPredicate(r.Config.Class),
+				PendingCertificateRequestPredicate(r.pendingRequests),
 			),
 		).
 		WithOptions(controller.Options{
