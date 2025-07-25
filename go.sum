@@ -169,8 +169,8 @@ github.com/gardener/controller-manager-library v0.2.1-0.20250630105600-972716a5f
 github.com/gardener/controller-manager-library v0.2.1-0.20250630105600-972716a5f721/go.mod h1:KH0e0QZI8BsZoP3VmjdUMiPro6oF1frDzV0HL2eyrE4=
 github.com/gardener/etcd-druid/api v0.31.0 h1:iH800fQOTeTAwQzaUQ8jxKFlSI8shZtpNfCTpsm3EyA=
 github.com/gardener/etcd-druid/api v0.31.0/go.mod h1:usOvhSOpqlrlnr/DTugq8VDoZRCU2YmwyDfiy6hRVO8=
-github.com/gardener/external-dns-management v0.25.3 h1:uzaJbgX67F78nr0MHBJTrHQ1B+/YANfKky2N4Y7ETMo=
-github.com/gardener/external-dns-management v0.25.3/go.mod h1:KiGmBNsv7o1Qukq27HsS7V0kchSy+J5sVbUZaNds1eA=
+github.com/gardener/external-dns-management v0.26.0 h1:Jhk8HRO5tMHx+2jfr0h8MjMHTfcKBJEZLD4dU5yTjuM=
+github.com/gardener/external-dns-management v0.26.0/go.mod h1:0sFmZu+MzUsCzu0IruV6k6uDwoTqTTqJdS31kx+xCw0=
 github.com/gardener/gardener v1.124.0 h1:0zM/Nnb164C2JnXN3FLPna+YySpLMB35T+TzMGCQmIc=
 github.com/gardener/gardener v1.124.0/go.mod h1:OxnsmvZA3qMv9G/jjH5VXldLQ9XVppSNCVCE/eeay/s=
 github.com/gardener/machine-controller-manager v0.59.2 h1:CSDKoNFzn8MdG+gJDp7ntsiuc7c57u82YYHLEbVdyOA=
