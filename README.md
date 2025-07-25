@@ -189,7 +189,7 @@ spec:
 #   skipDNSChallengeValidation: true
 ```
 
-Please see in the documentation of your CA how to create the EAB credentials.
+Please see the documentation of your CA on how to create the EAB credentials.
 For example, DigiCert provides some information here: [ACME external account binding (EAB)](https://docs.digicert.com/en/trust-lifecycle-manager/integration-guides/third-party-acme-integration/acme-external-account-binding--eab-.html)
 
 ### Certificate Authority (CA)
