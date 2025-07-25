@@ -22,7 +22,8 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Setting up Issuers](#setting-up-issuers)
     - [Automatic Certificate Management Environment (ACME)](#automatic-certificate-management-environment-acme)
       - [Auto registration](#auto-registration)
-      - [Using existing account](#using-existing-account)
+      - [Using an existing account](#using-an-existing-account)
+      - [Using an existing account with external account binding](#using-an-existing-account-with-external-account-binding)
     - [Certificate Authority (CA)](#certificate-authority-ca)
     - [SelfSigned](#selfsigned)
   - [Requesting a Certificate](#requesting-a-certificate)
@@ -70,10 +71,11 @@ The issuer custom resource contains the configuration and registration data for 
 
 ### Automatic Certificate Management Environment (ACME)
 
-Two modes are supported:
+Three modes are supported:
 
 - auto registration
 - using an existing account
+- using an existing account with external account binding
 
 #### Auto registration
 
@@ -101,10 +103,11 @@ spec:
       namespace: default
 ```
 
-#### Using existing account
+#### Using an existing account
 
 If you already have an existing account at the certificate authority, you need to
 specify email address and reference the private key from a secret.
+This is usually the case if you want to use an existing production account from a public CA like Let's Encrypt.
 
 ```yaml
 apiVersion: v1
@@ -139,6 +142,55 @@ In both cases, the state of an issuer resource can be checked on the `default` c
 NAME             SERVER                                                   EMAIL                    STATUS   TYPE   AGE
 issuer-staging   https://acme-staging-v02.api.letsencrypt.org/directory   some.user@mydomain.com   Ready    acme   8s
 ```
+
+#### Using an existing account with external account binding
+
+ACME with External Account Binding (EAB) is needed when a Certificate Authority (CA) requires an additional layer of authentication before allowing certificate issuance through the ACME protocol.
+
+> [!NOTE]
+> What Is External Account Binding (EAB)?
+> EAB is a mechanism in the ACME protocol ([RFC 8555](https://datatracker.ietf.org/doc/html/rfc8555/#section-7.3.4)) that allows a CA to bind a certificate request to a pre-authorized account.
+> It ensures that only clients with valid credentials (provided out-of-band) can register and request certificates.
+
+To use an existing account with EAB, you need to provide the EAB credentials, consisting of the *Key Identifier (KID)* and *HMAC key*.
+The *Key Identifier (KID)* must be provided in the `.spec.acme.externalAccountBinding.keyID` field.
+The *HMAC key* must be stored in a Kubernetes secret referenced by `keySecretRef` with the data key `hmacKey`.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: issuer-external-account-secret
+  namespace: default
+type: Opaque
+data:
+  hmacKey: ...
+```
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: my-issuer-with-external-account
+  namespace: default
+spec:
+  acme:
+    server: https://some-enterprise-or-commercial-ca.com/directory
+    email: my.account@mydomain.com
+    autoRegistration: true
+    externalAccountBinding:
+      keyID: mykey
+      keySecretRef:
+        # the secret must contain the data key 'hmacKey'
+        name: issuer-external-account-secret
+        namespace: default
+    # For some special setups, the DNS challenges are only performed pro forma. In this case the
+    # DNS Entry creation and DNS propagation check can be disabled with 'skipDNSChallengeValidation: true'
+#   skipDNSChallengeValidation: true
+```
+
+Please see the documentation of your CA on how to create the EAB credentials.
+For example, DigiCert provides some information here: [ACME external account binding (EAB)](https://docs.digicert.com/en/trust-lifecycle-manager/integration-guides/third-party-acme-integration/acme-external-account-binding--eab-.html)
 
 ### Certificate Authority (CA)
 
