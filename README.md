@@ -149,7 +149,8 @@ ACME with External Account Binding (EAB) is needed when a Certificate Authority 
 
 > [!NOTE]
 > What Is External Account Binding (EAB)?
-> EAB is a mechanism in the ACME protocol (RFC 8555) that allows a CA to bind a certificate request to a pre-authorized account. It ensures that only clients with valid credentials (provided out-of-band) can register and request certificates.
+> EAB is a mechanism in the ACME protocol ([RFC 8555](https://datatracker.ietf.org/doc/html/rfc8555/#section-7.3.4)) that allows a CA to bind a certificate request to a pre-authorized account.
+> It ensures that only clients with valid credentials (provided out-of-band) can register and request certificates.
 
 To use an existing account with EAB, you need to provide the EAB credentials, consisting of the *Key Identifier (KID)* and *HMAC key*.
 The *Key Identifier (KID)* must be provided in the `.spec.acme.externalAccountBinding.keyID` field.
