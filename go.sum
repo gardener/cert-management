@@ -176,8 +176,8 @@ github.com/gardener/gardener v1.124.0/go.mod h1:OxnsmvZA3qMv9G/jjH5VXldLQ9XVppSN
 github.com/gardener/machine-controller-manager v0.59.2 h1:CSDKoNFzn8MdG+gJDp7ntsiuc7c57u82YYHLEbVdyOA=
 github.com/gardener/machine-controller-manager v0.59.2/go.mod h1:TCU/KoudCMt2eV0Jnrq2D1TwgsrBCuhIVgV3j1el6Og=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
-github.com/go-acme/lego/v4 v4.25.1 h1:AYPUM7quPN/g2PcjjWw8sAMz3eV+Z8UWkr1kitDOyVA=
-github.com/go-acme/lego/v4 v4.25.1/go.mod h1:OORYyVNZPaNdIdVYCGSBNRNZDIjhQbPuFxwGDgWj/yM=
+github.com/go-acme/lego/v4 v4.25.2 h1:+D1Q+VnZrD+WJdlkgUEGHFFTcDrwGlE7q24IFtMmHDI=
+github.com/go-acme/lego/v4 v4.25.2/go.mod h1:OORYyVNZPaNdIdVYCGSBNRNZDIjhQbPuFxwGDgWj/yM=
 github.com/go-asn1-ber/asn1-ber v1.5.5/go.mod h1:hEBeB/ic+5LoWskz+yKT7vGhhPYkProFKoKdwZRWMe0=
 github.com/go-asn1-ber/asn1-ber v1.5.6 h1:CYsqysemXfEaQbyrLJmdsCRuufHoLa3P/gGWGl5TDrM=
 github.com/go-asn1-ber/asn1-ber v1.5.6/go.mod h1:hEBeB/ic+5LoWskz+yKT7vGhhPYkProFKoKdwZRWMe0=
