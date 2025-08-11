@@ -18,4 +18,8 @@ import (
 	_ "sigs.k8s.io/kind"
 
 	_ "github.com/gardener/controller-manager-library/hack"
+
+	_ "golang.org/x/tools/cmd/goimports" // import to be available in the go.mod file, so that it is not removed by go mod tidy (used in hack/tools/bin/work/import-boss/main.go)
+	_ "k8s.io/klog/v2"                   // import to be available in the go.mod file, so that it is not removed by go mod tidy (used in hack/tools/bin/work/import-boss/main.go)
+	_ "sigs.k8s.io/yaml"                 // import to be available in the go.mod file, so that it is not removed by go mod tidy (used in hack/tools/bin/work/import-boss/main.go)
 )
