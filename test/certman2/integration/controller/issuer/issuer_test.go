@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"net"
@@ -17,6 +18,7 @@ import (
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"golang.org/x/crypto/acme"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -219,6 +221,155 @@ var _ = Describe("Issuer controller tests", func() {
 			Expect(testClient.Delete(ctx, acmeIssuer)).To(Succeed())
 			Expect(testClient.Delete(ctx, secret)).To(Succeed())
 		})
+
+		It("should have validation errors for issuer secret with invalid secret", func() {
+			By("Create ACME issuer")
+			acmeIssuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "acme-issuer",
+					Namespace: testRunID,
+					Annotations: map[string]string{
+						"cert.gardener.cloud/class": "class-" + testRunID,
+					},
+				},
+				Spec: v1alpha1.IssuerSpec{
+					ACME: &v1alpha1.ACMESpec{
+						Server:           acmeServerURL,
+						Email:            acmeEmail,
+						AutoRegistration: true,
+						PrivateKeySecretRef: &corev1.SecretReference{
+							Name:      "invalid-secret",
+							Namespace: testRunID,
+						},
+					},
+				},
+			}
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      acmeIssuer.Spec.ACME.PrivateKeySecretRef.Name,
+					Namespace: testRunID,
+				},
+				Data: map[string][]byte{
+					legobridge.KeyPrivateKey: []byte("dummy"),
+				},
+			}
+			Expect(testClient.Create(ctx, secret)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, secret)).To(Succeed())
+			})
+			Expect(testClient.Create(ctx, acmeIssuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, acmeIssuer)).To(Succeed())
+			})
+
+			By("Wait for issuer to have state error because of invalid private key encoding")
+			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(acmeIssuer), acmeIssuer)).To(Succeed())
+				return acmeIssuer.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(Equal(fmt.Sprintf("validation of data keys failed for secret %s: value for key `privateKey` is invalid: decoding pem block for private key failed", client.ObjectKeyFromObject(secret)))),
+			}))
+
+			By("Wait for issuer to auto-registrate")
+			Expect(testClient.Delete(ctx, secret)).To(Succeed())
+			Eventually(func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(acmeIssuer), acmeIssuer)).To(Succeed())
+				return acmeIssuer.Status.State
+			}).Should(Equal("Ready"))
+
+			By("Wait for issuer to have validation error because of invalid key")
+			Expect(testClient.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+			secret.Data["invalid-key"] = []byte("this-is-not-a-data-key")
+			secret.Data[legobridge.ObsoleteKeyEmail] = []byte("dummy@example.com") // This key is obsolete but still allowed for backward compatibility
+			Expect(testClient.Update(ctx, secret)).To(Succeed())
+			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(acmeIssuer), acmeIssuer)).To(Succeed())
+				return acmeIssuer.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(Equal(fmt.Sprintf("validation of data keys failed for secret %s: invalid secret data keys: `invalid-key`", client.ObjectKeyFromObject(secret)))),
+			}))
+		})
+
+		It("should have validation errors for issuer secret with invalid EAB secret", func() {
+			By("Create ACME issuer")
+			acmeIssuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "acme-issuer",
+					Namespace: testRunID,
+					Annotations: map[string]string{
+						"cert.gardener.cloud/class": "class-" + testRunID,
+					},
+				},
+				Spec: v1alpha1.IssuerSpec{
+					ACME: &v1alpha1.ACMESpec{
+						Server:           acmeServerURL,
+						Email:            acmeEmail,
+						AutoRegistration: true,
+						ExternalAccountBinding: &v1alpha1.ACMEExternalAccountBinding{
+							KeyID: "test",
+							KeySecretRef: &corev1.SecretReference{
+								Name:      "invalid-secret",
+								Namespace: testRunID,
+							},
+						},
+					},
+				},
+			}
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      acmeIssuer.Spec.ACME.ExternalAccountBinding.KeySecretRef.Name,
+					Namespace: acmeIssuer.Spec.ACME.ExternalAccountBinding.KeySecretRef.Namespace,
+				},
+				Data: map[string][]byte{
+					legobridge.KeyHmacKey: []byte("dummy"),
+					"invalid-key":         []byte("this-is-not-a-data-key"),
+				},
+			}
+			Expect(testClient.Create(ctx, secret)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, secret)).To(Succeed())
+			})
+			Expect(testClient.Create(ctx, acmeIssuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, acmeIssuer)).To(Succeed())
+			})
+
+			By("Wait for issuer to have state error because of invalid data key")
+			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(acmeIssuer), acmeIssuer)).To(Succeed())
+				return acmeIssuer.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(Equal(fmt.Sprintf("loading EAB secret failed: EAB secret %s contains unexpected keys: invalid-key", client.ObjectKeyFromObject(secret)))),
+			}))
+
+			By("Wait for issuer to have state error because of invalid key value (not base64 encoded)")
+			Expect(testClient.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+			delete(secret.Data, "invalid-key")
+			Expect(testClient.Update(ctx, secret)).To(Succeed())
+			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(acmeIssuer), acmeIssuer)).To(Succeed())
+				return acmeIssuer.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(HavePrefix("creating registration user failed: acme: could not decode hmac key: illegal base64 data")),
+			}))
+
+			By("Wait for issuer to have state error because of key value too short")
+			Expect(testClient.Get(ctx, client.ObjectKeyFromObject(secret), secret)).To(Succeed())
+			secret.Data[legobridge.KeyHmacKey] = []byte(base64.RawURLEncoding.EncodeToString([]byte("dummy")))
+			Expect(testClient.Update(ctx, secret)).To(Succeed())
+			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(acmeIssuer), acmeIssuer)).To(Succeed())
+				return acmeIssuer.Status
+			}).Should(MatchFields(IgnoreExtras, Fields{
+				"State":   Equal("Error"),
+				"Message": PointTo(HavePrefix("creating registration user failed: acme: error signing eab content: failed to External Account Binding sign content: go-jose/go-jose: invalid key size for algorithm")),
+			}))
+		})
+
 	})
 })
 
