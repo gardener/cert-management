@@ -74,7 +74,7 @@ jobs:
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
       - name: run-verify
         run: |
-          set -eu
+          set -euo pipefail
           mkdir /tmp/blobs.d
 
           .ci/verify |& tee /tmp/blobs.d/verify-log.txt
