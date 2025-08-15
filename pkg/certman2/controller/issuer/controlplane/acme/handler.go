@@ -87,6 +87,9 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 		if core.IsSameExistingRegistration(issuer.Status.ACME, secretHash) {
 			rawReg = issuer.Status.ACME.Raw
 		} else {
+			if err := legobridge.ValidatePrivateKeySecretDataKeys(secret.Data); err != nil {
+				return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("validation of data keys failed for secret %s: %w", client.ObjectKeyFromObject(secret), err))
+			}
 			user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, secret.Data, eabKeyID, eabHmacKey)
 			if err != nil {
 				return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("creating registration user failed: %w", err))

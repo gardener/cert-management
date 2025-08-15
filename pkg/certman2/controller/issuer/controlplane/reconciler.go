@@ -86,7 +86,7 @@ func (r *Reconciler) issuersToReconcileOnSecretChanges(ctx context.Context, secr
 				},
 			})
 		}
-		if issuer.Spec.ACME != nil && issuer.Spec.ACME.PrivateKeySecretRef.Name == secret.GetName() &&
+		if issuer.Spec.ACME != nil && issuer.Spec.ACME.PrivateKeySecretRef != nil && issuer.Spec.ACME.PrivateKeySecretRef.Name == secret.GetName() &&
 			issuer.Spec.ACME.PrivateKeySecretRef.Namespace == secret.GetNamespace() {
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{

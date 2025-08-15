@@ -857,6 +857,20 @@ func (s *Support) LoadEABHmacKey(objKey *resources.ClusterObjectKey, issuerKey u
 		return "", "", fmt.Errorf("key %s not found in EAB secret %s/%s", legobridge.KeyHmacKey,
 			eab.KeySecretRef.Namespace, eab.KeySecretRef.Name)
 	}
+	if len(hmacEncoded) == 0 {
+		return "", "", fmt.Errorf("key %s in EAB secret %s/%s is empty", legobridge.KeyHmacKey,
+			eab.KeySecretRef.Namespace, eab.KeySecretRef.Name)
+	}
+	var invalidKeys []string
+	for key := range secret.Data {
+		if key != legobridge.KeyHmacKey {
+			invalidKeys = append(invalidKeys, key)
+		}
+	}
+	if len(invalidKeys) > 0 {
+		return "", "", fmt.Errorf("EAB secret %s/%s contains unexpected keys: %s",
+			eab.KeySecretRef.Namespace, eab.KeySecretRef.Name, strings.Join(invalidKeys, ", "))
+	}
 
 	return eab.KeyID, string(hmacEncoded), nil
 }

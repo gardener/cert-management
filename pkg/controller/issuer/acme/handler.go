@@ -13,6 +13,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/controller/issuer/core"
@@ -85,6 +86,9 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		if core.IsSameExistingRegistration(issuer.Status.ACME, secretHash) {
 			raw = issuer.Status.ACME.Raw
 		} else {
+			if err := legobridge.ValidatePrivateKeySecretDataKeys(secret.Data); err != nil {
+				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("validation of data keys failed for secret %s: %w", client.ObjectKeyFromObject(secret), err))
+			}
 			user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, secret.Data, eabKeyID, eabHmacKey)
 			if err != nil {
 				return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("creating registration user failed: %w", err))
