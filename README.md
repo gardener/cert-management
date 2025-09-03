@@ -48,6 +48,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Usage](#usage)
   - [Renewal of Certificates](#renewal-of-certificates)
     - [Triggering a manual Certificate renewal](#triggering-a-manual-certificate-renewal) 
+    - [Using `renewBefore`](#using-renewbefore)
   - [Revoking Certificates](#revoking-certificates)
     - [Revoking certificates with renewal](#revoking-certificates-with-renewal)
     - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
@@ -1150,6 +1151,41 @@ spec:
 ```
 
 If the field `.spec.ensureRenewedAfter` is set and you want to trigger the renewal again, make sure to remove it (e.g. by setting the value explicitly to `null`).
+
+### Using `renewBefore`
+
+You can control the renewal window of a `Certificate` by using `.spec.RenewBefore`.
+The value is a duration string parseable by Go's [`time.ParseDuration`](https://golang.org/pkg/time/#ParseDuration).
+It must be at least 5 minutes and less than the configured renewal window. 
+The controller subtracts the given duration from the _issued_ certificate's expiration date to determine the renewal date.
+You can inspect the planned renewal date in the status field `.status.renewalDate` (also set when no `renewBefore` is given).
+
+Let's assume a certificate is valid for 90 days, and instead of renewing it 30 days before expiration, you want to renew it 60 days before expiration.
+
+```yaml
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: renew-before-sample
+  namespace: default
+spec:
+  commonName: cert1.mydomain.com
+  duration: 2160h # 90 days
+  renewBefore: 1440h # 60 days
+```
+
+If the _issued_ certificate's expiration date is `2025-12-31T00:00:00Z` the status would show:
+
+```yaml
+status:
+  renewalDate: 2025-11-01T00:00:00Z
+```
+
+This is the planned renewal date of the `Certificate`.
+
+> [!NOTE]  
+> The expiration date of the _issued_ certificate is used for the calculation of the renewal date.
+> This is relevant in case the issuer ignores the requested duration and issues a certificate with a different validity period.
 
 ## Revoking Certificates
 
