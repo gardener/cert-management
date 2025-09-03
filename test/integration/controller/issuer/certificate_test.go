@@ -255,6 +255,73 @@ var _ = Describe("Certificate controller tests", func() {
 			Entry("invalid ip", nil, []string{"invalid-ip"}, nil, "invalid IP address"),
 			Entry("invalid uri", nil, nil, []string{":foo/bar"}, "invalid URI"),
 		)
+
+		Context("with renew before", func() {
+			It("should have a correct renewal date planned", func() {
+				certificate := &certv1alpha1.Certificate{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:    testNamespace.Name,
+						GenerateName: "self-signed-certificate-with-renewbefore-",
+					},
+					Spec: certv1alpha1.CertificateSpec{
+						IssuerRef: &certv1alpha1.IssuerRef{
+							Namespace: selfSignedIssuer.Namespace,
+							Name:      selfSignedIssuer.Name,
+						},
+						IsCA:        ptr.To(true),
+						CommonName:  ptr.To("example.com"),
+						Duration:    &metav1.Duration{Duration: 90 * 24 * time.Hour},
+						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
+					},
+				}
+				Expect(testClient.Create(ctx, certificate)).To(Succeed())
+				DeferCleanup(func() {
+					Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+				})
+				Eventually(func(g Gomega) {
+					g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+					g.Expect(certificate.Status.State).To(Equal("Ready"))
+
+					notAfter, err := time.Parse(time.RFC3339, certificate.Annotations[certctrl.AnnotationNotAfter])
+					Expect(err).NotTo(HaveOccurred())
+					renewalDate := notAfter.Add(-1 * time.Hour)
+					g.Expect(certificate.Status.RenewalDate).NotTo(BeNil())
+					g.Expect(*certificate.Status.RenewalDate).To(Equal(renewalDate.Format(time.RFC3339)))
+				}).WithTimeout(10 * time.Second).Should(Succeed())
+			})
+
+			DescribeTable("should reject invalid renew before values",
+				func(renewBefore time.Duration, expectedErrorMessage string) {
+					certificate := &certv1alpha1.Certificate{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace:    testNamespace.Name,
+							GenerateName: "self-signed-certificate-with-renewbefore-",
+						},
+						Spec: certv1alpha1.CertificateSpec{
+							IssuerRef: &certv1alpha1.IssuerRef{
+								Namespace: selfSignedIssuer.Namespace,
+								Name:      selfSignedIssuer.Name,
+							},
+							IsCA:        ptr.To(true),
+							CommonName:  ptr.To("example.com"),
+							Duration:    &metav1.Duration{Duration: 90 * 24 * time.Hour},
+							RenewBefore: &metav1.Duration{Duration: renewBefore},
+						},
+					}
+					Expect(testClient.Create(ctx, certificate)).To(Succeed())
+					DeferCleanup(func() {
+						Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+					})
+					Eventually(func(g Gomega) {
+						g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+						g.Expect(certificate.Status.State).To(Equal("Error"))
+						g.Expect(*certificate.Status.Message).To(ContainSubstring(expectedErrorMessage))
+					}).WithTimeout(10 * time.Second).Should(Succeed())
+				},
+				Entry("too short", -1*time.Hour, "renewBefore must be at least 5 minutes"),
+				Entry("too long", 365*24*time.Hour, "renewBefore must be less than the renewal window"),
+			)
+		})
 	})
 
 	Context("Self-signed certificates from CA issuer", func() {
