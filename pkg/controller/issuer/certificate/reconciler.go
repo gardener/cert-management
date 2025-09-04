@@ -969,7 +969,7 @@ func (r *certReconciler) checkScheduledRenewal(logctx logger.LogContext, obj res
 	renewalWindow := r.renewalWindow
 	renewBefore := crt.Spec.RenewBefore
 	if renewBefore != nil {
-		if err := r.validateRenewBefore(renewBefore.Duration); err != nil {
+		if err := r.validateRenewBefore(renewBefore.Duration, cert); err != nil {
 			status := r.failed(logctx, obj, api.StateError, err)
 			return &status
 		}
@@ -995,12 +995,14 @@ func (r *certReconciler) checkScheduledRenewal(logctx logger.LogContext, obj res
 	return nil
 }
 
-func (r *certReconciler) validateRenewBefore(renewBefore time.Duration) error {
-	if renewBefore < 5*time.Minute {
+func (r *certReconciler) validateRenewBefore(renewBefore time.Duration, cert *x509.Certificate) error {
+	lower := 5 * time.Minute
+	upper := cert.NotAfter.Add(-5 * time.Minute).Sub(cert.NotBefore)
+	if renewBefore < lower {
 		return fmt.Errorf("renewBefore must be at least 5 minutes (%v)", renewBefore)
 	}
-	if renewBefore >= r.renewalWindow {
-		return fmt.Errorf("renewBefore must be less than the renewal window (%v)", r.renewalWindow)
+	if renewBefore > upper {
+		return fmt.Errorf("renewBefore must not be greater than the duration of the issued certificate minus 5 minutes (%v)", upper)
 	}
 	return nil
 }

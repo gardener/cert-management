@@ -1156,7 +1156,7 @@ If the field `.spec.ensureRenewedAfter` is set and you want to trigger the renew
 
 You can control the renewal window of a `Certificate` by using `.spec.RenewBefore`.
 The value is a duration string parseable by Go's [`time.ParseDuration`](https://golang.org/pkg/time/#ParseDuration).
-It must be at least 5 minutes and less than the configured renewal window. 
+It must be at least 5 minutes and not greater than the issued certificate's duration minus 5 minutes. 
 The controller subtracts the given duration from the _issued_ certificate's expiration date to determine the renewal date.
 You can inspect the planned renewal date in the status field `.status.renewalDate` (also set when no `renewBefore` is given).
 

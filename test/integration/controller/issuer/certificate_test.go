@@ -319,7 +319,7 @@ var _ = Describe("Certificate controller tests", func() {
 					}).WithTimeout(10 * time.Second).Should(Succeed())
 				},
 				Entry("too short", -1*time.Hour, "renewBefore must be at least 5 minutes"),
-				Entry("too long", 365*24*time.Hour, "renewBefore must be less than the renewal window"),
+				Entry("too long", 365*24*time.Hour, "renewBefore must not be greater than the duration of the issued certificate minus 5 minutes"),
 			)
 		})
 	})
