@@ -908,3 +908,18 @@ func (s *Support) toObjectNameSet(keyset utils.IssuerKeySet) resources.ObjectNam
 func issuerKeyToObjectName(k utils.IssuerKey, def string) resources.ObjectName {
 	return resources.NewObjectName(k.NamespaceOrDefault(def), k.Name())
 }
+
+// AddScheduledReconciliation adds a scheduled reconciliation for a certificate using its planned renewal date.
+func (s *Support) AddScheduledReconciliation(cert *api.Certificate, renewalDate time.Time) {
+	s.state.AddScheduledReconciliation(newObjectName(cert.Namespace, cert.Name), renewalDate)
+}
+
+// HasScheduledReconciliation checks for a certificate's scheduled reconciliation using its planned renewal date.
+func (s *Support) HasScheduledReconciliation(cert *api.Certificate, renewalDate time.Time) bool {
+	return s.state.HasScheduledReconciliation(newObjectName(cert.Namespace, cert.Name), renewalDate)
+}
+
+// RemoveScheduledReconciliation removes a scheduled reconciliation for a certificate.
+func (s *Support) RemoveScheduledReconciliation(cert *api.Certificate) {
+	s.state.RemoveScheduledReconciliation(newObjectName(cert.Namespace, cert.Name))
+}

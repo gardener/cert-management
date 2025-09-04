@@ -285,6 +285,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 		status, remove := r.handleObtainOutput(logctx, obj, result)
 		if remove {
 			r.pendingResults.Remove(client.ObjectKeyFromObject(cert))
+			r.support.RemoveScheduledReconciliation(cert)
 		}
 		return status
 	}
@@ -925,6 +926,10 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		logctx.Errorf("certificate secret cannot be decoded: %s", err)
 	}
 
+	if status := r.checkScheduledRenewal(logctx, obj, cert); status != nil {
+		return *status
+	}
+
 	revoked := false
 	if _, ok := resources.GetAnnotation(secret, AnnotationRevoked); ok {
 		revoked = true
@@ -938,7 +943,7 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		r.support.ClearCertRenewalOverdue(obj.ObjectName())
 	}
 	requestedAt := ExtractRequestedAtFromAnnotation(secret)
-	if cert == nil || r.explicitRenewalRequested(cert, requestedAt, crt.Spec.EnsureRenewedAfter) || !revoked && r.needsRenewal(cert) {
+	if cert == nil || r.explicitRenewalRequested(cert, requestedAt, crt.Spec.EnsureRenewedAfter) || !revoked && r.needsRenewal(cert, &crt.Spec) {
 		if crt.Status.State == api.StatePending && r.lastPendingRateLimiting(crt.Status.LastPendingTimestamp) {
 			return reconcile.Succeeded(logctx)
 		}
@@ -956,6 +961,50 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		return r.failed(logctx, obj, api.StateError, err)
 	}
 	return r.succeeded(logctx, obj, &msg)
+}
+
+func (r *certReconciler) checkScheduledRenewal(logctx logger.LogContext, obj resources.Object, cert *x509.Certificate) *reconcile.Status {
+	crt := obj.Data().(*api.Certificate)
+
+	renewalWindow := r.renewalWindow
+	renewBefore := crt.Spec.RenewBefore
+	if renewBefore != nil {
+		if err := r.validateRenewBefore(renewBefore.Duration, cert); err != nil {
+			status := r.failed(logctx, obj, api.StateError, err)
+			return &status
+		}
+		renewalWindow = renewBefore.Duration
+	}
+
+	renewalDate := cert.NotAfter.Add(-renewalWindow)
+	renewalDateFormatted := ptr.To(renewalDate.Format(time.RFC3339))
+	if !ptr.Equal(renewalDateFormatted, crt.Status.RenewalDate) {
+		crt.Status.RenewalDate = renewalDateFormatted
+		if err := obj.UpdateStatus(); err != nil {
+			status := r.failed(logctx, obj, api.StateError, fmt.Errorf("updating renewal date: %w", err))
+			return &status
+		}
+	}
+
+	if !r.support.HasScheduledReconciliation(crt, renewalDate) && !r.needsRenewal(cert, &crt.Spec) {
+		status := reconcile.RescheduleAfter(logctx, time.Until(renewalDate))
+		r.support.AddScheduledReconciliation(crt, renewalDate)
+		return &status
+	}
+
+	return nil
+}
+
+func (r *certReconciler) validateRenewBefore(renewBefore time.Duration, cert *x509.Certificate) error {
+	lower := 5 * time.Minute
+	upper := cert.NotAfter.Add(-5 * time.Minute).Sub(cert.NotBefore)
+	if renewBefore < lower {
+		return fmt.Errorf("renewBefore must be at least 5 minutes (%v)", renewBefore)
+	}
+	if renewBefore > upper {
+		return fmt.Errorf("renewBefore must not be greater than the duration of the issued certificate minus 5 minutes (%v)", upper)
+	}
+	return nil
 }
 
 func (r *certReconciler) updateNotAfterAnnotation(logctx logger.LogContext, obj resources.Object, notAfter time.Time) *reconcile.Status {
@@ -1036,8 +1085,12 @@ func (r *certReconciler) explicitRenewalRequested(cert *x509.Certificate, reques
 	return ensureRenewalAfter != nil && WasRequestedBefore(cert, requestedAt, ensureRenewalAfter.Time)
 }
 
-func (r *certReconciler) needsRenewal(cert *x509.Certificate) bool {
-	return cert.NotAfter.Before(time.Now().Add(r.renewalWindow))
+func (r *certReconciler) needsRenewal(cert *x509.Certificate, crt *api.CertificateSpec) bool {
+	renewalWindow := r.renewalWindow
+	if crt.RenewBefore != nil {
+		renewalWindow = crt.RenewBefore.Duration
+	}
+	return cert.NotAfter.Before(time.Now().Add(renewalWindow))
 }
 
 func (r *certReconciler) isRenewalOverdue(cert *x509.Certificate) bool {
@@ -1096,7 +1149,7 @@ func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.Certi
 		}
 
 		requestedAt := ExtractRequestedAtFromAnnotation(secret)
-		if !r.needsRenewal(cert) && !r.explicitRenewalRequested(cert, requestedAt, spec.EnsureRenewedAfter) {
+		if !r.needsRenewal(cert, spec) && !r.explicitRenewalRequested(cert, requestedAt, spec.EnsureRenewedAfter) {
 			if best == nil ||
 				bestNotAfter.Before(cert.NotAfter) ||
 				secretRef != nil && bestNotAfter.Equal(cert.NotAfter) && obj.GetName() == secretRef.Name && core.NormalizeNamespace(obj.GetNamespace()) == core.NormalizeNamespace(secretRef.Namespace) {

@@ -80,6 +80,13 @@ type CertificateSpec struct {
 	// Renew triggers a renewal if set to true
 	// +optional
 	Renew *bool `json:"renew,omitempty"`
+	// RenewBefore specifies the time before the certificate's expiration date when the certificate should be renewed.
+	// Note that the actual expiration of the issued certificate is used for the calculation.
+	// If not set, the default renewal window is used.
+	// Must be at least 5 minutes and not greater than issued certificate's duration minus 5 minutes.
+	// Value must be in units accepted by Go time.ParseDuration https://golang.org/pkg/time/#ParseDuration.
+	// +optional
+	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
 	// EnsureRenewedAfter specifies a time stamp in the past. Renewing is only triggered if certificate notBefore date is before this date.
 	// +optional
 	EnsureRenewedAfter *metav1.Time `json:"ensureRenewedAfter,omitempty"`
@@ -193,6 +200,9 @@ type CertificateStatus struct {
 	// IssuanceDate shows the notBefore validity date.
 	// +optional
 	IssuanceDate *string `json:"issuanceDate,omitempty"`
+	// RenewalDate shows the planned renewal date. If not set, no renewal has been planned yet.
+	// +optional
+	RenewalDate *string `json:"renewalDate,omitempty"`
 	// ExpirationDate shows the notAfter validity date.
 	// +optional
 	ExpirationDate *string `json:"expirationDate,omitempty"`

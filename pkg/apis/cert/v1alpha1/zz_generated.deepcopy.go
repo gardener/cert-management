@@ -444,6 +444,11 @@ func (in *CertificateSpec) DeepCopyInto(out *CertificateSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.RenewBefore != nil {
+		in, out := &in.RenewBefore, &out.RenewBefore
+		*out = new(metav1.Duration)
+		**out = **in
+	}
 	if in.EnsureRenewedAfter != nil {
 		in, out := &in.EnsureRenewedAfter, &out.EnsureRenewedAfter
 		*out = (*in).DeepCopy()
@@ -520,6 +525,11 @@ func (in *CertificateStatus) DeepCopyInto(out *CertificateStatus) {
 	}
 	if in.IssuanceDate != nil {
 		in, out := &in.IssuanceDate, &out.IssuanceDate
+		*out = new(string)
+		**out = **in
+	}
+	if in.RenewalDate != nil {
+		in, out := &in.RenewalDate, &out.RenewalDate
 		*out = new(string)
 		**out = **in
 	}

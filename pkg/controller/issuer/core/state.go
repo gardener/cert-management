@@ -7,6 +7,8 @@
 package core
 
 import (
+	"time"
+
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	v1 "k8s.io/api/core/v1"
 
@@ -15,14 +17,15 @@ import (
 )
 
 type state struct {
-	secrets      ReferencedSecrets
-	altSecrets   ReferencedSecrets
-	eabSecrets   ReferencedSecrets
-	certificates AssociatedObjects
-	quotas       Quotas
-	selections   IssuerDNSSelections
-	overdueCerts objectNameSet
-	revokedCerts objectNameSet
+	secrets                  ReferencedSecrets
+	altSecrets               ReferencedSecrets
+	eabSecrets               ReferencedSecrets
+	certificates             AssociatedObjects
+	quotas                   Quotas
+	selections               IssuerDNSSelections
+	overdueCerts             objectNameSet
+	revokedCerts             objectNameSet
+	scheduledReconciliations map[resources.ObjectName]time.Time
 }
 
 func newState() *state {
@@ -31,6 +34,7 @@ func newState() *state {
 		certificates: *NewAssociatedObjects(), quotas: *NewQuotas(),
 		selections:   *NewIssuerDNSSelections(),
 		overdueCerts: *newObjectNameSet(), revokedCerts: *newObjectNameSet(),
+		scheduledReconciliations: make(map[resources.ObjectName]time.Time),
 	}
 }
 
@@ -143,4 +147,20 @@ func (s *state) GetAllRevoked() []resources.ObjectName {
 
 func (s *state) GetRevokedCount() int {
 	return s.revokedCerts.Size()
+}
+
+func (s *state) AddScheduledReconciliation(certName resources.ObjectName, renewalDate time.Time) {
+	s.scheduledReconciliations[certName] = renewalDate
+}
+
+func (s *state) HasScheduledReconciliation(certName resources.ObjectName, renewalDate time.Time) bool {
+	scheduledRenewalDate, ok := s.scheduledReconciliations[certName]
+	if !ok {
+		return false
+	}
+	return scheduledRenewalDate.Equal(renewalDate)
+}
+
+func (s *state) RemoveScheduledReconciliation(certName resources.ObjectName) {
+	delete(s.scheduledReconciliations, certName)
 }
