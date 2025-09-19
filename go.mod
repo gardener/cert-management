@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.18.2
 	github.com/gardener/controller-manager-library v0.2.1-0.20250807124838-0a9c26884c72
 	github.com/gardener/external-dns-management v0.28.0
-	github.com/gardener/gardener v1.127.1
+	github.com/gardener/gardener v1.128.0
 	github.com/go-acme/lego/v4 v4.26.0
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.8.0
@@ -21,17 +21,17 @@ require (
 	github.com/spf13/pflag v1.0.10
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.42.0
-	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
+	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
-	golang.org/x/tools v0.36.0
-	istio.io/api v1.25.4
+	golang.org/x/tools v0.37.0
+	istio.io/api v1.25.5
 	istio.io/client-go v1.25.1
-	k8s.io/api v0.33.4
-	k8s.io/apiextensions-apiserver v0.33.4
-	k8s.io/apimachinery v0.33.4
-	k8s.io/client-go v0.33.4
-	k8s.io/code-generator v0.33.4
-	k8s.io/component-base v0.33.4
+	k8s.io/api v0.33.5
+	k8s.io/apiextensions-apiserver v0.33.5
+	k8s.io/apimachinery v0.33.5
+	k8s.io/client-go v0.33.5
+	k8s.io/code-generator v0.33.5
+	k8s.io/component-base v0.33.5
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20250701173324-9bd5c66d9911
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
@@ -69,7 +69,7 @@ require (
 	github.com/fluent/fluent-operator/v3 v3.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
-	github.com/gardener/etcd-druid/api v0.31.0 // indirect
+	github.com/gardener/etcd-druid/api v0.32.0 // indirect
 	github.com/gardener/machine-controller-manager v0.60.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.6 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.2 // indirect
@@ -122,7 +122,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nexucis/lamenv v0.5.2 // indirect
-	github.com/open-telemetry/opentelemetry-operator v0.131.0 // indirect
+	github.com/open-telemetry/opentelemetry-operator v0.132.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/perses/common v0.27.1-0.20250326140707-96e439b14e0e // indirect
 	github.com/perses/perses v0.51.0 // indirect
@@ -130,14 +130,14 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.85.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.65.0 // indirect
+	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/otlptranslator v0.0.0-20250717125610-8549f4ab4f8f // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/cast v1.7.1 // indirect
+	github.com/spf13/cast v1.10.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
@@ -145,7 +145,7 @@ require (
 	github.com/zitadel/oidc/v3 v3.38.1 // indirect
 	github.com/zitadel/schema v1.3.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.36.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.37.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.17.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.13.0 // indirect
@@ -171,11 +171,13 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.27.0 // indirect
+	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
+	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/oauth2 v0.31.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/telemetry v0.0.0-20250908211612-aef8a434d053 // indirect
 	golang.org/x/term v0.35.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.13.0 // indirect
@@ -193,9 +195,9 @@ require (
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/kube-aggregator v0.33.4 // indirect
-	k8s.io/kubelet v0.33.4 // indirect
-	k8s.io/metrics v0.33.4 // indirect
+	k8s.io/kube-aggregator v0.33.5 // indirect
+	k8s.io/kubelet v0.33.5 // indirect
+	k8s.io/metrics v0.33.5 // indirect
 	sigs.k8s.io/controller-tools v0.18.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
