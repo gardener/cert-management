@@ -47,7 +47,7 @@ func (h *selfSignedIssuerHandler) Reconcile(logger logger.LogContext, obj resour
 	if selfSigned == nil {
 		return h.support.Failed(logger, obj, api.StateError, &selfSignedType, fmt.Errorf("missing selfSigned spec"), false)
 	}
-	issuer.Spec.RequestsPerDayQuota = ptr.To(math.MaxInt64)
+	issuer.Spec.RequestsPerDayQuota = ptr.To(math.MaxInt32)
 
 	return h.support.SucceedSelfSignedIssuer(logger, obj, &selfSignedType)
 }

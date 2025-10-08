@@ -50,7 +50,7 @@ func (r *caIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Obje
 		return r.failedCA(logger, obj, api.StateError, fmt.Errorf("missing CA spec"))
 	}
 
-	issuer.Spec.RequestsPerDayQuota = ptr.To(math.MaxInt64)
+	issuer.Spec.RequestsPerDayQuota = ptr.To(math.MaxInt32)
 
 	r.support.RememberIssuerSecret(obj.ClusterKey(), ca.PrivateKeySecretRef, "")
 
