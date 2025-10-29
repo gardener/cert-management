@@ -735,9 +735,6 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 
 func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resources.Object,
 	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
-	if cert.Spec.IsCA != nil {
-		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("isCA cannot be set for a certificate with issuer of type 'ca'"))
-	}
 	CAKeyPair, err := r.restoreCA(issuerKey, issuer)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, err)
@@ -802,7 +799,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, EmailAddresses: cert.Spec.EmailAddresses, IPAddresses: ipAddresses, URIs: uris, CSR: cert.Spec.CSR,
-		Callback: callback, Renew: renew, Duration: duration, KeyType: keyType}
+		Callback: callback, Renew: renew, Duration: duration, KeyType: keyType, IsCA: ptr.Deref(cert.Spec.IsCA, false)}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {

@@ -37,6 +37,22 @@ var _ = Describe("Issuer controller tests", func() {
 	var (
 		testRunID     string
 		testNamespace *corev1.Namespace
+
+		checkIssuerStateReady = func(issuer *v1alpha1.Issuer) {
+			EventuallyWithOffset(1, func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+				g.Expect(issuer.Status.ObservedGeneration).To(Equal(issuer.Generation))
+				return issuer.Status.State
+			}).Should(Equal("Ready"))
+		}
+
+		checkCertificateStateReady = func(cert *v1alpha1.Certificate) {
+			EventuallyWithOffset(1, func(g Gomega) string {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				g.Expect(cert.Status.ObservedGeneration).To(Equal(cert.Generation))
+				return cert.Status.State
+			}).Should(Equal("Ready"))
+		}
 	)
 
 	BeforeEach(func() {
@@ -76,10 +92,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.State
-			}).Should(Equal("Ready"))
+			checkIssuerStateReady(issuer)
 		})
 
 		It("should create a certificate", func() {
@@ -90,10 +103,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.State
-			}).Should(Equal("Ready"))
+			checkIssuerStateReady(issuer)
 
 			By("Create certificate")
 			cert := getCertificate(testRunID, "acme-certificate", "example.com", issuer.Namespace, issuer.Name)
@@ -103,10 +113,7 @@ var _ = Describe("Issuer controller tests", func() {
 			})
 
 			By("Wait for certificate to become ready")
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
-				return cert.Status.State
-			}).Should(Equal("Ready"))
+			checkCertificateStateReady(cert)
 		})
 
 		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
@@ -117,10 +124,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.State
-			}).Should(Equal("Ready"))
+			checkIssuerStateReady(issuer)
 
 			By("Stop manager")
 			stopManager()
@@ -181,13 +185,8 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status
-			}).Should(MatchFields(IgnoreExtras, Fields{
-				"State":               Equal("Ready"),
-				"RequestsPerDayQuota": Equal(1),
-			}))
+			checkIssuerStateReady(issuer)
+			Expect(issuer.Spec.RequestsPerDayQuota).To(PointTo(Equal(1)))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -197,10 +196,7 @@ var _ = Describe("Issuer controller tests", func() {
 			})
 
 			By("Wait for first certificate to become ready")
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert1), cert1)).To(Succeed())
-				return cert1.Status.State
-			}).Should(Equal("Ready"))
+			checkCertificateStateReady(cert1)
 
 			By("Create second certificate")
 			cert2 := getCertificate(testRunID, "acme-certificate2", "other.domain.com", issuer.Namespace, issuer.Name)
@@ -228,13 +224,8 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) v1alpha1.IssuerStatus {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status
-			}).Should(MatchFields(IgnoreExtras, Fields{
-				"State":               Equal("Ready"),
-				"RequestsPerDayQuota": Equal(1),
-			}))
+			checkIssuerStateReady(issuer)
+			Expect(issuer.Spec.RequestsPerDayQuota).To(PointTo(Equal(1)))
 
 			By("Create first certificate")
 			cert1 := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -244,10 +235,7 @@ var _ = Describe("Issuer controller tests", func() {
 			})
 
 			By("Wait for first certificate to become ready")
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert1), cert1)).To(Succeed())
-				return cert1.Status.State
-			}).Should(Equal("Ready"))
+			checkCertificateStateReady(cert1)
 
 			By("Create second certificate")
 			cert2 := getCertificate(testRunID, "acme-certificate2", "example.com", issuer.Namespace, issuer.Name)
@@ -278,10 +266,7 @@ var _ = Describe("Issuer controller tests", func() {
 			})
 
 			By("Wait for issuer to become ready")
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.State
-			}).Should(Equal("Ready"))
+			checkIssuerStateReady(issuer)
 
 			By("Create certificate")
 			cert := getCertificate(testRunID, "acme-certificate1", "example.com", issuer.Namespace, issuer.Name)
@@ -291,10 +276,7 @@ var _ = Describe("Issuer controller tests", func() {
 			})
 
 			By("Wait for certificate to become ready")
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
-				return cert.Status.State
-			}).Should(Equal("Ready"))
+			checkCertificateStateReady(cert)
 
 			By("Trigger renewal")
 			oldExpirationDate := &cert.Status.ExpirationDate
@@ -302,13 +284,8 @@ var _ = Describe("Issuer controller tests", func() {
 			Expect(testClient.Update(ctx, cert)).To(Succeed())
 
 			By("Wait for renewal")
-			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
-				return cert.Status
-			}).Should(MatchFields(IgnoreExtras, Fields{
-				"State":          Equal("Ready"),
-				"ExpirationDate": Not(Equal(oldExpirationDate)),
-			}))
+			checkCertificateStateReady(cert)
+			Expect(cert.Status.ExpirationDate).ToNot(PointTo(Equal(oldExpirationDate)))
 		})
 
 		It("should have validation errors for issuer secret with invalid secret", func() {
@@ -448,10 +425,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.State
-			}).Should(Equal("Ready"))
+			checkIssuerStateReady(issuer)
 		})
 
 		It("should be able to create self-signed certificates", func() {
@@ -463,10 +437,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
-				return certificate.Status.State
-			}).Should(Equal("Ready"))
+			checkCertificateStateReady(certificate)
 
 			By("Resolve certificate secret reference")
 			secretReference := certificate.Spec.SecretRef
@@ -559,10 +530,122 @@ var _ = Describe("Issuer controller tests", func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
 			})
 
-			Eventually(func(g Gomega) string {
-				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
-				return issuer.Status.State
-			}).Should(Equal("Ready"))
+			checkIssuerStateReady(issuer)
+		})
+	})
+
+	Context("Chained Certificate Authority issuer", func() {
+		It("should be able to create CA issuer", func() {
+			By("Create self-signed CA issuer")
+			selfSignedIssuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "self-signed-issuer",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					SelfSigned: &v1alpha1.SelfSignedSpec{},
+				},
+			}
+			Expect(testClient.Create(ctx, selfSignedIssuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, selfSignedIssuer)).To(Succeed())
+			})
+			checkIssuerStateReady(selfSignedIssuer)
+
+			By("Create root CA certificate")
+			rootCACertificate := getCertificate(testRunID, "root-ca-certificate", "root-ca.mydomain.com", testRunID, selfSignedIssuer.Name)
+			rootCACertificate.Spec.SecretRef = &corev1.SecretReference{
+				Name:      "root-ca-certificate-secret",
+				Namespace: testRunID,
+			}
+			rootCACertificate.Spec.IsCA = ptr.To(true)
+			rootCACertificate.Spec.Duration = &metav1.Duration{Duration: 3 * 365 * 24 * time.Hour} // 3 years
+			Expect(testClient.Create(ctx, rootCACertificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, rootCACertificate)).To(Succeed())
+			})
+			checkCertificateStateReady(rootCACertificate)
+
+			By("Create issuer with root CA certificate")
+			caRootIssuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "ca-root-issuer",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					CA: &v1alpha1.CASpec{
+						PrivateKeySecretRef: rootCACertificate.Spec.SecretRef,
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, caRootIssuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, caRootIssuer)).To(Succeed())
+			})
+			checkIssuerStateReady(caRootIssuer)
+
+			By("Create intermediate CA certificate")
+			intermediateCACertificate := getCertificate(testRunID, "intermediate-ca-certificate", "intermediate-ca.root-ca.mydomain.com", testRunID, caRootIssuer.Name)
+			intermediateCACertificate.Spec.SecretRef = &corev1.SecretReference{
+				Name:      "intermediate-ca-certificate-secret",
+				Namespace: testRunID,
+			}
+			intermediateCACertificate.Spec.IsCA = ptr.To(true)
+			intermediateCACertificate.Spec.Duration = &metav1.Duration{Duration: 1 * 365 * 24 * time.Hour} // 1 year
+			Expect(testClient.Create(ctx, intermediateCACertificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, intermediateCACertificate)).To(Succeed())
+			})
+			checkCertificateStateReady(intermediateCACertificate)
+
+			By("Create issuer with intermediate CA certificate")
+			caIntermediateIssuer := &v1alpha1.Issuer{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRunID,
+					Name:      "ca-intermediate-issuer",
+				},
+				Spec: v1alpha1.IssuerSpec{
+					CA: &v1alpha1.CASpec{
+						PrivateKeySecretRef: intermediateCACertificate.Spec.SecretRef,
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, caIntermediateIssuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, caIntermediateIssuer)).To(Succeed())
+			})
+			checkIssuerStateReady(caIntermediateIssuer)
+
+			By("Create certificate")
+			fooCertificate := getCertificate(testRunID, "foo-certificate", "foo.intermediate-ca.root-ca.mydomain.com", testRunID, caIntermediateIssuer.Name)
+			fooCertificate.Spec.SecretRef = &corev1.SecretReference{
+				Name:      "foo-certificate-secret",
+				Namespace: testRunID,
+			}
+			Expect(testClient.Create(ctx, fooCertificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, fooCertificate)).To(Succeed())
+			})
+			checkCertificateStateReady(fooCertificate)
+
+			secret := &corev1.Secret{}
+			By("Verify certificate secret contains certificate chain to first CA")
+			secretKey := client.ObjectKey{Name: fooCertificate.Spec.SecretRef.Name, Namespace: fooCertificate.Spec.SecretRef.Namespace}
+			Expect(testClient.Get(ctx, secretKey, secret)).To(Succeed())
+			certData := secret.Data[corev1.TLSCertKey]
+			block, rest := pem.Decode(certData)
+			Expect(block).NotTo(BeNil())
+			Expect(block.Type).To(Equal("CERTIFICATE"))
+			cert1, err := x509.ParseCertificate(block.Bytes)
+			Expect(err).NotTo(HaveOccurred())
+			block, rest = pem.Decode(rest)
+			Expect(block).NotTo(BeNil())
+			Expect(block.Type).To(Equal("CERTIFICATE"))
+			cert2, err := x509.ParseCertificate(block.Bytes)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rest).To(BeEmpty())
+			Expect(cert1.Issuer.CommonName).To(Equal("intermediate-ca.root-ca.mydomain.com"))
+			Expect(cert2.Issuer.CommonName).To(Equal("root-ca.mydomain.com"))
 		})
 	})
 })

@@ -80,6 +80,9 @@ func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Sig
 		return nil, err
 	}
 
+	// Return chain: leaf certificate + issuer certificate
+	crtPEM = append(crtPEM, issuerPEM.Bytes()...)
+
 	return &certificate.Resource{
 		PrivateKey:        privKeyPEM,
 		Certificate:       crtPEM,
@@ -298,7 +301,6 @@ func newSelfSignedCertInPEMFormat(
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		IsCA:                  true,
 		BasicConstraintsValid: true,
-		MaxPathLen:            0,
 	}
 
 	certDerBytes, _ := x509.CreateCertificate(rand.Reader, &template, &template, certPrivateKey.Public(), certPrivateKey)
