@@ -23,6 +23,8 @@ import (
 )
 
 var _ = Describe("Certificate reconcile", func() {
+	ctx := context.Background()
+
 	Context("#isOrphanedPendingCertificate", func() {
 		var (
 			reconciler *Reconciler
@@ -82,9 +84,9 @@ var _ = Describe("Certificate reconcile", func() {
 					LastPendingTimestamp: ptr.To(metav1.NewTime(time.Now())),
 				},
 			}
-			Expect(fakeClient.Create(context.TODO(), cert)).To(Succeed())
+			Expect(fakeClient.Create(ctx, cert)).To(Succeed())
 
-			result, err := reconciler.handleOrphanedPendingCertificate(context.TODO(), cert)
+			result, err := reconciler.handleOrphanedPendingCertificate(ctx, cert)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(result).To(Equal(reconcile.Result{}))
 			Expect(cert.Status.LastPendingTimestamp).To(BeNil())
@@ -186,7 +188,7 @@ var _ = Describe("Certificate reconcile", func() {
 
 		BeforeEach(func() {
 			reconciler = &Reconciler{
-				Client: fakeclient.NewClientBuilder().WithScheme(certmanclient.ClusterScheme).Build(),
+				Client: fakeclient.NewClientBuilder().WithScheme(certmanclient.ClusterScheme).WithStatusSubresource(&v1alpha1.Certificate{}).Build(),
 			}
 			cert = &v1alpha1.Certificate{
 				ObjectMeta: metav1.ObjectMeta{
@@ -195,19 +197,43 @@ var _ = Describe("Certificate reconcile", func() {
 					Annotations: map[string]string{
 						constants.GardenerOperationReconcile: "true",
 					},
+					Generation: 1,
 				},
 			}
-			Expect(reconciler.Client.Create(context.TODO(), cert)).To(Succeed())
 		})
 
 		It("should remove the reconcile annotation", func() {
-			result, err := reconciler.handleReconcileAnnotation(context.TODO(), cert)
+			Expect(reconciler.Client.Create(ctx, cert)).To(Succeed())
+			result, err := reconciler.handleReconcileAnnotation(ctx, cert)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(reconcile.Result{}))
 			Expect(cert.Annotations).NotTo(HaveKey(constants.GardenerOperationReconcile))
 
 			fetchedCert := &v1alpha1.Certificate{}
-			Expect(reconciler.Client.Get(context.TODO(), client.ObjectKeyFromObject(cert), fetchedCert)).To(Succeed())
+			Expect(reconciler.Client.Get(ctx, client.ObjectKeyFromObject(cert), fetchedCert)).To(Succeed())
+			Expect(fetchedCert.Annotations).NotTo(HaveKey(constants.GardenerOperationReconcile))
+		})
+
+		It("should remove the the back-off status first and then remove the reconcile annotation", func() {
+			cert.Status.BackOff = &v1alpha1.BackOffState{
+				ObservedGeneration: 1,
+				RetryAfter:         metav1.NewTime(time.Now().Add(100 * time.Second)),
+				RetryInterval:      metav1.Duration{Duration: 100 * time.Second},
+			}
+			Expect(reconciler.Client.Create(ctx, cert)).To(Succeed())
+			result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(cert)})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(reconcile.Result{}))
+
+			fetchedCert := &v1alpha1.Certificate{}
+			Expect(reconciler.Client.Get(ctx, client.ObjectKeyFromObject(cert), fetchedCert)).To(Succeed())
+			Expect(fetchedCert.Status.BackOff).To(BeNil())
+
+			result, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: client.ObjectKeyFromObject(cert)})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(reconcile.Result{}))
+
+			Expect(reconciler.Client.Get(ctx, client.ObjectKeyFromObject(cert), fetchedCert)).To(Succeed())
 			Expect(fetchedCert.Annotations).NotTo(HaveKey(constants.GardenerOperationReconcile))
 		})
 	})

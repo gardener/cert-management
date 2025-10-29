@@ -33,6 +33,10 @@ func (r *Reconciler) reconcile(
 	}
 
 	if r.hasReconcileAnnotation(cert) {
+		if r.shouldBackoff(cert) {
+			log.Info("reconcile annotation found, clearing backoff and reconciling again")
+			return r.clearBackoff(ctx, cert)
+		}
 		log.Info("reconcile annotation found, removing it and reconciling again")
 		return r.handleReconcileAnnotation(ctx, cert)
 	}
@@ -74,8 +78,9 @@ func (r *Reconciler) hasReconcileAnnotation(cert *v1alpha1.Certificate) bool {
 }
 
 func (r *Reconciler) handleReconcileAnnotation(ctx context.Context, cert *v1alpha1.Certificate) (reconcile.Result, error) {
+	patch := client.MergeFrom(cert.DeepCopy())
 	delete(cert.Annotations, constants.GardenerOperationReconcile)
-	if err := r.Client.Update(ctx, cert); err != nil {
+	if err := r.Client.Patch(ctx, cert, patch); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to remove reconcile annotation: %w", err)
 	}
 	return reconcile.Result{}, nil
@@ -96,4 +101,13 @@ func (r *Reconciler) handleBackoff(cert *v1alpha1.Certificate) reconcile.Result 
 	return reconcile.Result{
 		RequeueAfter: interval,
 	}
+}
+
+func (r *Reconciler) clearBackoff(ctx context.Context, cert *v1alpha1.Certificate) (reconcile.Result, error) {
+	patch := client.MergeFrom(cert.DeepCopy())
+	cert.Status.BackOff = nil
+	if err := r.Client.Status().Patch(ctx, cert, patch); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to clear backoff status: %w", err)
+	}
+	return reconcile.Result{}, nil
 }
