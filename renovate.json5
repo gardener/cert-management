@@ -190,6 +190,5 @@
     "sigs.k8s.io/controller-tools",
     "sigs.k8s.io/json",
     "sigs.k8s.io/randfill",
-    "sigs.k8s.io/structured-merge-diff/v4",
   ],
 }
