@@ -9,7 +9,7 @@ require (
 	github.com/gardener/controller-manager-library v0.2.1-0.20251016104111-a9eedfad962e
 	github.com/gardener/external-dns-management v0.29.0
 	github.com/gardener/gardener v1.131.0
-	github.com/go-acme/lego/v4 v4.27.0
+	github.com/go-acme/lego/v4 v4.28.0
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.8.0
 	github.com/miekg/dns v1.1.68
@@ -183,8 +183,8 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251002232023-7c0ddcbb5797 // indirect
-	google.golang.org/grpc v1.75.1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
+	google.golang.org/grpc v1.76.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
