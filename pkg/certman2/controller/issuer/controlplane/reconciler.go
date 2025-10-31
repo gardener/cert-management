@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -45,6 +46,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, fmt.Errorf("error retrieving object from store: %w", err)
+	}
+
+	if issuer.Annotations[v1beta1constants.GardenerOperation] == v1beta1constants.GardenerOperationReconcile {
+		patch := client.MergeFrom(issuer.DeepCopy())
+		delete(issuer.Annotations, v1beta1constants.GardenerOperation)
+		if err := r.Client.Patch(ctx, issuer, patch); err != nil {
+			return reconcile.Result{}, fmt.Errorf("failed to remove reconcile annotation: %w", err)
+		}
+		return reconcile.Result{}, nil
 	}
 
 	for _, h := range r.handlers {

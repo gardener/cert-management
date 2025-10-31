@@ -18,6 +18,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -151,6 +152,18 @@ func (h *CompoundHandler) Support() *Support {
 // ReconcileIssuer reconciles an issuer and forward it to the correct IssuerHandler
 func (h *CompoundHandler) ReconcileIssuer(logger logger.LogContext, obj resources.Object) reconcile.Status {
 	logger.Infof("reconciling")
+
+	if obj.GetAnnotations()[v1beta1constants.GardenerOperation] == v1beta1constants.GardenerOperationReconcile {
+		if _, err := obj.Modify(func(data resources.ObjectData) (bool, error) {
+			annotations := data.GetAnnotations()
+			delete(annotations, v1beta1constants.GardenerOperation)
+			data.SetAnnotations(annotations)
+			return true, nil
+		}); err != nil {
+			return reconcile.Delay(logger, err)
+		}
+	}
+
 	issuer, ok := obj.Data().(*api.Issuer)
 	if !ok {
 		return h.failedNoType(logger, obj, api.StateError, fmt.Errorf("casting to issuer failed"))

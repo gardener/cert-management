@@ -250,6 +250,27 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 		return reconcile.Succeeded(logctx)
 	}
 
+	if cert.Annotations[v1beta1constants.GardenerOperation] == v1beta1constants.GardenerOperationReconcile {
+		if cert.Status.BackOff != nil {
+			// delete backoff to allow immediate retry
+			mod := resources.NewModificationState(obj)
+			cert.Status.BackOff = nil
+			mod.Modified = true
+			if err := mod.UpdateStatus(); err != nil {
+				return reconcile.Delay(logctx, err)
+			}
+			return reconcile.Succeeded(logctx)
+		}
+		if _, err := obj.Modify(func(data resources.ObjectData) (bool, error) {
+			annotations := data.GetAnnotations()
+			delete(annotations, v1beta1constants.GardenerOperation)
+			data.SetAnnotations(annotations)
+			return true, nil
+		}); err != nil {
+			return reconcile.Delay(logctx, err)
+		}
+	}
+
 	if cert.Status.BackOff != nil &&
 		obj.GetGeneration() == cert.Status.BackOff.ObservedGeneration &&
 		time.Now().Before(cert.Status.BackOff.RetryAfter.Time) {
