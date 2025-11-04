@@ -70,6 +70,7 @@
     "github.com/go-openapi/jsonpointer",
     "github.com/go-openapi/jsonreference",
     "github.com/go-openapi/swag",
+    "github.com/go-openapi/swag/jsonname",
     "github.com/go-task/slim-sprig/v3",
     "github.com/gobuffalo/flect",
     "github.com/gobwas/glob",
