@@ -118,6 +118,7 @@
     "github.com/perses/perses",
     "github.com/perses/perses-operator",
     "github.com/pkg/errors",
+    "github.com/pmezard/go-difflib",
     "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring",
     "github.com/prometheus/client_model",
     "github.com/prometheus/common",
@@ -191,5 +192,6 @@
     "sigs.k8s.io/controller-tools",
     "sigs.k8s.io/json",
     "sigs.k8s.io/randfill",
+    "sigs.k8s.io/structured-merge-diff/v6",
   ],
 }
