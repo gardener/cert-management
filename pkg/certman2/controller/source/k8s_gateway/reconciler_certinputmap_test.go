@@ -134,7 +134,7 @@ var _ = Describe("Reconciler", func() {
 				Listeners: []gatewayapisv1.Listener{
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("a.example.com"),
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
 								{Name: "bar"},
@@ -150,7 +150,7 @@ var _ = Describe("Reconciler", func() {
 				Listeners: []gatewayapisv1.Listener{
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("a.example.com"),
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Kind: ptr.To(gatewayapisv1.Kind("MySpecialKind")), Name: "foo"},
 							},
@@ -166,7 +166,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("a.example.com"),
 						Protocol: gatewayapisv1.HTTPProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
 							},
@@ -182,7 +182,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("a.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							Mode: ptr.To(gatewayapisv1.TLSModePassthrough),
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
@@ -199,7 +199,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("a.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Namespace: ptr.To(gatewayapisv1.Namespace("ns1")), Name: "foo"},
 							},
@@ -215,7 +215,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("a.example.com"),
 						Protocol: gatewayapisv1.TLSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
 							},
@@ -231,7 +231,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("a.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo1"},
 							},
@@ -240,7 +240,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("b.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo2"},
 							},
@@ -259,7 +259,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("*.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
 							},
@@ -275,7 +275,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("b.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
 							},
@@ -298,7 +298,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("b.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
 							},
@@ -329,7 +329,7 @@ var _ = Describe("Reconciler", func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("b.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "foo"},
 							},

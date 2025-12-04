@@ -122,7 +122,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 					{
 						Hostname: ptr.To[gatewayapisv1.Hostname]("host1.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "host1-secret"},
 							},
@@ -277,7 +277,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 						{
 							Hostname: ptr.To[gatewayapisv1.Hostname]("host1.example.com"),
 							Protocol: gatewayapisv1.HTTPSProtocolType,
-							TLS: &gatewayapisv1.GatewayTLSConfig{
+							TLS: &gatewayapisv1.ListenerTLSConfig{
 								CertificateRefs: []gatewayapisv1.SecretObjectReference{
 									{Name: "host1-secret"},
 								},
@@ -286,7 +286,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 						{
 							Hostname: ptr.To[gatewayapisv1.Hostname]("host2.example.com"),
 							Protocol: gatewayapisv1.HTTPSProtocolType,
-							TLS: &gatewayapisv1.GatewayTLSConfig{
+							TLS: &gatewayapisv1.ListenerTLSConfig{
 								CertificateRefs: []gatewayapisv1.SecretObjectReference{
 									{Name: "host2-secret"},
 								},
@@ -308,7 +308,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {
 					listeners[0].Hostname = ptr.To[gatewayapisv1.Hostname]("host1b.example.com")
 					listeners[1].Hostname = ptr.To[gatewayapisv1.Hostname]("host3.example.com")
-					listeners[1].TLS = &gatewayapisv1.GatewayTLSConfig{
+					listeners[1].TLS = &gatewayapisv1.ListenerTLSConfig{
 						CertificateRefs: []gatewayapisv1.SecretObjectReference{
 							{Name: "host3-secret"},
 						},
