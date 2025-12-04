@@ -403,7 +403,7 @@ var _ = Describe("Source controller tests", func() {
 						Port:     443,
 						Hostname: ptr.To[gatewayapisv1.Hostname]("test.example.com"),
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "test-gateway-credential"},
 							},
@@ -448,7 +448,7 @@ var _ = Describe("Source controller tests", func() {
 						Name:     "l1",
 						Port:     443,
 						Protocol: gatewayapisv1.HTTPSProtocolType,
-						TLS: &gatewayapisv1.GatewayTLSConfig{
+						TLS: &gatewayapisv1.ListenerTLSConfig{
 							CertificateRefs: []gatewayapisv1.SecretObjectReference{
 								{Name: "test-gateway-credential"},
 							},
