@@ -47,12 +47,65 @@ var _ = Describe("Source controller tests", func() {
 		testRunID     string
 		testNamespace *corev1.Namespace
 
+		simulateGC = func(obj, owner client.Object) error {
+			GinkgoHelper()
+			gvks, _, err := testClient.Scheme().ObjectKinds(obj)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(gvks).To(HaveLen(1))
+			gvk := gvks[0]
+
+			for _, ref := range obj.GetOwnerReferences() {
+				if ref.UID == owner.GetUID() && ref.Kind == gvk.Kind {
+					// simulate Kubernetes garbage collection (see https://github.com/kubernetes-sigs/kubebuilder/blob/master/docs/book/src/reference/envtest.md#testing-considerations)
+					return testClient.Delete(ctx, obj)
+				}
+			}
+			return nil
+		}
+
 		certificateGarbageCollection = func(obj client.Object) {
+			GinkgoHelper()
 			list := &certmanv1alpha1.CertificateList{}
 			Expect(testClient.List(ctx, list, client.InNamespace(testRunID))).To(Succeed())
 			for _, cert := range list.Items {
 				Expect(simulateGC(&cert, obj)).To(Succeed())
 			}
+		}
+
+		checkCertificateSpec = func(obj client.Object, expectedSpec certmanv1alpha1.CertificateSpec) {
+			GinkgoHelper()
+			Eventually(func(g Gomega) {
+				gvks, _, err := testClient.Scheme().ObjectKinds(obj)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(gvks).To(HaveLen(1))
+				gvk := gvks[0]
+
+				list := &certmanv1alpha1.CertificateList{}
+				g.Expect(testClient.List(ctx, list, client.InNamespace(obj.GetNamespace()))).To(Succeed())
+				g.Expect(list.Items).To(HaveLen(1))
+				cert := list.Items[0]
+				g.Expect(cert.OwnerReferences).To(Equal([]metav1.OwnerReference{
+					{
+						APIVersion:         gvk.GroupVersion().String(),
+						Kind:               gvk.Kind,
+						Name:               obj.GetName(),
+						UID:                obj.GetUID(),
+						Controller:         ptr.To(true),
+						BlockOwnerDeletion: ptr.To(true),
+					},
+				}))
+				if !reflect.DeepEqual(expectedSpec, cert.Spec) {
+					expectedNames := collectDNSNames(expectedSpec)
+					actualNames := collectDNSNames(cert.Spec)
+					g.Expect(actualNames).To(Equal(expectedNames))
+					expectedSpecCopy := *expectedSpec.DeepCopy()
+					expectedSpecCopy.CommonName = cert.Spec.CommonName
+					expectedSpecCopy.DNSNames = cert.Spec.DNSNames
+					g.Expect(cert.Spec).To(Equal(expectedSpecCopy))
+				} else {
+					g.Expect(cert.Spec).To(Equal(expectedSpec))
+				}
+			}).WithPolling(10 * time.Millisecond).WithTimeout(10 * time.Second).Should(Succeed())
 		}
 	)
 
@@ -170,16 +223,15 @@ var _ = Describe("Source controller tests", func() {
 		})
 
 		By("Wait for certificate")
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, service, certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("test.example.com"),
-				DNSNames:   []string{"test.alt.example.com"},
-				SecretRef: &corev1.SecretReference{
-					Name:      "test-service-secret",
-					Namespace: testRunID,
-				},
-			})
-		}).Should(Succeed())
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test.example.com"),
+			DNSNames:   []string{"test.alt.example.com"},
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-secret",
+				Namespace: testRunID,
+			},
+		})
 
 		Expect(testClient.Delete(ctx, service)).To(Succeed())
 	})
@@ -219,16 +271,14 @@ var _ = Describe("Source controller tests", func() {
 		})
 
 		By("Wait for certificate")
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, ingress, certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("test.example.com"),
-				DNSNames:   []string{"test.alt.example.com"},
-				SecretRef: &corev1.SecretReference{
-					Name:      "test-ingress-secret",
-					Namespace: testRunID,
-				},
-			})
-		}).Should(Succeed())
+		checkCertificateSpec(ingress, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test.example.com"),
+			DNSNames:   []string{"test.alt.example.com"},
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-ingress-secret",
+				Namespace: testRunID,
+			},
+		})
 
 		Expect(testClient.Delete(ctx, ingress)).To(Succeed())
 	})
@@ -266,16 +316,14 @@ var _ = Describe("Source controller tests", func() {
 		})
 
 		By("Wait for certificate")
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, gateway, certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("test.example.com"),
-				DNSNames:   []string{"test.alt.example.com"},
-				SecretRef: &corev1.SecretReference{
-					Name:      "test-gateway-credential",
-					Namespace: testRunID,
-				},
-			})
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test.example.com"),
+			DNSNames:   []string{"test.alt.example.com"},
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-gateway-credential",
+				Namespace: testRunID,
+			},
+		})
 
 		Expect(testClient.Delete(ctx, gateway)).To(Succeed())
 	})
@@ -333,9 +381,7 @@ var _ = Describe("Source controller tests", func() {
 		}
 
 		By("Wait for certificate")
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		vs2 := &istionetworkingv1.VirtualService{
 			ObjectMeta: metav1.ObjectMeta{
@@ -351,36 +397,28 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = []string{"vs2.example.com"}
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		vs2.Spec.Hosts = []string{"vs2b.example.com"}
 		Expect(testClient.Update(ctx, vs2)).To(Succeed())
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = []string{"vs2b.example.com"}
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		vs2.Spec.Gateways = nil
 		Expect(testClient.Update(ctx, vs2)).To(Succeed())
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = nil
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		Expect(testClient.Delete(ctx, vs1)).To(Succeed())
 		Expect(testClient.Delete(ctx, vs2)).To(Succeed())
 
 		expectedCertSpec.CommonName = nil
 		expectedCertSpec.DNSNames = nil
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		Expect(testClient.Delete(ctx, gateway)).To(Succeed())
 	})
@@ -418,15 +456,13 @@ var _ = Describe("Source controller tests", func() {
 		})
 
 		By("Wait for certificate")
-		Eventually(func(g Gomega) {
-			checkCertificateSpec(g, gateway, certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("test.example.com"),
-				SecretRef: &corev1.SecretReference{
-					Name:      "test-gateway-credential",
-					Namespace: testRunID,
-				},
-			})
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-gateway-credential",
+				Namespace: testRunID,
+			},
+		})
 
 		Expect(testClient.Delete(ctx, gateway)).To(Succeed())
 	})
@@ -499,9 +535,7 @@ var _ = Describe("Source controller tests", func() {
 		}
 
 		By("Wait for certificate")
-		EventuallyWithOffset(1, func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		route2 := &gatewayapisv1.HTTPRoute{
 			ObjectMeta: metav1.ObjectMeta{
@@ -529,85 +563,29 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = []string{"route2.example.com"}
-		EventuallyWithOffset(1, func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		route2.Spec.Hostnames = []gatewayapisv1.Hostname{"route2.example.com", "route2b.example.com"}
 		Expect(testClient.Update(ctx, route2)).To(Succeed())
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = []string{"route2.example.com", "route2b.example.com"}
-		EventuallyWithOffset(1, func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		Expect(testClient.Delete(ctx, route2)).To(Succeed())
 
 		By("Wait for updated certificate")
 		expectedCertSpec.DNSNames = nil
-		EventuallyWithOffset(1, func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		Expect(testClient.Delete(ctx, route1)).To(Succeed())
 
 		expectedCertSpec.CommonName = nil
-		EventuallyWithOffset(1, func(g Gomega) {
-			checkCertificateSpec(g, gateway, expectedCertSpec)
-		}).Should(Succeed())
+		checkCertificateSpec(gateway, expectedCertSpec)
 
 		Expect(testClient.Delete(ctx, gateway)).To(Succeed())
 	})
 })
-
-func checkCertificateSpec(g Gomega, obj client.Object, expectedSpec certmanv1alpha1.CertificateSpec) {
-	gvks, _, err := testClient.Scheme().ObjectKinds(obj)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(gvks).To(HaveLen(1))
-	gvk := gvks[0]
-
-	list := &certmanv1alpha1.CertificateList{}
-	g.Expect(testClient.List(ctx, list, client.InNamespace(obj.GetNamespace()))).To(Succeed())
-	g.Expect(list.Items).To(HaveLen(1))
-	cert := list.Items[0]
-	g.Expect(cert.OwnerReferences).To(Equal([]metav1.OwnerReference{
-		{
-			APIVersion:         gvk.GroupVersion().String(),
-			Kind:               gvk.Kind,
-			Name:               obj.GetName(),
-			UID:                obj.GetUID(),
-			Controller:         ptr.To(true),
-			BlockOwnerDeletion: ptr.To(true),
-		},
-	}))
-	if !reflect.DeepEqual(expectedSpec, cert.Spec) {
-		expectedNames := collectDNSNames(expectedSpec)
-		actualNames := collectDNSNames(cert.Spec)
-		g.Expect(actualNames).To(Equal(expectedNames))
-		expectedSpecCopy := *expectedSpec.DeepCopy()
-		expectedSpecCopy.CommonName = cert.Spec.CommonName
-		expectedSpecCopy.DNSNames = cert.Spec.DNSNames
-		g.Expect(cert.Spec).To(Equal(expectedSpecCopy))
-	} else {
-		g.Expect(cert.Spec).To(Equal(expectedSpec))
-	}
-}
-
-func simulateGC(obj, owner client.Object) error {
-	gvks, _, err := testClient.Scheme().ObjectKinds(obj)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(gvks).To(HaveLen(1))
-	gvk := gvks[0]
-
-	for _, ref := range obj.GetOwnerReferences() {
-		if ref.UID == owner.GetUID() && ref.Kind == gvk.Kind {
-			// simulate Kubernetes garbage collection (see https://github.com/kubernetes-sigs/kubebuilder/blob/master/docs/book/src/reference/envtest.md#testing-considerations)
-			return testClient.Delete(ctx, obj)
-		}
-	}
-	return nil
-}
 
 func collectDNSNames(spec certmanv1alpha1.CertificateSpec) sets.Set[string] {
 	names := sets.Set[string]{}
