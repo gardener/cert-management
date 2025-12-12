@@ -39,7 +39,8 @@ var _ = Describe("Issuer controller tests", func() {
 		testNamespace *corev1.Namespace
 
 		checkIssuerStateReady = func(issuer *v1alpha1.Issuer) {
-			EventuallyWithOffset(1, func(g Gomega) string {
+			GinkgoHelper()
+			Eventually(func(g Gomega) string {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
 				g.Expect(issuer.Status.ObservedGeneration).To(Equal(issuer.Generation))
 				return issuer.Status.State
@@ -47,7 +48,8 @@ var _ = Describe("Issuer controller tests", func() {
 		}
 
 		checkCertificateStateReady = func(cert *v1alpha1.Certificate) {
-			EventuallyWithOffset(1, func(g Gomega) string {
+			GinkgoHelper()
+			Eventually(func(g Gomega) string {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
 				g.Expect(cert.Status.ObservedGeneration).To(Equal(cert.Generation))
 				return cert.Status.State
@@ -280,8 +282,11 @@ var _ = Describe("Issuer controller tests", func() {
 
 			By("Trigger renewal")
 			oldExpirationDate := &cert.Status.ExpirationDate
-			cert.Spec.Renew = ptr.To(true)
-			Expect(testClient.Update(ctx, cert)).To(Succeed())
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				cert.Spec.Renew = ptr.To(true)
+				g.Expect(testClient.Update(ctx, cert)).To(Succeed())
+			}).WithPolling(10 * time.Millisecond).Should(Succeed())
 
 			By("Wait for renewal")
 			checkCertificateStateReady(cert)
