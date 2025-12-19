@@ -34,6 +34,7 @@ const (
 	requireEAB         = false
 	retryAfterAuthz    = 3
 	retryAfterOrder    = 5
+	keyAlgorithm       = "ecdsa"
 )
 
 var (
@@ -85,7 +86,7 @@ func RunPebble(logr logr.Logger) (server *http.Server, certificatePath, director
 	log := NewLogBridge(logr)
 
 	database := db.NewMemoryStore()
-	certificateAuthority := ca.New(log, database, ocspResponderURL, alternateRoots, chainLength, profiles)
+	certificateAuthority := ca.New(log, database, ocspResponderURL, keyAlgorithm, alternateRoots, chainLength, profiles)
 	validationAuthority := va.New(log, httpPort, tlsPort, strict, customResolverAddr, database)
 
 	wfeImpl := wfe.New(log, database, validationAuthority, certificateAuthority, strict, requireEAB, retryAfterAuthz, retryAfterOrder)

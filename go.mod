@@ -11,7 +11,7 @@ require (
 	github.com/gardener/gardener v1.134.0
 	github.com/go-acme/lego/v4 v4.30.1
 	github.com/go-logr/logr v1.4.3
-	github.com/letsencrypt/pebble/v2 v2.8.0
+	github.com/letsencrypt/pebble/v2 v2.9.0
 	github.com/miekg/dns v1.1.69
 	github.com/onsi/ginkgo/v2 v2.27.1
 	github.com/onsi/gomega v1.38.2
