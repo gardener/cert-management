@@ -29,6 +29,7 @@ type CertInput struct {
 	PreferredChain      string
 	PrivateKeyAlgorithm string
 	PrivateKeySize      int
+	PrivateKeyEncoding  string
 	Annotations         map[string]string
 }
 
@@ -87,12 +88,17 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 			keySize = int(value)
 		}
 	}
+	var encoding string
+	if v := annotations[AnnotPrivateKeyEncoding]; ok && v == string(certmanv1alpha1.PKCS8) {
+		encoding = v
+	}
 
 	certInput.FollowCNAME = followCNAME
 	certInput.IssuerName = issuer
 	certInput.PreferredChain = preferredChain
 	certInput.PrivateKeyAlgorithm = algorithm
 	certInput.PrivateKeySize = keySize
+	certInput.PrivateKeyEncoding = encoding
 	certInput.SecretLabels = extractSecretLabels(annotations)
 	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
 	return certInput
@@ -196,12 +202,12 @@ func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 		spec.PreferredChain = &src.PreferredChain
 	}
 
-	spec.PrivateKey = createPrivateKey(src.PrivateKeyAlgorithm, src.PrivateKeySize)
+	spec.PrivateKey = createPrivateKey(src.PrivateKeyAlgorithm, src.PrivateKeySize, src.PrivateKeyEncoding)
 
 	return spec
 }
 
-func createPrivateKey(algorithm string, size int) *certmanv1alpha1.CertificatePrivateKey {
+func createPrivateKey(algorithm string, size int, encoding string) *certmanv1alpha1.CertificatePrivateKey {
 	if algorithm == "" && size == 0 {
 		return nil
 	}
@@ -211,6 +217,9 @@ func createPrivateKey(algorithm string, size int) *certmanv1alpha1.CertificatePr
 	}
 	if size != 0 {
 		obj.Size = ptr.To(certmanv1alpha1.PrivateKeySize(size)) // #nosec G115 -- only validated values in int32 range are used
+	}
+	if encoding == string(certmanv1alpha1.PKCS8) {
+		obj.Encoding = certmanv1alpha1.PKCS8
 	}
 	return obj
 }

@@ -38,7 +38,7 @@ func CAKeyPairFromSecretData(data map[string][]byte) (*TLSKeyPair, error) {
 	if !ok {
 		return nil, fmt.Errorf("`%s` data not found in secret", corev1.TLSPrivateKeyKey)
 	}
-	key, err := bytesToPrivateKey(keyBytes)
+	key, err := BytesToPrivateKey(keyBytes)
 	if err != nil {
 		return nil, err
 	}

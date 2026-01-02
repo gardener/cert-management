@@ -213,6 +213,7 @@ var _ = Describe("Reconciler", func() {
 			ingress.Annotations[common.AnnotPreferredChain] = "my-chain"
 			ingress.Annotations[common.AnnotPrivateKeyAlgorithm] = "ECDSA"
 			ingress.Annotations[common.AnnotPrivateKeySize] = "384"
+			ingress.Annotations[common.AnnotPrivateKeyEncoding] = "PKCS8"
 			cert.Spec.SecretName = ptr.To("host1-secret")
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			test(&certmanv1alpha1.CertificateSpec{
@@ -229,6 +230,7 @@ var _ = Describe("Reconciler", func() {
 				PrivateKey: &certmanv1alpha1.CertificatePrivateKey{
 					Algorithm: ptr.To(certmanv1alpha1.ECDSAKeyAlgorithm),
 					Size:      ptr.To[certmanv1alpha1.PrivateKeySize](384),
+					Encoding:  certmanv1alpha1.PKCS8,
 				},
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).NotTo(HaveOccurred())

@@ -225,6 +225,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				annotations[common.AnnotPreferredChain] = "my-chain"
 				annotations[common.AnnotPrivateKeyAlgorithm] = "ECDSA"
 				annotations[common.AnnotPrivateKeySize] = "384"
+				annotations[common.AnnotPrivateKeyEncoding] = "PKCS8"
 				cert.Spec.SecretName = ptr.To("host1-secret")
 				Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 				test(&certmanv1alpha1.CertificateSpec{
@@ -241,6 +242,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 					PrivateKey: &certmanv1alpha1.CertificatePrivateKey{
 						Algorithm: ptr.To(certmanv1alpha1.ECDSAKeyAlgorithm),
 						Size:      ptr.To[certmanv1alpha1.PrivateKeySize](384),
+						Encoding:  certmanv1alpha1.PKCS8,
 					},
 				})
 				Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).NotTo(HaveOccurred())

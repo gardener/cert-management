@@ -72,7 +72,7 @@ var _ = Describe("PKI", func() {
 				Expect(cert.NotAfter).To(BeTemporally("~", expectedNotAfter, 10*time.Second))
 
 				By("Decoding and parsing the certificate private key")
-				privateKey, err := bytesToPrivateKey(certPrivateKeyPEM)
+				privateKey, err := BytesToPrivateKey(certPrivateKeyPEM)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(privateKey).NotTo(BeNil())
 				pk, ok := privateKey.(*rsa.PrivateKey)
