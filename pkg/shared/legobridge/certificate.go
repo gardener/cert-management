@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
@@ -34,6 +33,14 @@ const TLSCAKey = "ca.crt"
 
 // ObtainerCallback is callback function type
 type ObtainerCallback func(output *ObtainOutput)
+
+// KeySpec contains the key type and encoding to use for private key generation.
+type KeySpec struct {
+	// KeyType represents the algo and size to use for the private key.
+	KeyType KeyType
+	// UsePKCS8 indicates whether to encode the private key in PKCS8 format.
+	UsePKCS8 bool
+}
 
 // ObtainInput contains all data needed to obtain a certificate.
 type ObtainInput struct {
@@ -71,8 +78,9 @@ type ObtainInput struct {
 	AlwaysDeactivateAuthorizations bool
 	// PreferredChain
 	PreferredChain string
-	// KeyType represents the algo and size to use for the private key (only used if CSR is not set).
-	KeyType certcrypto.KeyType
+	// KeySpec contains the key type and encoding to use for private key generation (only used if CSR is not set).
+	KeySpec KeySpec
+
 	// IsCA is used to request a self-signed certificate
 	IsCA bool
 	// Duration is the lifetime of the certificate
@@ -124,7 +132,7 @@ type ObtainOutput struct {
 	// CSR is the copy from the input.
 	CSR []byte
 	// KeyType is the copy from the input.
-	KeyType certcrypto.KeyType
+	KeyType KeyType
 	// IsCA is used to request a self-signed certificate
 	IsCA bool
 	// Err contains the obtain request error.
@@ -171,7 +179,7 @@ func NewObtainer(factory LoggerFactory) Obtainer {
 }
 
 func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) (*certificate.Resource, error) {
-	privateKey, err := certcrypto.GeneratePrivateKey(input.KeyType)
+	privateKey, err := generatePrivateKey(input.KeySpec.KeyType)
 	if err != nil {
 		return nil, err
 	}
@@ -213,8 +221,31 @@ func (d CertificatePrivateKeyDefaults) String() string {
 		d.algorithm, d.rsaKeySize, d.ecdsaKeySize)
 }
 
+// ToKeySpec extracts the key type and encoding from the private key spec.
+func (d CertificatePrivateKeyDefaults) ToKeySpec(privateKeySpec *api.CertificatePrivateKey) (KeySpec, error) {
+	keyType, err := d.ToKeyType(privateKeySpec)
+	if err != nil {
+		return KeySpec{}, err
+	}
+	usePKCS8 := false
+	if privateKeySpec != nil {
+		switch privateKeySpec.Encoding {
+		case api.PKCS1, "":
+			usePKCS8 = false
+		case api.PKCS8:
+			usePKCS8 = true
+		default:
+			return KeySpec{}, fmt.Errorf("invalid private key encoding %s (allowed values are '%s' and '%s')", privateKeySpec.Encoding, api.PKCS1, api.PKCS8)
+		}
+	}
+	return KeySpec{
+		KeyType:  keyType,
+		UsePKCS8: usePKCS8,
+	}, nil
+}
+
 // ToKeyType extracts the key type from the private key spec.
-func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, error) {
+func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.CertificatePrivateKey) (KeyType, error) {
 	algorithm := d.algorithm
 	if privateKeySpec != nil && privateKeySpec.Algorithm != nil {
 		algorithm = *privateKeySpec.Algorithm
@@ -238,20 +269,20 @@ func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.Certificate
 	case api.RSAKeyAlgorithm:
 		switch size {
 		case 2048:
-			return certcrypto.RSA2048, nil
+			return RSA2048, nil
 		case 3072:
-			return certcrypto.RSA3072, nil
+			return RSA3072, nil
 		case 4096:
-			return certcrypto.RSA4096, nil
+			return RSA4096, nil
 		default:
 			return "", fmt.Errorf("invalid key size for RSA: %d (allowed values are 2048, 3072, and 4096)", size)
 		}
 	case api.ECDSAKeyAlgorithm:
 		switch size {
 		case 256:
-			return certcrypto.EC256, nil
+			return EC256, nil
 		case 384:
-			return certcrypto.EC384, nil
+			return EC384, nil
 		default:
 			return "", fmt.Errorf("invalid key size for ECDSA: %d (allowed values are 256 and 384)", size)
 		}
@@ -262,7 +293,7 @@ func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.Certificate
 }
 
 // IsDefaultKeyType returns true if the keyType matched the default one.
-func (d CertificatePrivateKeyDefaults) IsDefaultKeyType(keyType certcrypto.KeyType) bool {
+func (d CertificatePrivateKeyDefaults) IsDefaultKeyType(keyType KeyType) bool {
 	defaultKeyType, err := d.ToKeyType(nil)
 	if err != nil {
 		return false
@@ -270,18 +301,30 @@ func (d CertificatePrivateKeyDefaults) IsDefaultKeyType(keyType certcrypto.KeyTy
 	return defaultKeyType == keyType
 }
 
+// FromKeySpec converts key spec back to a private key spec.
+func FromKeySpec(keySpec KeySpec) *api.CertificatePrivateKey {
+	key := FromKeyType(keySpec.KeyType)
+	if key == nil {
+		return nil
+	}
+	if keySpec.UsePKCS8 {
+		key.Encoding = api.PKCS8
+	}
+	return key
+}
+
 // FromKeyType converts key type back to a private key spec.
-func FromKeyType(keyType certcrypto.KeyType) *api.CertificatePrivateKey {
+func FromKeyType(keyType KeyType) *api.CertificatePrivateKey {
 	switch keyType {
-	case certcrypto.RSA2048:
+	case RSA2048:
 		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 2048)
-	case certcrypto.RSA3072:
+	case RSA3072:
 		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 3072)
-	case certcrypto.RSA4096:
+	case RSA4096:
 		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 4096)
-	case certcrypto.EC256:
+	case EC256:
 		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 256)
-	case certcrypto.EC384:
+	case EC384:
 		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 384)
 	default:
 		return nil
@@ -418,7 +461,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			IssuerInfo:   shared.NewACMEIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
-			KeyType:      input.KeyType,
+			KeyType:      input.KeySpec.KeyType,
 			CSR:          input.CSR,
 			Err:          niceError(err, provider.GetPendingTXTRecordError()),
 		}
@@ -446,7 +489,7 @@ func (o *obtainer) ObtainFromCA(input ObtainInput) error {
 			IssuerInfo:   shared.NewCAIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
-			KeyType:      input.KeyType,
+			KeyType:      input.KeySpec.KeyType,
 			CSR:          input.CSR,
 			Err:          err,
 		}
@@ -516,7 +559,7 @@ func (o *obtainer) ObtainFromSelfSigned(input ObtainInput) error {
 			IssuerInfo:   shared.NewSelfSignedIssuerInfo(input.IssuerKey),
 			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
-			KeyType:      input.KeyType,
+			KeyType:      input.KeySpec.KeyType,
 			IsCA:         input.IsCA,
 			CSR:          input.CSR,
 			Err:          err,
@@ -531,18 +574,7 @@ func newSelfSignedCertFromInput(input ObtainInput) (certificates *certificate.Re
 	if input.CSR != nil {
 		certPEM, privKeyPEM, err = newSelfSignedCertFromCSRinPEMFormat(input)
 	} else {
-		certPrivateKey := FromKeyType(input.KeyType)
-		if certPrivateKey == nil {
-			return nil, fmt.Errorf("invalid key type: '%s'", input.KeyType)
-		}
-		var algo x509.PublicKeyAlgorithm
-		switch *certPrivateKey.Algorithm {
-		case api.RSAKeyAlgorithm:
-			algo = x509.RSA
-		case api.ECDSAKeyAlgorithm:
-			algo = x509.ECDSA
-		}
-		certPEM, privKeyPEM, err = newSelfSignedCertInPEMFormat(input, algo, int(*certPrivateKey.Size))
+		certPEM, privKeyPEM, err = NewSelfSignedCertInPEMFormat(input)
 	}
 	if err != nil {
 		return nil, err
@@ -560,11 +592,7 @@ func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) ([]byte, []byte, err
 	if err != nil {
 		return nil, nil, err
 	}
-	pubKeySize := pubKeySize(csr.PublicKey)
-	if pubKeySize == 0 {
-		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
-	}
-	certPrivateKey, certPrivateKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize)
+	certPrivateKey, certPrivateKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize(csr.PublicKey), input.KeySpec.UsePKCS8)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -641,17 +669,13 @@ func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) 
 	if err != nil {
 		return nil, err
 	}
-	return newCASignedCertFromCertReq(csr, input.IsCA, input.CAKeyPair, input.Duration)
+	return newCASignedCertFromCertReq(csr, input.IsCA, input.CAKeyPair, input.Duration, input.KeySpec.UsePKCS8)
 }
 
 // newCASignedCertFromCertReq returns a new Certificate signed by a CA based on
 // an x509.CertificateRequest and a CA key pair. A private key will be generated.
-func newCASignedCertFromCertReq(csr *x509.CertificateRequest, isCA bool, CAKeyPair *TLSKeyPair, duration *time.Duration) (*certificate.Resource, error) {
-	pubKeySize := pubKeySize(csr.PublicKey)
-	if pubKeySize == 0 {
-		pubKeySize = defaultKeySize(csr.PublicKeyAlgorithm)
-	}
-	privKey, privKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize)
+func newCASignedCertFromCertReq(csr *x509.CertificateRequest, isCA bool, CAKeyPair *TLSKeyPair, duration *time.Duration, usePKCS8 bool) (*certificate.Resource, error) {
+	privKey, privKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize(csr.PublicKey), usePKCS8)
 	if err != nil {
 		return nil, err
 	}

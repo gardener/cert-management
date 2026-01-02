@@ -593,7 +593,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 	if cert.Spec.PreferredChain != nil {
 		preferredChain = *cert.Spec.PreferredChain
 	}
-	keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(cert.Spec.PrivateKey)
+	keySpec, err := r.certificatePrivateKeyDefaults.ToKeySpec(cert.Spec.PrivateKey)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid private key configuration: %w", err))
 	}
@@ -611,7 +611,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		Renew:                          renew,
 		AlwaysDeactivateAuthorizations: r.alwaysDeactivateAuthorizations,
 		PreferredChain:                 preferredChain,
-		KeyType:                        keyType,
+		KeySpec:                        keySpec,
 		PreflightCheck:                 preflightCheck,
 	}
 
@@ -725,7 +725,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		}
 	}
 
-	keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(cert.Spec.PrivateKey)
+	keySpec, err := r.certificatePrivateKeyDefaults.ToKeySpec(cert.Spec.PrivateKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
@@ -738,7 +738,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		URIs:           uris,
 		Callback:       callback,
 		Renew:          renew,
-		KeyType:        keyType,
+		KeySpec:        keySpec,
 		IsCA:           true,
 		Duration:       duration,
 		CSR:            cert.Spec.CSR,
@@ -768,7 +768,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 	if duration == nil {
 		duration = ptr.To(2 * legobridge.DefaultCertDuration)
 	}
-	keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(cert.Spec.PrivateKey)
+	keySpec, err := r.certificatePrivateKeyDefaults.ToKeySpec(cert.Spec.PrivateKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
@@ -820,7 +820,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, EmailAddresses: cert.Spec.EmailAddresses, IPAddresses: ipAddresses, URIs: uris, CSR: cert.Spec.CSR,
-		Callback: callback, Renew: renew, Duration: duration, KeyType: keyType, IsCA: ptr.Deref(cert.Spec.IsCA, false)}
+		Callback: callback, Renew: renew, Duration: duration, KeySpec: keySpec, IsCA: ptr.Deref(cert.Spec.IsCA, false)}
 
 	err = r.obtainer.Obtain(input)
 	if err != nil {

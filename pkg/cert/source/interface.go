@@ -28,6 +28,7 @@ type CertInfo struct {
 	PreferredChain      string
 	PrivateKeyAlgorithm string
 	PrivateKeySize      api.PrivateKeySize
+	PrivateKeyEncoding  api.PrivateKeyEncoding
 	Annotations         map[string]string
 }
 
