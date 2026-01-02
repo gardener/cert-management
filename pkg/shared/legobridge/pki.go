@@ -101,6 +101,10 @@ func GenerateKey(algo x509.PublicKeyAlgorithm, size int, usePKCS8 bool) (crypto.
 		return nil, nil, fmt.Errorf("unsupported public key algorithm: %v", algo)
 	}
 	if size != 0 {
+		// precheck for type conversion
+		if size < 0 || size > 4096 {
+			return nil, nil, fmt.Errorf("invalid key size: %d", size)
+		}
 		input.Size = ptr.To(v1alpha1.PrivateKeySize(size))
 	}
 	input.Encoding = v1alpha1.PKCS1
