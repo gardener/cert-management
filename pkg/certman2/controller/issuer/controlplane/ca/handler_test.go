@@ -6,18 +6,15 @@ package ca
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
-	"math/big"
 	"time"
 
+	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -64,7 +61,7 @@ var _ = Describe("Handler", func() {
 		err = fakeClient.Create(ctx, caIssuer)
 		Expect(err).NotTo(HaveOccurred())
 
-		certPEM, certPrivKeyPEM, err := NewSelfSignedCertInPEMFormat(x509.RSA, 2048)
+		certPEM, certPrivKeyPEM, err := newSelfSignedCertInPEMFormat()
 		Expect(err).NotTo(HaveOccurred())
 		secretData := map[string][]byte{"tls.crt": certPEM, "tls.key": certPrivKeyPEM}
 		secret := corev1.Secret{
@@ -111,33 +108,13 @@ var _ = Describe("Handler", func() {
 	})
 })
 
-// TODO replace with existing method if SelfSigned certificate feature is merged: https://github.com/gardener/cert-management/pull/228
-func NewSelfSignedCertInPEMFormat(algo x509.PublicKeyAlgorithm, algoSize int) ([]byte, []byte, error) {
-	certPrivateKey, certPrivateKeyPEM, err := legobridge.GenerateKey(algo, algoSize)
-	if err != nil {
-		return nil, nil, err
+func newSelfSignedCertInPEMFormat() ([]byte, []byte, error) {
+	input := legobridge.ObtainInput{
+		CommonName: ptr.To("host.example.com"),
+		DNSNames:   []string{"host2.example.com"},
+		Duration:   ptr.To(time.Hour * 24 * 365),
+		KeySpec:    legobridge.KeySpec{KeyType: certcrypto.RSA2048},
+		IsCA:       true,
 	}
-	keyUsage := x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign
-	if algo == x509.RSA {
-		keyUsage |= x509.KeyUsageKeyEncipherment
-	}
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName: "host.example.com",
-		},
-		DNSNames:              []string{"host2.example.com"},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(time.Hour * 24 * 365),
-		KeyUsage:              keyUsage,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IsCA:                  true,
-		BasicConstraintsValid: true,
-		MaxPathLen:            0,
-	}
-
-	certDerBytes, _ := x509.CreateCertificate(rand.Reader, &template, &template, certPrivateKey.Public(), certPrivateKey)
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDerBytes})
-	return certPEM, certPrivateKeyPEM, nil
+	return legobridge.NewSelfSignedCertInPEMFormat(input)
 }

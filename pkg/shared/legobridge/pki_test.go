@@ -19,74 +19,76 @@ import (
 )
 
 var _ = Describe("PKI", func() {
-	Context("#newSelfSignedCertInPEMFormat", func() {
+	Context("#NewSelfSignedCertInPEMFormat", func() {
 		It("returns an error with empty input", func() {
-			_, _, err := newSelfSignedCertInPEMFormat(ObtainInput{}, x509.RSA, 2048)
+			_, _, err := NewSelfSignedCertInPEMFormat(ObtainInput{})
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("returns an error when no common name is set", func() {
 			input := ObtainInput{Duration: ptr.To(time.Hour)}
-			_, _, err := newSelfSignedCertInPEMFormat(input, x509.RSA, 2048)
+			_, _, err := NewSelfSignedCertInPEMFormat(input)
 			Expect(err).To(MatchError("common name must be set"))
 		})
 
 		It("returns an error when no duration is set", func() {
 			input := ObtainInput{CommonName: ptr.To("test-common-name")}
-			_, _, err := newSelfSignedCertInPEMFormat(input, x509.RSA, 2048)
+			_, _, err := NewSelfSignedCertInPEMFormat(input)
 			Expect(err).To(MatchError("duration must be set"))
 		})
 
-		It("should be able to create a self-signed certificate", func() {
-			By("Creating a self-signed certificate")
-			keySize := 2048
-			duration := ptr.To(90 * 24 * time.Hour)
-			expectedNotBefore := time.Now()
-			expectedNotAfter := expectedNotBefore.Add(*duration)
-			input := ObtainInput{
-				CommonName: ptr.To("test-common-name"),
-				DNSNames:   []string{"test-dns-name"},
-				Duration:   duration,
-			}
-			certPEM, certPrivateKeyPEM, err := newSelfSignedCertInPEMFormat(input, x509.RSA, keySize)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(certPEM).NotTo(BeNil())
-			Expect(certPEM).NotTo(BeEmpty())
-			Expect(certPrivateKeyPEM).NotTo(BeNil())
-			Expect(certPrivateKeyPEM).NotTo(BeEmpty())
+		DescribeTable("should be able to create a self-signed certificate",
+			func(usePKCS8 bool) {
+				By("Creating a self-signed certificate")
+				keySize := 2048
+				duration := ptr.To(90 * 24 * time.Hour)
+				expectedNotBefore := time.Now()
+				expectedNotAfter := expectedNotBefore.Add(*duration)
+				input := ObtainInput{
+					CommonName: ptr.To("test-common-name"),
+					DNSNames:   []string{"test-dns-name"},
+					Duration:   duration,
+					KeySpec:    KeySpec{KeyType: certcrypto.RSA2048, UsePKCS8: usePKCS8},
+				}
+				certPEM, certPrivateKeyPEM, err := NewSelfSignedCertInPEMFormat(input)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(certPEM).NotTo(BeNil())
+				Expect(certPEM).NotTo(BeEmpty())
+				Expect(certPrivateKeyPEM).NotTo(BeNil())
+				Expect(certPrivateKeyPEM).NotTo(BeEmpty())
 
-			By("Decoding the certificate")
-			p, _ := pem.Decode(certPEM)
-			Expect(p).NotTo(BeNil())
-			Expect(p.Bytes).NotTo(BeEmpty())
+				By("Decoding the certificate")
+				p, _ := pem.Decode(certPEM)
+				Expect(p).NotTo(BeNil())
+				Expect(p.Bytes).NotTo(BeEmpty())
 
-			By("Parsing the certificate")
-			cert, err := x509.ParseCertificate(p.Bytes)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(cert).NotTo(BeNil())
-			Expect(cert.Subject.CommonName).To(Equal(*input.CommonName))
-			Expect(cert.DNSNames).To(ContainElement(input.DNSNames[0]))
-			Expect(cert.IsCA).To(BeTrue())
-			Expect(cert.NotBefore).To(BeTemporally("~", expectedNotBefore, 10*time.Second))
-			Expect(cert.NotAfter).To(BeTemporally("~", expectedNotAfter, 10*time.Second))
+				By("Parsing the certificate")
+				cert, err := x509.ParseCertificate(p.Bytes)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cert).NotTo(BeNil())
+				Expect(cert.Subject.CommonName).To(Equal(*input.CommonName))
+				Expect(cert.DNSNames).To(ContainElement(input.DNSNames[0]))
+				Expect(cert.IsCA).To(BeTrue())
+				Expect(cert.NotBefore).To(BeTemporally("~", expectedNotBefore, 10*time.Second))
+				Expect(cert.NotAfter).To(BeTemporally("~", expectedNotAfter, 10*time.Second))
 
-			By("Decoding the certificate private key")
-			p, _ = pem.Decode(certPrivateKeyPEM)
-			Expect(p).NotTo(BeNil())
-			Expect(p.Bytes).NotTo(BeEmpty())
-
-			By("Parsing the certificate private key")
-			privateKey, err := x509.ParsePKCS1PrivateKey(p.Bytes)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(privateKey).NotTo(BeNil())
-			Expect(privateKey.Size()).To(Equal(keySize / 8))
-		})
+				By("Decoding and parsing the certificate private key")
+				privateKey, err := bytesToPrivateKey(certPrivateKeyPEM)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(privateKey).NotTo(BeNil())
+				pk, ok := privateKey.(*rsa.PrivateKey)
+				Expect(ok).To(BeTrue())
+				Expect(pk.Size()).To(Equal(keySize / 8))
+			},
+			Entry("with PKCS1 format", false),
+			Entry("with PKCS8 format", true),
+		)
 	})
 
-	Context("#generatePrivateKey", func() {
+	Context("#GenerateKeyFromSpec", func() {
 		DescribeTable("should generate a private key of the expected type and size",
-			func(keyType certcrypto.KeyType, expectedKeySize int) {
-				key, err := generatePrivateKey(keyType)
+			func(keyType certcrypto.KeyType, usePKCS8 bool, expectedKeySize int) {
+				key, pem, err := GenerateKeyFromSpec(KeySpec{KeyType: keyType, UsePKCS8: usePKCS8})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(key).NotTo(BeNil())
 				Expect(pubKeySize(key.Public())).To(Equal(expectedKeySize))
@@ -96,12 +98,24 @@ var _ = Describe("PKI", func() {
 				case certcrypto.RSA2048, certcrypto.RSA3072, certcrypto.RSA4096, certcrypto.RSA8192:
 					Expect(key).To(BeAssignableToTypeOf(&rsa.PrivateKey{}))
 				}
+				if usePKCS8 {
+					Expect(string(pem)).To(ContainSubstring("BEGIN PRIVATE KEY"))
+				} else {
+					switch keyType {
+					case certcrypto.EC256, certcrypto.EC384:
+						Expect(string(pem)).To(ContainSubstring("BEGIN EC PRIVATE KEY"))
+					case certcrypto.RSA2048, certcrypto.RSA3072, certcrypto.RSA4096, certcrypto.RSA8192:
+						Expect(string(pem)).To(ContainSubstring("BEGIN RSA PRIVATE KEY"))
+					}
+				}
 			},
-			Entry("ECDSA 256", certcrypto.EC256, 256),
-			Entry("ECDSA 384", certcrypto.EC384, 384),
-			Entry("RSA 2048", certcrypto.RSA2048, 2048),
-			Entry("RSA 3072", certcrypto.RSA3072, 3072),
-			Entry("RSA 4096", certcrypto.RSA4096, 4096),
+			Entry("ECDSA 256", certcrypto.EC256, false, 256),
+			Entry("ECDSA 384", certcrypto.EC384, false, 384),
+			Entry("RSA 2048", certcrypto.RSA2048, false, 2048),
+			Entry("RSA 3072", certcrypto.RSA3072, false, 3072),
+			Entry("RSA 4096", certcrypto.RSA4096, false, 4096),
+			Entry("ECDSA 256 with PKCS#8", certcrypto.EC256, true, 256),
+			Entry("RSA 2048 with PKCS#8", certcrypto.RSA2048, true, 2048),
 		)
 
 		It("should fail on an invalid key type", func() {
