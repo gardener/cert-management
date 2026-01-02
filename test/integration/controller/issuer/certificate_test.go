@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gardener/cert-management/pkg/shared/legobridge"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,6 +26,7 @@ import (
 
 	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certctrl "github.com/gardener/cert-management/pkg/controller/issuer/certificate"
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 )
 
 var _ = Describe("Certificate controller tests", func() {
