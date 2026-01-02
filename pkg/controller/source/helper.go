@@ -73,6 +73,11 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 		}
 	}
 
+	var encoding api.PrivateKeyEncoding
+	if encodingStr, ok := resources.GetAnnotation(objData, source.AnnotPrivateKeyEncoding); ok && encodingStr == string(api.PKCS8) {
+		encoding = api.PKCS8
+	}
+
 	annotatedDomains, cn := source.GetDomainsFromAnnotations(objData, false)
 
 	var issuer *string
@@ -105,6 +110,7 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 			PreferredChain:      preferredChain,
 			PrivateKeyAlgorithm: algorithm,
 			PrivateKeySize:      keySize,
+			PrivateKeyEncoding:  encoding,
 			Annotations:         source.CopyDNSRecordsAnnotations(objData),
 		}
 	}

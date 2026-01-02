@@ -196,6 +196,11 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		}
 	}
 
+	var encoding api.PrivateKeyEncoding
+	if encodingStr, ok := resources.GetAnnotation(objData, AnnotPrivateKeyEncoding); ok && encodingStr == string(api.PKCS8) {
+		encoding = api.PKCS8
+	}
+
 	info.Certs[secretName] = CertInfo{
 		SecretName:          secretName,
 		Domains:             annotatedDomains,
@@ -205,6 +210,7 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		PreferredChain:      preferredChain,
 		PrivateKeyAlgorithm: algorithm,
 		PrivateKeySize:      keySize,
+		PrivateKeyEncoding:  encoding,
 		Annotations:         CopyDNSRecordsAnnotations(objData),
 	}
 	return info, nil

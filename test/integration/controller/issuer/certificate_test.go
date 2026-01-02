@@ -6,6 +6,7 @@ package issuer_test
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -15,6 +16,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/gardener/cert-management/pkg/shared/legobridge"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -394,8 +396,12 @@ var _ = Describe("Certificate controller tests", func() {
 		})
 
 		DescribeTable("Create self-signed certificates using CA issuer",
-			func(privateKeyAlgorithm certv1alpha1.PrivateKeyAlgorithm, privateKeySize int) {
+			func(privateKeyAlgorithm certv1alpha1.PrivateKeyAlgorithm, privateKeySize int, optionalEncoding ...certv1alpha1.PrivateKeyEncoding) {
 				By("Create certificate using CA issuer")
+				var encoding certv1alpha1.PrivateKeyEncoding
+				if len(optionalEncoding) > 0 {
+					encoding = optionalEncoding[0]
+				}
 				certificate := &certv1alpha1.Certificate{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace:    testNamespace.Name,
@@ -409,6 +415,7 @@ var _ = Describe("Certificate controller tests", func() {
 						PrivateKey: &certv1alpha1.CertificatePrivateKey{
 							Algorithm: ptr.To(privateKeyAlgorithm),
 							Size:      ptr.To(certv1alpha1.PrivateKeySize(privateKeySize)),
+							Encoding:  encoding,
 						},
 						Duration: &metav1.Duration{
 							Duration: 48 * time.Hour,
@@ -433,18 +440,16 @@ var _ = Describe("Certificate controller tests", func() {
 				}, secret)).To(Succeed())
 
 				By("Check that the certificate secret private key uses the expected algorithm and size")
-				privateKeyBlock, _ := pem.Decode(secret.Data[corev1.TLSPrivateKeyKey]) // tls.key
-				switch privateKeyAlgorithm {
-				case certv1alpha1.ECDSAKeyAlgorithm:
-					privateKey, err := x509.ParseECPrivateKey(privateKeyBlock.Bytes)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(privateKey).NotTo(BeNil())
-					Expect(privateKey.Curve.Params().BitSize).To(Equal(privateKeySize))
-				case certv1alpha1.RSAKeyAlgorithm:
-					privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(privateKey).NotTo(BeNil())
-					Expect(privateKey.N.BitLen()).To(Equal(privateKeySize))
+				privateKey, err := legobridge.BytesToPrivateKey(secret.Data[corev1.TLSPrivateKeyKey]) // tls.key
+				Expect(err).NotTo(HaveOccurred())
+				Expect(privateKey).NotTo(BeNil())
+				switch pk := privateKey.(type) {
+				case *ecdsa.PrivateKey:
+					Expect(privateKeyAlgorithm).To(Equal(certv1alpha1.ECDSAKeyAlgorithm))
+					Expect(pk.Curve.Params().BitSize).To(Equal(privateKeySize))
+				case *rsa.PrivateKey:
+					Expect(privateKeyAlgorithm).To(Equal(certv1alpha1.RSAKeyAlgorithm))
+					Expect(pk.N.BitLen()).To(Equal(privateKeySize))
 				default:
 					Fail("Unsupported private key algorithm")
 				}
@@ -454,6 +459,8 @@ var _ = Describe("Certificate controller tests", func() {
 			Entry("RSA 2048", certv1alpha1.RSAKeyAlgorithm, 2048),
 			Entry("RSA 3072", certv1alpha1.RSAKeyAlgorithm, 3072),
 			Entry("RSA 4096", certv1alpha1.RSAKeyAlgorithm, 4096),
+			Entry("ECDSA 256", certv1alpha1.ECDSAKeyAlgorithm, 256, certv1alpha1.PKCS8),
+			Entry("RSA 2048", certv1alpha1.RSAKeyAlgorithm, 2048, certv1alpha1.PKCS8),
 		)
 
 		It("should be properly created with subject alternative names (SANs)", func() {

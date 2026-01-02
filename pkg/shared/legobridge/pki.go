@@ -432,7 +432,8 @@ func privateKeyToBytes(key crypto.PrivateKey, usePKCS8 bool) ([]byte, error) {
 	return pem.EncodeToMemory(block), nil
 }
 
-func bytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
+// BytesToPrivateKey decodes a PEM encoded private key.
+func BytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
 	block, rest := pem.Decode(data)
 	if block == nil {
 		return nil, fmt.Errorf("decoding pem block for private key failed")

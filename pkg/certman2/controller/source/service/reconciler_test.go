@@ -200,6 +200,7 @@ var _ = Describe("Reconciler", func() {
 			svc.Annotations[common.AnnotPreferredChain] = "my-chain"
 			svc.Annotations[common.AnnotPrivateKeyAlgorithm] = "ECDSA"
 			svc.Annotations[common.AnnotPrivateKeySize] = "384"
+			svc.Annotations[common.AnnotPrivateKeyEncoding] = "PKCS8"
 			cert.Spec.SecretName = ptr.To("foo-secret")
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			test(&certmanv1alpha1.CertificateSpec{
@@ -216,6 +217,7 @@ var _ = Describe("Reconciler", func() {
 				PrivateKey: &certmanv1alpha1.CertificatePrivateKey{
 					Algorithm: ptr.To(certmanv1alpha1.ECDSAKeyAlgorithm),
 					Size:      ptr.To[certmanv1alpha1.PrivateKeySize](384),
+					Encoding:  certmanv1alpha1.PKCS8,
 				},
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).NotTo(HaveOccurred())
