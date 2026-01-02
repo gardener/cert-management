@@ -106,7 +106,7 @@ var _ = Describe("Handler", func() {
 		})
 		Context("with existing private key secret", func() {
 			BeforeEach(func() {
-				_, certPrivateKeyPEM, err := legobridge.GenerateKey(x509.ECDSA, 256)
+				_, certPrivateKeyPEM, err := legobridge.GenerateKey(x509.ECDSA, 256, false)
 				Expect(err).NotTo(HaveOccurred())
 				secretData := map[string][]byte{"email": []byte("some.user@mydomain.com"), "privateKey": certPrivateKeyPEM}
 				secret := corev1.Secret{

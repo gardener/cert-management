@@ -204,7 +204,7 @@ var _ = Describe("Issuer controller tests", func() {
 			err = testClient.Get(ctx, client.ObjectKey{Namespace: testRunID, Name: secretName}, secret)
 			Expect(err).NotTo(HaveOccurred())
 			oldPrivateKeyPEM := secret.Data["privateKey"]
-			_, newPrivateKeyPEM, err := legobridge.GenerateKey(x509.ECDSA, 256)
+			_, newPrivateKeyPEM, err := legobridge.GenerateKey(x509.ECDSA, 256, false)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = changeKeyInBackend(ctx, oldPrivateKeyPEM, newPrivateKeyPEM)
 			Expect(err).NotTo(HaveOccurred())

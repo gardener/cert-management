@@ -170,7 +170,7 @@ func NewRegistrationUserFromEmailAndPrivateKey(issuerKey shared.IssuerKeyItf,
 
 // ToSecretData returns the registration user as a secret data map.
 func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
-	privkey, err := privateKeyToBytes(u.key)
+	privkey, err := privateKeyToBytes(u.key, false)
 	if err != nil {
 		return nil, fmt.Errorf("encoding private key failed: %w", err)
 	}
