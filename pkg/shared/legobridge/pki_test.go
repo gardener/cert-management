@@ -12,7 +12,6 @@ import (
 	"encoding/pem"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
@@ -48,7 +47,7 @@ var _ = Describe("PKI", func() {
 					CommonName: ptr.To("test-common-name"),
 					DNSNames:   []string{"test-dns-name"},
 					Duration:   duration,
-					KeySpec:    KeySpec{KeyType: certcrypto.RSA2048, UsePKCS8: usePKCS8},
+					KeySpec:    KeySpec{KeyType: RSA2048, UsePKCS8: usePKCS8},
 				}
 				certPEM, certPrivateKeyPEM, err := NewSelfSignedCertInPEMFormat(input)
 				Expect(err).NotTo(HaveOccurred())
@@ -87,35 +86,35 @@ var _ = Describe("PKI", func() {
 
 	Context("#GenerateKeyFromSpec", func() {
 		DescribeTable("should generate a private key of the expected type and size",
-			func(keyType certcrypto.KeyType, usePKCS8 bool, expectedKeySize int) {
+			func(keyType KeyType, usePKCS8 bool, expectedKeySize int) {
 				key, pem, err := GenerateKeyFromSpec(KeySpec{KeyType: keyType, UsePKCS8: usePKCS8})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(key).NotTo(BeNil())
 				Expect(pubKeySize(key.Public())).To(Equal(expectedKeySize))
 				switch keyType {
-				case certcrypto.EC256, certcrypto.EC384:
+				case EC256, EC384:
 					Expect(key).To(BeAssignableToTypeOf(&ecdsa.PrivateKey{}))
-				case certcrypto.RSA2048, certcrypto.RSA3072, certcrypto.RSA4096, certcrypto.RSA8192:
+				case RSA2048, RSA3072, RSA4096:
 					Expect(key).To(BeAssignableToTypeOf(&rsa.PrivateKey{}))
 				}
 				if usePKCS8 {
 					Expect(string(pem)).To(ContainSubstring("BEGIN PRIVATE KEY"))
 				} else {
 					switch keyType {
-					case certcrypto.EC256, certcrypto.EC384:
+					case EC256, EC384:
 						Expect(string(pem)).To(ContainSubstring("BEGIN EC PRIVATE KEY"))
-					case certcrypto.RSA2048, certcrypto.RSA3072, certcrypto.RSA4096, certcrypto.RSA8192:
+					case RSA2048, RSA3072, RSA4096:
 						Expect(string(pem)).To(ContainSubstring("BEGIN RSA PRIVATE KEY"))
 					}
 				}
 			},
-			Entry("ECDSA 256", certcrypto.EC256, false, 256),
-			Entry("ECDSA 384", certcrypto.EC384, false, 384),
-			Entry("RSA 2048", certcrypto.RSA2048, false, 2048),
-			Entry("RSA 3072", certcrypto.RSA3072, false, 3072),
-			Entry("RSA 4096", certcrypto.RSA4096, false, 4096),
-			Entry("ECDSA 256 with PKCS#8", certcrypto.EC256, true, 256),
-			Entry("RSA 2048 with PKCS#8", certcrypto.RSA2048, true, 2048),
+			Entry("ECDSA 256", EC256, false, 256),
+			Entry("ECDSA 384", EC384, false, 384),
+			Entry("RSA 2048", RSA2048, false, 2048),
+			Entry("RSA 3072", RSA3072, false, 3072),
+			Entry("RSA 4096", RSA4096, false, 4096),
+			Entry("ECDSA 256 with PKCS#8", EC256, true, 256),
+			Entry("RSA 2048 with PKCS#8", RSA2048, true, 2048),
 		)
 
 		It("should fail on an invalid key type", func() {

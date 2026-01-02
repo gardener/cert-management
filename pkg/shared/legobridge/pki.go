@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	"k8s.io/utils/ptr"
 
@@ -164,17 +163,17 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 	}, nil
 }
 
-func generatePrivateKey(keyType certcrypto.KeyType) (crypto.Signer, error) {
+func generatePrivateKey(keyType KeyType) (crypto.Signer, error) {
 	switch keyType {
-	case certcrypto.EC256:
+	case EC256:
 		return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	case certcrypto.EC384:
+	case EC384:
 		return ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	case certcrypto.RSA2048:
+	case RSA2048:
 		return rsa.GenerateKey(rand.Reader, 2048)
-	case certcrypto.RSA3072:
+	case RSA3072:
 		return rsa.GenerateKey(rand.Reader, 3072)
-	case certcrypto.RSA4096:
+	case RSA4096:
 		return rsa.GenerateKey(rand.Reader, 4096)
 	default:
 		return nil, fmt.Errorf("invalid key type: %v", keyType)

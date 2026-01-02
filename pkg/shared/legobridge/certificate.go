@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
@@ -38,7 +37,7 @@ type ObtainerCallback func(output *ObtainOutput)
 // KeySpec contains the key type and encoding to use for private key generation.
 type KeySpec struct {
 	// KeyType represents the algo and size to use for the private key.
-	KeyType certcrypto.KeyType
+	KeyType KeyType
 	// UsePKCS8 indicates whether to encode the private key in PKCS8 format.
 	UsePKCS8 bool
 }
@@ -133,7 +132,7 @@ type ObtainOutput struct {
 	// CSR is the copy from the input.
 	CSR []byte
 	// KeyType is the copy from the input.
-	KeyType certcrypto.KeyType
+	KeyType KeyType
 	// IsCA is used to request a self-signed certificate
 	IsCA bool
 	// Err contains the obtain request error.
@@ -246,7 +245,7 @@ func (d CertificatePrivateKeyDefaults) ToKeySpec(privateKeySpec *api.Certificate
 }
 
 // ToKeyType extracts the key type from the private key spec.
-func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.CertificatePrivateKey) (certcrypto.KeyType, error) {
+func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.CertificatePrivateKey) (KeyType, error) {
 	algorithm := d.algorithm
 	if privateKeySpec != nil && privateKeySpec.Algorithm != nil {
 		algorithm = *privateKeySpec.Algorithm
@@ -270,20 +269,20 @@ func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.Certificate
 	case api.RSAKeyAlgorithm:
 		switch size {
 		case 2048:
-			return certcrypto.RSA2048, nil
+			return RSA2048, nil
 		case 3072:
-			return certcrypto.RSA3072, nil
+			return RSA3072, nil
 		case 4096:
-			return certcrypto.RSA4096, nil
+			return RSA4096, nil
 		default:
 			return "", fmt.Errorf("invalid key size for RSA: %d (allowed values are 2048, 3072, and 4096)", size)
 		}
 	case api.ECDSAKeyAlgorithm:
 		switch size {
 		case 256:
-			return certcrypto.EC256, nil
+			return EC256, nil
 		case 384:
-			return certcrypto.EC384, nil
+			return EC384, nil
 		default:
 			return "", fmt.Errorf("invalid key size for ECDSA: %d (allowed values are 256 and 384)", size)
 		}
@@ -294,7 +293,7 @@ func (d CertificatePrivateKeyDefaults) ToKeyType(privateKeySpec *api.Certificate
 }
 
 // IsDefaultKeyType returns true if the keyType matched the default one.
-func (d CertificatePrivateKeyDefaults) IsDefaultKeyType(keyType certcrypto.KeyType) bool {
+func (d CertificatePrivateKeyDefaults) IsDefaultKeyType(keyType KeyType) bool {
 	defaultKeyType, err := d.ToKeyType(nil)
 	if err != nil {
 		return false
@@ -315,17 +314,17 @@ func FromKeySpec(keySpec KeySpec) *api.CertificatePrivateKey {
 }
 
 // FromKeyType converts key type back to a private key spec.
-func FromKeyType(keyType certcrypto.KeyType) *api.CertificatePrivateKey {
+func FromKeyType(keyType KeyType) *api.CertificatePrivateKey {
 	switch keyType {
-	case certcrypto.RSA2048:
+	case RSA2048:
 		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 2048)
-	case certcrypto.RSA3072:
+	case RSA3072:
 		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 3072)
-	case certcrypto.RSA4096:
+	case RSA4096:
 		return newCertificatePrivateKey(api.RSAKeyAlgorithm, 4096)
-	case certcrypto.EC256:
+	case EC256:
 		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 256)
-	case certcrypto.EC384:
+	case EC384:
 		return newCertificatePrivateKey(api.ECDSAKeyAlgorithm, 384)
 	default:
 		return nil
