@@ -13,7 +13,6 @@ import (
 	"encoding/pem"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -25,7 +24,7 @@ import (
 
 var _ = Describe("Certificate", func() {
 	DescribeTable("KeyType conversion",
-		func(keyType certcrypto.KeyType, algorithm api.PrivateKeyAlgorithm, size int) {
+		func(keyType KeyType, algorithm api.PrivateKeyAlgorithm, size int) {
 			defaults, err := NewCertificatePrivateKeyDefaults(api.RSAKeyAlgorithm, 2048, 256)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -50,16 +49,16 @@ var _ = Describe("Certificate", func() {
 				Expect(actualKeyType).To(Equal(keyType))
 			}
 		},
-		Entry("default", certcrypto.RSA2048, api.PrivateKeyAlgorithm(""), 0),
-		Entry("RSA from empty config", certcrypto.RSA2048, api.RSAKeyAlgorithm, 0),
-		Entry("RSA2048", certcrypto.RSA2048, api.RSAKeyAlgorithm, 2048),
-		Entry("RSA3072", certcrypto.RSA3072, api.RSAKeyAlgorithm, 3072),
-		Entry("RSA4096", certcrypto.RSA4096, api.RSAKeyAlgorithm, 4096),
-		Entry("ECDSA with default size", certcrypto.EC256, api.ECDSAKeyAlgorithm, 0),
-		Entry("EC256", certcrypto.EC256, api.ECDSAKeyAlgorithm, 256),
-		Entry("EC384", certcrypto.EC384, api.ECDSAKeyAlgorithm, 384),
-		Entry("RSA with wrong size", certcrypto.KeyType(""), api.RSAKeyAlgorithm, 8192), // 8192 is not supported, as the time complexity of finding primes is too high (~30s)
-		Entry("ECDSA with wrong size", certcrypto.KeyType(""), api.ECDSAKeyAlgorithm, 511),
+		Entry("default", RSA2048, api.PrivateKeyAlgorithm(""), 0),
+		Entry("RSA from empty config", RSA2048, api.RSAKeyAlgorithm, 0),
+		Entry("RSA2048", RSA2048, api.RSAKeyAlgorithm, 2048),
+		Entry("RSA3072", RSA3072, api.RSAKeyAlgorithm, 3072),
+		Entry("RSA4096", RSA4096, api.RSAKeyAlgorithm, 4096),
+		Entry("ECDSA with default size", EC256, api.ECDSAKeyAlgorithm, 0),
+		Entry("EC256", EC256, api.ECDSAKeyAlgorithm, 256),
+		Entry("EC384", EC384, api.ECDSAKeyAlgorithm, 384),
+		Entry("RSA with wrong size", KeyType(""), api.RSAKeyAlgorithm, 8192), // 8192 is not supported, as the time complexity of finding primes is too high (~30s)
+		Entry("ECDSA with wrong size", KeyType(""), api.ECDSAKeyAlgorithm, 511),
 	)
 
 	DescribeTable("private key encoding",
@@ -74,7 +73,7 @@ var _ = Describe("Certificate", func() {
 			}
 			actualKeyTypeAndEncoding, err := defaults.ToKeySpec(key)
 			if expectedOK {
-				Expect(actualKeyTypeAndEncoding.KeyType).To(Equal(certcrypto.RSA2048))
+				Expect(actualKeyTypeAndEncoding.KeyType).To(Equal(RSA2048))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(actualKeyTypeAndEncoding.UsePKCS8).To(Equal(expectedUsePKCS8))
 			} else {
@@ -151,7 +150,7 @@ var _ = Describe("Certificate", func() {
 
 		It("should create a self-signed certificate from the input", func() {
 			input := ObtainInput{
-				KeySpec:    KeySpec{KeyType: certcrypto.RSA2048},
+				KeySpec:    KeySpec{KeyType: RSA2048},
 				Duration:   ptr.To(time.Hour),
 				CommonName: ptr.To("test-common-name"),
 			}
@@ -172,7 +171,7 @@ var _ = Describe("Certificate", func() {
 		It("should prioritize a CSR over the input key type", func() {
 			input := ObtainInput{
 				CSR:      _createCSR(),
-				KeySpec:  KeySpec{KeyType: certcrypto.EC256},
+				KeySpec:  KeySpec{KeyType: EC256},
 				Duration: ptr.To(time.Hour),
 			}
 			cert, err := newSelfSignedCertFromInput(input)

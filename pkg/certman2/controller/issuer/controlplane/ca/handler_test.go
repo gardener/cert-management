@@ -8,7 +8,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -113,7 +112,7 @@ func newSelfSignedCertInPEMFormat() ([]byte, []byte, error) {
 		CommonName: ptr.To("host.example.com"),
 		DNSNames:   []string{"host2.example.com"},
 		Duration:   ptr.To(time.Hour * 24 * 365),
-		KeySpec:    legobridge.KeySpec{KeyType: certcrypto.RSA2048},
+		KeySpec:    legobridge.KeySpec{KeyType: legobridge.RSA2048},
 		IsCA:       true,
 	}
 	return legobridge.NewSelfSignedCertInPEMFormat(input)
