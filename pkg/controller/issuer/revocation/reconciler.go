@@ -289,7 +289,7 @@ func (r *revokeReconciler) collectCertificateRefsAndRepeat(logctx logger.LogCont
 func (r *revokeReconciler) updateCertEnsureRenewedAfter(certObj resources.Object, renewedAfterTime *metav1.Time) error {
 	var err error
 	wait := 500 * time.Millisecond
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		cert := certObj.Data().(*api.Certificate)
 		cert.Spec.EnsureRenewedAfter = renewedAfterTime
 		err = certObj.Update()

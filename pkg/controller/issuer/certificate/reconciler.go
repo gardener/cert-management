@@ -274,10 +274,7 @@ func (r *certReconciler) Reconcile(logctx logger.LogContext, obj resources.Objec
 	if cert.Status.BackOff != nil &&
 		obj.GetGeneration() == cert.Status.BackOff.ObservedGeneration &&
 		time.Now().Before(cert.Status.BackOff.RetryAfter.Time) {
-		interval := time.Until(cert.Status.BackOff.RetryAfter.Time)
-		if interval < 1*time.Second {
-			interval = 1 * time.Second
-		}
+		interval := max(time.Until(cert.Status.BackOff.RetryAfter.Time), 1*time.Second)
 		return reconcile.Recheck(logctx, fmt.Errorf("backoff"), interval)
 	}
 
@@ -531,10 +528,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 					waitTime: time.Duration(waitMinutes) * time.Minute,
 				}
 			}
-			waitMinutes = 1440 / requestsPerDayQuota / 2
-			if waitMinutes < 5 {
-				waitMinutes = 5
-			}
+			waitMinutes = max(1440/requestsPerDayQuota/2, 5)
 			return &notAcceptedError{
 				message: fmt.Sprintf("request quota exhausted. Retrying in %d min. "+
 					"Up to %d requests per day are allowed. To change the quota, set `spec.requestsPerDayQuota` for issuer %s",

@@ -207,10 +207,10 @@ func (t testCluster) Config() rest.Config {
 	panic("unsupported")
 }
 
-func (t testCluster) GetAttr(_ interface{}) interface{} {
+func (t testCluster) GetAttr(_ any) any {
 	panic("unsupported")
 }
 
-func (t testCluster) SetAttr(_, _ interface{}) {
+func (t testCluster) SetAttr(_, _ any) {
 	panic("unsupported")
 }

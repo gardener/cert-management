@@ -253,7 +253,7 @@ func GetDomainsFromAnnotations(objData resources.ObjectData, forService bool) (a
 	if cn != "" {
 		annotatedDomains = append(annotatedDomains, cn)
 	}
-	for _, e := range strings.Split(a, ",") {
+	for e := range strings.SplitSeq(a, ",") {
 		e = strings.TrimSpace(e)
 		if e != "" && e != cn {
 			annotatedDomains = append(annotatedDomains, e)

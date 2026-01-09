@@ -7,6 +7,7 @@
 package core
 
 import (
+	"maps"
 	"sync"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -68,8 +69,6 @@ func (s *IssuerDNSSelections) GetAll() map[utils.IssuerKey]*v1alpha1.DNSSelectio
 	defer s.lock.Unlock()
 
 	result := map[utils.IssuerKey]*v1alpha1.DNSSelection{}
-	for k, v := range s.selections {
-		result[k] = v
-	}
+	maps.Copy(result, s.selections)
 	return result
 }

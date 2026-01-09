@@ -42,10 +42,7 @@ func (q *Quotas) RememberQuotas(issuerKey IssuerKey, requestsPerDay int) {
 	}
 
 	qps := float32(requestsPerDay) / 86400
-	burst := requestsPerDay / 4
-	if burst < 1 {
-		burst = 1
-	}
+	burst := max(requestsPerDay/4, 1)
 
 	q.issuerToQuotas[issuerKey] = quotas{
 		rateLimiter:    flowcontrol.NewTokenBucketRateLimiter(qps, burst),
