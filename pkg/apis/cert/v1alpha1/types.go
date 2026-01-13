@@ -142,6 +142,24 @@ const (
 // +kubebuilder:validation:Enum=256;384;2048;3072;4096
 type PrivateKeySize int32
 
+// PrivateKeyEncoding is the encoding for the private key.
+// +kubebuilder:validation:Enum=PKCS1;PKCS8
+type PrivateKeyEncoding string
+
+const (
+	// PKCS1 private key encoding.
+	// PKCS1 produces a PEM block that contains the private key algorithm
+	// in the header and the private key in the body. A key that uses this
+	// can be recognised by its `BEGIN RSA PRIVATE KEY` or `BEGIN EC PRIVATE KEY` header.
+	PKCS1 PrivateKeyEncoding = "PKCS1"
+
+	// PKCS8 private key encoding.
+	// PKCS8 produces a PEM block with a static header and both the private
+	// key algorithm and the private key in the body. A key that uses this
+	// encoding can be recognised by its `BEGIN PRIVATE KEY` header.
+	PKCS8 PrivateKeyEncoding = "PKCS8"
+)
+
 // CertificatePrivateKey contains configuration options for private keys
 // used by the Certificate controller.
 // These include the key algorithm and size.
@@ -164,6 +182,15 @@ type CertificatePrivateKey struct {
 	// No other values are allowed.
 	// +optional
 	Size *PrivateKeySize `json:"size,omitempty"`
+
+	// The private key cryptography standards (PKCS) encoding for this
+	// certificate's private key to be encoded in.
+	//
+	// If provided, allowed values are `PKCS1` and `PKCS8` standing for PKCS#1
+	// and PKCS#8, respectively.
+	// Defaults to `PKCS1` if not specified.
+	// +optional
+	Encoding PrivateKeyEncoding `json:"encoding,omitempty"`
 }
 
 // BackOffState stores the status for exponential back off on repeated cert request failure

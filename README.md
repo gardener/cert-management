@@ -33,7 +33,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Follow CNAME](#follow-cname)
     - [Preferred Chain](#preferred-chain)
     - [Secret Labels](#secret-labels)
-    - [Specifying private key algorithm and size](#specifying-private-key-algorithm-and-size)
+    - [Specifying private key algorithm, size, and encoding](#specifying-private-key-algorithm-size-and-encoding)
     - [Using a certificate signing request (CSR)](#using-a-certificate-signing-request-csr)
     - [Creating JKS or PKCS#12 keystores](#creating-jks-or-pkcs12-keystores)
     - [Subject Alternative Names (SANs)](#subject-alternative-names-sans)
@@ -481,7 +481,7 @@ spec:
 
 In this case the secret `my-secret` will contains the labels.
 
-### Specifying private key algorithm and size
+### Specifying private key algorithm, size, and encoding
 
 The private key algorithm and size used by default are deployment specific.
 To override these defaults, you may override them in the certificate itself.
@@ -509,6 +509,7 @@ spec:
   privateKey:
     algorithm: ECDSA
     size: 384
+    #encoding: PKCS8  # optional, default is PKCS1 for RSA and SEC1 for ECDSA
 ```
 
 Allowed values for `spec.privateKey.algorithm` are `RSA` and `ECDSA`.
@@ -516,6 +517,10 @@ For `RSA`, the allowed key sizes are `2048`, `3072`, and `4096`. If the size fie
 a deployment specific default value will be used.
 For `ECDSA`, the allowed key sizes are `256` and `384`.  If the size field is not specified,
 a deployment specific default value will be used.
+
+The optional `encoding` field allows to specify the encoding of the private key.
+Allowed values for `spec.privateKey.encoding` are `PKCS1` (default) or `PKCS8`.
+The default is `PKCS1`.
 
 ### Using a certificate signing request (CSR)
 
@@ -675,6 +680,7 @@ See also [examples/40-ingress-echoheaders.yaml](./examples/40-ingress-echoheader
            #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
            #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
            #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+           #cert.gardener.cloud/private-key-encoding: PKCS8              # optional to specify encoding for private key, allowed values are 'PKCS1' (default) or 'PKCS8'
            # annotations needed when using DNSRecords
            #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
            #cert.gardener.cloud/dnsrecord-secret-ref: myns/mysecret
@@ -732,6 +738,7 @@ metadata:
     #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
     #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+    #cert.gardener.cloud/private-key-encoding: PKCS8              # optional to specify encoding for private key, allowed values are 'PKCS1' (default) or 'PKCS8'
     #cert.gardener.cloud/secret-namespace: "my-namespace"         # optional to specify the namespace where the certificate secret should be created
     # annotations needed when using DNSRecords
     #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
@@ -798,6 +805,7 @@ metadata:
     #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
     #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+    #cert.gardener.cloud/private-key-encoding: PKCS8              # optional to specify encoding for private key, allowed values are 'PKCS1' (default) or 'PKCS8'
     #cert.gardener.cloud/secret-namespace: "istio-system"         # optional to specify the namespace where the certificate secret should be created
     # annotations needed when using DNSRecords
     #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
@@ -859,6 +867,7 @@ metadata:
     #cert.gardener.cloud/preferred-chain: "chain name"            # optional to specify preferred-chain (value is the Subject Common Name of the root issuer)
     #cert.gardener.cloud/private-key-algorithm: ECDSA             # optional to specify algorithm for private key, allowed values are 'RSA' or 'ECDSA'
     #cert.gardener.cloud/private-key-size: "384"                  # optional to specify size of private key, allowed values for RSA are "2048", "3072", "4096" and for ECDSA "256" and "384"
+    #cert.gardener.cloud/private-key-encoding: PKCS8              # optional to specify encoding for private key, allowed values are 'PKCS1' (default) or 'PKCS8'
     # annotations needed when using DNSRecords
     #cert.gardener.cloud/dnsrecord-provider-type: aws-route53
     #cert.gardener.cloud/dnsrecord-secret-ref: myns/mysecret

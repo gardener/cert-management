@@ -21,9 +21,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	"github.com/go-acme/lego/v4/certificate"
 	"k8s.io/utils/ptr"
+
+	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
 
 // DefaultCertExtKeyUsage are the default Extended KeyUsage (letsencrypt default).
@@ -46,18 +48,6 @@ const (
 
 	// DefaultCertDuration is the default Certificate validity period (letsencrypt default).
 	DefaultCertDuration time.Duration = 24 * time.Hour * 90
-
-	// RSAMinSize is the minimum size for an RSA key
-	RSAMinSize int = 2048
-	// RSAMaxSize is the maximum size for an RSA key
-	RSAMaxSize int = 8192
-
-	// ECCurve256 represents a 256bit ECDSA key.
-	ECCurve256 int = 256
-	// ECCurve384 represents a 384bit ECDSA key.
-	ECCurve384 int = 384
-	// ECCurve521 represents a 521bit ECDSA key.
-	ECCurve521 int = 521
 )
 
 // issueSignedCert does all the Certificate Issuing.
@@ -91,54 +81,52 @@ func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Sig
 	}, nil
 }
 
-// defaultKeySize returns the default key size based on a public key algorithm.
-func defaultKeySize(algo x509.PublicKeyAlgorithm) int {
-	if algo == x509.RSA {
-		return RSAMinSize
+func defaultCertificatePrivateKeyDefaults() CertificatePrivateKeyDefaults {
+	return CertificatePrivateKeyDefaults{
+		algorithm:    v1alpha1.RSAKeyAlgorithm,
+		ecdsaKeySize: 384,
+		rsaKeySize:   2048,
 	}
-	return ECCurve521
 }
 
 // GenerateKey generates a crypto.Signer key and its PEM encoded format.
-func GenerateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte, error) {
-	var key crypto.Signer
-	var err error
-
+func GenerateKey(algo x509.PublicKeyAlgorithm, size int, usePKCS8 bool) (crypto.Signer, []byte, error) {
+	input := &v1alpha1.CertificatePrivateKey{}
 	switch algo {
-	case x509.RSA:
-		if size < RSAMinSize {
-			return nil, nil, fmt.Errorf("RSA key is too weak")
-		}
-		if size > RSAMaxSize {
-			return nil, nil, fmt.Errorf("RSA key size too large")
-		}
-
-		key, err = rsa.GenerateKey(rand.Reader, size)
-		if err != nil {
-			return nil, nil, fmt.Errorf("unable to generate RSA private key: %w", err)
-		}
 	case x509.ECDSA:
-		var curve elliptic.Curve
-		switch size {
-		case ECCurve521:
-			curve = elliptic.P521()
-		case ECCurve384:
-			curve = elliptic.P384()
-		case ECCurve256:
-			curve = elliptic.P256()
-		default:
-			return nil, nil, fmt.Errorf("invalid elliptic curve")
-		}
-
-		key, err = ecdsa.GenerateKey(curve, rand.Reader)
-		if err != nil {
-			return nil, nil, fmt.Errorf("unable to generate RSA private key: %w", err)
-		}
+		input.Algorithm = ptr.To(v1alpha1.ECDSAKeyAlgorithm)
+	case x509.RSA:
+		input.Algorithm = ptr.To(v1alpha1.RSAKeyAlgorithm)
 	default:
-		return nil, nil, fmt.Errorf("algorithm not supported")
+		return nil, nil, fmt.Errorf("unsupported public key algorithm: %v", algo)
+	}
+	if size != 0 {
+		// precheck for type conversion
+		if size < 0 || size > 4096 {
+			return nil, nil, fmt.Errorf("invalid key size: %d", size)
+		}
+		input.Size = ptr.To(v1alpha1.PrivateKeySize(size))
+	}
+	input.Encoding = v1alpha1.PKCS1
+	if usePKCS8 {
+		input.Encoding = v1alpha1.PKCS8
+	}
+	defaults := defaultCertificatePrivateKeyDefaults()
+	keySpec, err := defaults.ToKeySpec(input)
+	if err != nil {
+		return nil, nil, err
+	}
+	return GenerateKeyFromSpec(keySpec)
+}
+
+// GenerateKeyFromSpec generates a crypto.Signer key and its PEM encoded format.
+func GenerateKeyFromSpec(keySpec KeySpec) (crypto.Signer, []byte, error) {
+	key, err := generatePrivateKey(keySpec.KeyType)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	pem, err := privateKeyToBytes(key)
+	pem, err := privateKeyToBytes(key, keySpec.UsePKCS8)
 	if err != nil {
 		return nil, nil, fmt.Errorf("encoding private key failed: %w", err)
 	}
@@ -149,9 +137,9 @@ func GenerateKey(algo x509.PublicKeyAlgorithm, size int) (crypto.Signer, []byte,
 // to generate a PEM encoded CSR.
 func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 	subjectCA := &input.CAKeyPair.Cert.Subject
-	privateKey, err := generatePrivateKey(input.KeyType)
+	privateKey, err := generatePrivateKey(input.KeySpec.KeyType)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate private key for type %v: %w", input.KeyType, err)
+		return nil, fmt.Errorf("failed to generate private key for type %v: %w", input.KeySpec.KeyType, err)
 	}
 
 	var emailAddresses []string
@@ -179,17 +167,17 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 	}, nil
 }
 
-func generatePrivateKey(keyType certcrypto.KeyType) (crypto.Signer, error) {
+func generatePrivateKey(keyType KeyType) (crypto.Signer, error) {
 	switch keyType {
-	case certcrypto.EC256:
+	case EC256:
 		return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	case certcrypto.EC384:
+	case EC384:
 		return ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	case certcrypto.RSA2048:
+	case RSA2048:
 		return rsa.GenerateKey(rand.Reader, 2048)
-	case certcrypto.RSA3072:
+	case RSA3072:
 		return rsa.GenerateKey(rand.Reader, 3072)
-	case certcrypto.RSA4096:
+	case RSA4096:
 		return rsa.GenerateKey(rand.Reader, 4096)
 	default:
 		return nil, fmt.Errorf("invalid key type: %v", keyType)
@@ -268,21 +256,20 @@ func generateCertFromCSR(csrPEM []byte, duration time.Duration, isCA bool) (*x50
 	}, nil
 }
 
-// newSelfSignedCertInPEMFormat returns a self-signed certificate and the private key in PEM format.
-func newSelfSignedCertInPEMFormat(
-	input ObtainInput, algo x509.PublicKeyAlgorithm, algoSize int) ([]byte, []byte, error) {
+// NewSelfSignedCertInPEMFormat returns a self-signed certificate and the private key in PEM format.
+func NewSelfSignedCertInPEMFormat(input ObtainInput) ([]byte, []byte, error) {
 	if input.CommonName == nil {
 		return nil, nil, fmt.Errorf("common name must be set")
 	}
 	if input.Duration == nil {
 		return nil, nil, fmt.Errorf("duration must be set")
 	}
-	certPrivateKey, certPrivateKeyPEM, err := GenerateKey(algo, algoSize)
+	certPrivateKey, certPrivateKeyPEM, err := GenerateKeyFromSpec(input.KeySpec)
 	if err != nil {
 		return nil, nil, err
 	}
 	keyUsage := DefaultCertKeyUsage | CAKeyUsage
-	if algo == x509.RSA {
+	if getPublicKeyAlgorithm(certPrivateKey) == x509.RSA {
 		keyUsage |= RSAKeyUsage
 	}
 
@@ -404,7 +391,7 @@ func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
 	}
 }
 
-func pemBlockForKey(priv any) (*pem.Block, error) {
+func pemBlockForKeyPKCS1(priv any) (*pem.Block, error) {
 	switch k := priv.(type) {
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)
@@ -438,15 +425,19 @@ func encodePEM(out io.Writer, b *pem.Block) error {
 	return nil
 }
 
-func privateKeyToBytes(key crypto.PrivateKey) ([]byte, error) {
-	block, err := pemBlockForKey(key)
+func privateKeyToBytes(key crypto.PrivateKey, usePKCS8 bool) ([]byte, error) {
+	if usePKCS8 {
+		return pki.EncodePKCS8PrivateKey(key)
+	}
+	block, err := pemBlockForKeyPKCS1(key)
 	if err != nil {
 		return nil, err
 	}
 	return pem.EncodeToMemory(block), nil
 }
 
-func bytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
+// BytesToPrivateKey decodes a PEM encoded private key.
+func BytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
 	block, rest := pem.Decode(data)
 	if block == nil {
 		return nil, fmt.Errorf("decoding pem block for private key failed")

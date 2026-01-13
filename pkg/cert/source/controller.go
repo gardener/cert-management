@@ -65,6 +65,12 @@ const (
 	// No other values are allowed.
 	AnnotPrivateKeySize = "cert.gardener.cloud/private-key-size"
 
+	// AnnotPrivateKeyEncoding is the annotation key to set the PrivateKeyEncoding for a Certificate.
+	// If PrivateKeyEncoding is set to `PKCS8`, the private key will be encoded using PKCS#8 standard.
+	// If set to `PKCS1`, the private key will be encoded using the traditional format.
+	// If unset, the private key will be encoded using the traditional format.
+	AnnotPrivateKeyEncoding = "cert.gardener.cloud/private-key-encoding"
+
 	// OptClass is the cert-class command line option
 	OptClass = "cert-class"
 	// OptTargetclass is the target-cert-class command line option

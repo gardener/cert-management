@@ -98,7 +98,7 @@ func ExtractOrGeneratePrivateKey(secretData map[string][]byte) (crypto.PrivateKe
 	var privateKey crypto.PrivateKey
 	var err error
 	if ok {
-		privateKey, err = bytesToPrivateKey(privkeyData)
+		privateKey, err = BytesToPrivateKey(privkeyData)
 	} else {
 		privateKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	}
@@ -116,7 +116,7 @@ func ValidatePrivateKeySecretDataKeys(secretData map[string][]byte) error {
 	for key := range allowedKeys {
 		value, ok := secretData[key]
 		if ok && key == KeyPrivateKey {
-			if _, err := bytesToPrivateKey(value); err != nil {
+			if _, err := BytesToPrivateKey(value); err != nil {
 				return fmt.Errorf("value for key `%s` is invalid: %w", key, err)
 			}
 		}
@@ -170,7 +170,7 @@ func NewRegistrationUserFromEmailAndPrivateKey(issuerKey shared.IssuerKeyItf,
 
 // ToSecretData returns the registration user as a secret data map.
 func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
-	privkey, err := privateKeyToBytes(u.key)
+	privkey, err := privateKeyToBytes(u.key, false)
 	if err != nil {
 		return nil, fmt.Errorf("encoding private key failed: %w", err)
 	}
@@ -194,7 +194,7 @@ func RegistrationUserFromSecretData(issuerKey shared.IssuerKeyItf,
 	if !ok {
 		return nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
 	}
-	privateKey, err := bytesToPrivateKey(privkeyBytes)
+	privateKey, err := BytesToPrivateKey(privkeyBytes)
 	if err != nil {
 		return nil, err
 	}

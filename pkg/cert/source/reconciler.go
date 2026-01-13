@@ -360,7 +360,7 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 		cert.Spec.PreferredChain = &info.PreferredChain
 	}
 
-	cert.Spec.PrivateKey = createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize)
+	cert.Spec.PrivateKey = createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize, info.PrivateKeyEncoding)
 
 	for key, value := range info.Annotations {
 		resources.SetAnnotation(cert, key, value)
@@ -468,7 +468,7 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 			mod.Modify(true)
 		}
 
-		newPrivateKey := createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize)
+		newPrivateKey := createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize, info.PrivateKeyEncoding)
 		if !reflect.DeepEqual(spec.PrivateKey, newPrivateKey) {
 			spec.PrivateKey = newPrivateKey
 			mod.Modify(true)
@@ -488,7 +488,7 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 	return obj.Modify(f)
 }
 
-func createPrivateKey(algorithm string, size api.PrivateKeySize) *api.CertificatePrivateKey {
+func createPrivateKey(algorithm string, size api.PrivateKeySize, encoding api.PrivateKeyEncoding) *api.CertificatePrivateKey {
 	if algorithm == "" && size == 0 {
 		return nil
 	}
@@ -498,6 +498,9 @@ func createPrivateKey(algorithm string, size api.PrivateKeySize) *api.Certificat
 	}
 	if size != 0 {
 		obj.Size = ptr.To(size)
+	}
+	if encoding != "" {
+		obj.Encoding = encoding
 	}
 	return obj
 }
