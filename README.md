@@ -519,7 +519,7 @@ For `ECDSA`, the allowed key sizes are `256` and `384`.  If the size field is no
 a deployment specific default value will be used.
 
 The optional `encoding` field allows to specify the encoding of the private key.
-Allowed values for `spec.privateKey.encoding` are `PKCS1`, `PKCS8`.
+Allowed values for `spec.privateKey.encoding` are `PKCS1` (default) or `PKCS8`.
 The default is `PKCS1`.
 
 ### Using a certificate signing request (CSR)
