@@ -35,8 +35,8 @@ type LoggerFactory func(key client.ObjectKey, serial uint32) LoggerInfof
 
 // LoggerInfof is a minimal interface for logging the DNS challenges.
 type LoggerInfof interface {
-	Info(msg ...interface{})
-	Infof(msgfmt string, args ...interface{})
+	Info(msg ...any)
+	Infof(msgfmt string, args ...any)
 }
 
 type internalProvider interface {

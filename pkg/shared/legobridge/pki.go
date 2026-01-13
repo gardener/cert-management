@@ -336,7 +336,7 @@ func IsCertCA(crt x509.Certificate) bool {
 
 // PublicKeyFromPrivateKey returns the crypto.PublicKey
 // for a crypto.PrivateKey or a crypto.Signer.
-func PublicKeyFromPrivateKey(key interface{}) (crypto.PublicKey, error) {
+func PublicKeyFromPrivateKey(key any) (crypto.PublicKey, error) {
 	switch k := key.(type) {
 	case *rsa.PrivateKey:
 		return k.Public(), nil
@@ -365,7 +365,7 @@ func ValidatePublicKeyWithPrivateKey(checkPubKey crypto.PublicKey, privKey crypt
 }
 
 // pubKeySize returns the bit size of a key
-func pubKeySize(key interface{}) int {
+func pubKeySize(key any) int {
 	if key == nil {
 		return 0
 	}
@@ -404,7 +404,7 @@ func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
 	}
 }
 
-func pemBlockForKey(priv interface{}) (*pem.Block, error) {
+func pemBlockForKey(priv any) (*pem.Block, error) {
 	switch k := priv.(type) {
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)

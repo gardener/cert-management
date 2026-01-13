@@ -20,7 +20,7 @@ func requireFinalizer(src resources.Object, cluster resources.Cluster) bool {
 func ExtractSecretLabels(objData resources.ObjectData) (secretLabels map[string]string) {
 	if labels, ok := resources.GetAnnotation(objData, AnnotCertSecretLabels); ok {
 		secretLabels = map[string]string{}
-		for _, pair := range strings.Split(labels, ",") {
+		for pair := range strings.SplitSeq(labels, ",") {
 			pair = strings.TrimSpace(pair)
 			items := strings.SplitN(pair, "=", 2)
 			if len(items) == 2 {

@@ -115,7 +115,7 @@ func NewHandlerSupport(c controller.Interface) (*Support, error) {
 
 // NewCompoundHandler creates a cluster specific CompoundHandler
 func NewCompoundHandler(c controller.Interface, factories ...IssuerHandlerFactory) (*CompoundHandler, error) {
-	result := c.GetEnvironment().GetOrCreateSharedValue(c.GetName()+"-support", func() interface{} {
+	result := c.GetEnvironment().GetOrCreateSharedValue(c.GetName()+"-support", func() any {
 		support, err := NewHandlerSupport(c)
 		if err != nil {
 			return err

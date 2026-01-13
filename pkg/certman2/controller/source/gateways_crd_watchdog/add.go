@@ -7,6 +7,7 @@ package gateways_crd_watchdog
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/utils/ptr"
@@ -137,12 +138,7 @@ func Predicate() predicate.Predicate {
 			if !ok || crd == nil {
 				return false
 			}
-			for _, name := range relevantCRDs {
-				if crd.Name == name {
-					return true
-				}
-			}
-			return false
+			return slices.Contains(relevantCRDs, crd.Name)
 		},
 
 		UpdateFunc: func(e event.UpdateEvent) bool {
@@ -150,12 +146,7 @@ func Predicate() predicate.Predicate {
 			if !ok || crd == nil {
 				return false
 			}
-			for _, name := range relevantCRDs {
-				if crd.Name == name {
-					return true
-				}
-			}
-			return false
+			return slices.Contains(relevantCRDs, crd.Name)
 		},
 
 		DeleteFunc: func(e event.DeleteEvent) bool {
@@ -163,12 +154,7 @@ func Predicate() predicate.Predicate {
 			if !ok || crd == nil {
 				return false
 			}
-			for _, name := range relevantCRDs {
-				if crd.Name == name {
-					return true
-				}
-			}
-			return false
+			return slices.Contains(relevantCRDs, crd.Name)
 		},
 
 		GenericFunc: func(event.GenericEvent) bool { return false },

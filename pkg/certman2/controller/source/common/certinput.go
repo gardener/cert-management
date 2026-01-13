@@ -128,7 +128,7 @@ func getDomainsFromAnnotations(annotations map[string]string, forService bool) (
 	if cn != "" {
 		annotatedDomains = append(annotatedDomains, cn)
 	}
-	for _, e := range strings.Split(a, ",") {
+	for e := range strings.SplitSeq(a, ",") {
 		e = strings.TrimSpace(e)
 		if e != "" && e != cn {
 			annotatedDomains = append(annotatedDomains, e)
@@ -140,7 +140,7 @@ func getDomainsFromAnnotations(annotations map[string]string, forService bool) (
 func extractSecretLabels(annotations map[string]string) (secretLabels map[string]string) {
 	if labels, ok := annotations[AnnotCertSecretLabels]; ok {
 		secretLabels = map[string]string{}
-		for _, pair := range strings.Split(labels, ",") {
+		for pair := range strings.SplitSeq(labels, ",") {
 			pair = strings.TrimSpace(pair)
 			items := strings.SplitN(pair, "=", 2)
 			if len(items) == 2 {
