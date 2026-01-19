@@ -97,7 +97,7 @@ generate: $(VGOPATH) $(CONTROLLER_GEN) $(MOCKGEN) $(YQ)
 	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) VGOPATH=$(VGOPATH) REPO_ROOT=$(REPO_ROOT) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/...
 	@./hack/copy-crds.sh
 	$(MAKE) format
-	@./hack/generate-renovate-ignore-deps.sh
+	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) ./hack/generate-renovate-ignore-deps.sh
 
 .PHONY: docker-images
 docker-images:
