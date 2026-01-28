@@ -10,9 +10,7 @@ SOURCE_PATH="$(readlink -f "$(dirname ${0})/..")"
 
 PROJECT_ROOT=$(dirname $0)/..
 
-# setup virtual GOPATH
 export REPO_ROOT=${REPO_ROOT}
-source "$GARDENER_HACK_DIR"/vgopath-setup.sh
 
 # cleanup generated files
 rm -f ${GOPATH}/bin/*-gen
