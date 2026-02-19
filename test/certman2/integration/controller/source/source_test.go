@@ -236,6 +236,47 @@ var _ = Describe("Source controller tests", func() {
 		Expect(testClient.Delete(ctx, service)).To(Succeed())
 	})
 
+	It("should successfully reconcile a service with renew-before annotation", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname:  "test-service-renew-secret",
+					common.AnnotDnsnames:    "test-renew.example.com",
+					common.AnnotClass:       testRunID,
+					common.AnnotRenewBefore: "888h",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for certificate with renewBefore")
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: &metav1.Duration{Duration: 888 * time.Hour},
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
 	It("should successfully reconcile an ingress", func() {
 		ingress := &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{

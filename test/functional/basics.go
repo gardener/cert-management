@@ -111,6 +111,17 @@ spec:
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: Certificate
 metadata:
+  name: cert2c
+  namespace: {{.Namespace}}
+spec:
+  commonName: cert2c.{{.Domain}}
+  issuerRef:
+    name: {{.Name}}
+  renewBefore: 840h # 35 days
+---
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
   name: cert3
   namespace: {{.Namespace}}
 spec:
@@ -227,6 +238,19 @@ spec:
     namespace: {{.Namespace}}
 `
 
+var revoke2cTemplate = `
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: CertificateRevocation
+metadata:
+  name: revoke-cert2c
+  namespace: {{.Namespace}}
+spec:
+  certificateRef:
+    name: cert2c
+    namespace: {{.Namespace}}
+  renew: true
+`
+
 var revoke3Template = `
 apiVersion: cert.gardener.cloud/v1alpha1
 kind: CertificateRevocation
@@ -305,7 +329,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			entryNames := []string{}
-			for _, name := range []string{"1", "2", "2b", "3", "5", "6", "7", "8", "9"} {
+			for _, name := range []string{"1", "2", "2b", "2c", "3", "5", "6", "7", "8", "9"} {
 				entryNames = append(entryNames, entryName(iss, name))
 			}
 			err = u.WaitUntilCertReady(ctx, entryNames...)
@@ -349,6 +373,13 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				entryName(iss, "2b"): MatchFields(IgnoreExtras, Fields{
 					"Status": MatchFields(IgnoreExtras, Fields{
 						"CommonName":     PointTo(Equal(dnsName(iss, "cert2"))),
+						"State":          Equal("Ready"),
+						"ExpirationDate": PointTo(HavePrefix("20")),
+					}),
+				}),
+				entryName(iss, "2c"): MatchFields(IgnoreExtras, Fields{
+					"Status": MatchFields(IgnoreExtras, Fields{
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert2c"))),
 						"State":          Equal("Ready"),
 						"ExpirationDate": PointTo(HavePrefix("20")),
 					}),
@@ -460,6 +491,24 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 			})
 
 			if !iss.SkipRevokeWithRenewal {
+				By("revoking cert2c with renewal (renewBefore test)", func() {
+					filename, err := iss.CreateTempManifest("revoke2c", revoke2cTemplate)
+					defer iss.DeleteTempManifest(filename)
+					Expect(err).ShouldNot(HaveOccurred())
+
+					err = u.KubectlApply(filename)
+					Expect(err).ShouldNot(HaveOccurred())
+
+					err = u.WaitUntilCertRevocationApplied(ctx, "revoke-cert2c")
+					Expect(err).ShouldNot(HaveOccurred())
+
+					err = u.WaitUntilCertReady(ctx, entryName(iss, "2c"))
+					Expect(err).ShouldNot(HaveOccurred())
+
+					err = u.KubectlDelete(filename)
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+
 				By("revoking with renewal", func() {
 					filename, err := iss.CreateTempManifest("revoke3", revoke3Template)
 					defer iss.DeleteTempManifest(filename)

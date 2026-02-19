@@ -51,6 +51,10 @@ const (
 	// If set to `PKCS1`, the private key will be encoded using the traditional format.
 	// If unset, the private key will be encoded using the traditional format.
 	AnnotPrivateKeyEncoding = "cert.gardener.cloud/private-key-encoding"
+	// AnnotRenewBefore is the annotation key to set the renewBefore duration for a Certificate.
+	// The value should be a valid Go duration string (e.g., "720h", "30d").
+	// If unset, the default value of 720h (30 days) will be used.
+	AnnotRenewBefore = "cert.gardener.cloud/renew-before"
 	// AnnotDNSRecordProviderType is the annotation for providing the provider type for DNS records.
 	AnnotDNSRecordProviderType = "cert.gardener.cloud/dnsrecord-provider-type"
 	// AnnotDNSRecordSecretRef is the annotation for providing the secret ref for DNS records.
