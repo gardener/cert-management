@@ -9,9 +9,11 @@ package source
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -78,6 +80,20 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 		encoding = api.PKCS8
 	}
 
+	var renewBefore *metav1.Duration
+	if renewBeforeStr, ok := resources.GetAnnotation(objData, source.AnnotRenewBefore); ok {
+		if duration, err := time.ParseDuration(renewBeforeStr); err == nil {
+			// Validate minimum of 5 minutes
+			if duration < 5*time.Minute {
+				logger.Warnf("Invalid renew-before annotation value %q: must be at least 5 minutes", renewBeforeStr)
+			} else {
+				renewBefore = &metav1.Duration{Duration: duration}
+			}
+		} else {
+			logger.Warnf("Invalid renew-before annotation value %q: %v", renewBeforeStr, err)
+		}
+	}
+
 	annotatedDomains, cn := source.GetDomainsFromAnnotations(objData, false)
 
 	var issuer *string
@@ -111,6 +127,7 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 			PrivateKeyAlgorithm: algorithm,
 			PrivateKeySize:      keySize,
 			PrivateKeyEncoding:  encoding,
+			RenewBefore:         renewBefore,
 			Annotations:         source.CopyDNSRecordsAnnotations(objData),
 		}
 	}

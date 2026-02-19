@@ -71,6 +71,11 @@ const (
 	// If unset, the private key will be encoded using the traditional format.
 	AnnotPrivateKeyEncoding = "cert.gardener.cloud/private-key-encoding"
 
+	// AnnotRenewBefore is the annotation key to set the renewBefore duration for a Certificate.
+	// The value should be a valid Go duration string (e.g., "720h", "30d").
+	// If unset, the default value of 720h (30 days) will be used.
+	AnnotRenewBefore = "cert.gardener.cloud/renew-before"
+
 	// OptClass is the cert-class command line option
 	OptClass = "cert-class"
 	// OptTargetclass is the target-cert-class command line option
