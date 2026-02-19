@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.19.3
 	github.com/gardener/controller-manager-library v0.2.1-0.20251212135449-45ab4fb75a4e
 	github.com/gardener/external-dns-management v0.35.1
-	github.com/gardener/gardener v1.136.0
+	github.com/gardener/gardener v1.136.1
 	github.com/go-acme/lego/v4 v4.31.0
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.9.0
@@ -90,7 +90,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gardener/etcd-druid/api v0.35.0 // indirect
-	github.com/gardener/machine-controller-manager v0.61.1 // indirect
+	github.com/gardener/machine-controller-manager v0.61.2 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.12 // indirect
