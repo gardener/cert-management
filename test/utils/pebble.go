@@ -48,6 +48,7 @@ var (
 			ValidityPeriod: 518400,
 		},
 	}
+	caaIdentities = []string{"pebble.letsencrypt.org"}
 )
 
 // RunPebble runs a pebble server with the given configuration.
@@ -89,7 +90,7 @@ func RunPebble(logr logr.Logger) (server *http.Server, certificatePath, director
 	certificateAuthority := ca.New(log, database, ocspResponderURL, keyAlgorithm, alternateRoots, chainLength, profiles)
 	validationAuthority := va.New(log, httpPort, tlsPort, strict, customResolverAddr, database)
 
-	wfeImpl := wfe.New(log, database, validationAuthority, certificateAuthority, strict, requireEAB, retryAfterAuthz, retryAfterOrder)
+	wfeImpl := wfe.New(log, database, validationAuthority, certificateAuthority, caaIdentities, strict, requireEAB, retryAfterAuthz, retryAfterOrder)
 	muxHandler := wfeImpl.Handler()
 
 	directoryAddress = fmt.Sprintf("https://%s%s", listenAddress, wfe.DirectoryPath)
