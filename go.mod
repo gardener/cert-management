@@ -8,7 +8,7 @@ require (
 	github.com/cert-manager/cert-manager v1.19.3
 	github.com/gardener/controller-manager-library v0.2.1-0.20251212135449-45ab4fb75a4e
 	github.com/gardener/external-dns-management v0.35.1
-	github.com/gardener/gardener v1.136.1
+	github.com/gardener/gardener v1.136.2
 	github.com/go-acme/lego/v4 v4.31.0
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.10.0
