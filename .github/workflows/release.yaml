@@ -12,8 +12,9 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/build.yaml
+    secrets: inherit
     permissions:
-      contents: write
+      contents: read
       packages: write
       id-token: write
     with:
@@ -31,5 +32,4 @@ jobs:
     with:
       release-commit-target: branch
       next-version: ${{ inputs.next-version }}
-      next-version-callback-action-path:
       slack-channel-id: C9CEBQPGE # #sap-tech-gardener
