@@ -20,6 +20,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/resources/abstract"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
@@ -362,6 +363,9 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 
 	cert.Spec.PrivateKey = createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize, info.PrivateKeyEncoding)
 
+	// Set and validate renewBefore
+	cert.Spec.RenewBefore = validateAndAdjustRenewBefore(logger, info.RenewBefore, cert.Spec.Duration)
+
 	for key, value := range info.Annotations {
 		resources.SetAnnotation(cert, key, value)
 	}
@@ -474,6 +478,13 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 			mod.Modify(true)
 		}
 
+		// Update and validate renewBefore
+		newRenewBefore := validateAndAdjustRenewBefore(logger, info.RenewBefore, spec.Duration)
+		if !reflect.DeepEqual(spec.RenewBefore, newRenewBefore) {
+			spec.RenewBefore = newRenewBefore
+			mod.Modify(true)
+		}
+
 		for key, value := range info.Annotations {
 			if resources.SetAnnotation(o, key, value) {
 				mod.Modify(true)
@@ -503,4 +514,38 @@ func createPrivateKey(algorithm string, size api.PrivateKeySize, encoding api.Pr
 		obj.Encoding = encoding
 	}
 	return obj
+}
+
+// validateAndAdjustRenewBefore validates the renewBefore duration against the certificate duration.
+// It ensures renewBefore is at least 5 minutes and not greater than duration - 5 minutes.
+// If duration is nil, it uses the default of 90 days (2160h).
+// Returns the validated renewBefore value or the default of 720h if validation fails.
+func validateAndAdjustRenewBefore(logger logger.LogContext, renewBefore *metav1.Duration, duration *metav1.Duration) *metav1.Duration {
+	// Use default duration of 90 days if not specified
+	certDuration := 2160 * time.Hour // 90 days default
+	if duration != nil {
+		certDuration = duration.Duration
+	}
+
+	// If no renewBefore specified, use default of 720h
+	if renewBefore == nil {
+		return &metav1.Duration{Duration: 720 * time.Hour}
+	}
+
+	renewBeforeDuration := renewBefore.Duration
+
+	// Validate minimum of 5 minutes
+	if renewBeforeDuration < 5*time.Minute {
+		logger.Warnf("renewBefore %v is less than minimum 5 minutes, using default 720h", renewBeforeDuration)
+		return &metav1.Duration{Duration: 720 * time.Hour}
+	}
+
+	// Validate maximum of duration - 5 minutes
+	maxRenewBefore := certDuration - 5*time.Minute
+	if renewBeforeDuration > maxRenewBefore {
+		logger.Warnf("renewBefore %v exceeds maximum %v (duration - 5 minutes), using default 720h", renewBeforeDuration, maxRenewBefore)
+		return &metav1.Duration{Duration: 720 * time.Hour}
+	}
+
+	return renewBefore
 }

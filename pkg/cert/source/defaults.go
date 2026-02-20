@@ -11,12 +11,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -201,6 +203,20 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		encoding = api.PKCS8
 	}
 
+	var renewBefore *metav1.Duration
+	if renewBeforeStr, ok := resources.GetAnnotation(objData, AnnotRenewBefore); ok {
+		if duration, err := time.ParseDuration(renewBeforeStr); err == nil {
+			// Validate minimum of 5 minutes
+			if duration < 5*time.Minute {
+				logger.Warnf("Invalid renew-before annotation value %q: must be at least 5 minutes", renewBeforeStr)
+			} else {
+				renewBefore = &metav1.Duration{Duration: duration}
+			}
+		} else {
+			logger.Warnf("Invalid renew-before annotation value %q: %v", renewBeforeStr, err)
+		}
+	}
+
 	info.Certs[secretName] = CertInfo{
 		SecretName:          secretName,
 		Domains:             annotatedDomains,
@@ -211,6 +227,7 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		PrivateKeyAlgorithm: algorithm,
 		PrivateKeySize:      keySize,
 		PrivateKeyEncoding:  encoding,
+		RenewBefore:         renewBefore,
 		Annotations:         CopyDNSRecordsAnnotations(objData),
 	}
 	return info, nil

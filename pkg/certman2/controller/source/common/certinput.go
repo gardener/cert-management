@@ -10,9 +10,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -30,6 +32,7 @@ type CertInput struct {
 	PrivateKeyAlgorithm string
 	PrivateKeySize      int
 	PrivateKeyEncoding  string
+	RenewBefore         string
 	Annotations         map[string]string
 }
 
@@ -93,12 +96,15 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 		encoding = v
 	}
 
+	renewBefore := annotations[AnnotRenewBefore]
+
 	certInput.FollowCNAME = followCNAME
 	certInput.IssuerName = issuer
 	certInput.PreferredChain = preferredChain
 	certInput.PrivateKeyAlgorithm = algorithm
 	certInput.PrivateKeySize = keySize
 	certInput.PrivateKeyEncoding = encoding
+	certInput.RenewBefore = renewBefore
 	certInput.SecretLabels = extractSecretLabels(annotations)
 	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
 	return certInput
@@ -203,6 +209,7 @@ func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 	}
 
 	spec.PrivateKey = createPrivateKey(src.PrivateKeyAlgorithm, src.PrivateKeySize, src.PrivateKeyEncoding)
+	spec.RenewBefore = parseRenewBefore(src.RenewBefore)
 
 	return spec
 }
@@ -229,4 +236,27 @@ func normalizeArray(a []string) []string {
 		return nil
 	}
 	return a
+}
+
+// parseRenewBefore parses the renewBefore duration string and returns a metav1.Duration.
+// Returns nil if the string is empty or invalid, or if the duration is less than 5 minutes.
+// The default value of 720h is applied by the certificate controller if nil is returned.
+func parseRenewBefore(renewBeforeStr string) *metav1.Duration {
+	if renewBeforeStr == "" {
+		return nil
+	}
+
+	duration, err := time.ParseDuration(renewBeforeStr)
+	if err != nil {
+		// Invalid duration format, return nil to use default
+		return nil
+	}
+
+	// Validate minimum of 5 minutes
+	if duration < 5*time.Minute {
+		// Too small, return nil to use default
+		return nil
+	}
+
+	return &metav1.Duration{Duration: duration}
 }
