@@ -9,4 +9,4 @@ issuers:
   server: https://acme.certman-support.svc.cluster.local/dir
   email: some.user@mydomain.com
   precheckNameservers:
-  - 10.96.0.10:53
+  - knot-dns.certman-support.svc:53

@@ -163,7 +163,10 @@ test-functional-local-dnsrecords: $(GINKGO)
 	@USE_DNSRECORDS=true hack/kind/test-functional-local.sh
 
 .PHONY: test-e2e-local
-test-e2e-local: kind-up certman-up test-functional-local certman-dnsrecords-up test-functional-local-dnsrecords
+test-e2e-local: kind-up certman-up
+	@echo "Waiting for certman to be ready..."
+	@sleep 10
+	$(MAKE) test-functional-local certman-dnsrecords-up test-functional-local-dnsrecords
 
 .PHONY: sast
 sast: $(GOSEC)

@@ -30,6 +30,9 @@ install_dns_controller_manager()
     --set configuration.identifier="host-$(hostname)" \
     --set createCRDs=true \
     --set vpa.enabled=false \
+    --set configuration.poolResyncPeriod=10s \
+    --set configuration.poolSize=5 \
+    --set configuration.cacheTtl=5 \
     | kubectl apply -f -
 }
 
