@@ -51,6 +51,7 @@ metadata:
   annotations:
     #cert.gardener.cloud/dnsnames: "*.example.com" # alternative if you want to control the dns names explicitly.
     cert.gardener.cloud/purpose: managed
+    #cert.gardener.cloud/renew-before: "720h"      # optional to specify when to renew the certificate before expiration (default: 720h/30 days, min: 5m, max: duration-5m)
 spec:
   gatewayClassName: istio
   listeners:
