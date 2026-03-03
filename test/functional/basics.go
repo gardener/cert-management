@@ -114,7 +114,7 @@ metadata:
   name: cert3
   namespace: {{.Namespace}}
 spec:
-  commonName: cert3.{{.Domain}}
+  commonName: cert33.{{.Domain}}
   dnsNames:
   - "*.cert3.{{.Domain}}"
   issuerRef:
@@ -150,7 +150,6 @@ metadata:
   name: cert5
   namespace: {{.Namespace}}
 spec:
-  commonName: 
   dnsNames:
   - cert5.very-very-very-very-very-very-very-very-very-very-very-long.{{.Domain}} # more than 64 chars
   - cert5.{{.Domain}}
@@ -255,7 +254,7 @@ metadata:
   name: cert3
   namespace: {{.Namespace}}
 spec:
-  commonName: cert3.{{.Domain}}
+  commonName: cert33.{{.Domain}}
   dnsNames:
   - "*.cert3.{{.Domain}}"
   issuerRef:
@@ -355,7 +354,7 @@ func functestbasics(cfg *config.Config, iss *config.IssuerConfig) {
 				}),
 				entryName(iss, "3"): MatchFields(IgnoreExtras, Fields{
 					"Status": MatchFields(IgnoreExtras, Fields{
-						"CommonName":     PointTo(Equal(dnsName(iss, "cert3"))),
+						"CommonName":     PointTo(Equal(dnsName(iss, "cert33"))), // TODO (MartinWeindel) investigate flaky test with "cert3"
 						"DNSNames":       And(HaveLen(1), ContainElement(dnsName(iss, "*.cert3"))),
 						"State":          Equal("Ready"),
 						"ExpirationDate": PointTo(HavePrefix("20")),

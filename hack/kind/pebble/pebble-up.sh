@@ -14,6 +14,7 @@ source $(dirname ${0})/../common.sh /..
 
 create_certificate() {
   # generate certificate for ACME server
+ echo "🚀 Generating certificate for ACME server..."
   current_dir=$PWD
   cd /tmp
   go run `go env GOROOT`/src/crypto/tls/generate_cert.go --host=acme.certman-support.svc.cluster.local,acme.certman-support.svc,acme,localhost --ecdsa-curve=P256
@@ -23,8 +24,9 @@ create_certificate() {
 }
 
 kubectl get ns certman-support  >/dev/null 2>&1 || kubectl create ns certman-support
-if [ ! -f ${SOURCE_PATH}/dev/pebble-cert.pem ]; then
-  create_certificate
+# generate certificate if not exist or older than 30 days
+if [ ! -f ${SOURCE_PATH}/dev/pebble-cert.pem ] || [ $(find ${SOURCE_PATH}/dev/pebble-cert.pem -mtime +30 -print) ]; then
+  create_certificate  create_certificate
 fi
 
 cat  << EOF | kubectl apply -f -
