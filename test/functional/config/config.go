@@ -67,7 +67,7 @@ type IssuerConfig struct {
 	Email                      string                  `json:"email,omitempty"`
 	ExternalAccountBinding     *ExternalAccountBinding `json:"externalAccountBinding,omitempty"`
 	SkipDNSChallengeValidation bool                    `json:"skipDNSChallengeValidation,omitempty"`
-	PrivateKey                 string                  `json:"privateKey,omitempty"`
+	PrivateKey                 string                  `json:"privateKey,omitempty"` // #nosec G117 - false positivem
 	SkipRevokeWithRenewal      bool                    `json:"skipRevokeWithRenewal,omitempty"`
 
 	Namespace string

@@ -13,7 +13,7 @@ corefileOrg=$(kubectl -n kube-system get cm coredns '-ojsonpath={.data.Corefile}
 if ! [[ "$corefileOrg" == *"import custom/"* ]]; then
   tmp="${corefileOrg/%\}/}"
   tmp="${tmp//$'\n'/$'\n'  }"
-  cat <<EOF | kubectl apply -f -
+  cat <<EOF | kubectl apply --force-conflicts --server-side -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:

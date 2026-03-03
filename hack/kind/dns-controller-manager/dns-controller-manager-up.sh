@@ -7,7 +7,7 @@
 set -o errexit
 set -o pipefail
 
-VERSION=v0.18.6
+VERSION=$(go list -m -f "{{.Version}}" github.com/gardener/external-dns-management)
 
 source $(dirname ${0})/../common.sh /..
 
