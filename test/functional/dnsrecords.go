@@ -202,7 +202,7 @@ func startDNSRecordToDNSEntryTranslator(namespace, dnskubeconfig string) context
 		reportError("client.New", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // #nosec G118 -- The cancel function is returned to the caller and used there.
 	entries := map[string]*dnsapi.DNSEntry{}
 	go func() {
 		for {
