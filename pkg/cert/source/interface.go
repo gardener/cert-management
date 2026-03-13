@@ -29,6 +29,7 @@ type CertInfo struct {
 	PrivateKeyAlgorithm string
 	PrivateKeySize      api.PrivateKeySize
 	PrivateKeyEncoding  api.PrivateKeyEncoding
+	RenewBefore         *metav1.Duration
 	Annotations         map[string]string
 }
 

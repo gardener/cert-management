@@ -236,6 +236,332 @@ var _ = Describe("Source controller tests", func() {
 		Expect(testClient.Delete(ctx, service)).To(Succeed())
 	})
 
+	It("should successfully reconcile a service with renew-before annotation", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname:  "test-service-renew-secret",
+					common.AnnotDnsnames:    "test-renew.example.com",
+					common.AnnotClass:       testRunID,
+					common.AnnotRenewBefore: "888h",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for certificate with renewBefore")
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: &metav1.Duration{Duration: 888 * time.Hour},
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
+	It("should successfully reconcile a service with minimum renewBefore", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew-min",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname:  "test-service-renew-min-secret",
+					common.AnnotDnsnames:    "test-renew-min.example.com",
+					common.AnnotClass:       testRunID,
+					common.AnnotRenewBefore: "5m",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for certificate with minimum renewBefore (5 minutes)")
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-min.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-min-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: &metav1.Duration{Duration: 5 * time.Minute},
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
+	It("should use default renewBefore when annotation is below minimum", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew-below-min",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname:  "test-service-renew-below-min-secret",
+					common.AnnotDnsnames:    "test-renew-below-min.example.com",
+					common.AnnotClass:       testRunID,
+					common.AnnotRenewBefore: "3m",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for certificate with default renewBefore (below minimum should be ignored)")
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-below-min.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-below-min-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: nil,
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
+	It("should successfully reconcile a service with maximum renewBefore", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew-max",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname:  "test-service-renew-max-secret",
+					common.AnnotDnsnames:    "test-renew-max.example.com",
+					common.AnnotClass:       testRunID,
+					common.AnnotRenewBefore: "8760h",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for certificate with maximum renewBefore (1 year)")
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-max.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-max-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: &metav1.Duration{Duration: 8760 * time.Hour},
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
+	It("should use default renewBefore when annotation has invalid format", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew-invalid",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname:  "test-service-renew-invalid-secret",
+					common.AnnotDnsnames:    "test-renew-invalid.example.com",
+					common.AnnotClass:       testRunID,
+					common.AnnotRenewBefore: "invalid-duration",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for certificate with default renewBefore (invalid format should be ignored)")
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-invalid.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-invalid-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: nil,
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
+	It("should use default renewBefore when annotation is empty", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew-default",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname: "test-service-renew-default-secret",
+					common.AnnotDnsnames:   "test-renew-default.example.com",
+					common.AnnotClass:      testRunID,
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for certificate with default renewBefore (no annotation)")
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-default.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-default-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: nil,
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
+	It("should update certificate renewBefore when annotation is added, changed, and removed", func() {
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-service-renew-update",
+				Namespace: testRunID,
+				Annotations: map[string]string{
+					common.AnnotSecretname: "test-service-renew-update-secret",
+					common.AnnotDnsnames:   "test-renew-update.example.com",
+					common.AnnotClass:      testRunID,
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "https",
+						Port: 443,
+					},
+				},
+				Type: corev1.ServiceTypeLoadBalancer,
+			},
+		}
+		Expect(testClient.Create(ctx, service)).To(Succeed())
+		DeferCleanup(func() {
+			certificateGarbageCollection(service)
+		})
+
+		By("Wait for initial certificate without renewBefore")
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-update.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-update-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: nil,
+		})
+
+		By("Add renew-before annotation and verify certificate is updated")
+		patch := client.MergeFrom(service.DeepCopy())
+		service.Annotations[common.AnnotRenewBefore] = "600h"
+		Expect(testClient.Patch(ctx, service, patch)).To(Succeed())
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-update.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-update-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: &metav1.Duration{Duration: 600 * time.Hour},
+		})
+
+		By("Change renew-before annotation value and verify certificate is updated")
+		patch = client.MergeFrom(service.DeepCopy())
+		service.Annotations[common.AnnotRenewBefore] = "720h"
+		Expect(testClient.Patch(ctx, service, patch)).To(Succeed())
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-update.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-update-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: &metav1.Duration{Duration: 720 * time.Hour},
+		})
+
+		By("Remove renew-before annotation and verify certificate renewBefore is cleared")
+		patch = client.MergeFrom(service.DeepCopy())
+		delete(service.Annotations, common.AnnotRenewBefore)
+		Expect(testClient.Patch(ctx, service, patch)).To(Succeed())
+
+		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
+			CommonName: ptr.To("test-renew-update.example.com"),
+			SecretRef: &corev1.SecretReference{
+				Name:      "test-service-renew-update-secret",
+				Namespace: testRunID,
+			},
+			RenewBefore: nil,
+		})
+
+		Expect(testClient.Delete(ctx, service)).To(Succeed())
+	})
+
 	It("should successfully reconcile an ingress", func() {
 		ingress := &networkingv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
