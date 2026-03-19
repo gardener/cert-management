@@ -8,6 +8,7 @@ package utils
 
 import (
 	"fmt"
+	"slices"
 	"unicode/utf8"
 
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -100,7 +101,7 @@ func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
 		}
 	}
 
-	if cn != nil {
+	if cn != nil && !slices.Contains(dnsNames, *cn) {
 		dnsNames = append([]string{*cn}, dnsNames...)
 	}
 	return dnsNames, nil

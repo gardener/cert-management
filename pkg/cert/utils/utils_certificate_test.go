@@ -155,6 +155,17 @@ var _ = Describe("UtilsCertificate", func() {
 				Expect(dnsNames).To(Equal(append([]string{exampleCn}, exampleSan...)))
 				Expect(err).ToNot(HaveOccurred())
 			})
+
+			It("should allow to specify the same domain for the CommonName and in DNSNames", func() {
+				spec := api.CertificateSpec{
+					CommonName: &exampleCn,
+					DNSNames:   append(exampleSan, exampleCn),
+				}
+
+				dnsNames, err := utils.ExtractDomains(&spec)
+				Expect(dnsNames).To(Equal(append(exampleSan, exampleCn)))
+				Expect(err).ToNot(HaveOccurred())
+			})
 		})
 
 		Context("Neither CommonName nor DNSNames are specified", func() {
