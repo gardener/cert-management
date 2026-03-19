@@ -10,7 +10,7 @@ require (
 	github.com/gardener/external-dns-management v0.37.1
 	github.com/gardener/gardener v1.138.0
 	github.com/gardener/gardener/pkg/apis v1.138.0
-	github.com/go-acme/lego/v4 v4.32.0
+	github.com/go-acme/lego/v4 v4.33.0
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.10.0
 	github.com/miekg/dns v1.1.72
