@@ -15,7 +15,6 @@
   ignoreDeps: [
     "github.com/Masterminds/semver/v3",
     "github.com/ahmetb/gen-crd-api-reference-docs",
-    "github.com/gardener/gardener/pkg/apis",
     "github.com/go-logr/logr",
     "github.com/miekg/dns",
     "github.com/onsi/ginkgo/v2",
@@ -158,7 +157,6 @@
     "github.com/shopspring/decimal",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cast",
-    "github.com/stoewer/go-strcase",
     "github.com/valyala/bytebufferpool",
     "github.com/valyala/fastjson",
     "github.com/valyala/fastrand",
