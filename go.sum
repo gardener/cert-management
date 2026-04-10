@@ -170,8 +170,8 @@ github.com/gardener/external-dns-management v0.37.1 h1:U8+JBexrkWaDH9pro+Wlarylx
 github.com/gardener/external-dns-management v0.37.1/go.mod h1:o0MX4X6AiUzRtKws/UWfvOE1BRQYExL7E+IG9O+fWXI=
 github.com/gardener/gardener v1.139.1 h1:e3q4HTJI0j1vDEfZBlG7ApXm/XJytQnbDkUJ+X9b08Q=
 github.com/gardener/gardener v1.139.1/go.mod h1:iRY1IXXz+lSPuStOJsdh/ztA/5zEQ+rB0EnI0SUZBb8=
-github.com/gardener/gardener/pkg/apis v1.139.1 h1:yxHSs1y393/FesGAVBORnDbc7isi3cLMLMIJmCzmZhk=
-github.com/gardener/gardener/pkg/apis v1.139.1/go.mod h1:3Tbqw9dx7KaJ7Fikkna+WVGjRCyTTdlZEAy0GV6u4Gc=
+github.com/gardener/gardener/pkg/apis v1.140.0 h1:xAoxwwEMi8YpGfLNcO0qkCfuZ6jjy81NX9tuvWvkUEY=
+github.com/gardener/gardener/pkg/apis v1.140.0/go.mod h1:3Tbqw9dx7KaJ7Fikkna+WVGjRCyTTdlZEAy0GV6u4Gc=
 github.com/gardener/machine-controller-manager v0.61.3 h1:w0JuHCKLmcK7B8E7mx3TvE3e0hSYwikchsMSiMhocqw=
 github.com/gardener/machine-controller-manager v0.61.3/go.mod h1:8eE1qLztrWIbOM71mHSQGaC6Q+pl5lvOyN08qP39D7o=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
