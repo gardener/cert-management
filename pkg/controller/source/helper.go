@@ -82,10 +82,10 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 
 	var renewBefore *metav1.Duration
 	if renewBeforeStr, ok := resources.GetAnnotation(objData, source.AnnotRenewBefore); ok {
-		var warning string
-		renewBefore, warning = common.ParseRenewBefore(renewBeforeStr)
-		if warning != "" {
-			logger.Warn(warning)
+		var err error
+		renewBefore, err = common.ParseRenewBefore(renewBeforeStr)
+		if err != nil {
+			logger.Warn(err.Error())
 		}
 	}
 

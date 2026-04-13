@@ -102,7 +102,7 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 	certInput.PrivateKeyAlgorithm = algorithm
 	certInput.PrivateKeySize = keySize
 	certInput.PrivateKeyEncoding = encoding
-	certInput.RenewBefore = annotations[AnnotRenewBefore]
+	certInput.RenewBefore, _ = ParseRenewBefore(annotations[AnnotRenewBefore])
 	certInput.SecretLabels = extractSecretLabels(annotations)
 	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
 	return certInput
@@ -207,7 +207,7 @@ func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 	}
 
 	spec.PrivateKey = createPrivateKey(src.PrivateKeyAlgorithm, src.PrivateKeySize, src.PrivateKeyEncoding)
-	spec.RenewBefore, _ = ParseRenewBefore(src.RenewBefore)
+	spec.RenewBefore = src.RenewBefore
 
 	return spec
 }
@@ -236,24 +236,24 @@ func normalizeArray(a []string) []string {
 	return a
 }
 
-// ParseRenewBefore parses the renewBefore duration string and returns a metav1.Duration and an optional warning message.
-// Returns (nil, warning) if the string is invalid or the duration is less than 5 minutes.
-// Returns (nil, "") if the string is empty.
+// ParseRenewBefore parses the renewBefore duration string and returns a *metav1.Duration and an optional error.
+// Returns (nil, error) if the string is invalid or the duration is less than 5 minutes.
+// Returns (nil, nil) if the string is empty.
 // The default value of DefaultRenewBefore is applied by the certificate controller if nil is returned.
 func ParseRenewBefore(renewBeforeStr string) (*metav1.Duration, error) {
 	if renewBeforeStr == "" {
-		return nil, ""
+		return nil, nil
 	}
 
 	duration, err := time.ParseDuration(renewBeforeStr)
 	if err != nil {
-		return nil, fmt.Sprintf("invalid renew-before annotation value %q: %v", renewBeforeStr, err)
+		return nil, fmt.Errorf("invalid renew-before annotation value %q: %w", renewBeforeStr, err)
 	}
 
 	// Validate minimum of 5 minutes
 	if duration < 5*time.Minute {
-		return nil, fmt.Sprintf("invalid renew-before annotation value %q: must be at least 5 minutes", renewBeforeStr)
+		return nil, fmt.Errorf("invalid renew-before annotation value %q: must be at least 5 minutes", renewBeforeStr)
 	}
 
-	return &metav1.Duration{Duration: duration}, ""
+	return &metav1.Duration{Duration: duration}, nil
 }
