@@ -240,7 +240,7 @@ func normalizeArray(a []string) []string {
 // Returns (nil, warning) if the string is invalid or the duration is less than 5 minutes.
 // Returns (nil, "") if the string is empty.
 // The default value of DefaultRenewBefore is applied by the certificate controller if nil is returned.
-func ParseRenewBefore(renewBeforeStr string) (*metav1.Duration, string) {
+func ParseRenewBefore(renewBeforeStr string) (*metav1.Duration, error) {
 	if renewBeforeStr == "" {
 		return nil, ""
 	}
