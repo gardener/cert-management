@@ -32,7 +32,7 @@ type CertInput struct {
 	PrivateKeyAlgorithm string
 	PrivateKeySize      int
 	PrivateKeyEncoding  string
-	RenewBefore         string
+	RenewBefore         *metav1.Duration
 	Annotations         map[string]string
 }
 
