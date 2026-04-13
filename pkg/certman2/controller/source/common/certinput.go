@@ -96,15 +96,13 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 		encoding = v
 	}
 
-	renewBefore := annotations[AnnotRenewBefore]
-
 	certInput.FollowCNAME = followCNAME
 	certInput.IssuerName = issuer
 	certInput.PreferredChain = preferredChain
 	certInput.PrivateKeyAlgorithm = algorithm
 	certInput.PrivateKeySize = keySize
 	certInput.PrivateKeyEncoding = encoding
-	certInput.RenewBefore = renewBefore
+	certInput.RenewBefore = annotations[AnnotRenewBefore]
 	certInput.SecretLabels = extractSecretLabels(annotations)
 	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
 	return certInput
