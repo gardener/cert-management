@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 // CertInput contains basic certificate data.
@@ -241,19 +241,5 @@ func normalizeArray(a []string) []string {
 // Returns (nil, nil) if the string is empty.
 // The default value of DefaultRenewBefore is applied by the certificate controller if nil is returned.
 func ParseRenewBefore(renewBeforeStr string) (*metav1.Duration, error) {
-	if renewBeforeStr == "" {
-		return nil, nil
-	}
-
-	duration, err := time.ParseDuration(renewBeforeStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid renew-before annotation value %q: %w", renewBeforeStr, err)
-	}
-
-	// Validate minimum of 5 minutes
-	if duration < 5*time.Minute {
-		return nil, fmt.Errorf("invalid renew-before annotation value %q: must be at least 5 minutes", renewBeforeStr)
-	}
-
-	return &metav1.Duration{Duration: duration}, nil
+	return shared.ParseRenewBefore(renewBeforeStr)
 }

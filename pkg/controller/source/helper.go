@@ -17,7 +17,7 @@ import (
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/source"
-	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 const (
@@ -83,7 +83,7 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 	var renewBefore *metav1.Duration
 	if renewBeforeStr, ok := resources.GetAnnotation(objData, source.AnnotRenewBefore); ok {
 		var err error
-		renewBefore, err = common.ParseRenewBefore(renewBeforeStr)
+		renewBefore, err = shared.ParseRenewBefore(renewBeforeStr)
 		if err != nil {
 			logger.Warn(err.Error())
 		}
