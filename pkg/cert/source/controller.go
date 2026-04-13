@@ -73,7 +73,7 @@ const (
 
 	// AnnotRenewBefore is the annotation key to set the renewBefore duration for a Certificate.
 	// The value should be a valid Go duration string (e.g., "720h", "30d").
-	// If unset, the default value of DefaultRenewBefore (30 days) will be used.
+	// If unset, the default of 30 days will be used.
 	AnnotRenewBefore = "cert.gardener.cloud/renew-before"
 
 	// OptClass is the cert-class command line option
@@ -87,9 +87,6 @@ const (
 
 	// DefaultClass is the default cert-class
 	DefaultClass = "gardencert"
-
-	// DefaultRenewBefore is the default renewBefore duration (720 hours / 30 days)
-	DefaultRenewBefore = 720 * time.Hour
 )
 
 var certificateGroupKind = resources.NewGroupKind(api.GroupName, api.CertificateKind)

@@ -53,7 +53,7 @@ const (
 	AnnotPrivateKeyEncoding = "cert.gardener.cloud/private-key-encoding"
 	// AnnotRenewBefore is the annotation key to set the renewBefore duration for a Certificate.
 	// The value should be a valid Go duration string (e.g., "720h").
-	// If unset, the default value of DefaultRenewBefore (30 days) will be used.
+	// If unset, the default of 30 days will be used.
 	AnnotRenewBefore = "cert.gardener.cloud/renew-before"
 	// AnnotDNSRecordProviderType is the annotation for providing the provider type for DNS records.
 	AnnotDNSRecordProviderType = "cert.gardener.cloud/dnsrecord-provider-type"
