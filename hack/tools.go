@@ -9,7 +9,6 @@
 package tools
 
 import (
-	_ "github.com/ahmetb/gen-crd-api-reference-docs"
 	_ "github.com/onsi/ginkgo/v2/ginkgo"
 	_ "github.com/onsi/gomega"
 	_ "golang.org/x/lint/golint"
