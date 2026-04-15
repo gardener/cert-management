@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/cert-manager/cert-manager v1.20.2
 	github.com/gardener/controller-manager-library v0.2.1-0.20260223090032-ae6be22010f5
-	github.com/gardener/external-dns-management v0.38.0
+	github.com/gardener/external-dns-management v0.39.0
 	github.com/gardener/gardener v1.140.1
 	github.com/gardener/gardener/pkg/apis v1.140.1
 	github.com/go-acme/lego/v4 v4.33.0
