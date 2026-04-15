@@ -72,7 +72,7 @@ const (
 	AnnotPrivateKeyEncoding = "cert.gardener.cloud/private-key-encoding"
 
 	// AnnotRenewBefore is the annotation key to set the renewBefore duration for a Certificate.
-	// The value should be a valid Go duration string (e.g., "720h", "30d").
+	// The value should be a valid Go duration string (e.g., "720h").
 	// If unset, the default of 30 days will be used.
 	AnnotRenewBefore = "cert.gardener.cloud/renew-before"
 
