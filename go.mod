@@ -7,7 +7,7 @@ require (
 	github.com/cert-manager/cert-manager v1.20.2
 	github.com/gardener/controller-manager-library v0.2.1-0.20260223090032-ae6be22010f5
 	github.com/gardener/external-dns-management v0.39.0
-	github.com/gardener/gardener v1.140.2
+	github.com/gardener/gardener v1.141.0
 	github.com/gardener/gardener/pkg/apis v1.140.2
 	github.com/go-acme/lego/v4 v4.35.1
 	github.com/go-logr/logr v1.4.3
@@ -24,14 +24,14 @@ require (
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
 	golang.org/x/tools v0.44.0
-	istio.io/api v1.29.1
-	istio.io/client-go v1.29.1
-	k8s.io/api v0.35.3
-	k8s.io/apiextensions-apiserver v0.35.3
-	k8s.io/apimachinery v0.35.3
-	k8s.io/client-go v0.35.3
-	k8s.io/code-generator v0.35.3
-	k8s.io/component-base v0.35.3
+	istio.io/api v1.29.2
+	istio.io/client-go v1.29.2
+	k8s.io/api v0.35.4
+	k8s.io/apiextensions-apiserver v0.35.4
+	k8s.io/apimachinery v0.35.4
+	k8s.io/client-go v0.35.4
+	k8s.io/code-generator v0.35.4
+	k8s.io/component-base v0.35.4
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
@@ -89,7 +89,7 @@ require (
 	github.com/fluent/fluent-operator/v3 v3.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/gardener/etcd-druid/api v0.36.2 // indirect
+	github.com/gardener/etcd-druid/api v0.36.3 // indirect
 	github.com/gardener/machine-controller-manager v0.61.3 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -132,7 +132,7 @@ require (
 	github.com/ironcore-dev/vgopath v0.1.5 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.13-0.20220915233716-71ac16282d12 // indirect
-	github.com/klauspost/compress v1.18.4 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0 // indirect
 	github.com/labstack/echo/v4 v4.15.1 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
@@ -223,9 +223,9 @@ require (
 	helm.sh/helm/v3 v3.20.2 // indirect
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.6.0 // indirect
 	k8s.io/gengo/v2 v2.0.0-20251215205346-5ee0d033ba5b // indirect
-	k8s.io/kube-aggregator v0.35.3 // indirect
-	k8s.io/kubelet v0.35.3 // indirect
-	k8s.io/metrics v0.35.3 // indirect
+	k8s.io/kube-aggregator v0.35.4 // indirect
+	k8s.io/kubelet v0.35.4 // indirect
+	k8s.io/metrics v0.35.4 // indirect
 	sigs.k8s.io/controller-tools v0.20.1 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
