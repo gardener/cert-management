@@ -8,7 +8,7 @@ require (
 	github.com/gardener/controller-manager-library v0.2.1-0.20260223090032-ae6be22010f5
 	github.com/gardener/external-dns-management v0.39.0
 	github.com/gardener/gardener v1.140.2
-	github.com/gardener/gardener/pkg/apis v1.140.2
+	github.com/gardener/gardener/pkg/apis v1.141.0
 	github.com/go-acme/lego/v4 v4.35.1
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.10.1
@@ -26,12 +26,12 @@ require (
 	golang.org/x/tools v0.44.0
 	istio.io/api v1.29.1
 	istio.io/client-go v1.29.1
-	k8s.io/api v0.35.3
-	k8s.io/apiextensions-apiserver v0.35.3
-	k8s.io/apimachinery v0.35.3
-	k8s.io/client-go v0.35.3
-	k8s.io/code-generator v0.35.3
-	k8s.io/component-base v0.35.3
+	k8s.io/api v0.35.4
+	k8s.io/apiextensions-apiserver v0.35.4
+	k8s.io/apimachinery v0.35.4
+	k8s.io/client-go v0.35.4
+	k8s.io/code-generator v0.35.4
+	k8s.io/component-base v0.35.4
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
