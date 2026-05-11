@@ -10,7 +10,6 @@ require (
 	github.com/gardener/gardener v1.142.0
 	github.com/gardener/gardener/pkg/apis v1.142.0
 	github.com/go-acme/lego/v4 v4.35.2
-	github.com/go-acme/lego/v5 v5.0.0
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.10.1
 	github.com/miekg/dns v1.1.72
