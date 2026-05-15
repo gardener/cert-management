@@ -26,7 +26,7 @@ import (
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v5/certificate"
 	corev1 "k8s.io/api/core/v1"
 	apierrrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -293,6 +293,8 @@ func (r *certReconciler) isOrphanedPendingCertificate(cert *api.Certificate) boo
 }
 
 func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) reconcile.Status {
+	ctx := context.Background()
+
 	r.support.AddCertificate(cert)
 
 	if r.challengePending(cert) {
@@ -344,7 +346,7 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 				if status := r.updateNotAfterAnnotation(logctx, obj, x509cert.NotAfter); status != nil {
 					return *status
 				}
-				return r.checkForRenewAndSucceeded(logctx, obj, secret)
+				return r.checkForRenewAndSucceeded(ctx, logctx, obj, secret)
 			}
 
 			// corner case: existing secret but no stored hash, check if renewal is overdue
@@ -358,7 +360,8 @@ func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.O
 		remainingSeconds := r.lastPendingRateLimitingSeconds(cert.Status.LastPendingTimestamp)
 		return reconcile.Delay(logctx, fmt.Errorf("waiting for end of pending rate limiting in %d seconds", remainingSeconds))
 	}
-	return r.obtainCertificateAndPending(logctx, obj, false)
+
+	return r.obtainCertificateAndPending(ctx, logctx, obj, false)
 }
 
 func (r *certReconciler) addEvent(obj resources.Object, status reconcile.Status, msg *string) {
@@ -456,7 +459,7 @@ func (r *certReconciler) challengePending(crt *api.Certificate) bool {
 	return r.pendingRequests.Contains(client.ObjectKeyFromObject(crt))
 }
 
-func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, obj resources.Object, renew bool) reconcile.Status {
+func (r *certReconciler) obtainCertificateAndPending(ctx context.Context, logctx logger.LogContext, obj resources.Object, renew bool) reconcile.Status {
 	cert := obj.Data().(*api.Certificate)
 	logctx.Infof("obtain certificate")
 
@@ -470,13 +473,13 @@ func (r *certReconciler) obtainCertificateAndPending(logctx logger.LogContext, o
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("invalid issuer spec: either ACME, CA or selfSigned can be set"))
 	}
 	if issuer.Spec.ACME != nil {
-		return r.obtainCertificateAndPendingACME(logctx, obj, renew, cert, issuerKey, issuer)
+		return r.obtainCertificateAndPendingACME(ctx, logctx, obj, renew, cert, issuerKey, issuer)
 	}
 	if issuer.Spec.CA != nil {
-		return r.obtainCertificateCA(logctx, obj, renew, cert, issuerKey, issuer)
+		return r.obtainCertificateCA(ctx, logctx, obj, renew, cert, issuerKey, issuer)
 	}
 	if issuer.Spec.SelfSigned != nil {
-		return r.obtainCertificateSelfSigned(logctx, obj, renew, cert, issuerKey)
+		return r.obtainCertificateSelfSigned(ctx, logctx, obj, renew, cert, issuerKey)
 	}
 	return r.failed(logctx, obj, api.StateError, fmt.Errorf("incomplete issuer spec (ACME or CA section must be provided)"))
 }
@@ -490,7 +493,7 @@ func (e *notAcceptedError) Error() string {
 	return e.message
 }
 
-func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContext, obj resources.Object,
+func (r *certReconciler) obtainCertificateAndPendingACME(ctx context.Context, logctx logger.LogContext, obj resources.Object,
 	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
 	reguser, err := r.support.RestoreRegUser(issuerKey, issuer)
 	if err != nil {
@@ -612,7 +615,7 @@ func (r *certReconciler) obtainCertificateAndPendingACME(logctx logger.LogContex
 		PreflightCheck:                 preflightCheck,
 	}
 
-	err = r.obtainer.Obtain(input)
+	err = r.obtainer.Obtain(ctx, input)
 	if err != nil {
 		var concurrentObtainError *legobridge.ConcurrentObtainError
 		var notAcceptedError *notAcceptedError
@@ -664,7 +667,7 @@ func (r *certReconciler) restoreCA(issuerKey utils.IssuerKey, issuer *api.Issuer
 	return CAKeyPair, nil
 }
 
-func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, obj resources.Object,
+func (r *certReconciler) obtainCertificateSelfSigned(ctx context.Context, logctx logger.LogContext, obj resources.Object,
 	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey) reconcile.Status {
 	if cert.Spec.IsCA == nil || !*cert.Spec.IsCA {
 		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("self signed certificates must set 'spec.isCA: true'"))
@@ -741,7 +744,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 		CSR:            cert.Spec.CSR,
 	}
 
-	err = r.obtainer.Obtain(input)
+	err = r.obtainer.Obtain(ctx, input)
 	if err != nil {
 		return r.failed(logctx, obj, api.StateError, fmt.Errorf("obtaining self signed certificate failed: %w", err))
 	}
@@ -751,7 +754,7 @@ func (r *certReconciler) obtainCertificateSelfSigned(logctx logger.LogContext, o
 	return r.pending(logctx, obj, msg)
 }
 
-func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resources.Object,
+func (r *certReconciler) obtainCertificateCA(ctx context.Context, logctx logger.LogContext, obj resources.Object,
 	renew bool, cert *api.Certificate, issuerKey utils.IssuerKey, issuer *api.Issuer) reconcile.Status {
 	CAKeyPair, err := r.restoreCA(issuerKey, issuer)
 	if err != nil {
@@ -819,7 +822,7 @@ func (r *certReconciler) obtainCertificateCA(logctx logger.LogContext, obj resou
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, EmailAddresses: cert.Spec.EmailAddresses, IPAddresses: ipAddresses, URIs: uris, CSR: cert.Spec.CSR,
 		Callback: callback, Renew: renew, Duration: duration, KeySpec: keySpec, IsCA: ptr.Deref(cert.Spec.IsCA, false)}
 
-	err = r.obtainer.Obtain(input)
+	err = r.obtainer.Obtain(ctx, input)
 	if err != nil {
 		var concurrentObtainError *legobridge.ConcurrentObtainError
 		switch {
@@ -926,7 +929,7 @@ func (r *certReconciler) updateSecretLabels(obj resources.Object, secret *corev1
 	return nil
 }
 
-func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj resources.Object, secret *corev1.Secret) reconcile.Status {
+func (r *certReconciler) checkForRenewAndSucceeded(ctx context.Context, logctx logger.LogContext, obj resources.Object, secret *corev1.Secret) reconcile.Status {
 	crt := obj.Data().(*api.Certificate)
 
 	if (crt.Spec.Renew != nil && *crt.Spec.Renew) || crt.Spec.EnsureRenewedAfter != nil {
@@ -964,7 +967,7 @@ func (r *certReconciler) checkForRenewAndSucceeded(logctx logger.LogContext, obj
 		}
 
 		logctx.Infof("start obtaining certificate")
-		return r.obtainCertificateAndPending(logctx, obj, true)
+		return r.obtainCertificateAndPending(ctx, logctx, obj, true)
 	}
 	if revoked {
 		return r.revoked(logctx, obj)

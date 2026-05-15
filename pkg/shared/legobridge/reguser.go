@@ -7,6 +7,7 @@
 package legobridge
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -15,8 +16,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-acme/lego/v4/lego"
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/acme"
+	"github.com/go-acme/lego/v5/lego"
+	"github.com/go-acme/lego/v5/registration"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gardener/cert-management/pkg/shared"
@@ -34,10 +36,10 @@ const (
 
 // RegistrationUser contains the data of a registration user.
 type RegistrationUser struct {
-	email        string
-	caDirURL     string
-	registration *registration.Resource
-	key          crypto.PrivateKey
+	email           string
+	caDirURL        string
+	extendedAccount *acme.ExtendedAccount
+	key             crypto.Signer
 
 	eabKeyID   string
 	eabHmacKey string
@@ -48,13 +50,13 @@ func (u *RegistrationUser) GetEmail() string {
 	return u.email
 }
 
-// GetRegistration returns the registration resource.
-func (u *RegistrationUser) GetRegistration() *registration.Resource {
-	return u.registration
+// GetRegistration returns the extended account.
+func (u *RegistrationUser) GetRegistration() *acme.ExtendedAccount {
+	return u.extendedAccount
 }
 
 // GetPrivateKey returns the private key of the registration user.
-func (u *RegistrationUser) GetPrivateKey() crypto.PrivateKey {
+func (u *RegistrationUser) GetPrivateKey() crypto.Signer {
 	return u.key
 }
 
@@ -93,9 +95,9 @@ func NewRegistrationUserFromEmail(issuerKey shared.IssuerKeyItf,
 }
 
 // ExtractOrGeneratePrivateKey extracts the private key from the secret or generates a new one.
-func ExtractOrGeneratePrivateKey(secretData map[string][]byte) (crypto.PrivateKey, error) {
+func ExtractOrGeneratePrivateKey(secretData map[string][]byte) (crypto.Signer, error) {
 	privkeyData, ok := secretData[KeyPrivateKey]
-	var privateKey crypto.PrivateKey
+	var privateKey crypto.Signer
 	var err error
 	if ok {
 		privateKey, err = BytesToPrivateKey(privkeyData)
@@ -137,22 +139,23 @@ func ValidatePrivateKeySecretDataKeys(secretData map[string][]byte) error {
 
 // NewRegistrationUserFromEmailAndPrivateKey requests a user registration.
 func NewRegistrationUserFromEmailAndPrivateKey(issuerKey shared.IssuerKeyItf,
-	email string, caDirURL string, privateKey crypto.PrivateKey, eabKid, eabHmacKey string,
+	email string, caDirURL string, privateKey crypto.Signer, eabKid, eabHmacKey string,
 ) (*RegistrationUser, error) {
 	user := &RegistrationUser{email: email, key: privateKey, caDirURL: caDirURL, eabKeyID: eabKid, eabHmacKey: eabHmacKey}
 	config := user.NewConfig(caDirURL)
 
+	ctx := context.Background()
 	// A client facilitates communication with the CA server.
 	client, err := lego.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
-	var reg *registration.Resource
+	var reg *acme.ExtendedAccount
 	// New users will need to register
 	if eabKid == "" {
-		reg, err = client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+		reg, err = client.Registration.Register(ctx, registration.RegisterOptions{TermsOfServiceAgreed: true})
 	} else {
-		reg, err = client.Registration.RegisterWithExternalAccountBinding(registration.RegisterEABOptions{
+		reg, err = client.Registration.RegisterWithExternalAccountBinding(ctx, registration.RegisterEABOptions{
 			TermsOfServiceAgreed: true,
 			Kid:                  user.eabKeyID,
 			HmacEncoded:          user.eabHmacKey,
@@ -161,9 +164,9 @@ func NewRegistrationUserFromEmailAndPrivateKey(issuerKey shared.IssuerKeyItf,
 	if err != nil {
 		return user, err
 	}
-	user.registration = reg
+	user.extendedAccount = reg
 
-	metrics.AddACMEAccountRegistration(issuerKey, reg.URI, email)
+	metrics.AddACMEAccountRegistration(issuerKey, reg.Location, email)
 
 	return user, nil
 }
@@ -179,7 +182,7 @@ func (u *RegistrationUser) ToSecretData() (map[string][]byte, error) {
 
 // RawRegistration returns the registration as a byte array.
 func (u *RegistrationUser) RawRegistration() ([]byte, error) {
-	reg, err := json.Marshal(u.registration)
+	reg, err := json.Marshal(u.extendedAccount)
 	if err != nil {
 		return nil, fmt.Errorf("encoding registration failed: %w", err)
 	}
@@ -199,17 +202,17 @@ func RegistrationUserFromSecretData(issuerKey shared.IssuerKeyItf,
 		return nil, err
 	}
 
-	reg := &registration.Resource{}
+	reg := &acme.ExtendedAccount{}
 	err = json.Unmarshal(registrationRaw, reg)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling registration json failed: %w", err)
 	}
-	if reg.URI == "" {
-		return nil, fmt.Errorf("unmarshalling registration with unexpected empty URI")
+	if reg.Location == "" {
+		return nil, fmt.Errorf("unmarshalling registration with unexpected empty account location URL")
 	}
-	metrics.AddACMEAccountRegistration(issuerKey, reg.URI, email)
+	metrics.AddACMEAccountRegistration(issuerKey, reg.Location, email)
 	return &RegistrationUser{
-		email: email, registration: reg, caDirURL: caDirURL, key: privateKey,
+		email: email, extendedAccount: reg, caDirURL: caDirURL, key: privateKey,
 		eabKeyID: eabKeyID, eabHmacKey: eabHmacKey,
 	}, nil
 }

@@ -8,6 +8,7 @@ package revocation
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"math/big"
 	"strings"
@@ -452,7 +453,8 @@ func (r *revokeReconciler) revokeOldCertificateSecrets(logctx logger.LogContext,
 		tlscrt := secret.Data[corev1.TLSCertKey]
 
 		if _, ok := resources.GetAnnotation(secret, certificate.AnnotationRevoked); !ok {
-			err = legobridge.RevokeCertificate(user, tlscrt)
+			ctx := context.Background()
+			err = legobridge.RevokeCertificate(ctx, user, tlscrt)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("certificate revocation failed for backup certificate secret %s: %w", secret.Name, err))
 				failedSecrets = append(failedSecrets, ref)

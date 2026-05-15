@@ -7,11 +7,13 @@
 package shared
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
-	"github.com/go-acme/lego/v4/challenge/dns01"
+	"github.com/go-acme/lego/v5/challenge/dns01"
 	"github.com/miekg/dns"
 )
 
@@ -31,7 +33,7 @@ func PreparePrecheckNameservers(nameservers []string) []string {
 	if len(nameservers) == 0 || len(nameservers) == 1 && len(nameservers[0]) == 0 {
 		return getNameservers(defaultPath, defaultNameservers)
 	}
-	return dns01.ParseNameservers(nameservers)
+	return parseNameservers(nameservers)
 }
 
 // getNameservers attempts to get systems nameservers before falling back to the defaults
@@ -41,13 +43,13 @@ func getNameservers(path string, defaults []string) []string {
 		return defaults
 	}
 
-	return dns01.ParseNameservers(config.Servers)
+	return parseNameservers(config.Servers)
 }
 
 // CreateWrapPreCheckOption creates lego DNS ChallengeOption for custom Precheck function,
 // checking the DNS propagation of the DNS challenge TXT record.
 func CreateWrapPreCheckOption(nameservers []string) dns01.ChallengeOption {
-	return dns01.WrapPreCheck(func(_, fqdn, value string, _ dns01.PreCheckFunc) (b bool, err error) {
+	return dns01.WrapPreCheck(func(_ context.Context, _, fqdn, value string, _ dns01.PreCheckFunc) (b bool, err error) {
 		return CheckDNSPropagation(nameservers, fqdn, value)
 	})
 }
@@ -55,7 +57,7 @@ func CreateWrapPreCheckOption(nameservers []string) dns01.ChallengeOption {
 // NoPropagationCheckOption creates lego DNS ChallengeOption for custom Precheck function,
 // performing no DNS propagation check of the DNS challenge TXT record at all.
 func NoPropagationCheckOption() dns01.ChallengeOption {
-	return dns01.WrapPreCheck(func(_, _, _ string, _ dns01.PreCheckFunc) (b bool, err error) {
+	return dns01.WrapPreCheck(func(_ context.Context, _, _, _ string, _ dns01.PreCheckFunc) (b bool, err error) {
 		return true, nil
 	})
 }
@@ -193,4 +195,19 @@ func MatchesWildcardSingleSubdomain(host, h string) bool {
 // MatchesWildcardAnySubdomain checks whether 'h' is a wildcard pattern (*.X) that matches 'host' with any level of subdomains.
 func MatchesWildcardAnySubdomain(host, h string) bool {
 	return strings.HasPrefix(h, "*.") && strings.HasSuffix(host, h[1:])
+}
+
+// parseNameservers ensures that all nameservers have a port number, and adds the default DNS port 53 if not.
+// This function replicates functionality that was removed from lego v5.
+func parseNameservers(servers []string) []string {
+	var resolvers []string
+	for _, resolver := range servers {
+		// ensure all servers have a port number
+		if _, _, err := net.SplitHostPort(resolver); err != nil {
+			resolvers = append(resolvers, net.JoinHostPort(resolver, "53"))
+		} else {
+			resolvers = append(resolvers, resolver)
+		}
+	}
+	return resolvers
 }

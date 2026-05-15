@@ -20,7 +20,7 @@ import (
 // TLSKeyPair contains a certificate and a private key.
 type TLSKeyPair struct {
 	Cert x509.Certificate
-	Key  crypto.PrivateKey
+	Key  crypto.Signer
 }
 
 // CAKeyPairFromSecretData restores a TLSKeyPair from a secret data map.
