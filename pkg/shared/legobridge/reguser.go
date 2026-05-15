@@ -189,8 +189,17 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 	return reg, nil
 }
 
+// RegistrationUserFactoryFunc is a function type for creating a registration user from email and private key.
+type RegistrationUserFactoryFunc func(issuerKey shared.IssuerKeyItf, email, caDirURL string, privateKey crypto.Signer, eabKeyID, eabHmacKey string) (*RegistrationUser, error)
+
 // RegistrationUserFromSecretData restores a RegistrationUser from a secret data map.
 func RegistrationUserFromSecretData(logInfoFunc func(msg string), issuerKey shared.IssuerKeyItf,
+	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string,
+) (*RegistrationUser, []byte, error) {
+	return registrationUserFromSecretDataWithFactory(logInfoFunc, NewRegistrationUserFromEmailAndPrivateKey, issuerKey, email, caDirURL, registrationRaw, data, eabKeyID, eabHmacKey)
+}
+
+func registrationUserFromSecretDataWithFactory(logInfoFunc func(msg string), factoryFunc RegistrationUserFactoryFunc, issuerKey shared.IssuerKeyItf,
 	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string,
 ) (*RegistrationUser, []byte, error) {
 	privkeyBytes, ok := data[KeyPrivateKey]
@@ -213,7 +222,7 @@ func RegistrationUserFromSecretData(logInfoFunc func(msg string), issuerKey shar
 		if logInfoFunc != nil {
 			logInfoFunc("Detected v4 registration format, fetching account info from ACME server")
 		}
-		user, err := NewRegistrationUserFromEmailAndPrivateKey(issuerKey, email, caDirURL, privateKey, eabKeyID, eabHmacKey)
+		user, err := factoryFunc(issuerKey, email, caDirURL, privateKey, eabKeyID, eabHmacKey)
 		if err != nil {
 			return nil, nil, fmt.Errorf("migrating v4 registration to v5 failed: %w", err)
 		}
