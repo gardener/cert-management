@@ -832,7 +832,7 @@ func (s *Support) RestoreRegUser(issuerKey utils.IssuerKey, issuer *api.Issuer) 
 		return nil, err
 	}
 
-	reguser, err := legobridge.RegistrationUserFromSecretData(issuerKey, issuer.Spec.ACME.Email, issuer.Spec.ACME.Server,
+	reguser, _, err := legobridge.RegistrationUserFromSecretData(nil, issuerKey, issuer.Spec.ACME.Email, issuer.Spec.ACME.Server,
 		issuer.Status.ACME.Raw, issuerSecret.Data, eabKeyID, eabHmacKey)
 	if err != nil {
 		return nil, fmt.Errorf("restoring registration issuer from issuer secret failed: %w", err)

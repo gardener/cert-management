@@ -99,7 +99,9 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 				return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("registration marshalling failed: %w", err))
 			}
 		}
-		user, err := legobridge.RegistrationUserFromSecretData(issuerKey, acme.Email, acme.Server, rawReg,
+		logInfoFunc := func(msg string) { log.Info(msg) }
+		// rawReg may be updated if v4 migration occurs
+		user, rawReg, err := legobridge.RegistrationUserFromSecretData(logInfoFunc, issuerKey, acme.Email, acme.Server, rawReg,
 			secret.Data, eabKeyID, eabHmacKey)
 		if err != nil {
 			return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("extracting registration user from secret failed: %w", err))

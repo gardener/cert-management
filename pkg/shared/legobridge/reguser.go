@@ -190,29 +190,43 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 }
 
 // RegistrationUserFromSecretData restores a RegistrationUser from a secret data map.
-func RegistrationUserFromSecretData(issuerKey shared.IssuerKeyItf,
+func RegistrationUserFromSecretData(logInfoFunc func(msg string), issuerKey shared.IssuerKeyItf,
 	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string,
-) (*RegistrationUser, error) {
+) (*RegistrationUser, []byte, error) {
 	privkeyBytes, ok := data[KeyPrivateKey]
 	if !ok {
-		return nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
+		return nil, nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
 	}
 	privateKey, err := BytesToPrivateKey(privkeyBytes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	reg := &acme.ExtendedAccount{}
 	err = json.Unmarshal(registrationRaw, reg)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshalling registration json failed: %w", err)
+		return nil, nil, fmt.Errorf("unmarshalling registration json failed: %w", err)
 	}
 	if reg.Location == "" {
-		return nil, fmt.Errorf("unmarshalling registration with unexpected empty account location URL")
+		// invalid status, e.g. issuer created with acme-lego <= v4
+		// get account info from ACME server
+		if logInfoFunc != nil {
+			logInfoFunc("Detected v4 registration format, fetching account info from ACME server")
+		}
+		user, err := NewRegistrationUserFromEmailAndPrivateKey(issuerKey, email, caDirURL, privateKey, eabKeyID, eabHmacKey)
+		if err != nil {
+			return nil, nil, fmt.Errorf("migrating v4 registration to v5 failed: %w", err)
+		}
+		raw, err := user.RawRegistration()
+		if err != nil {
+			return nil, nil, fmt.Errorf("registration marshalling failed: %w", err)
+		}
+		return user, raw, nil
 	}
+
 	metrics.AddACMEAccountRegistration(issuerKey, reg.Location, email)
 	return &RegistrationUser{
 		email: email, extendedAccount: reg, caDirURL: caDirURL, key: privateKey,
 		eabKeyID: eabKeyID, eabHmacKey: eabHmacKey,
-	}, nil
+	}, registrationRaw, nil
 }
