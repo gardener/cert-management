@@ -189,53 +189,107 @@ func (u *RegistrationUser) RawRegistration() ([]byte, error) {
 	return reg, nil
 }
 
-// RegistrationUserFactoryFunc is a function type for creating a registration user from email and private key.
-type RegistrationUserFactoryFunc func(issuerKey shared.IssuerKeyItf, email, caDirURL string, privateKey crypto.Signer, eabKeyID, eabHmacKey string) (*RegistrationUser, error)
+// RegistrationConfig contains all parameters needed to restore a registration user.
+type RegistrationConfig struct {
+	// Required fields
+	IssuerKey       shared.IssuerKeyItf
+	Email           string
+	CADirURL        string
+	RegistrationRaw []byte
+	SecretData      map[string][]byte
 
-// RegistrationUserFromSecretData restores a RegistrationUser from a secret data map.
-func RegistrationUserFromSecretData(logInfoFunc func(msg string), issuerKey shared.IssuerKeyItf,
-	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string,
-) (*RegistrationUser, []byte, error) {
-	return registrationUserFromSecretDataWithFactory(logInfoFunc, NewRegistrationUserFromEmailAndPrivateKey, issuerKey, email, caDirURL, registrationRaw, data, eabKeyID, eabHmacKey)
+	// Optional EAB (External Account Binding) credentials
+	EABKeyID   string
+	EABHmacKey string
+
+	AllowV4ToV5Migration bool // If true, allows automatic migration from v4 to v5 registration format
 }
 
-func registrationUserFromSecretDataWithFactory(logInfoFunc func(msg string), factoryFunc RegistrationUserFactoryFunc, issuerKey shared.IssuerKeyItf,
-	email, caDirURL string, registrationRaw []byte, data map[string][]byte, eabKeyID, eabHmacKey string,
-) (*RegistrationUser, []byte, error) {
-	privkeyBytes, ok := data[KeyPrivateKey]
+// RegistrationResult contains the restored user and migration metadata.
+type RegistrationResult struct {
+	User        *RegistrationUser
+	UpdatedRaw  []byte // Always returned, may differ from input if migrated
+	WasMigrated bool   // True if v4->v5 migration occurred
+}
+
+// RegistrationUserFactoryFunc is a function type for creating a registration user from email and private key.
+type RegistrationUserFactoryFunc func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error)
+
+// RegistrationUserFromConfig restores a RegistrationUser using configuration struct.
+// It supports automatic v4-to-v5 migration and signals when migration occurs via WasMigrated field.
+func RegistrationUserFromConfig(cfg *RegistrationConfig) (*RegistrationResult, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("configuration cannot be nil")
+	}
+	// Validate required fields
+	if cfg.IssuerKey == nil {
+		return nil, fmt.Errorf("required field IssuerKey is missing")
+	}
+	if cfg.Email == "" {
+		return nil, fmt.Errorf("required field Email is missing")
+	}
+	if cfg.CADirURL == "" {
+		return nil, fmt.Errorf("required field CADirURL is missing")
+	}
+
+	return registrationUserFromConfigWithFactory(cfg, defaultRegistrationUserFactory)
+}
+
+func defaultRegistrationUserFactory(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
+	return NewRegistrationUserFromEmailAndPrivateKey(cfg.IssuerKey, cfg.Email, cfg.CADirURL, privateKey, cfg.EABKeyID, cfg.EABHmacKey)
+}
+
+func registrationUserFromConfigWithFactory(cfg *RegistrationConfig, factoryFunc RegistrationUserFactoryFunc) (*RegistrationResult, error) {
+	privkeyBytes, ok := cfg.SecretData[KeyPrivateKey]
 	if !ok {
-		return nil, nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
+		return nil, fmt.Errorf("`%s` data not found in secret", KeyPrivateKey)
 	}
 	privateKey, err := BytesToPrivateKey(privkeyBytes)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	reg := &acme.ExtendedAccount{}
-	err = json.Unmarshal(registrationRaw, reg)
+	err = json.Unmarshal(cfg.RegistrationRaw, reg)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unmarshalling registration json failed: %w", err)
-	}
-	if reg.Location == "" {
-		// invalid status, e.g. issuer created with acme-lego <= v4
-		// get account info from ACME server
-		if logInfoFunc != nil {
-			logInfoFunc("Detected v4 registration format, fetching account info from ACME server")
-		}
-		user, err := factoryFunc(issuerKey, email, caDirURL, privateKey, eabKeyID, eabHmacKey)
-		if err != nil {
-			return nil, nil, fmt.Errorf("migrating v4 registration to v5 failed: %w", err)
-		}
-		raw, err := user.RawRegistration()
-		if err != nil {
-			return nil, nil, fmt.Errorf("registration marshalling failed: %w", err)
-		}
-		return user, raw, nil
+		return nil, fmt.Errorf("unmarshalling registration json failed: %w", err)
 	}
 
-	metrics.AddACMEAccountRegistration(issuerKey, reg.Location, email)
-	return &RegistrationUser{
-		email: email, extendedAccount: reg, caDirURL: caDirURL, key: privateKey,
-		eabKeyID: eabKeyID, eabHmacKey: eabHmacKey,
-	}, registrationRaw, nil
+	var updatedRaw []byte
+	var user *RegistrationUser
+
+	wasMigrated := false
+	if reg.Location == "" {
+		if !cfg.AllowV4ToV5Migration {
+			return nil, fmt.Errorf("missing account URL in status (maybe outdated status)")
+		}
+		// invalid status, e.g. issuer created with acme-lego <= v4
+		// get account info from ACME server (migration will be logged via WasMigrated flag)
+		user, err = factoryFunc(cfg, privateKey)
+		if err != nil {
+			return nil, fmt.Errorf("migrating v4 registration to v5 failed: %w", err)
+		}
+		updatedRaw, err = user.RawRegistration()
+		if err != nil {
+			return nil, fmt.Errorf("registration marshalling failed: %w", err)
+		}
+		wasMigrated = true
+	} else {
+		metrics.AddACMEAccountRegistration(cfg.IssuerKey, reg.Location, cfg.Email)
+		user = &RegistrationUser{
+			email:           cfg.Email,
+			extendedAccount: reg,
+			caDirURL:        cfg.CADirURL,
+			key:             privateKey,
+			eabKeyID:        cfg.EABKeyID,
+			eabHmacKey:      cfg.EABHmacKey,
+		}
+		updatedRaw = cfg.RegistrationRaw
+	}
+
+	return &RegistrationResult{
+		User:        user,
+		UpdatedRaw:  updatedRaw,
+		WasMigrated: wasMigrated,
+	}, nil
 }
