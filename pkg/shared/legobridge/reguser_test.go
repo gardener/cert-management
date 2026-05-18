@@ -28,22 +28,21 @@ type mockIssuerKey struct {
 	cluster   shared.Cluster
 }
 
-func (m *mockIssuerKey) Name() string              { return m.name }
-func (m *mockIssuerKey) Namespace() string         { return m.namespace }
-func (m *mockIssuerKey) Cluster() shared.Cluster   { return m.cluster }
-func (m *mockIssuerKey) Secondary() bool           { return m.cluster == shared.ClusterDefault }
-func (m *mockIssuerKey) String() string            { return m.namespace + "/" + m.name }
-
+func (m *mockIssuerKey) Name() string            { return m.name }
+func (m *mockIssuerKey) Namespace() string       { return m.namespace }
+func (m *mockIssuerKey) Cluster() shared.Cluster { return m.cluster }
+func (m *mockIssuerKey) Secondary() bool         { return m.cluster == shared.ClusterDefault }
+func (m *mockIssuerKey) String() string          { return m.namespace + "/" + m.name }
 
 var _ = Describe("RegistrationUser", func() {
 	var (
-		issuerKey   shared.IssuerKeyItf
-		email       string
-		caDirURL    string
-		privateKey  *ecdsa.PrivateKey
-		secretData  map[string][]byte
-		eabKeyID    string
-		eabHmacKey  string
+		issuerKey  shared.IssuerKeyItf
+		email      string
+		caDirURL   string
+		privateKey *ecdsa.PrivateKey
+		secretData map[string][]byte
+		eabKeyID   string
+		eabHmacKey string
 	)
 
 	BeforeEach(func() {
@@ -257,19 +256,19 @@ var _ = Describe("RegistrationUser", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
-				return nil, fmt.Errorf("test error")
-			}
+					return nil, fmt.Errorf("test error")
+				}
 
 				// Pass nil log function - should not panic
 				cfg := &RegistrationConfig{
-				IssuerKey:       issuerKey,
-				Email:           email,
-				CADirURL:        caDirURL,
-				RegistrationRaw: registrationRaw,
-				SecretData:      secretData,
-				EABKeyID:        eabKeyID,
-				EABHmacKey:      eabHmacKey,
-			}
+					IssuerKey:       issuerKey,
+					Email:           email,
+					CADirURL:        caDirURL,
+					RegistrationRaw: registrationRaw,
+					SecretData:      secretData,
+					EABKeyID:        eabKeyID,
+					EABHmacKey:      eabHmacKey,
+				}
 
 				_, err = registrationUserFromConfigWithFactory(cfg, mockFactory)
 

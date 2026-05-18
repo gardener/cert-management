@@ -99,13 +99,13 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 			}
 		}
 		result, err := legobridge.RegistrationUserFromConfig(&legobridge.RegistrationConfig{
-			IssuerKey:       issuerKey,
-			Email:           acme.Email,
-			CADirURL:        acme.Server,
-			RegistrationRaw: raw,
-			SecretData:      secret.Data,
-			EABKeyID:        eabKeyID,
-			EABHmacKey:      eabHmacKey,
+			IssuerKey:            issuerKey,
+			Email:                acme.Email,
+			CADirURL:             acme.Server,
+			RegistrationRaw:      raw,
+			SecretData:           secret.Data,
+			EABKeyID:             eabKeyID,
+			EABHmacKey:           eabHmacKey,
 			AllowV4ToV5Migration: true,
 		})
 		if err != nil {
