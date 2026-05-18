@@ -43,6 +43,11 @@ var _ = Describe("RegistrationUser", func() {
 		secretData map[string][]byte
 		eabKeyID   string
 		eabHmacKey string
+
+		mockFactoryNoCall = func(_ *RegistrationConfig, _ crypto.Signer) (*RegistrationUser, error) {
+			Fail("factory should not be called")
+			return nil, nil
+		}
 	)
 
 	BeforeEach(func() {
@@ -82,13 +87,6 @@ var _ = Describe("RegistrationUser", func() {
 				registrationRaw, err := json.Marshal(validReg)
 				Expect(err).ToNot(HaveOccurred())
 
-				// Mock factory should not be called
-				factoryCalled := false
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
-					factoryCalled = true
-					return nil, fmt.Errorf("factory should not be called for v5 data")
-				}
-
 				cfg := &RegistrationConfig{
 					IssuerKey:       issuerKey,
 					Email:           email,
@@ -99,7 +97,7 @@ var _ = Describe("RegistrationUser", func() {
 					EABHmacKey:      eabHmacKey,
 				}
 
-				result, err := registrationUserFromConfigWithFactory(cfg, mockFactory)
+				result, err := registrationUserFromConfigWithFactory(cfg, mockFactoryNoCall)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result).ToNot(BeNil())
@@ -110,9 +108,6 @@ var _ = Describe("RegistrationUser", func() {
 
 				// Raw data should not be updated (no migration occurred)
 				Expect(result.UpdatedRaw).To(Equal(registrationRaw))
-
-				// Factory should not have been called
-				Expect(factoryCalled).To(BeFalse())
 			})
 		})
 
@@ -193,7 +188,7 @@ var _ = Describe("RegistrationUser", func() {
 				registrationRaw, err := json.Marshal(v4Reg)
 				Expect(err).ToNot(HaveOccurred())
 				// Mock factory that returns an error
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
+				mockFactory := func(_ *RegistrationConfig, _ crypto.Signer) (*RegistrationUser, error) {
 					return nil, fmt.Errorf("ACME server unreachable")
 				}
 
@@ -226,7 +221,7 @@ var _ = Describe("RegistrationUser", func() {
 				registrationRaw, err := json.Marshal(v4Reg)
 				Expect(err).ToNot(HaveOccurred())
 
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
+				mockFactory := func(_ *RegistrationConfig, _ crypto.Signer) (*RegistrationUser, error) {
 					return nil, fmt.Errorf("test error")
 				}
 
@@ -255,7 +250,7 @@ var _ = Describe("RegistrationUser", func() {
 				registrationRaw, err := json.Marshal(v4Reg)
 				Expect(err).ToNot(HaveOccurred())
 
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
+				mockFactory := func(_ *RegistrationConfig, _ crypto.Signer) (*RegistrationUser, error) {
 					return nil, fmt.Errorf("test error")
 				}
 
@@ -280,11 +275,6 @@ var _ = Describe("RegistrationUser", func() {
 			It("should return error for invalid JSON", func() {
 				invalidJSON := []byte(`{"status": "valid", invalid json}`)
 
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
-					Fail("factory should not be called")
-					return nil, nil
-				}
-
 				cfg := &RegistrationConfig{
 					IssuerKey:       issuerKey,
 					Email:           email,
@@ -295,7 +285,7 @@ var _ = Describe("RegistrationUser", func() {
 					EABHmacKey:      eabHmacKey,
 				}
 
-				result, err := registrationUserFromConfigWithFactory(cfg, mockFactory)
+				result, err := registrationUserFromConfigWithFactory(cfg, mockFactoryNoCall)
 
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("unmarshalling registration json failed"))
@@ -315,11 +305,6 @@ var _ = Describe("RegistrationUser", func() {
 				// Empty secret data (no private key)
 				emptySecretData := map[string][]byte{}
 
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
-					Fail("factory should not be called")
-					return nil, nil
-				}
-
 				cfg := &RegistrationConfig{
 					IssuerKey:       issuerKey,
 					Email:           email,
@@ -330,7 +315,7 @@ var _ = Describe("RegistrationUser", func() {
 					EABHmacKey:      eabHmacKey,
 				}
 
-				result, err := registrationUserFromConfigWithFactory(cfg, mockFactory)
+				result, err := registrationUserFromConfigWithFactory(cfg, mockFactoryNoCall)
 
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("`privateKey` data not found in secret"))
@@ -352,11 +337,6 @@ var _ = Describe("RegistrationUser", func() {
 					KeyPrivateKey: []byte("not a valid private key"),
 				}
 
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
-					Fail("factory should not be called")
-					return nil, nil
-				}
-
 				cfg := &RegistrationConfig{
 					IssuerKey:       issuerKey,
 					Email:           email,
@@ -367,7 +347,7 @@ var _ = Describe("RegistrationUser", func() {
 					EABHmacKey:      eabHmacKey,
 				}
 
-				result, err := registrationUserFromConfigWithFactory(cfg, mockFactory)
+				result, err := registrationUserFromConfigWithFactory(cfg, mockFactoryNoCall)
 
 				Expect(err).To(HaveOccurred())
 				Expect(result).To(BeNil())
@@ -388,11 +368,6 @@ var _ = Describe("RegistrationUser", func() {
 				registrationRaw, err := json.Marshal(validReg)
 				Expect(err).ToNot(HaveOccurred())
 
-				mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
-					Fail("factory should not be called")
-					return nil, nil
-				}
-
 				cfg := &RegistrationConfig{
 					IssuerKey:       issuerKey,
 					Email:           email,
@@ -403,7 +378,7 @@ var _ = Describe("RegistrationUser", func() {
 					EABHmacKey:      eabHmacKey,
 				}
 
-				result, err := registrationUserFromConfigWithFactory(cfg, mockFactory)
+				result, err := registrationUserFromConfigWithFactory(cfg, mockFactoryNoCall)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(result).ToNot(BeNil())
@@ -802,7 +777,7 @@ var _ = Describe("RegistrationUser", func() {
 			registrationRaw, err := json.Marshal(v4Reg)
 			Expect(err).ToNot(HaveOccurred())
 
-			mockFactory := func(cfg *RegistrationConfig, privateKey crypto.Signer) (*RegistrationUser, error) {
+			mockFactory := func(_ *RegistrationConfig, _ crypto.Signer) (*RegistrationUser, error) {
 				return nil, fmt.Errorf("ACME server unreachable")
 			}
 
