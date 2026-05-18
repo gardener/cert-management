@@ -19,6 +19,7 @@ import (
 
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
+	"github.com/gardener/cert-management/pkg/controller/source/gateways/common"
 	"github.com/gardener/cert-management/pkg/controller/source/ingress"
 	"github.com/gardener/cert-management/pkg/controller/source/service"
 )
@@ -116,20 +117,33 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 				return nil, err
 			}
 			for _, item := range array {
-				item.Hosts = s.appendHostsFromVirtualServices(virtualServices, item.Hosts)
+				// Snapshot the server's own hosts before appendHostsFromVirtualServices mutates item.Hosts,
+				// so wildcard detection sees the original server config, not VS-derived additions.
+				serverHosts := append([]string(nil), item.Hosts...)
+				item.Hosts = s.appendHostsFromVirtualServices(virtualServices, item.Hosts, serverHosts)
 			}
 		}
 		return array, nil
 	})
 }
 
-func (s *gatewaySource) appendHostsFromVirtualServices(virtualServices []resources.ObjectData, hosts []string) []string {
+func (s *gatewaySource) appendHostsFromVirtualServices(virtualServices []resources.ObjectData, hosts []string, serverHosts []string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host {
+			if h == host || common.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
-			if strings.HasPrefix(h, "*.") && strings.HasSuffix(host, h[1:]) && !strings.Contains(host[:len(host)-len(h)+1], ".") {
+		}
+		if len(serverHosts) > 0 {
+			found := false
+			for _, sh := range serverHosts {
+				if common.MatchesWildcardAnySubdomain(host, sh) || common.MatchesWildcardAnySubdomain(sh, host) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				// foreign host for another server, do not add
 				return hosts
 			}
 		}

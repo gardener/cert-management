@@ -6,7 +6,6 @@ package gatewayapi
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller"
 	"github.com/gardener/controller-manager-library/pkg/logger"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
+	"github.com/gardener/cert-management/pkg/controller/source/gateways/common"
 )
 
 type httpRouteLister interface {
@@ -109,7 +109,11 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 				return nil, err
 			}
 			for _, item := range array {
-				item.Hosts = s.appendHostsFromHTTPRoutes(routes, item.Hosts)
+				var listenerHost string
+				if len(item.Hosts) > 0 {
+					listenerHost = item.Hosts[0]
+				}
+				item.Hosts = s.appendHostsFromHTTPRoutes(routes, item.Hosts, listenerHost)
 			}
 		}
 
@@ -117,13 +121,16 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 	})
 }
 
-func (s *gatewaySource) appendHostsFromHTTPRoutes(routes []resources.ObjectData, hosts []string) []string {
+func (s *gatewaySource) appendHostsFromHTTPRoutes(routes []resources.ObjectData, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host {
+			if h == host || common.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
-			if strings.HasPrefix(h, "*.") && strings.HasSuffix(host, h[1:]) && !strings.Contains(host[:len(host)-len(h)+1], ".") {
+		}
+		if listenerHost != "" {
+			if !common.MatchesWildcardAnySubdomain(host, listenerHost) && !common.MatchesWildcardAnySubdomain(listenerHost, host) {
+				// foreign host for another listener, do not add
 				return hosts
 			}
 		}
