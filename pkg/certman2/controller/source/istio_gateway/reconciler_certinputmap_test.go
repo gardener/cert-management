@@ -68,6 +68,25 @@ var _ = Describe("Reconciler", func() {
 			}
 			return []*istionetworkingv1.VirtualService{vsvc1, vsvc2, vsvc3}
 		}
+
+		// mixedDomainVirtualServices returns virtual services attached to g1 with hostnames from two distinct domains.
+		mixedDomainVirtualServices = func() []*istionetworkingv1.VirtualService {
+			vsvcExample := &istionetworkingv1.VirtualService{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "vsvc-example"},
+				Spec: apinetworkingv1.VirtualService{
+					Gateways: []string{"test/g1"},
+					Hosts:    []string{"foo.example.com", "sub.bar.example.com"},
+				},
+			}
+			vsvcLegacy := &istionetworkingv1.VirtualService{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "vsvc-legacy"},
+				Spec: apinetworkingv1.VirtualService{
+					Gateways: []string{"test/g1"},
+					Hosts:    []string{"app.legacy.io"},
+				},
+			}
+			return []*istionetworkingv1.VirtualService{vsvcExample, vsvcLegacy}
+		}
 	)
 
 	BeforeEach(func() {
@@ -153,7 +172,7 @@ var _ = Describe("Reconciler", func() {
 					},
 				},
 			},
-		}, allVirtualServices(), singleCertInput("mysecret", "a.example.com", "foo.example.com", "bar.example.com")),
+		}, allVirtualServices(), singleCertInput("mysecret", "a.example.com")),
 		Entry("assigned gateway to service with hostname", &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
 			Spec: apinetworkingv1.Gateway{
@@ -273,6 +292,44 @@ var _ = Describe("Reconciler", func() {
 				},
 			},
 		}, allVirtualServices(), singleCertInput("mysecret", "foo.example.com", "bar.example.com")),
+		Entry("multiple servers with mixed-domain virtual services should not pollute SANs", &istionetworkingv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
+					{
+						Hosts: []string{"*.example.com"},
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
+							CredentialName: "cert-example",
+						},
+					},
+					{
+						Hosts: []string{"*.legacy.io"},
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
+							CredentialName: "cert-legacy",
+						},
+					},
+				},
+			},
+		}, mixedDomainVirtualServices(), toMap(
+			makeCertInput("cert-example", "*.example.com", "sub.bar.example.com"),
+			makeCertInput("cert-legacy", "*.legacy.io"),
+		)),
+		Entry("single server should not pick up hostnames from unrelated domain", &istionetworkingv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
+					{
+						Hosts: []string{"*.example.com"},
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
+							CredentialName: "cert-example",
+						},
+					},
+				},
+			},
+		}, mixedDomainVirtualServices(), singleCertInput("cert-example", "*.example.com", "sub.bar.example.com")),
 	)
 })
 

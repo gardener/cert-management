@@ -7,7 +7,6 @@ package k8s_gateway
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -97,7 +96,11 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 				return nil, err
 			}
 			for _, item := range array {
-				item.Hosts = r.appendHostsFromHTTPRoutes(routes, item.Hosts)
+				var listenerHost string
+				if len(item.Hosts) > 0 {
+					listenerHost = item.Hosts[0]
+				}
+				item.Hosts = r.appendHostsFromHTTPRoutes(routes, item.Hosts, listenerHost)
 			}
 		}
 
@@ -105,13 +108,16 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 	})
 }
 
-func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []string) []string {
+func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host {
+			if h == host || common.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
-			if strings.HasPrefix(h, "*.") && strings.HasSuffix(host, h[1:]) && !strings.Contains(host[:len(host)-len(h)+1], ".") {
+		}
+		if listenerHost != "" {
+			if !common.MatchesWildcardAnySubdomain(host, listenerHost) && !common.MatchesWildcardAnySubdomain(listenerHost, host) {
+				// foreign host for another listener, do not add
 				return hosts
 			}
 		}
