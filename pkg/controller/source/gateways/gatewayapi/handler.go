@@ -17,7 +17,7 @@ import (
 
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
-	"github.com/gardener/cert-management/pkg/controller/source/gateways/common"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 type httpRouteLister interface {
@@ -124,12 +124,12 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 func (s *gatewaySource) appendHostsFromHTTPRoutes(routes []resources.ObjectData, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host || common.MatchesWildcardSingleSubdomain(host, h) {
+			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
 		}
 		if listenerHost != "" {
-			if !common.MatchesWildcardAnySubdomain(host, listenerHost) && !common.MatchesWildcardAnySubdomain(listenerHost, host) {
+			if !shared.MatchesWildcardAnySubdomain(host, listenerHost) && !shared.MatchesWildcardAnySubdomain(listenerHost, host) {
 				// foreign host for another listener, do not add
 				return hosts
 			}

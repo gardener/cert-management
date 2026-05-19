@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func (r *Reconciler) reconcile(
@@ -108,14 +109,14 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 func (r *Reconciler) appendHostsFromVirtualServices(virtualServices []client.Object, hosts []string, serverHosts []string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host || common.MatchesWildcardSingleSubdomain(host, h) {
+			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
 		}
 		if len(serverHosts) > 0 {
 			found := false
 			for _, sh := range serverHosts {
-				if common.MatchesWildcardAnySubdomain(host, sh) || common.MatchesWildcardAnySubdomain(sh, host) {
+				if shared.MatchesWildcardAnySubdomain(host, sh) || shared.MatchesWildcardAnySubdomain(sh, host) {
 					found = true
 					break
 				}

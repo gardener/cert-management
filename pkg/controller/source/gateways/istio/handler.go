@@ -19,9 +19,9 @@ import (
 
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
-	"github.com/gardener/cert-management/pkg/controller/source/gateways/common"
 	"github.com/gardener/cert-management/pkg/controller/source/ingress"
 	"github.com/gardener/cert-management/pkg/controller/source/service"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 type resourceLister interface {
@@ -130,14 +130,14 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 func (s *gatewaySource) appendHostsFromVirtualServices(virtualServices []resources.ObjectData, hosts []string, serverHosts []string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host || common.MatchesWildcardSingleSubdomain(host, h) {
+			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
 		}
 		if len(serverHosts) > 0 {
 			found := false
 			for _, sh := range serverHosts {
-				if common.MatchesWildcardAnySubdomain(host, sh) || common.MatchesWildcardAnySubdomain(sh, host) {
+				if shared.MatchesWildcardAnySubdomain(host, sh) || shared.MatchesWildcardAnySubdomain(sh, host) {
 					found = true
 					break
 				}

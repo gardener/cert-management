@@ -19,6 +19,7 @@ import (
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func (r *Reconciler) reconcile(
@@ -111,12 +112,12 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host || common.MatchesWildcardSingleSubdomain(host, h) {
+			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
 		}
 		if listenerHost != "" {
-			if !common.MatchesWildcardAnySubdomain(host, listenerHost) && !common.MatchesWildcardAnySubdomain(listenerHost, host) {
+			if !shared.MatchesWildcardAnySubdomain(host, listenerHost) && !shared.MatchesWildcardAnySubdomain(listenerHost, host) {
 				// foreign host for another listener, do not add
 				return hosts
 			}
