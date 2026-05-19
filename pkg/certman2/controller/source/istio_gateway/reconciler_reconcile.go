@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func (r *Reconciler) reconcile(
@@ -95,20 +96,33 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 				return nil, err
 			}
 			for _, item := range array {
-				item.Hosts = r.appendHostsFromVirtualServices(virtualServices, item.Hosts)
+				// Snapshot the server's own hosts before appendHostsFromVirtualServices mutates item.Hosts,
+				// so wildcard detection sees the original server config, not VS-derived additions.
+				serverHosts := append([]string(nil), item.Hosts...)
+				item.Hosts = r.appendHostsFromVirtualServices(virtualServices, item.Hosts, serverHosts)
 			}
 		}
 		return array, nil
 	})
 }
 
-func (r *Reconciler) appendHostsFromVirtualServices(virtualServices []client.Object, hosts []string) []string {
+func (r *Reconciler) appendHostsFromVirtualServices(virtualServices []client.Object, hosts []string, serverHosts []string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host {
+			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
-			if strings.HasPrefix(h, "*.") && strings.HasSuffix(host, h[1:]) && !strings.Contains(host[:len(host)-len(h)+1], ".") {
+		}
+		if len(serverHosts) > 0 {
+			found := false
+			for _, sh := range serverHosts {
+				if shared.MatchesWildcardAnySubdomain(host, sh) || shared.MatchesWildcardAnySubdomain(sh, host) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				// foreign host for another server, do not add
 				return hosts
 			}
 		}

@@ -55,6 +55,30 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 		}
 		routes = []*gatewayapisv1.HTTPRoute{route1, route2, route3}
 
+		routeExample = &gatewayapisv1.HTTPRoute{
+			Spec: gatewayapisv1.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+					{
+						Namespace: ptr.To(gatewayapisv1.Namespace("test")),
+						Name:      "g1",
+					},
+				}},
+				Hostnames: []gatewayapisv1.Hostname{"foo.example.com", "sub.bar.example.com"},
+			},
+		}
+		routeLegacy = &gatewayapisv1.HTTPRoute{
+			Spec: gatewayapisv1.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+					{
+						Namespace: ptr.To(gatewayapisv1.Namespace("test")),
+						Name:      "g1",
+					},
+				}},
+				Hostnames: []gatewayapisv1.Hostname{"app.legacy.io"},
+			},
+		}
+		mixedDomainRoutes = []*gatewayapisv1.HTTPRoute{routeExample, routeLegacy}
+
 		log                = logger.NewContext("", "TestEnv")
 		emptyMap           = map[types.NamespacedName]source.CertInfo{}
 		standardObjectMeta = metav1.ObjectMeta{
@@ -255,7 +279,7 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 					},
 				},
 			},
-		}, routes, singleCertInfo("foo", nil, "b.example.com", "foo.example.com", "bar.example.com")),
+		}, routes, singleCertInfo("foo", nil, "b.example.com")),
 		Entry("hosts in cert annotation override all hosts", &gatewayapisv1.Gateway{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "test",
@@ -320,7 +344,59 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 				source.AnnotDNSRecordSecretRef:    "dummy",
 			}
 			return info
-		}))))
+		}))),
+		Entry("multiple listeners with mixed-domain HTTPRoutes should not pollute SANs", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Hostname: ptr.To(gatewayapisv1.Hostname("*.example.com")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-example"}},
+						},
+					},
+					{
+						Hostname: ptr.To(gatewayapisv1.Hostname("*.legacy.io")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-legacy"}},
+						},
+					},
+				},
+			},
+		}, mixedDomainRoutes, toMap(
+			makeCertInfo("cert-example", nil, "*.example.com", "sub.bar.example.com"),
+			makeCertInfo("cert-legacy", nil, "*.legacy.io"),
+		)),
+		Entry("single listener should not pick up hostnames from unrelated domain", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Hostname: ptr.To(gatewayapisv1.Hostname("*.example.com")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-example"}},
+						},
+					},
+				},
+			},
+		}, mixedDomainRoutes, singleCertInfo("cert-example", nil, "*.example.com", "sub.bar.example.com")),
+		Entry("single listener should not pick up all hostnames if listener does not specify hostname", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-example"}},
+						},
+					},
+				},
+			},
+		}, routes, singleCertInfo("cert-example", nil, "foo.example.com", "bar.example.com")),
+	)
 })
 
 type testRouteLister struct {

@@ -7,7 +7,6 @@ package k8s_gateway
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -20,6 +19,7 @@ import (
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/certman2/controller/source/common"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 func (r *Reconciler) reconcile(
@@ -97,7 +97,11 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 				return nil, err
 			}
 			for _, item := range array {
-				item.Hosts = r.appendHostsFromHTTPRoutes(routes, item.Hosts)
+				var listenerHost string
+				if len(item.Hosts) > 0 {
+					listenerHost = item.Hosts[0]
+				}
+				item.Hosts = r.appendHostsFromHTTPRoutes(routes, item.Hosts, listenerHost)
 			}
 		}
 
@@ -105,13 +109,16 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 	})
 }
 
-func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []string) []string {
+func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
-			if h == host {
+			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
 				return hosts
 			}
-			if strings.HasPrefix(h, "*.") && strings.HasSuffix(host, h[1:]) && !strings.Contains(host[:len(host)-len(h)+1], ".") {
+		}
+		if listenerHost != "" {
+			if !shared.MatchesWildcardAnySubdomain(host, listenerHost) && !shared.MatchesWildcardAnySubdomain(listenerHost, host) {
+				// foreign host for another listener, do not add
 				return hosts
 			}
 		}
