@@ -383,11 +383,14 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 	}
 
 	spec := &api.CertificateSpec{
-		CommonName: result.CommonName,
-		DNSNames:   result.DNSNames,
-		CSR:        result.CSR,
-		IssuerRef:  &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
-		PrivateKey: legobridge.FromKeyType(result.KeyType),
+		CommonName:     result.CommonName,
+		DNSNames:       result.DNSNames,
+		IPAddresses:    cert.Spec.IPAddresses,
+		EmailAddresses: cert.Spec.EmailAddresses,
+		URIs:           cert.Spec.URIs,
+		CSR:            result.CSR,
+		IssuerRef:      &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
+		PrivateKey:     legobridge.FromKeyType(result.KeyType),
 	}
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
