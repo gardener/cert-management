@@ -420,7 +420,11 @@ var _ = Describe("Certificate controller tests", func() {
 						Duration: &metav1.Duration{
 							Duration: 48 * time.Hour,
 						},
-						CommonName: ptr.To("example.com"),
+						CommonName:     ptr.To("example.com"),
+						DNSNames:       []string{"*.example.com"},
+						EmailAddresses: []string{"admin@example.com"},
+						IPAddresses:    []string{"127.0.0.1"},
+						URIs:           []string{"https://example.com"},
 					},
 				}
 				Expect(testClient.Create(ctx, certificate)).To(Succeed())
