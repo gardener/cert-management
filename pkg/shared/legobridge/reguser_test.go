@@ -206,8 +206,8 @@ var _ = Describe("RegistrationUser", func() {
 				result, err := registrationUserFromConfigWithFactory(cfg, mockFactory)
 
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("migrating v4 registration to v5 failed"))
-				Expect(err.Error()).To(ContainSubstring("ACME server unreachable"))
+				Expect(err).To(MatchError(ContainSubstring("migrating v4 registration to v5 failed")))
+				Expect(err).To(MatchError(ContainSubstring("ACME server unreachable")))
 				Expect(result).To(BeNil())
 			})
 
@@ -288,7 +288,7 @@ var _ = Describe("RegistrationUser", func() {
 				result, err := registrationUserFromConfigWithFactory(cfg, mockFactoryNoCall)
 
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("unmarshalling registration json failed"))
+				Expect(err).To(MatchError(ContainSubstring("unmarshalling registration json failed")))
 				Expect(result).To(BeNil())
 			})
 
@@ -318,7 +318,7 @@ var _ = Describe("RegistrationUser", func() {
 				result, err := registrationUserFromConfigWithFactory(cfg, mockFactoryNoCall)
 
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("`privateKey` data not found in secret"))
+				Expect(err).To(MatchError(ContainSubstring("`privateKey` data not found in secret")))
 				Expect(result).To(BeNil())
 			})
 
@@ -521,7 +521,7 @@ var _ = Describe("RegistrationUser", func() {
 
 			err := ValidatePrivateKeySecretDataKeys(data)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("value for key `privateKey` is invalid"))
+			Expect(err).To(MatchError(ContainSubstring("value for key `privateKey` is invalid")))
 		})
 
 		It("should reject unknown keys", func() {
@@ -535,8 +535,8 @@ var _ = Describe("RegistrationUser", func() {
 
 			err = ValidatePrivateKeySecretDataKeys(data)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("invalid secret data keys"))
-			Expect(err.Error()).To(ContainSubstring("`unknownKey`"))
+			Expect(err).To(MatchError(ContainSubstring("invalid secret data keys")))
+			Expect(err).To(MatchError(ContainSubstring("`unknownKey`")))
 		})
 	})
 
@@ -644,24 +644,24 @@ var _ = Describe("RegistrationUser", func() {
 		It("should validate required fields", func() {
 			_, err := RegistrationUserFromConfig(nil)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("configuration cannot be nil"))
+			Expect(err).To(MatchError(ContainSubstring("configuration cannot be nil")))
 
 			_, err = RegistrationUserFromConfig(&RegistrationConfig{})
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("IssuerKey is missing"))
+			Expect(err).To(MatchError(ContainSubstring("IssuerKey is missing")))
 
 			_, err = RegistrationUserFromConfig(&RegistrationConfig{
 				IssuerKey: issuerKey,
 			})
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Email is missing"))
+			Expect(err).To(MatchError(ContainSubstring("Email is missing")))
 
 			_, err = RegistrationUserFromConfig(&RegistrationConfig{
 				IssuerKey: issuerKey,
 				Email:     email,
 			})
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("CADirURL is missing"))
+			Expect(err).To(MatchError(ContainSubstring("CADirURL is missing")))
 		})
 
 		It("should restore user from valid v5 data without migration", func() {
@@ -791,7 +791,7 @@ var _ = Describe("RegistrationUser", func() {
 			}, mockFactory)
 
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("migrating v4 registration to v5 failed"))
+			Expect(err).To(MatchError(ContainSubstring("migrating v4 registration to v5 failed")))
 			Expect(result).To(BeNil())
 		})
 
@@ -817,7 +817,7 @@ var _ = Describe("RegistrationUser", func() {
 			result, err := RegistrationUserFromConfig(cfg)
 
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("missing account URL in status"))
+			Expect(err).To(MatchError(ContainSubstring("missing account URL in status")))
 			Expect(result).To(BeNil())
 		})
 	})

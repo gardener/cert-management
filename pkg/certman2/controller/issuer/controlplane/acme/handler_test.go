@@ -97,8 +97,6 @@ var _ = Describe("Handler", func() {
 					err = json.Unmarshal(raw.Raw, &wrappedReg)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(wrappedReg.Account.Status).To(Equal("valid"))
-					// contact seems not to be set in the registration response anymore
-					//Expect(wrappedReg.Resource.Body.Contact[0]).To(Equal("mailto:some.user@mydomain.com"))
 					Expect(wrappedReg.SecretHash).ToNot(BeNil())
 					Expect(*wrappedReg.SecretHash).ToNot(Equal(""))
 				})
@@ -124,13 +122,11 @@ var _ = Describe("Handler", func() {
 				Expect(reconcileResult.IsZero()).To(BeTrue())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(acmeIssuer.Status.State).To(Equal("Ready"))
-				raw := acmeIssuer.Status.ACME // "body":{"contact":["mailto:some.user@mydomain.com"],"status":"valid"},"secretHash":"xxx","uri":"https://acme-staging-v02.api.letsencrypt.org/acme/acct/xxx"
+				raw := acmeIssuer.Status.ACME
 				wrappedReg := wrappedRegistration{}
 				err = json.Unmarshal(raw.Raw, &wrappedReg)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(wrappedReg.Account.Status).To(Equal("valid"))
-				// contact seems not to be set in the registration response anymore
-				//Expect(wrappedReg.Account.Contact[0]).To(Equal("mailto:some.user@mydomain.com"))
 				Expect(wrappedReg.SecretHash).ToNot(BeNil())
 				Expect(*wrappedReg.SecretHash).ToNot(Equal(""))
 			})
@@ -140,7 +136,7 @@ var _ = Describe("Handler", func() {
 				Expect(reconcileResult.IsZero()).To(BeTrue())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(acmeIssuer.Status.State).To(Equal("Ready"))
-				raw := acmeIssuer.Status.ACME // "body":{"contact":["mailto:some.user@mydomain.com"],"status":"valid"},"secretHash":"xxx","uri":"https://acme-staging-v02.api.letsencrypt.org/acme/acct/xxx"
+				raw := acmeIssuer.Status.ACME
 				wrappedReg := wrappedRegistration{}
 				err = json.Unmarshal(raw.Raw, &wrappedReg)
 				Expect(err).ToNot(HaveOccurred())
@@ -150,7 +146,7 @@ var _ = Describe("Handler", func() {
 				Expect(reconcileResult.IsZero()).To(BeTrue())
 				Expect(err).ToNot(HaveOccurred())
 				Expect(acmeIssuer.Status.State).To(Equal("Ready"))
-				raw = acmeIssuer.Status.ACME // "body":{"contact":["mailto:some.user@mydomain.com"],"status":"valid"},"secretHash":"xxx","uri":"https://acme-staging-v02.api.letsencrypt.org/acme/acct/xxx"
+				raw = acmeIssuer.Status.ACME
 				wrappedReg = wrappedRegistration{}
 				err = json.Unmarshal(raw.Raw, &wrappedReg)
 				Expect(err).ToNot(HaveOccurred())

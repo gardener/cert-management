@@ -60,16 +60,16 @@ var _ = Describe("ParseRenewBefore", func() {
 			result, err := shared.ParseRenewBefore("not-a-duration")
 			Expect(result).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("invalid renew-before annotation value"))
-			Expect(err.Error()).To(ContainSubstring("not-a-duration"))
+			Expect(err).To(MatchError(ContainSubstring("invalid renew-before annotation value")))
+			Expect(err).To(MatchError(ContainSubstring("not-a-duration")))
 		})
 
 		It("returns nil and an error for a bare number without a unit", func() {
 			result, err := shared.ParseRenewBefore("300")
 			Expect(result).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("invalid renew-before annotation value"))
-			Expect(err.Error()).To(ContainSubstring("300"))
+			Expect(err).To(MatchError(ContainSubstring("invalid renew-before annotation value")))
+			Expect(err).To(MatchError(ContainSubstring("300")))
 		})
 	})
 
@@ -78,28 +78,28 @@ var _ = Describe("ParseRenewBefore", func() {
 			result, err := shared.ParseRenewBefore("4m59s")
 			Expect(result).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must be at least 5 minutes"))
+			Expect(err).To(MatchError(ContainSubstring("must be at least 5 minutes")))
 		})
 
 		It("returns nil and an error for 1 minute", func() {
 			result, err := shared.ParseRenewBefore("1m")
 			Expect(result).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must be at least 5 minutes"))
+			Expect(err).To(MatchError(ContainSubstring("must be at least 5 minutes")))
 		})
 
 		It("returns nil and an error for 299 seconds", func() {
 			result, err := shared.ParseRenewBefore("299s")
 			Expect(result).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must be at least 5 minutes"))
+			Expect(err).To(MatchError(ContainSubstring("must be at least 5 minutes")))
 		})
 
 		It("returns nil and an error for 0s", func() {
 			result, err := shared.ParseRenewBefore("0s")
 			Expect(result).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("must be at least 5 minutes"))
+			Expect(err).To(MatchError(ContainSubstring("must be at least 5 minutes")))
 		})
 	})
 })

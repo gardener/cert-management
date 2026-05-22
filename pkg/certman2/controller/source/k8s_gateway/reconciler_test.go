@@ -46,7 +46,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				_, err := reconciler.Reconcile(ctx, req)
 				if len(expectedErrorMessage) > 0 {
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(expectedErrorMessage[0]))
+					Expect(err).To(MatchError(ContainSubstring(expectedErrorMessage[0])))
 					return
 				}
 				Expect(err).NotTo(HaveOccurred())

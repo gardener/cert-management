@@ -12,18 +12,31 @@ import (
 )
 
 var _ = Describe("DnsUtils", func() {
-	Describe("#PreparePrecheckNameservers", func() {
-		It("should return given nameservers if they are valid", func() {
-			nameservers := []string{"1.1.1.1:53", "1.1.1.2:53"}
-			Expect(shared.PreparePrecheckNameservers(nameservers)).To(Equal(nameservers))
-		})
-
-		It("should return given nameservers if they are valid and adds missing ports", func() {
-			nameservers := []string{"1.1.1.1", "1.1.1.2"}
-			nameserversExpected := []string{"1.1.1.1:53", "1.1.1.2:53"}
-			Expect(shared.PreparePrecheckNameservers(nameservers)).To(Equal(nameserversExpected))
-		})
-	})
+	DescribeTable("#PreparePrecheckNameservers / #parseNameservers",
+		func(input, expected []string) {
+			Expect(shared.PreparePrecheckNameservers(input)).To(Equal(expected))
+		},
+		Entry("should keep nameservers that already have a port",
+			[]string{"1.1.1.1:53", "1.1.1.2:53"},
+			[]string{"1.1.1.1:53", "1.1.1.2:53"},
+		),
+		Entry("should add default port 53 to nameservers without a port",
+			[]string{"1.1.1.1", "1.1.1.2"},
+			[]string{"1.1.1.1:53", "1.1.1.2:53"},
+		),
+		Entry("should handle mixed nameservers with and without port",
+			[]string{"1.1.1.1", "1.1.1.2:5353"},
+			[]string{"1.1.1.1:53", "1.1.1.2:5353"},
+		),
+		Entry("should handle IPv6 address with port",
+			[]string{"[::1]:53"},
+			[]string{"[::1]:53"},
+		),
+		Entry("should add default port to bare IPv6 address",
+			[]string{"::1"},
+			[]string{"[::1]:53"},
+		),
+	)
 
 	DescribeTable("#MatchesWildcardAnySubdomain",
 		func(host, wildcard string, expected bool) {
