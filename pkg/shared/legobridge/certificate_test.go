@@ -7,13 +7,14 @@
 package legobridge
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"time"
 
-	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v5/certificate"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -23,6 +24,8 @@ import (
 )
 
 var _ = Describe("Certificate", func() {
+	ctx := context.Background()
+
 	DescribeTable("KeyType conversion",
 		func(keyType KeyType, algorithm api.PrivateKeyAlgorithm, size int) {
 			defaults, err := NewCertificatePrivateKeyDefaults(api.RSAKeyAlgorithm, 2048, 256)
@@ -105,7 +108,7 @@ var _ = Describe("Certificate", func() {
 	})
 
 	It("obtainForDomains should fail with unknown key type", func() {
-		_, err := obtainForDomains(nil, []string{}, ObtainInput{KeySpec: KeySpec{KeyType: "SomeUnknownKeyType"}})
+		_, err := obtainForDomains(ctx, nil, []string{}, ObtainInput{KeySpec: KeySpec{KeyType: "SomeUnknownKeyType"}})
 		Expect(err).To(MatchError("invalid key type: SomeUnknownKeyType"))
 	})
 

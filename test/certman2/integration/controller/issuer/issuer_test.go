@@ -366,7 +366,7 @@ var _ = Describe("Issuer controller tests", func() {
 				return acmeIssuer.Status
 			}).Should(MatchFields(IgnoreExtras, Fields{
 				"State":   Equal("Error"),
-				"Message": PointTo(HavePrefix("creating registration user failed: acme: error signing eab content: failed to External Account Binding sign content: go-jose/go-jose: invalid key size for algorithm")),
+				"Message": PointTo(HavePrefix("creating registration user failed: acme: error signing eab content: EAB: sign content: go-jose/go-jose: invalid key size for algorithm")),
 			}))
 		})
 

@@ -7,6 +7,7 @@
 package legobridge
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -16,9 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-acme/lego/v4/certificate"
-	"github.com/go-acme/lego/v4/challenge/dns01"
-	"github.com/go-acme/lego/v4/lego"
+	"github.com/go-acme/lego/v5/certificate"
+	"github.com/go-acme/lego/v5/lego"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -142,7 +142,7 @@ type ObtainOutput struct {
 // Obtainer provides a Obtain method to start a certificate request
 type Obtainer interface {
 	// Obtain starts the async obtain request.
-	Obtain(input ObtainInput) error
+	Obtain(ctx context.Context, input ObtainInput) error
 }
 
 // ConcurrentObtainError is returned if Obtain should be postponed because of concurrent obtain request for
@@ -178,7 +178,7 @@ func NewObtainer(factory LoggerFactory) Obtainer {
 	}
 }
 
-func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) (*certificate.Resource, error) {
+func obtainForDomains(ctx context.Context, client *lego.Client, domains []string, input ObtainInput) (*certificate.Resource, error) {
 	privateKey, err := generatePrivateKey(input.KeySpec.KeyType)
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func obtainForDomains(client *lego.Client, domains []string, input ObtainInput) 
 			return nil, err
 		}
 	}
-	return client.Certificate.Obtain(request)
+	return client.Certificate.Obtain(ctx, request)
 }
 
 // NewCertificatePrivateKeyDefaults creates a defaults for certifcate private key generation.
@@ -335,7 +335,7 @@ func newCertificatePrivateKey(algorithm api.PrivateKeyAlgorithm, size api.Privat
 	return &api.CertificatePrivateKey{Algorithm: ptr.To(algorithm), Size: ptr.To(size)}
 }
 
-func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certificate.Resource, error) {
+func obtainForCSR(ctx context.Context, client *lego.Client, csr []byte, input ObtainInput) (*certificate.Resource, error) {
 	cert, err := extractCertificateRequest(csr)
 	if err != nil {
 		return nil, err
@@ -345,7 +345,7 @@ func obtainForCSR(client *lego.Client, csr []byte, input ObtainInput) (*certific
 			return nil, err
 		}
 	}
-	return client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
+	return client.Certificate.ObtainForCSR(ctx, certificate.ObtainForCSRRequest{
 		CSR:                            cert,
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
@@ -367,12 +367,12 @@ type dummyProvider struct {
 
 var _ ProviderWithCount = &dummyProvider{}
 
-func (p *dummyProvider) Present(_, _, _ string) error {
+func (p *dummyProvider) Present(_ context.Context, _, _, _ string) error {
 	p.count++
 	return nil
 }
 
-func (p *dummyProvider) CleanUp(_, _, _ string) error {
+func (p *dummyProvider) CleanUp(_ context.Context, _, _, _ string) error {
 	return nil
 }
 
@@ -384,21 +384,21 @@ func (p *dummyProvider) GetPendingTXTRecordError() error {
 	return nil
 }
 
-func (o *obtainer) Obtain(input ObtainInput) error {
+func (o *obtainer) Obtain(ctx context.Context, input ObtainInput) error {
 	switch {
 	case input.User != nil:
-		return o.ObtainACME(input)
+		return o.ObtainACME(ctx, input)
 	case input.CAKeyPair != nil:
-		return o.ObtainFromCA(input)
+		return o.ObtainFromCA(ctx, input)
 	case input.IsCA:
-		return o.ObtainFromSelfSigned(input)
+		return o.ObtainFromSelfSigned(ctx, input)
 	default:
 		return fmt.Errorf("certificate obtention not valid, neither ACME, CA  or selfSigned values were provided")
 	}
 }
 
 // ObtainACME starts the async obtain request.
-func (o *obtainer) ObtainACME(input ObtainInput) error {
+func (o *obtainer) ObtainACME(ctx context.Context, input ObtainInput) error {
 	err := o.setPending(input)
 	if err != nil {
 		return err
@@ -426,7 +426,6 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			return err
 		}
 		err = legoClient.Challenge.SetDNS01Provider(provider,
-			dns01.AddRecursiveNameservers(input.DNSSettings.PrecheckNameservers),
 			shared.CreateWrapPreCheckOption(input.DNSSettings.PrecheckNameservers))
 		if err != nil {
 			o.releasePending(input)
@@ -450,9 +449,9 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 			if input.CommonName != nil {
 				domains = append([]string{*input.CommonName}, domains...)
 			}
-			certificates, err = obtainForDomains(legoClient, domains, input)
+			certificates, err = obtainForDomains(ctx, legoClient, domains, input)
 		} else {
-			certificates, err = obtainForCSR(legoClient, input.CSR, input)
+			certificates, err = obtainForCSR(ctx, legoClient, input.CSR, input)
 		}
 		count := provider.GetChallengesCount()
 		metrics.AddACMEOrder(input.IssuerKey, err == nil, count, input.Renew)
@@ -473,7 +472,7 @@ func (o *obtainer) ObtainACME(input ObtainInput) error {
 }
 
 // ObtainFromCA start the certificate creation from a CA
-func (o *obtainer) ObtainFromCA(input ObtainInput) error {
+func (o *obtainer) ObtainFromCA(_ context.Context, input ObtainInput) error {
 	err := o.setPending(input)
 	if err != nil {
 		return err
@@ -551,7 +550,7 @@ func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
 }
 
 // ObtainFromSelfSigned starts the creation of a selfsigned certificate
-func (o *obtainer) ObtainFromSelfSigned(input ObtainInput) error {
+func (o *obtainer) ObtainFromSelfSigned(_ context.Context, input ObtainInput) error {
 	go func() {
 		certificates, err := newSelfSignedCertFromInput(input)
 		output := &ObtainOutput{
@@ -686,7 +685,7 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, isCA bool, CAKeyPa
 }
 
 // RevokeCertificate revokes a certificate
-func RevokeCertificate(user *RegistrationUser, cert []byte) error {
+func RevokeCertificate(ctx context.Context, user *RegistrationUser, cert []byte) error {
 	config := user.NewConfig(user.CADirURL())
 
 	// A client facilitates communication with the CA server.
@@ -695,7 +694,7 @@ func RevokeCertificate(user *RegistrationUser, cert []byte) error {
 		return fmt.Errorf("client creation failed: %w", err)
 	}
 
-	return client.Certificate.Revoke(cert)
+	return client.Certificate.Revoke(ctx, cert)
 }
 
 func niceError(err, detailErr error) error {

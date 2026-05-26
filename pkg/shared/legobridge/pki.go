@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
-	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v5/certificate"
 	"k8s.io/utils/ptr"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -437,7 +437,7 @@ func privateKeyToBytes(key crypto.PrivateKey, usePKCS8 bool) ([]byte, error) {
 }
 
 // BytesToPrivateKey decodes a PEM encoded private key.
-func BytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
+func BytesToPrivateKey(data []byte) (crypto.Signer, error) {
 	block, rest := pem.Decode(data)
 	if block == nil {
 		return nil, fmt.Errorf("decoding pem block for private key failed")
@@ -457,5 +457,9 @@ func BytesToPrivateKey(data []byte) (crypto.PrivateKey, error) {
 	if err3 != nil {
 		return nil, fmt.Errorf("decoding private key failed with %s (ec) and %s (rsa PKCS1) and %s (PKCS8)", err, err2, err3)
 	}
-	return key3, nil
+	signer, ok := key3.(crypto.Signer)
+	if !ok {
+		return nil, fmt.Errorf("private key does not implement crypto.Signer")
+	}
+	return signer, nil
 }

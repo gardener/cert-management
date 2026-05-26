@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-acme/lego/v4/challenge"
-	"github.com/go-acme/lego/v4/challenge/dns01"
+	"github.com/go-acme/lego/v5/challenge"
+	"github.com/go-acme/lego/v5/challenge/dns01"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -125,10 +125,10 @@ func retryOnUpdateError(fn func() error) error {
 	return err
 }
 
-func (p *delegatingProvider) Present(domain, _, keyAuth string) error {
+func (p *delegatingProvider) Present(ctx context.Context, domain, _, keyAuth string) error {
 	metrics.AddActiveACMEDNSChallenge(p.issuerKey)
 	atomic.AddInt32(&p.count, 1)
-	info := dns01.GetChallengeInfo(domain, keyAuth)
+	info := dns01.GetChallengeInfo(ctx, domain, keyAuth)
 	value := info.Value
 	fqdn := info.FQDN
 
@@ -143,7 +143,6 @@ func (p *delegatingProvider) Present(domain, _, keyAuth string) error {
 
 	values := p.addPresentingDomainValue(domain, value)
 
-	ctx := context.Background()
 	err, remove := p.internalProvider.present(ctx, p.logger, domain, fqdn, values)
 	if remove {
 		p.removePresentingDomain(domain)
@@ -165,14 +164,13 @@ func (p *delegatingProvider) removePresentingDomain(domain string) bool {
 	return true
 }
 
-func (p *delegatingProvider) CleanUp(domain, _, _ string) error {
+func (p *delegatingProvider) CleanUp(ctx context.Context, domain, _, _ string) error {
 	metrics.RemoveActiveACMEDNSChallenge(p.issuerKey)
 
 	if !p.removePresentingDomain(domain) {
 		return nil
 	}
 
-	ctx := context.Background()
 	return p.internalProvider.cleanup(ctx, p.logger, domain)
 }
 

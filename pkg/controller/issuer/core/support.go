@@ -832,13 +832,20 @@ func (s *Support) RestoreRegUser(issuerKey utils.IssuerKey, issuer *api.Issuer) 
 		return nil, err
 	}
 
-	reguser, err := legobridge.RegistrationUserFromSecretData(issuerKey, issuer.Spec.ACME.Email, issuer.Spec.ACME.Server,
-		issuer.Status.ACME.Raw, issuerSecret.Data, eabKeyID, eabHmacKey)
+	result, err := legobridge.RegistrationUserFromConfig(&legobridge.RegistrationConfig{
+		IssuerKey:       issuerKey,
+		Email:           issuer.Spec.ACME.Email,
+		CADirURL:        issuer.Spec.ACME.Server,
+		RegistrationRaw: issuer.Status.ACME.Raw,
+		SecretData:      issuerSecret.Data,
+		EABKeyID:        eabKeyID,
+		EABHmacKey:      eabHmacKey,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("restoring registration issuer from issuer secret failed: %w", err)
 	}
 
-	return reguser, nil
+	return result.User, nil
 }
 
 // LoadEABHmacKey reads the external account binding MAC key from the referenced secret

@@ -9,7 +9,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	stdlog "log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +23,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/utils"
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
 	"github.com/gardener/gardener/pkg/logger"
-	legolog "github.com/go-acme/lego/v4/log"
+	legolog "github.com/go-acme/lego/v5/log"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -71,7 +71,7 @@ var _ = BeforeSuite(func() {
 	)
 
 	cmllogger.SetOutput(GinkgoWriter)
-	legolog.Logger = stdlog.New(GinkgoWriter, "lego", stdlog.LstdFlags)
+	legolog.SetDefault(slog.New(slog.NewTextHandler(GinkgoWriter, &slog.HandlerOptions{})))
 	logf.SetLogger(logger.MustNewZapLogger(logger.DebugLevel, logger.FormatJSON, zap.WriteTo(GinkgoWriter)))
 	log = logf.Log.WithName(testID)
 

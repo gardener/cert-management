@@ -98,10 +98,22 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 				return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("registration marshalling failed: %w", err))
 			}
 		}
-		user, err := legobridge.RegistrationUserFromSecretData(issuerKey, acme.Email, acme.Server, raw,
-			secret.Data, eabKeyID, eabHmacKey)
+		result, err := legobridge.RegistrationUserFromConfig(&legobridge.RegistrationConfig{
+			IssuerKey:            issuerKey,
+			Email:                acme.Email,
+			CADirURL:             acme.Server,
+			RegistrationRaw:      raw,
+			SecretData:           secret.Data,
+			EABKeyID:             eabKeyID,
+			EABHmacKey:           eabHmacKey,
+			AllowV4ToV5Migration: true,
+		})
 		if err != nil {
 			return r.failedAcmeRetry(logger, obj, api.StateError, fmt.Errorf("extracting registration user from secret failed: %w", err))
+		}
+		user, raw := result.User, result.UpdatedRaw
+		if result.WasMigrated {
+			logger.Info("v4 registration format migrated to v5")
 		}
 		if user.GetEmail() != acme.Email {
 			return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.GetEmail(), acme.Email))

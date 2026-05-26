@@ -9,13 +9,13 @@ package core
 import (
 	"encoding/json"
 
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/acme"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type wrappedRegistration struct {
-	registration.Resource `json:",inline"`
-	SecretHash            *string `json:"secretHash,omitempty"`
+	acme.ExtendedAccount `json:",inline"`
+	SecretHash           *string `json:"secretHash,omitempty"`
 }
 
 // WrapRegistration wraps registration.
