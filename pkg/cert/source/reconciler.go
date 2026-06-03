@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
@@ -505,10 +504,10 @@ func createPrivateKey(algorithm string, size api.PrivateKeySize, encoding api.Pr
 	}
 	obj := &api.CertificatePrivateKey{}
 	if algorithm != "" {
-		obj.Algorithm = ptr.To(api.PrivateKeyAlgorithm(algorithm))
+		obj.Algorithm = new(api.PrivateKeyAlgorithm(algorithm))
 	}
 	if size != 0 {
-		obj.Size = ptr.To(size)
+		obj.Size = new(size)
 	}
 	if encoding != "" {
 		obj.Encoding = encoding

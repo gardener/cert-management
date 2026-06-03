@@ -14,7 +14,6 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -218,10 +217,10 @@ func createPrivateKey(algorithm string, size int, encoding string) *certmanv1alp
 	}
 	obj := &certmanv1alpha1.CertificatePrivateKey{}
 	if algorithm != "" {
-		obj.Algorithm = ptr.To(certmanv1alpha1.PrivateKeyAlgorithm(algorithm))
+		obj.Algorithm = new(certmanv1alpha1.PrivateKeyAlgorithm(algorithm))
 	}
 	if size != 0 {
-		obj.Size = ptr.To(certmanv1alpha1.PrivateKeySize(size)) // #nosec G115 -- only validated values in int32 range are used
+		obj.Size = new(certmanv1alpha1.PrivateKeySize(size)) // #nosec G115 -- only validated values in int32 range are used
 	}
 	if encoding == string(certmanv1alpha1.PKCS8) {
 		obj.Encoding = certmanv1alpha1.PKCS8

@@ -109,7 +109,7 @@ var _ = Describe("Handler", func() {
 
 func newSelfSignedCertInPEMFormat() ([]byte, []byte, error) {
 	input := legobridge.ObtainInput{
-		CommonName: ptr.To("host.example.com"),
+		CommonName: new("host.example.com"),
 		DNSNames:   []string{"host2.example.com"},
 		Duration:   ptr.To(time.Hour * 24 * 365),
 		KeySpec:    legobridge.KeySpec{KeyType: legobridge.RSA2048},

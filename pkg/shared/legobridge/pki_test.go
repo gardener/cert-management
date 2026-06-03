@@ -31,7 +31,7 @@ var _ = Describe("PKI", func() {
 		})
 
 		It("returns an error when no duration is set", func() {
-			input := ObtainInput{CommonName: ptr.To("test-common-name")}
+			input := ObtainInput{CommonName: new("test-common-name")}
 			_, _, err := NewSelfSignedCertInPEMFormat(input)
 			Expect(err).To(MatchError("duration must be set"))
 		})
@@ -44,7 +44,7 @@ var _ = Describe("PKI", func() {
 				expectedNotBefore := time.Now()
 				expectedNotAfter := expectedNotBefore.Add(*duration)
 				input := ObtainInput{
-					CommonName: ptr.To("test-common-name"),
+					CommonName: new("test-common-name"),
 					DNSNames:   []string{"test-dns-name"},
 					Duration:   duration,
 					KeySpec:    KeySpec{KeyType: RSA2048, UsePKCS8: usePKCS8},

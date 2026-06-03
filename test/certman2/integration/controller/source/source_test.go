@@ -90,8 +90,8 @@ var _ = Describe("Source controller tests", func() {
 						Kind:               gvk.Kind,
 						Name:               obj.GetName(),
 						UID:                obj.GetUID(),
-						Controller:         ptr.To(true),
-						BlockOwnerDeletion: ptr.To(true),
+						Controller:         new(true),
+						BlockOwnerDeletion: new(true),
 					},
 				}))
 				if !reflect.DeepEqual(expectedSpec, cert.Spec) {
@@ -162,7 +162,7 @@ var _ = Describe("Source controller tests", func() {
 				},
 			},
 			Controller: controllerconfig.Controller{
-				SkipNameValidation: ptr.To(true),
+				SkipNameValidation: new(true),
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -225,7 +225,7 @@ var _ = Describe("Source controller tests", func() {
 		By("Wait for certificate")
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test.example.com"),
+			CommonName: new("test.example.com"),
 			DNSNames:   []string{"test.alt.example.com"},
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-secret",
@@ -266,7 +266,7 @@ var _ = Describe("Source controller tests", func() {
 		By("Wait for certificate with renewBefore")
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew.example.com"),
+			CommonName: new("test-renew.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-secret",
 				Namespace: testRunID,
@@ -307,7 +307,7 @@ var _ = Describe("Source controller tests", func() {
 		By("Wait for certificate with minimum renewBefore (5 minutes)")
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-min.example.com"),
+			CommonName: new("test-renew-min.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-min-secret",
 				Namespace: testRunID,
@@ -348,7 +348,7 @@ var _ = Describe("Source controller tests", func() {
 		By("Wait for certificate with default renewBefore (below minimum should be ignored)")
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-below-min.example.com"),
+			CommonName: new("test-renew-below-min.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-below-min-secret",
 				Namespace: testRunID,
@@ -389,7 +389,7 @@ var _ = Describe("Source controller tests", func() {
 		By("Wait for certificate with maximum renewBefore (1 year)")
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-max.example.com"),
+			CommonName: new("test-renew-max.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-max-secret",
 				Namespace: testRunID,
@@ -430,7 +430,7 @@ var _ = Describe("Source controller tests", func() {
 		By("Wait for certificate with default renewBefore (invalid format should be ignored)")
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-invalid.example.com"),
+			CommonName: new("test-renew-invalid.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-invalid-secret",
 				Namespace: testRunID,
@@ -470,7 +470,7 @@ var _ = Describe("Source controller tests", func() {
 		By("Wait for certificate with default renewBefore (no annotation)")
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-default.example.com"),
+			CommonName: new("test-renew-default.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-default-secret",
 				Namespace: testRunID,
@@ -509,7 +509,7 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for initial certificate without renewBefore")
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-update.example.com"),
+			CommonName: new("test-renew-update.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-update-secret",
 				Namespace: testRunID,
@@ -523,7 +523,7 @@ var _ = Describe("Source controller tests", func() {
 		Expect(testClient.Patch(ctx, service, patch)).To(Succeed())
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-update.example.com"),
+			CommonName: new("test-renew-update.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-update-secret",
 				Namespace: testRunID,
@@ -537,7 +537,7 @@ var _ = Describe("Source controller tests", func() {
 		Expect(testClient.Patch(ctx, service, patch)).To(Succeed())
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-update.example.com"),
+			CommonName: new("test-renew-update.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-update-secret",
 				Namespace: testRunID,
@@ -551,7 +551,7 @@ var _ = Describe("Source controller tests", func() {
 		Expect(testClient.Patch(ctx, service, patch)).To(Succeed())
 
 		checkCertificateSpec(service, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test-renew-update.example.com"),
+			CommonName: new("test-renew-update.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-service-renew-update-secret",
 				Namespace: testRunID,
@@ -598,7 +598,7 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for certificate")
 		checkCertificateSpec(ingress, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test.example.com"),
+			CommonName: new("test.example.com"),
 			DNSNames:   []string{"test.alt.example.com"},
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-ingress-secret",
@@ -643,7 +643,7 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for certificate")
 		checkCertificateSpec(gateway, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test.example.com"),
+			CommonName: new("test.example.com"),
 			DNSNames:   []string{"test.alt.example.com"},
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-gateway-credential",
@@ -699,7 +699,7 @@ var _ = Describe("Source controller tests", func() {
 		})
 
 		expectedCertSpec := certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("vs1.example.com"),
+			CommonName: new("vs1.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-gateway-credential",
 				Namespace: testRunID,
@@ -783,7 +783,7 @@ var _ = Describe("Source controller tests", func() {
 
 		By("Wait for certificate")
 		checkCertificateSpec(gateway, certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("test.example.com"),
+			CommonName: new("test.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-gateway-credential",
 				Namespace: testRunID,
@@ -822,7 +822,7 @@ var _ = Describe("Source controller tests", func() {
 		Expect(testClient.Create(ctx, gateway)).To(Succeed())
 
 		parentRef := gatewayapisv1.ParentReference{
-			Namespace: ptr.To(gatewayapisv1.Namespace(gateway.Namespace)),
+			Namespace: new(gatewayapisv1.Namespace(gateway.Namespace)),
 			Name:      gatewayapisv1.ObjectName(gateway.Name),
 		}
 		route1 := &gatewayapisv1.HTTPRoute{
@@ -853,7 +853,7 @@ var _ = Describe("Source controller tests", func() {
 		})
 
 		expectedCertSpec := certmanv1alpha1.CertificateSpec{
-			CommonName: ptr.To("route1.example.com"),
+			CommonName: new("route1.example.com"),
 			SecretRef: &corev1.SecretReference{
 				Name:      "test-gateway-credential",
 				Namespace: testRunID,

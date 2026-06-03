@@ -14,7 +14,6 @@ import (
 	"time"
 
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/shared"
@@ -40,7 +39,7 @@ func (p *dnsControllerProvider) present(ctx context.Context, log LoggerInfof, do
 	setSpec := func(e *dnsapi.DNSEntry) {
 		e.Spec.DNSName = strings.TrimSuffix(fqdn, ".")
 		e.Spec.OwnerId = p.settings.OwnerID
-		e.Spec.TTL = ptr.To(int64(p.settings.PropagationTimeout.Seconds()))
+		e.Spec.TTL = new(int64(p.settings.PropagationTimeout.Seconds()))
 		e.Spec.Text = values
 		if p.targetClass != "" {
 			addAnnotation(e, shared.AnnotDNSClass, p.targetClass)

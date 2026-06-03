@@ -203,7 +203,7 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 					},
 				},
 			},
-		}, nil, singleCertInfo("foo", ptr.To("ns1"), "a.example.com")),
+		}, nil, singleCertInfo("foo", new("ns1"), "a.example.com")),
 		Entry("should have single certsInfo info if single certificate is provided and protocol is TLSProtocolType", &gatewayapisv1.Gateway{
 			ObjectMeta: standardObjectMeta,
 			Spec: gatewayapisv1.GatewaySpec{
@@ -337,7 +337,7 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 			info.PreferredChain = "chain2"
 			info.PrivateKeyAlgorithm = "ECDSA"
 			info.PrivateKeySize = 384
-			info.IssuerName = ptr.To("test-issuer")
+			info.IssuerName = new("test-issuer")
 			info.SecretLabels = map[string]string{"a": "b", "c": "bar42"}
 			info.Annotations = map[string]string{
 				source.AnnotDNSRecordProviderType: "dummy-type",

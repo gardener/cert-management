@@ -16,7 +16,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
-	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/utils"
@@ -74,7 +73,7 @@ var _ = Describe("UtilsCertificate", func() {
 					Expect(certificateObject.SafeFirstDNSName()).To(Equal(expected))
 				},
 				Entry("should return the CommonName if it is defined",
-					&api.Certificate{Spec: api.CertificateSpec{CommonName: ptr.To("someCommonName")}},
+					&api.Certificate{Spec: api.CertificateSpec{CommonName: new("someCommonName")}},
 					"someCommonName",
 				),
 				Entry("should return the first DNSName of DNS Names if DNS names are defined",
@@ -82,7 +81,7 @@ var _ = Describe("UtilsCertificate", func() {
 					"someDnsName",
 				),
 				Entry("should return the CommonName if it is defined in the status",
-					&api.Certificate{Status: api.CertificateStatus{CommonName: ptr.To("someCommonName")}},
+					&api.Certificate{Status: api.CertificateStatus{CommonName: new("someCommonName")}},
 					"someCommonName",
 				),
 				Entry("should return the first DNSName of DNS Names if DNS names are defined in the status",

@@ -112,7 +112,7 @@ func (h *caIssuerHandler) succeededAndTriggerCertificates(ctx context.Context, i
 
 func (h *caIssuerHandler) updateStatusFailed(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) error {
 	patch := client.MergeFrom(issuer.DeepCopy())
-	issuer.Status.Message = ptr.To(err.Error())
+	issuer.Status.Message = new(err.Error())
 	issuer.Status.Type = ptr.To(core.CAType)
 	issuer.Status.State = state
 	issuer.Status.ObservedGeneration = issuer.Generation

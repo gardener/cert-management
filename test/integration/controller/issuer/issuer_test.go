@@ -141,8 +141,8 @@ var _ = Describe("Issuer controller tests", func() {
 			cert.Status = v1alpha1.CertificateStatus{
 				ObservedGeneration:   cert.Generation,
 				State:                "Pending",
-				Message:              ptr.To("simulated orphan pending certificate"),
-				LastPendingTimestamp: ptr.To(metav1.Now()),
+				Message:              new("simulated orphan pending certificate"),
+				LastPendingTimestamp: new(metav1.Now()),
 				BackOff: &v1alpha1.BackOffState{
 					ObservedGeneration: cert.Generation,
 					RetryAfter:         metav1.Time{Time: time.Now().Add(1 * time.Second)},
@@ -181,7 +181,7 @@ var _ = Describe("Issuer controller tests", func() {
 		It("should not be able to create certificate if no quota is left", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID)
-			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
+			issuer.Spec.RequestsPerDayQuota = new(1)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -220,7 +220,7 @@ var _ = Describe("Issuer controller tests", func() {
 		It("should reuse certificate and not consume quota if multiple certificates are created for the same domain", func() {
 			By("Create ACME issuer")
 			issuer := getAcmeIssuer(testRunID)
-			issuer.Spec.RequestsPerDayQuota = ptr.To(1)
+			issuer.Spec.RequestsPerDayQuota = new(1)
 			Expect(testClient.Create(ctx, issuer)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
@@ -280,7 +280,7 @@ var _ = Describe("Issuer controller tests", func() {
 			oldExpirationDate := &cert.Status.ExpirationDate
 			Eventually(func(g Gomega) {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
-				cert.Spec.Renew = ptr.To(true)
+				cert.Spec.Renew = new(true)
 				g.Expect(testClient.Update(ctx, cert)).To(Succeed())
 			}).WithPolling(10 * time.Millisecond).Should(Succeed())
 
@@ -432,7 +432,7 @@ var _ = Describe("Issuer controller tests", func() {
 		It("should be able to create self-signed certificates", func() {
 			By("Create self-signed certificate")
 			certificate := getCertificate(testRunID, "self-signed-certificate", "ca1.mydomain.com", issuer.Namespace, issuer.Name)
-			certificate.Spec.IsCA = ptr.To(true)
+			certificate.Spec.IsCA = new(true)
 			Expect(testClient.Create(ctx, certificate)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
@@ -453,7 +453,7 @@ var _ = Describe("Issuer controller tests", func() {
 		It("should not be able to create self-signed certificate if the duration is < 48h", func() {
 			By("Create self-signed certificate")
 			certificate := getCertificate(testRunID, "self-signed-certificate", "ca1.mydomain.com", issuer.Namespace, issuer.Name)
-			certificate.Spec.IsCA = ptr.To(true)
+			certificate.Spec.IsCA = new(true)
 			certificate.Spec.Duration = &metav1.Duration{Duration: 1 * time.Hour}
 			Expect(testClient.Create(ctx, certificate)).To(Succeed())
 			DeferCleanup(func() {
@@ -472,7 +472,7 @@ var _ = Describe("Issuer controller tests", func() {
 		It("should not be able to create self-signed certificate if IsCA = false", func() {
 			By("Create self-signed certificate")
 			certificate := getCertificate(testRunID, "self-signed-certificate", "ca1.mydomain.com", issuer.Namespace, issuer.Name)
-			certificate.Spec.IsCA = ptr.To(false)
+			certificate.Spec.IsCA = new(false)
 			Expect(testClient.Create(ctx, certificate)).To(Succeed())
 			DeferCleanup(func() {
 				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
@@ -559,7 +559,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Name:      "root-ca-certificate-secret",
 				Namespace: testRunID,
 			}
-			rootCACertificate.Spec.IsCA = ptr.To(true)
+			rootCACertificate.Spec.IsCA = new(true)
 			rootCACertificate.Spec.Duration = &metav1.Duration{Duration: 3 * 365 * 24 * time.Hour} // 3 years
 			Expect(testClient.Create(ctx, rootCACertificate)).To(Succeed())
 			DeferCleanup(func() {
@@ -591,7 +591,7 @@ var _ = Describe("Issuer controller tests", func() {
 				Name:      "intermediate-ca-certificate-secret",
 				Namespace: testRunID,
 			}
-			intermediateCACertificate.Spec.IsCA = ptr.To(true)
+			intermediateCACertificate.Spec.IsCA = new(true)
 			intermediateCACertificate.Spec.Duration = &metav1.Duration{Duration: 1 * 365 * 24 * time.Hour} // 1 year
 			Expect(testClient.Create(ctx, intermediateCACertificate)).To(Succeed())
 			DeferCleanup(func() {
@@ -662,7 +662,7 @@ func getAcmeIssuer(namespace string) *v1alpha1.Issuer {
 				Email:                      "foo@somewhere-foo-123456.com",
 				Server:                     acmeDirectoryAddress,
 				AutoRegistration:           true,
-				SkipDNSChallengeValidation: ptr.To(true),
+				SkipDNSChallengeValidation: new(true),
 			},
 		},
 	}
@@ -675,7 +675,7 @@ func getCertificate(certificateNamespace, certificateName, commonName, issuerNam
 			GenerateName: fmt.Sprintf("%v-", certificateName),
 		},
 		Spec: v1alpha1.CertificateSpec{
-			CommonName: ptr.To(commonName),
+			CommonName: new(commonName),
 			IssuerRef: &v1alpha1.IssuerRef{
 				Namespace: issuerNamespace,
 				Name:      issuerName,

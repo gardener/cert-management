@@ -105,7 +105,7 @@ func GenerateKey(algo x509.PublicKeyAlgorithm, size int, usePKCS8 bool) (crypto.
 		if size < 0 || size > 4096 {
 			return nil, nil, fmt.Errorf("invalid key size: %d", size)
 		}
-		input.Size = ptr.To(v1alpha1.PrivateKeySize(size))
+		input.Size = new(v1alpha1.PrivateKeySize(size))
 	}
 	input.Encoding = v1alpha1.PKCS1
 	if usePKCS8 {

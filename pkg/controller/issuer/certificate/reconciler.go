@@ -106,12 +106,12 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	c.Infof(defaults.String())
 
 	dnsCluster := c.GetCluster(ctrl.DNSCluster)
-	dnsClient, err := client.New(ptr.To(dnsCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
+	dnsClient, err := client.New(new(dnsCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
 	if err != nil {
 		return nil, fmt.Errorf("creating client for DNS controller failed: %w", err)
 	}
 
-	targetClient, err := client.New(ptr.To(targetCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
+	targetClient, err := client.New(new(targetCluster.Config()), client.Options{Scheme: certclient.ClusterScheme})
 	if err != nil {
 		return nil, fmt.Errorf("creating client for target cluster failed: %w", err)
 	}
@@ -887,7 +887,7 @@ func (r *certReconciler) getDuration(cert *api.Certificate) (*time.Duration, err
 	if duration < 2*r.renewalWindow {
 		return nil, fmt.Errorf("certificate duration must be at least %v", 2*r.renewalWindow)
 	}
-	return ptr.To(duration), nil
+	return new(duration), nil
 }
 
 func (r *certReconciler) validateCertDuration(duration *time.Duration, caKeyPair *legobridge.TLSKeyPair) error {
@@ -995,7 +995,7 @@ func (r *certReconciler) checkScheduledRenewal(logctx logger.LogContext, obj res
 	}
 
 	renewalDate := cert.NotAfter.Add(-renewalWindow)
-	renewalDateFormatted := ptr.To(renewalDate.Format(time.RFC3339))
+	renewalDateFormatted := new(renewalDate.Format(time.RFC3339))
 	if !ptr.Equal(renewalDateFormatted, crt.Status.RenewalDate) {
 		crt.Status.RenewalDate = renewalDateFormatted
 		if err := obj.UpdateStatus(); err != nil {

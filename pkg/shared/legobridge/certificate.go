@@ -20,7 +20,6 @@ import (
 	"github.com/go-acme/lego/v5/certificate"
 	"github.com/go-acme/lego/v5/lego"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -332,7 +331,7 @@ func FromKeyType(keyType KeyType) *api.CertificatePrivateKey {
 }
 
 func newCertificatePrivateKey(algorithm api.PrivateKeyAlgorithm, size api.PrivateKeySize) *api.CertificatePrivateKey {
-	return &api.CertificatePrivateKey{Algorithm: ptr.To(algorithm), Size: ptr.To(size)}
+	return &api.CertificatePrivateKey{Algorithm: new(algorithm), Size: new(size)}
 }
 
 func obtainForCSR(ctx context.Context, client *lego.Client, csr []byte, input ObtainInput) (*certificate.Resource, error) {

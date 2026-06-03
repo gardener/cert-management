@@ -92,7 +92,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 		}
 
 		if len(array) > 0 {
-			routes, err := r.listHTTPRoutes(ctx, ptr.To(client.ObjectKeyFromObject(gateway)), r.ActiveVersion)
+			routes, err := r.listHTTPRoutes(ctx, new(client.ObjectKeyFromObject(gateway)), r.ActiveVersion)
 			if err != nil {
 				return nil, err
 			}

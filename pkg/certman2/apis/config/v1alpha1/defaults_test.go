@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
-	"k8s.io/utils/ptr"
 
 	. "github.com/gardener/cert-management/pkg/certman2/apis/config/v1alpha1"
 )
@@ -126,7 +125,7 @@ var _ = Describe("Defaults", func() {
 
 			It("should not overwrite custom settings", func() {
 				expectedLeaderElection := componentbaseconfigv1alpha1.LeaderElectionConfiguration{
-					LeaderElect:       ptr.To(true),
+					LeaderElect:       new(true),
 					ResourceLock:      "foo",
 					RetryPeriod:       metav1.Duration{Duration: 40 * time.Second},
 					RenewDeadline:     metav1.Duration{Duration: 41 * time.Second},
@@ -157,7 +156,7 @@ var _ = Describe("Defaults", func() {
 
 				It("should not overwrite existing values", func() {
 					obj := &IssuerControllerConfig{
-						ConcurrentSyncs:            ptr.To(5),
+						ConcurrentSyncs:            new(5),
 						SyncPeriod:                 &metav1.Duration{Duration: time.Second},
 						Namespace:                  "foo",
 						DefaultIssuerName:          "foo-issuer",
