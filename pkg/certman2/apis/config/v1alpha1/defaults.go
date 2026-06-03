@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	componentbaseconfigv1alpha1 "k8s.io/component-base/config/v1alpha1"
-	"k8s.io/utils/ptr"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -114,7 +113,7 @@ func SetDefaults_ServerConfiguration(obj *ServerConfiguration) {
 // SetDefaults_IssuerControllerConfig sets defaults for the IssuerControllerConfig object.
 func SetDefaults_IssuerControllerConfig(obj *IssuerControllerConfig) {
 	if obj.ConcurrentSyncs == nil {
-		obj.ConcurrentSyncs = ptr.To(1)
+		obj.ConcurrentSyncs = new(1)
 	}
 	if obj.SyncPeriod == nil {
 		obj.SyncPeriod = &metav1.Duration{Duration: time.Hour}

@@ -112,8 +112,8 @@ var _ = Describe("Reconciler", func() {
 						Kind:               "Service",
 						Name:               "foo",
 						UID:                "123-456",
-						Controller:         ptr.To(true),
-						BlockOwnerDeletion: ptr.To(true),
+						Controller:         new(true),
+						BlockOwnerDeletion: new(true),
 					},
 				},
 			},
@@ -127,7 +127,7 @@ var _ = Describe("Reconciler", func() {
 	Describe("#Reconcile", func() {
 		It("should create certificate object for service of type load balancer", func() {
 			test(&certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.example.com"),
+				CommonName: new("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
 			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
@@ -156,7 +156,7 @@ var _ = Describe("Reconciler", func() {
 			svc.Annotations[common.AnnotDnsnames] = "*"
 			svc.Annotations[common.AnnotCommonName] = "foo.example.com"
 			test(&certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.example.com"),
+				CommonName: new("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
 			testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated")
@@ -165,7 +165,7 @@ var _ = Describe("Reconciler", func() {
 		It("should create correct certificate object if domain name with cert annotation", func() {
 			svc.Annotations[common.AnnotCertDNSNames] = "foo.cert.example.com,foo-alt.cert.example.com"
 			test(&certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.cert.example.com"),
+				CommonName: new("foo.cert.example.com"),
 				DNSNames:   []string{"foo-alt.cert.example.com"},
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
@@ -175,7 +175,7 @@ var _ = Describe("Reconciler", func() {
 			svc.Annotations[common.AnnotCommonName] = "foo.cert.example.com"
 			svc.Annotations[common.AnnotCertDNSNames] = "foo-alt.cert.example.com"
 			test(&certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.cert.example.com"),
+				CommonName: new("foo.cert.example.com"),
 				DNSNames:   []string{"foo-alt.cert.example.com"},
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
@@ -184,7 +184,7 @@ var _ = Describe("Reconciler", func() {
 		It("should create correct certificate object with overwritten secret namespace", func() {
 			svc.Annotations[common.AnnotSecretNamespace] = "other"
 			test(&certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.example.com"),
+				CommonName: new("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "other"},
 			})
 		})
@@ -201,7 +201,7 @@ var _ = Describe("Reconciler", func() {
 			svc.Annotations[common.AnnotPrivateKeyAlgorithm] = "ECDSA"
 			svc.Annotations[common.AnnotPrivateKeySize] = "384"
 			svc.Annotations[common.AnnotPrivateKeyEncoding] = "PKCS8"
-			cert.Spec.SecretName = ptr.To("foo-secret")
+			cert.Spec.SecretName = new("foo-secret")
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			test(&certmanv1alpha1.CertificateSpec{
 				CommonName:   nil,
@@ -212,8 +212,8 @@ var _ = Describe("Reconciler", func() {
 					Name:      "my-issuer",
 					Namespace: "my-ns",
 				},
-				FollowCNAME:    ptr.To(true),
-				PreferredChain: ptr.To("my-chain"),
+				FollowCNAME:    new(true),
+				PreferredChain: new("my-chain"),
 				PrivateKey: &certmanv1alpha1.CertificatePrivateKey{
 					Algorithm: ptr.To(certmanv1alpha1.ECDSAKeyAlgorithm),
 					Size:      ptr.To[certmanv1alpha1.PrivateKeySize](384),
@@ -231,7 +231,7 @@ var _ = Describe("Reconciler", func() {
 			Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 			cert2.Name = "foo-service-2"
 			cert2.Spec = certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.example.com"),
+				CommonName: new("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			}
 			Expect(fakeClient.Create(ctx, cert2)).NotTo(HaveOccurred())
@@ -240,7 +240,7 @@ var _ = Describe("Reconciler", func() {
 			cert3.ResourceVersion = ""
 			Expect(fakeClient.Create(ctx, cert3)).NotTo(HaveOccurred())
 			test(&certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.example.com"),
+				CommonName: new("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
 			Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert2), &certmanv1alpha1.Certificate{})).NotTo(HaveOccurred())
@@ -250,7 +250,7 @@ var _ = Describe("Reconciler", func() {
 
 		It("should delete certificate object if type is changed", func() {
 			test(&certmanv1alpha1.CertificateSpec{
-				CommonName: ptr.To("foo.example.com"),
+				CommonName: new("foo.example.com"),
 				SecretRef:  &corev1.SecretReference{Name: "foo-secret", Namespace: "test"},
 			})
 			svc.Spec.Type = corev1.ServiceTypeClusterIP

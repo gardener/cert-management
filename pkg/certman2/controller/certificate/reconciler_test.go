@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -46,7 +45,7 @@ var _ = Describe("#Reconcile", func() {
 				Annotations: map[string]string{},
 			},
 			Status: v1alpha1.CertificateStatus{
-				Message: ptr.To(""),
+				Message: new(""),
 			},
 		}
 		request = reconcile.Request{NamespacedName: client.ObjectKeyFromObject(cert)}

@@ -104,7 +104,7 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 		}
 
 		if len(array) > 0 {
-			routes, err := s.lister.ListHTTPRoutes(ptr.To(resources.NewObjectNameForData(objData)))
+			routes, err := s.lister.ListHTTPRoutes(new(resources.NewObjectNameForData(objData)))
 			if err != nil {
 				return nil, err
 			}

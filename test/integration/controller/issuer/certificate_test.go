@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	certv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -99,8 +98,8 @@ var _ = Describe("Certificate controller tests", func() {
 						Namespace: selfSignedIssuer.Namespace,
 						Name:      selfSignedIssuer.Name,
 					},
-					IsCA:       ptr.To(true),
-					CommonName: ptr.To("example.com"),
+					IsCA:       new(true),
+					CommonName: new("example.com"),
 				},
 			}
 			Expect(testClient.Create(ctx, certificate)).To(Succeed())
@@ -143,8 +142,8 @@ var _ = Describe("Certificate controller tests", func() {
 						Namespace: selfSignedIssuer.Namespace,
 						Name:      selfSignedIssuer.Name,
 					},
-					IsCA:           ptr.To(true),
-					CommonName:     ptr.To("example.com"),
+					IsCA:           new(true),
+					CommonName:     new("example.com"),
 					EmailAddresses: []string{"foo@example.com", "bar@example.com"},
 					IPAddresses:    []string{"1.1.1.1", "1.0.0.1"},
 					URIs:           []string{"ftp://ftp.example.com", "urn:isbn:9780718097914"},
@@ -209,7 +208,7 @@ var _ = Describe("Certificate controller tests", func() {
 						Namespace: selfSignedIssuer.Namespace,
 						Name:      selfSignedIssuer.Name,
 					},
-					IsCA: ptr.To(true),
+					IsCA: new(true),
 					CSR:  csrPEM,
 				},
 			}
@@ -236,8 +235,8 @@ var _ = Describe("Certificate controller tests", func() {
 							Namespace: selfSignedIssuer.Namespace,
 							Name:      selfSignedIssuer.Name,
 						},
-						IsCA:           ptr.To(true),
-						CommonName:     ptr.To("example.com"),
+						IsCA:           new(true),
+						CommonName:     new("example.com"),
 						EmailAddresses: emailAddresses,
 						IPAddresses:    ipAddresses,
 						URIs:           uris,
@@ -270,8 +269,8 @@ var _ = Describe("Certificate controller tests", func() {
 							Namespace: selfSignedIssuer.Namespace,
 							Name:      selfSignedIssuer.Name,
 						},
-						IsCA:        ptr.To(true),
-						CommonName:  ptr.To("example.com"),
+						IsCA:        new(true),
+						CommonName:  new("example.com"),
 						Duration:    &metav1.Duration{Duration: 90 * 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 					},
@@ -304,8 +303,8 @@ var _ = Describe("Certificate controller tests", func() {
 								Namespace: selfSignedIssuer.Namespace,
 								Name:      selfSignedIssuer.Name,
 							},
-							IsCA:        ptr.To(true),
-							CommonName:  ptr.To("example.com"),
+							IsCA:        new(true),
+							CommonName:  new("example.com"),
 							Duration:    &metav1.Duration{Duration: 90 * 24 * time.Hour},
 							RenewBefore: &metav1.Duration{Duration: renewBefore},
 						},
@@ -356,12 +355,12 @@ var _ = Describe("Certificate controller tests", func() {
 					GenerateName: "root-certificate-",
 				},
 				Spec: certv1alpha1.CertificateSpec{
-					IsCA: ptr.To(true),
+					IsCA: new(true),
 					IssuerRef: &certv1alpha1.IssuerRef{
 						Namespace: selfSignedIssuer.Namespace,
 						Name:      selfSignedIssuer.Name,
 					},
-					CommonName: ptr.To("example.com"),
+					CommonName: new("example.com"),
 				},
 			}
 			Expect(testClient.Create(ctx, rootCertificate)).To(Succeed())
@@ -413,14 +412,14 @@ var _ = Describe("Certificate controller tests", func() {
 							Name:      caIssuer.Name,
 						},
 						PrivateKey: &certv1alpha1.CertificatePrivateKey{
-							Algorithm: ptr.To(privateKeyAlgorithm),
-							Size:      ptr.To(certv1alpha1.PrivateKeySize(privateKeySize)),
+							Algorithm: new(privateKeyAlgorithm),
+							Size:      new(certv1alpha1.PrivateKeySize(privateKeySize)),
 							Encoding:  encoding,
 						},
 						Duration: &metav1.Duration{
 							Duration: 48 * time.Hour,
 						},
-						CommonName:     ptr.To("example.com"),
+						CommonName:     new("example.com"),
 						DNSNames:       []string{"*.example.com"},
 						EmailAddresses: []string{"admin@example.com"},
 						IPAddresses:    []string{"127.0.0.1"},
@@ -479,7 +478,7 @@ var _ = Describe("Certificate controller tests", func() {
 						Namespace: caIssuer.Namespace,
 						Name:      caIssuer.Name,
 					},
-					CommonName: ptr.To("example.com"),
+					CommonName: new("example.com"),
 					Duration: &metav1.Duration{
 						Duration: 48 * time.Hour,
 					},

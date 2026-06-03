@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -124,8 +123,8 @@ func (r *Reconciler) AddToManager(mgr manager.Manager) error {
 		).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 1,
-			RecoverPanic:            ptr.To(false),
-			NeedLeaderElection:      ptr.To(false),
+			RecoverPanic:            new(false),
+			NeedLeaderElection:      new(false),
 		}).
 		Complete(r)
 }

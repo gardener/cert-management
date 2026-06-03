@@ -140,8 +140,8 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 							Kind:               "Gateway",
 							Name:               "foo",
 							UID:                "123-456",
-							Controller:         ptr.To(true),
-							BlockOwnerDeletion: ptr.To(true),
+							Controller:         new(true),
+							BlockOwnerDeletion: new(true),
 						},
 					},
 				},
@@ -155,7 +155,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 		Describe("#Reconcile", func() {
 			It("should create certificate object for gateway with TLS", func() {
 				test(&certmanv1alpha1.CertificateSpec{
-					CommonName: ptr.To("host1.example.com"),
+					CommonName: new("host1.example.com"),
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				})
 				testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ")
@@ -185,7 +185,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 			It("should succeed if '*' dnsnames is overwritten by cert dnsnames", func() {
 				gateway.GetAnnotations()[common.AnnotCertDNSNames] = "foo.cert.example.com,foo-alt.cert.example.com"
 				test(&certmanv1alpha1.CertificateSpec{
-					CommonName: ptr.To("foo.cert.example.com"),
+					CommonName: new("foo.cert.example.com"),
 					DNSNames:   []string{"foo-alt.cert.example.com"},
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				})
@@ -196,7 +196,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				gateway.GetAnnotations()[common.AnnotDnsnames] = "*"
 				gateway.GetAnnotations()[common.AnnotCommonName] = "foo.example.com"
 				test(&certmanv1alpha1.CertificateSpec{
-					CommonName: ptr.To("foo.example.com"),
+					CommonName: new("foo.example.com"),
 					DNSNames:   []string{"host1.example.com"},
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				})
@@ -207,7 +207,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				gateway.GetAnnotations()[common.AnnotCommonName] = "foo.cert.example.com"
 				gateway.GetAnnotations()[common.AnnotCertDNSNames] = "foo-alt.cert.example.com"
 				test(&certmanv1alpha1.CertificateSpec{
-					CommonName: ptr.To("foo.cert.example.com"),
+					CommonName: new("foo.cert.example.com"),
 					DNSNames:   []string{"foo-alt.cert.example.com"},
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				})
@@ -226,7 +226,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				annotations[common.AnnotPrivateKeyAlgorithm] = "ECDSA"
 				annotations[common.AnnotPrivateKeySize] = "384"
 				annotations[common.AnnotPrivateKeyEncoding] = "PKCS8"
-				cert.Spec.SecretName = ptr.To("host1-secret")
+				cert.Spec.SecretName = new("host1-secret")
 				Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 				test(&certmanv1alpha1.CertificateSpec{
 					CommonName:   nil,
@@ -237,8 +237,8 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 						Name:      "my-issuer",
 						Namespace: "my-ns",
 					},
-					FollowCNAME:    ptr.To(true),
-					PreferredChain: ptr.To("my-chain"),
+					FollowCNAME:    new(true),
+					PreferredChain: new("my-chain"),
 					PrivateKey: &certmanv1alpha1.CertificatePrivateKey{
 						Algorithm: ptr.To(certmanv1alpha1.ECDSAKeyAlgorithm),
 						Size:      ptr.To[certmanv1alpha1.PrivateKeySize](384),
@@ -256,7 +256,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				Expect(fakeClient.Create(ctx, cert)).NotTo(HaveOccurred())
 				cert2.Name = "foo-gateway-2"
 				cert2.Spec = certmanv1alpha1.CertificateSpec{
-					CommonName: ptr.To("host1.example.com"),
+					CommonName: new("host1.example.com"),
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				}
 				Expect(fakeClient.Create(ctx, cert2)).NotTo(HaveOccurred())
@@ -265,7 +265,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				cert3.ResourceVersion = ""
 				Expect(fakeClient.Create(ctx, cert3)).NotTo(HaveOccurred())
 				test(&certmanv1alpha1.CertificateSpec{
-					CommonName: ptr.To("host1.example.com"),
+					CommonName: new("host1.example.com"),
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				})
 				Expect(fakeClient.Get(ctx, client.ObjectKeyFromObject(cert2), &certmanv1alpha1.Certificate{})).NotTo(HaveOccurred())
@@ -298,11 +298,11 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				})
 				testMulti(
 					&certmanv1alpha1.CertificateSpec{
-						CommonName: ptr.To("host1.example.com"),
+						CommonName: new("host1.example.com"),
 						SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 					},
 					&certmanv1alpha1.CertificateSpec{
-						CommonName: ptr.To("host2.example.com"),
+						CommonName: new("host2.example.com"),
 						SecretRef:  &corev1.SecretReference{Name: "host2-secret", Namespace: "test"},
 					})
 				testutils.AssertEvents(fakeRecorder.Events, "Normal CertificateCreated ", "Normal CertificateCreated ")
@@ -320,11 +320,11 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 				Expect(fakeClient.Update(ctx, gateway)).NotTo(HaveOccurred())
 				testWithoutCreation([]*certmanv1alpha1.CertificateSpec{
 					{
-						CommonName: ptr.To("host1b.example.com"),
+						CommonName: new("host1b.example.com"),
 						SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 					},
 					{
-						CommonName: ptr.To("host3.example.com"),
+						CommonName: new("host3.example.com"),
 						SecretRef:  &corev1.SecretReference{Name: "host3-secret", Namespace: "test"},
 					},
 				})
@@ -333,7 +333,7 @@ func createReconcilerTestFunc[T client.Object](obj T, version Version) func() {
 
 			It("should delete certificate object if gateway TLS is dropped", func() {
 				test(&certmanv1alpha1.CertificateSpec{
-					CommonName: ptr.To("host1.example.com"),
+					CommonName: new("host1.example.com"),
 					SecretRef:  &corev1.SecretReference{Name: "host1-secret", Namespace: "test"},
 				})
 				modifyListeners(gateway, func(listeners []gatewayapisv1.Listener) []gatewayapisv1.Listener {

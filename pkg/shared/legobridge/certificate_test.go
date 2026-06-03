@@ -33,13 +33,13 @@ var _ = Describe("Certificate", func() {
 
 			var key *api.CertificatePrivateKey
 			if len(algorithm) > 0 {
-				key = &api.CertificatePrivateKey{Algorithm: ptr.To(algorithm)}
+				key = &api.CertificatePrivateKey{Algorithm: new(algorithm)}
 			}
 			if size > 0 {
 				if key == nil {
 					key = &api.CertificatePrivateKey{}
 				}
-				key.Size = ptr.To(api.PrivateKeySize(size))
+				key.Size = new(api.PrivateKeySize(size))
 			}
 			actualKeyType, err := defaults.ToKeyType(key)
 			if keyType == "" {
@@ -155,7 +155,7 @@ var _ = Describe("Certificate", func() {
 			input := ObtainInput{
 				KeySpec:    KeySpec{KeyType: RSA2048},
 				Duration:   ptr.To(time.Hour),
-				CommonName: ptr.To("test-common-name"),
+				CommonName: new("test-common-name"),
 			}
 			cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())

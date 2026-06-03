@@ -16,7 +16,6 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/shared"
@@ -48,13 +47,13 @@ var _ internalProvider = &dnsRecordProvider{}
 func (p *dnsRecordProvider) present(ctx context.Context, log LoggerInfof, domain, fqdn string, values []string) (error, bool) {
 	setSpec := func(e *extensionsv1alpha.DNSRecord) {
 		e.Spec.Name = dns.NormalizeHostname(fqdn)
-		e.Spec.TTL = ptr.To(int64(p.settings.PropagationTimeout.Seconds()))
+		e.Spec.TTL = new(int64(p.settings.PropagationTimeout.Seconds()))
 		e.Spec.RecordType = extensionsv1alpha.DNSRecordTypeTXT
 		e.Spec.Type = p.settings.DNSRecordSettings.Type
 		e.Spec.SecretRef = p.settings.DNSRecordSettings.SecretRef
 		e.Spec.Values = values
 		if p.settings.DNSRecordSettings.Class != "" {
-			e.Spec.Class = ptr.To(extensionsv1alpha.ExtensionClass(p.settings.DNSRecordSettings.Class))
+			e.Spec.Class = new(extensionsv1alpha.ExtensionClass(p.settings.DNSRecordSettings.Class))
 		}
 		addAnnotation(e, shared.AnnotACMEDNSChallenge, "true")
 	}

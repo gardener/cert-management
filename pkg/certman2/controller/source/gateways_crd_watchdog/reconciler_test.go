@@ -17,7 +17,6 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -52,7 +51,7 @@ var _ = Describe("Reconciler", func() {
 			for _, kv := range keysAndValues {
 				msgParts = append(msgParts, fmt.Sprintf("%v", kv))
 			}
-			lastShutdown = ptr.To(strings.Join(msgParts, ","))
+			lastShutdown = new(strings.Join(msgParts, ","))
 		}
 		lastShutdown = nil
 	})

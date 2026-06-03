@@ -15,7 +15,6 @@ import (
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
@@ -112,7 +111,7 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 			return nil, fmt.Errorf("unexpected istio gateway type: %#v", objData)
 		}
 		if len(array) > 0 {
-			virtualServices, err := s.lister.ListVirtualServices(ptr.To(resources.NewObjectNameForData(objData)))
+			virtualServices, err := s.lister.ListVirtualServices(new(resources.NewObjectNameForData(objData)))
 			if err != nil {
 				return nil, err
 			}
