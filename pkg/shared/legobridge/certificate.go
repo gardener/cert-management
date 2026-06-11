@@ -187,6 +187,7 @@ func obtainForDomains(ctx context.Context, client *lego.Client, domains []string
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
+		EnableCommonName:               true,
 		PrivateKey:                     privateKey,
 	}
 	if input.PreflightCheck != nil {
@@ -349,6 +350,7 @@ func obtainForCSR(ctx context.Context, client *lego.Client, csr []byte, input Ob
 		Bundle:                         true,
 		AlwaysDeactivateAuthorizations: input.AlwaysDeactivateAuthorizations,
 		PreferredChain:                 input.PreferredChain,
+		EnableCommonName:               true,
 	})
 }
 
