@@ -53,7 +53,7 @@ var _ = Describe("Issuer controller tests", func() {
 				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
 				g.Expect(cert.Status.ObservedGeneration).To(Equal(cert.Generation))
 				return cert.Status.State
-			}).Should(Equal("Ready"))
+			}).WithPolling(500 * time.Millisecond).WithTimeout(10 * time.Second).Should(Equal("Ready"))
 		}
 	)
 
@@ -116,6 +116,78 @@ var _ = Describe("Issuer controller tests", func() {
 
 			By("Wait for certificate to become ready")
 			checkCertificateStateReady(cert)
+
+			By("Check CN and DNSNames in the issued certificate")
+			parsedCert := parseCertFromSecret(cert)
+			Expect(parsedCert.Subject.CommonName).To(Equal("example.com"))
+			Expect(parsedCert.DNSNames).To(ConsistOf("example.com"))
+		})
+
+		It("should create a certificate from a CSR", func() {
+			By("Create ACME issuer")
+			issuer := getAcmeIssuer(testRunID)
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			checkIssuerStateReady(issuer)
+
+			By("Build a CSR with CN=example.com")
+			csrPEM := buildCSR("example.com", []string{"example.com", "another.example.com"})
+
+			By("Create certificate referencing the CSR")
+			cert := &v1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testRunID,
+					GenerateName: "acme-certificate-csr-",
+				},
+				Spec: v1alpha1.CertificateSpec{
+					CSR: csrPEM,
+					IssuerRef: &v1alpha1.IssuerRef{
+						Namespace: issuer.Namespace,
+						Name:      issuer.Name,
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, cert)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert)).To(Succeed())
+			})
+
+			By("Wait for certificate to become ready")
+			checkCertificateStateReady(cert)
+
+			By("Check CN and DNSNames in the issued certificate")
+			parsedCert := parseCertFromSecret(cert)
+			Expect(parsedCert.Subject.CommonName).To(Equal("example.com"))
+			Expect(parsedCert.DNSNames).To(ConsistOf("example.com", "another.example.com"))
+		})
+
+		It("should create a certificate with both CommonName and DNSNames", func() {
+			By("Create ACME issuer")
+			issuer := getAcmeIssuer(testRunID)
+			Expect(testClient.Create(ctx, issuer)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, issuer)).To(Succeed())
+			})
+
+			checkIssuerStateReady(issuer)
+
+			By("Create certificate with CommonName and additional DNSNames")
+			cert := getCertificate(testRunID, "acme-certificate-cn-sans", "example.com", issuer.Namespace, issuer.Name, "another.example.com", "third.example.com")
+			Expect(testClient.Create(ctx, cert)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, cert)).To(Succeed())
+			})
+
+			By("Wait for certificate to become ready")
+			checkCertificateStateReady(cert)
+
+			By("Check CN and DNSNames in the issued certificate")
+			parsedCert := parseCertFromSecret(cert)
+			Expect(parsedCert.Subject.CommonName).To(Equal("example.com"))
+			Expect(parsedCert.DNSNames).To(ConsistOf("example.com", "another.example.com", "third.example.com"))
 		})
 
 		It("should reconcile an orphan pending certificate with an ACME issuer", func() {
@@ -668,7 +740,7 @@ func getAcmeIssuer(namespace string) *v1alpha1.Issuer {
 	}
 }
 
-func getCertificate(certificateNamespace, certificateName, commonName, issuerNamespace, issuerName string) *v1alpha1.Certificate {
+func getCertificate(certificateNamespace, certificateName, commonName, issuerNamespace, issuerName string, dnsNames ...string) *v1alpha1.Certificate {
 	return &v1alpha1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    certificateNamespace,
@@ -676,12 +748,41 @@ func getCertificate(certificateNamespace, certificateName, commonName, issuerNam
 		},
 		Spec: v1alpha1.CertificateSpec{
 			CommonName: new(commonName),
+			DNSNames:   dnsNames,
 			IssuerRef: &v1alpha1.IssuerRef{
 				Namespace: issuerNamespace,
 				Name:      issuerName,
 			},
 		},
 	}
+}
+
+func buildCSR(commonName string, dnsNames []string) []byte {
+	GinkgoHelper()
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	Expect(err).NotTo(HaveOccurred())
+	csrDER, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{
+		Subject:  pkix.Name{CommonName: commonName},
+		DNSNames: dnsNames,
+	}, privateKey)
+	Expect(err).NotTo(HaveOccurred())
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER})
+}
+
+func parseCertFromSecret(cert *v1alpha1.Certificate) *x509.Certificate {
+	GinkgoHelper()
+	Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+	Expect(cert.Spec.SecretRef).NotTo(BeNil())
+	secret := &corev1.Secret{}
+	Expect(testClient.Get(ctx, client.ObjectKey{
+		Namespace: cert.Spec.SecretRef.Namespace,
+		Name:      cert.Spec.SecretRef.Name,
+	}, secret)).To(Succeed())
+	certBlock, _ := pem.Decode(secret.Data[corev1.TLSCertKey])
+	Expect(certBlock).NotTo(BeNil())
+	parsedCert, err := x509.ParseCertificate(certBlock.Bytes)
+	Expect(err).NotTo(HaveOccurred())
+	return parsedCert
 }
 
 func createPemCertificate(privateKey crypto.PrivateKey, pubKey crypto.PublicKey, header string, privateKeyBytes []byte) (map[string][]byte, error) {
