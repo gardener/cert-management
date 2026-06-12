@@ -512,7 +512,8 @@ var _ = Describe("Certificate controller tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Check SANs in the certificate")
-			Expect(parsedCert.DNSNames).To(ConsistOf("example.com", "another.example.com"))
+			Expect(parsedCert.Subject.CommonName).To(Equal("example.com"))
+			Expect(parsedCert.DNSNames).To(ConsistOf("another.example.com", "example.com"))
 			Expect(parsedCert.EmailAddresses).To(ConsistOf("foo@example.com", "bar@example.com"))
 			Expect(parsedCert.IPAddresses).To(ConsistOf(net.ParseIP("1.1.1.1").To4(), net.ParseIP("1.0.0.1").To4()))
 			Expect(parsedCert.URIs).To(ConsistOf(&url.URL{Scheme: "ftp", Host: "ftp.example.com"}, &url.URL{Scheme: "urn", Opaque: "isbn:9780718097914"}))

@@ -38,14 +38,17 @@ const (
 )
 
 var (
+	// PromoteCommonName mirrors lego's EnableCommonName so the issued cert carries a CN.
 	profiles = map[string]ca.Profile{
 		"default": {
-			Description:    "The profile you know and love",
-			ValidityPeriod: 7776000,
+			Description:       "The profile you know and love",
+			ValidityPeriod:    7776000,
+			PromoteCommonName: true,
 		},
 		"shortlived": {
-			Description:    "A short-lived cert profile, without actual enforcement",
-			ValidityPeriod: 518400,
+			Description:       "A short-lived cert profile, without actual enforcement",
+			ValidityPeriod:    518400,
+			PromoteCommonName: true,
 		},
 	}
 	caaIdentities = []string{"pebble.letsencrypt.org"}
