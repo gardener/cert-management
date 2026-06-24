@@ -41,7 +41,7 @@ require (
 	sigs.k8s.io/gateway-api v1.5.0
 	sigs.k8s.io/kind v0.32.0
 	sigs.k8s.io/yaml v1.6.0
-	software.sslmate.com/src/go-pkcs12 v0.7.2
+	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
 
 require (
