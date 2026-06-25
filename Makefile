@@ -43,7 +43,7 @@ check-generate:
 
 .PHONY: check-imports
 check-imports: $(IMPORT_BOSS)
-	$(IMPORT_BOSS) ./cmd/... ./pkg/... ./test/...
+	$(IMPORT_BOSS) ./cmd/... ./pkg/... ./pkg/apis/... ./test/...
 
 .PHONY: check
 check: format check-imports $(GOIMPORTS) $(GOLANGCI_LINT) $(GO_ADD_LICENSE)
