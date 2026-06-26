@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# SPDX-FileCopyrightText: 2023 SAP SE or an SAP affiliate company and Gardener contributors
+# SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
 #
 # SPDX-License-Identifier: Apache-2.0
 
-set -eu
+set -euo pipefail
 
 CONTROLLER_GEN=$CONTROLLER_GEN bash "$CONTROLLER_MANAGER_LIB_HACK_DIR/generate-crds"
 
