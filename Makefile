@@ -33,7 +33,9 @@ tidy:
 .PHONY: clean
 clean:
 	bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./pkg/...
+	@rm -f $(REPO_ROOT)/pkg/certman2/apis/cert/*.yaml
 	@rm -f $(REPO_ROOT)/pkg/apis/cert/crds/*
+	@rm -f $(REPO_ROOT)/pkg/cert/crds/*
 
 .PHONY: check-generate
 check-generate:
@@ -41,7 +43,7 @@ check-generate:
 
 .PHONY: check-imports
 check-imports: $(IMPORT_BOSS)
-	$(IMPORT_BOSS) ./cmd/... ./pkg/... ./test/...
+	$(IMPORT_BOSS) ./cmd/... ./pkg/... ./pkg/apis/... ./test/...
 
 .PHONY: check
 check: format check-imports $(GOIMPORTS) $(GOLANGCI_LINT) $(GO_ADD_LICENSE)
@@ -94,7 +96,8 @@ test-clean:
 .PHONY: generate
 generate: $(CONTROLLER_GEN) $(MOCKGEN) $(YQ)
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) REPO_ROOT=$(REPO_ROOT) ./hack/generate-code
-	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) REPO_ROOT=$(REPO_ROOT) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/...
+	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) REPO_ROOT=$(REPO_ROOT) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/...
+	@CONTROLLER_MANAGER_LIB_HACK_DIR=$(CONTROLLER_MANAGER_LIB_HACK_DIR) REPO_ROOT=$(REPO_ROOT) CONTROLLER_GEN=$(shell realpath $(CONTROLLER_GEN)) go generate ./pkg/apis/...
 	@./hack/copy-crds.sh
 	$(MAKE) format
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) bash $(GARDENER_HACK_DIR)/generate-renovate-ignore-deps.sh

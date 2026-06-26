@@ -4,7 +4,8 @@ rules:
       - ''
     forbiddenPrefixes:
       - github.com/gardener/cert-management
-# TODO(marc1404): controller-manager-library references should be removed
-#  - selectorRegexp: github[.]com/gardener/controller-manager-library
-#    forbiddenPrefixes:
-#      - ''
+  - selectorRegexp: github[.]com/gardener/controller-manager-library
+    allowedPrefixes:
+      - ''
+    forbiddenPrefixes:
+      - 'github.com/gardener/controller-manager-library'
