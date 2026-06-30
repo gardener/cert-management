@@ -15,6 +15,13 @@
       groupName: 'gardener/gardener',
       matchPackageNames: ['/^(github\\.com\\/)?gardener\\/gardener(\\/.*)?$/'],
       enabled: true
+    },
+    {
+      // Ignore updates for internal packages.
+      matchPackageNames: [
+        'github.com/gardener/cert-management/pkg/apis',
+      ],
+      enabled: false,
     }
   ],
   // The following list of dependencies to ignore is updated by `make generate`.
