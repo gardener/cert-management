@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/cert-manager/cert-manager v1.20.3
 	github.com/gardener/cert-management/pkg/apis v0.0.0
-	github.com/gardener/controller-manager-library v0.2.1-0.20260508123052-a693015425a8
+	github.com/gardener/controller-manager-library c0ab44e1854d
 	github.com/gardener/external-dns-management v0.46.0
 	github.com/gardener/gardener v1.145.1
 	github.com/gardener/gardener/pkg/apis v1.145.0
