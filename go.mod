@@ -9,9 +9,9 @@ require (
 	github.com/cert-manager/cert-manager v1.20.3
 	github.com/gardener/cert-management/pkg/apis v0.0.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20260703140944-c0ab44e1854d
-	github.com/gardener/external-dns-management v0.46.0
+	github.com/gardener/external-dns-management v0.47.0
 	github.com/gardener/gardener v1.145.1
-	github.com/gardener/gardener/pkg/apis v1.145.0
+	github.com/gardener/gardener/pkg/apis v1.145.1
 	github.com/go-acme/lego/v5 v5.2.2
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.10.1
@@ -65,12 +65,12 @@ require (
 	github.com/VictoriaMetrics/operator/api v0.66.1 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.41.8 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.42.1 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.19 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.18 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.24 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.24 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.24 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.30 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.30 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.25 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.24 // indirect
@@ -78,7 +78,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.30.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.36.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.2 // indirect
-	github.com/aws/smithy-go v1.25.1 // indirect
+	github.com/aws/smithy-go v1.27.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
@@ -195,7 +195,7 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
