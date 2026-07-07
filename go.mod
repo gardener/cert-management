@@ -10,8 +10,8 @@ require (
 	github.com/gardener/cert-management/pkg/apis v0.0.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20260703140944-c0ab44e1854d
 	github.com/gardener/external-dns-management v0.47.0
-	github.com/gardener/gardener v1.145.1
-	github.com/gardener/gardener/pkg/apis v1.145.1
+	github.com/gardener/gardener v1.146.1
+	github.com/gardener/gardener/pkg/apis v1.146.1
 	github.com/go-acme/lego/v5 v5.2.2
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.10.1
@@ -27,7 +27,7 @@ require (
 	golang.org/x/exp v0.0.0-20260527015227-08cc5374adb3
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067
 	golang.org/x/tools v0.46.0
-	istio.io/api v1.29.4
+	istio.io/api v1.29.5
 	istio.io/client-go v1.29.2
 	k8s.io/api v0.36.2
 	k8s.io/apiextensions-apiserver v0.36.2
@@ -63,7 +63,7 @@ require (
 	github.com/VictoriaMetrics/metrics v1.40.2 // indirect
 	github.com/VictoriaMetrics/metricsql v0.84.8 // indirect
 	github.com/VictoriaMetrics/operator/api v0.66.1 // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.1 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.25 // indirect
