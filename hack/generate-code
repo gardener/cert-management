@@ -16,7 +16,9 @@ export REPO_ROOT=${REPO_ROOT}
 rm -f ${GOPATH}/bin/*-gen
 rm -rf "${SOURCE_PATH}/pkg/client/cert"
 
-CODE_GEN_DIR=$(go list -m -f '{{.Dir}}' k8s.io/code-generator)
+MODFILE="$(go list -m -f '{{.Dir}}' github.com/gardener/gardener/hack/tools)/go.mod"
+GOWORK=off go mod download -modfile "${MODFILE}" k8s.io/code-generator
+CODE_GEN_DIR=$(GOWORK=off go list -m -modfile "${MODFILE}" -f '{{.Dir}}' k8s.io/code-generator)
 source "${CODE_GEN_DIR}/kube_codegen.sh"
 
 kube::codegen::gen_helpers \
