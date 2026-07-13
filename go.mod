@@ -10,9 +10,9 @@ require (
 	github.com/gardener/cert-management/pkg/apis v0.25.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20260703140944-c0ab44e1854d
 	github.com/gardener/external-dns-management v0.47.0
-	github.com/gardener/gardener v1.146.1
-	github.com/gardener/gardener/hack/tools v1.146.1
-	github.com/gardener/gardener/pkg/apis v1.146.1
+	github.com/gardener/gardener v1.146.3
+	github.com/gardener/gardener/hack/tools v1.146.3
+	github.com/gardener/gardener/pkg/apis v1.146.3
 	github.com/go-acme/lego/v5 v5.2.2
 	github.com/go-logr/logr v1.4.3
 	github.com/letsencrypt/pebble/v2 v2.10.1
@@ -40,12 +40,6 @@ require (
 	sigs.k8s.io/gateway-api v1.6.0
 	software.sslmate.com/src/go-pkcs12 v0.7.3
 )
-
-replace github.com/gardener/gardener => github.com/LucaBernstein/gardener v1.99.2607101033
-
-replace github.com/gardener/gardener/pkg/apis => github.com/LucaBernstein/gardener/pkg/apis v1.99.2607101033
-
-replace github.com/gardener/gardener/hack/tools => github.com/LucaBernstein/gardener/hack/tools v1.99.2607101033
 
 replace github.com/gardener/cert-management/pkg/apis => ./pkg/apis
 
