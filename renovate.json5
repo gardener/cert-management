@@ -28,7 +28,6 @@
   // DO NOT EDIT THIS SECTION MANUALLY.
   ignoreDeps: [
     "github.com/Masterminds/semver/v3",
-    "github.com/gardener/cert-management/pkg/apis",
     "github.com/go-logr/logr",
     "github.com/miekg/dns",
     "github.com/onsi/ginkgo/v2",
@@ -201,7 +200,6 @@
     "k8s.io/kube-aggregator",
     "k8s.io/kubelet",
     "k8s.io/metrics",
-    "k8s.io/streaming",
     "sigs.k8s.io/json",
     "sigs.k8s.io/randfill",
     "sigs.k8s.io/structured-merge-diff/v6",
