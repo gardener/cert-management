@@ -11,7 +11,7 @@ import (
 	"github.com/gardener/gardener/cmd/utils"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"github.com/gardener/cert-management/cmd/certman2/app"
+	"github.com/gardener/cert-management/cmd/cert-controller-manager-next-generation/app"
 )
 
 func main() {
