@@ -10,7 +10,7 @@ GARDENER_HACK_DIR                 := $(shell go list -m -f "{{.Dir}}" github.com
 EXTERNAL_DNS_MAN_DIR              := $(shell go list -m -f "{{.Dir}}" github.com/gardener/external-dns-management)
 REGISTRY                          := europe-docker.pkg.dev/gardener-project/public
 EXECUTABLE                        := cert-controller-manager
-EXECUTABLE2                       := certman2
+EXECUTABLE_NG                     := cert-controller-manager-next-generation
 REPO_ROOT                         := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                          := $(REPO_ROOT)/hack
 PROJECT                           := github.com/gardener/cert-management
@@ -61,22 +61,34 @@ add-license-headers: $(GO_ADD_LICENSE)
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./pkg ./test
 
+LDFLAGS_RELEASE  ?= -s -w
+GOFLAGS_RELEASE  ?= -trimpath -buildvcs=false
+LDFLAGS_NG := $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(EXECUTABLE_NG))
+
 .PHONY: build-local
 build-local:
 	@CGO_ENABLED=0 go build -o $(EXECUTABLE) \
-	    -ldflags "-X main.version=$(VERSION)-$(shell git rev-parse HEAD)"\
+	    -ldflags "-X main.version=$(VERSION)-$(shell git rev-parse HEAD)" \
 	    ./cmd/cert-controller-manager
-	@CGO_ENABLED=0 go build -o $(EXECUTABLE2) \
-	    -ldflags "-X main.version=$(VERSION)-$(shell git rev-parse HEAD)"\
-	    ./cmd/certman2
-
+	@CGO_ENABLED=0 go build -o $(EXECUTABLE_NG) \
+	    -ldflags "$(LDFLAGS_NG)" \
+	    ./cmd/cert-controller-manager-next-generation
 
 .PHONY: release
-release:
-	@CGO_ENABLED=0 go build -o $(EXECUTABLE) \
-	    -a \
-	    -ldflags "-w -X main.version=$(VERSION)" \
+release: $(EXECUTABLE) # TODO(martinweindel): add '$(EXECUTABLE_NG)' later when all controllers are implemented
+
+$(EXECUTABLE): FORCE
+	@CGO_ENABLED=0 go build $(GOFLAGS_RELEASE) -o $@ \
+	    -ldflags "$(LDFLAGS_RELEASE) -X main.version=$(VERSION)" \
 	    ./cmd/cert-controller-manager
+
+$(EXECUTABLE_NG): FORCE
+	@CGO_ENABLED=0 go build $(GOFLAGS_RELEASE) -o $@ \
+	    -ldflags "$(LDFLAGS_NG) $(LDFLAGS_RELEASE)" \
+	    ./cmd/cert-controller-manager-next-generation
+
+.PHONY: FORCE
+FORCE:
 
 .PHONY: test
 test: $(GINKGO)
