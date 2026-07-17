@@ -164,8 +164,8 @@ github.com/gardener/external-dns-management v0.48.0 h1:n2ZRSs++40XScJjsF2rP0yg8D
 github.com/gardener/external-dns-management v0.48.0/go.mod h1:p+UYYgz6zn5FH58kcF/sAv18hkNOOYoLFocLCX1WrI0=
 github.com/gardener/gardener v1.147.0 h1:Ym8wAlGeagN3Bh/7wXux1QEyTj2p2PJgwtG8MZQTlKU=
 github.com/gardener/gardener v1.147.0/go.mod h1:FSbwvYXFWTEnTqOdE6eYKUMpeOPtcsIfS/IAfbtxhkc=
-github.com/gardener/gardener/hack/tools v1.146.4 h1:Q3bG6wXNytZUKiTz82QzC3JrCOERkdS1TeV5wo547dg=
-github.com/gardener/gardener/hack/tools v1.146.4/go.mod h1:AYY/L1q1uzpKUYUN+KWHj4Ke6OUxcc6k9RyRkUVFYFc=
+github.com/gardener/gardener/hack/tools v1.147.0 h1:TL5kXUROsK9E+8H/vaBbPoVUCSREMRcc6U6dIEe3h3Y=
+github.com/gardener/gardener/hack/tools v1.147.0/go.mod h1:2MzyJ3tFKLquDhDunSpdTOrf7h4qX4fYmlShXIbaIT4=
 github.com/gardener/gardener/pkg/apis v1.147.0 h1:9mlwQhVRxYIkE0G6YZdwIMdju1PxJGdl4EHDdnSPdxM=
 github.com/gardener/gardener/pkg/apis v1.147.0/go.mod h1:qaMyCp4H/Gjct9tF57r5GoaV8YI0IrO6snnQQA9pgEo=
 github.com/gardener/machine-controller-manager v0.62.1 h1:TQ4Qs9aaYTqSkqFownIaEAvnrYoNpBMcp7ZMYVEgUWM=
