@@ -22,6 +22,13 @@
         'github.com/gardener/cert-management/pkg/apis',
       ],
       enabled: false,
+    },
+    {
+      // Pin Dockerfile base images by digest for reproducible, supply-chain-safe builds.
+      // Renovate will open a PR to add @sha256:... to any unpinned FROM tag and to
+      // keep the digest in sync with the tag on subsequent updates.
+      matchManagers: ['dockerfile'],
+      pinDigests: true,
     }
   ],
   // The following list of dependencies to ignore is updated by `make generate`.
