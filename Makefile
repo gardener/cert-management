@@ -27,6 +27,8 @@ include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: tidy
 tidy:
+	@go work use
+	@go work sync
 	@go mod tidy
 	@cp $(GARDENER_HACK_DIR)/sast.sh $(HACK_DIR)/sast.sh && chmod +xw $(HACK_DIR)/sast.sh
 	@cp $(EXTERNAL_DNS_MAN_DIR)/pkg/apis/dns/crds/dns.gardener.cloud_dnsentries.yaml $(REPO_ROOT)/examples/11-dns.gardener.cloud_dnsentries.yaml
