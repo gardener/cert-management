@@ -656,6 +656,32 @@ func DecodeCertificate(tlsCrt []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
+// DecodeCertificates decodes all certificates from the crt byte array.
+// At least one certificate must be present.
+func DecodeCertificates(tlsCrt []byte) ([]*x509.Certificate, error) {
+	var certs []*x509.Certificate
+	rest := tlsCrt
+	for {
+		var block *pem.Block
+		block, rest = pem.Decode(rest)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parsing certificate failed: %w", err)
+		}
+		certs = append(certs, cert)
+	}
+	if len(certs) == 0 {
+		return nil, fmt.Errorf("no certificate found in PEM data for %s", corev1.TLSCertKey)
+	}
+	return certs, nil
+}
+
 // newCASignedCertFromInput returns a new Certificate signed by a CA.
 // An x509.CertificateRequest is created from scratch based on and ObtainInput object
 func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) {
