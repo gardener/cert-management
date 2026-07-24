@@ -79,7 +79,7 @@ var _ = Describe("PKI Helpers", func() {
 			data[corev1.TLSCertKey] = []byte{}
 
 			_, err = CAKeyPairFromSecretData(data)
-			Expect(err).To(MatchError("decoding pem for tls.crt from request secret failed"))
+			Expect(err).To(MatchError("no certificate found in PEM data for tls.crt"))
 		})
 
 		It("returns error if TLSPrivateKeyKey is missing", func() {

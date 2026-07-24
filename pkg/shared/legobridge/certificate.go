@@ -677,7 +677,7 @@ func DecodeCertificates(tlsCrt []byte) ([]*x509.Certificate, error) {
 		certs = append(certs, cert)
 	}
 	if len(certs) == 0 {
-		return nil, fmt.Errorf("decoding pem for %s from request secret failed", corev1.TLSCertKey)
+		return nil, fmt.Errorf("no certificate found in PEM data for %s", corev1.TLSCertKey)
 	}
 	return certs, nil
 }
