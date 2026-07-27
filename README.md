@@ -54,6 +54,7 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
     - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
   - [Metrics](#metrics)
   - [Using DNSRecords](#using-dnsrecords)
+  - [CA Injector](#ca-injector)
   - [Troubleshooting](#troubleshooting)
   - [Development](#development)
   - [Why not use the community `cert-manager` solution?](#why-not-use-the-community-cert-manager-solution)
@@ -1360,6 +1361,18 @@ With the command line option `--use-dnsrecords`, the cert-controller-manager cre
 `DNSEntries`. In this case, the `Certificate` or source objects need two additional annotations:
 - `cert.gardener.cloud/dnsrecord-provider-type` to fill the `.spec.type` field of `DNSRecords`
 - `cert.gardener.cloud/dnsrecord-secret-ref` to fill the `.spec.secretRef`. The value is either the name of the secret in the same namespace as the certificate or in the format `<namespace>/<name>`.
+
+## CA Injector
+
+The CA injector is a feature of `cert-controller-manager-next-generation` that automatically
+populates the `caBundle` field of `ValidatingWebhookConfiguration`,
+`MutatingWebhookConfiguration`, `CustomResourceDefinition` (conversion webhook), and `APIService`
+resources with a CA certificate managed by cert-management — keeping them in sync whenever the CA
+rotates.
+
+It is **disabled by default** and opt-in per resource via annotations.
+
+For full documentation see [CA Injector](docs/usage/ca-injector.md).
 
 ## Troubleshooting
 

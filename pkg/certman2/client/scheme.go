@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubernetesscheme "k8s.io/client-go/kubernetes/scheme"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -45,6 +46,7 @@ func init() {
 		gatewayapisv1alpha2.AddToScheme,
 		gatewayapisv1beta1.AddToScheme,
 		gardenerextensionsv1alpha1.AddToScheme,
+		apiregistrationv1.AddToScheme,
 	)
 
 	utilruntime.Must(clusterSchemeBuilder.AddToScheme(ClusterScheme))

@@ -39,6 +39,7 @@ import (
 	"github.com/gardener/cert-management/pkg/certman2/apis/config"
 	configv1alpha1 "github.com/gardener/cert-management/pkg/certman2/apis/config/v1alpha1"
 	certmanclient "github.com/gardener/cert-management/pkg/certman2/client"
+	"github.com/gardener/cert-management/pkg/certman2/controller/cainjector"
 	"github.com/gardener/cert-management/pkg/certman2/controller/certificate"
 	issuercontrolplane "github.com/gardener/cert-management/pkg/certman2/controller/issuer/controlplane"
 	"github.com/gardener/cert-management/pkg/certman2/controller/source"
@@ -257,6 +258,9 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 		Config: *cfg,
 	}).AddToManager(mgr, controlPlaneCluster); err != nil {
 		return fmt.Errorf("failed adding control plane Issuer controller: %w", err)
+	}
+	if err := cainjector.AddToManager(mgr, *cfg); err != nil {
+		return fmt.Errorf("failed adding CA injector controllers: %w", err)
 	}
 
 	log.Info("Starting manager")

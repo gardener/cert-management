@@ -110,6 +110,16 @@ func SetDefaults_ServerConfiguration(obj *ServerConfiguration) {
 	}
 }
 
+// SetDefaults_CAInjectorControllerConfig sets defaults for the CAInjectorControllerConfig object.
+func SetDefaults_CAInjectorControllerConfig(obj *CAInjectorControllerConfig) {
+	if obj.Enabled == nil {
+		obj.Enabled = new(false)
+	}
+	if obj.ConcurrentSyncs == nil {
+		obj.ConcurrentSyncs = new(1)
+	}
+}
+
 // SetDefaults_IssuerControllerConfig sets defaults for the IssuerControllerConfig object.
 func SetDefaults_IssuerControllerConfig(obj *IssuerControllerConfig) {
 	if obj.ConcurrentSyncs == nil {
