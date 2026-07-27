@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/util/pki"
@@ -146,6 +147,19 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 	emailAddresses = append(emailAddresses, input.CAKeyPair.Cert.EmailAddresses...)
 	emailAddresses = append(emailAddresses, input.EmailAddresses...)
 
+	// For leaf certificates, ensure the common name is also present as a DNS SAN.
+	// Modern TLS clients ignore the certificate's common name and validate the
+	// requested hostname only against the subject alternative names; a Certificate
+	// that sets only `commonName` (and no `dnsNames`) would otherwise yield a
+	// certificate that browsers reject with ERR_CERT_COMMON_NAME_INVALID. This
+	// matches the ACME issuance path, which already includes the common name in the
+	// set of domains. CA certificates are excluded: their common name is an
+	// identity, not a hostname.
+	dnsNames := input.DNSNames
+	if !input.IsCA && input.CommonName != nil && *input.CommonName != "" && !slices.Contains(dnsNames, *input.CommonName) {
+		dnsNames = append([]string{*input.CommonName}, dnsNames...)
+	}
+
 	return &x509.CertificateRequest{
 		Version:            3,
 		PublicKeyAlgorithm: getPublicKeyAlgorithm(privateKey),
@@ -160,7 +174,7 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 			StreetAddress:      subjectCA.StreetAddress,
 			PostalCode:         subjectCA.PostalCode,
 		},
-		DNSNames:       input.DNSNames,
+		DNSNames:       dnsNames,
 		EmailAddresses: emailAddresses,
 		IPAddresses:    input.IPAddresses,
 		URIs:           input.URIs,
