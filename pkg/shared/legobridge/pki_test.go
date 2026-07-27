@@ -84,6 +84,42 @@ var _ = Describe("PKI", func() {
 		)
 	})
 
+	Context("#createCertReq", func() {
+		baseInput := func() ObtainInput {
+			return ObtainInput{
+				CAKeyPair: &TLSKeyPair{Cert: x509.Certificate{}},
+				KeySpec:   KeySpec{KeyType: RSA2048},
+			}
+		}
+
+		It("adds the common name as a DNS SAN for leaf certificates", func() {
+			input := baseInput()
+			input.CommonName = new("*.ingress.example.com")
+			csr, err := createCertReq(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(csr.Subject.CommonName).To(Equal("*.ingress.example.com"))
+			Expect(csr.DNSNames).To(ConsistOf("*.ingress.example.com"))
+		})
+
+		It("prepends the common name without duplicating an existing DNS name", func() {
+			input := baseInput()
+			input.CommonName = new("a.example.com")
+			input.DNSNames = []string{"b.example.com", "a.example.com"}
+			csr, err := createCertReq(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(csr.DNSNames).To(Equal([]string{"b.example.com", "a.example.com"}))
+		})
+
+		It("does not add the common name as a SAN for CA certificates", func() {
+			input := baseInput()
+			input.CommonName = new("Intermediate CA")
+			input.IsCA = true
+			csr, err := createCertReq(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(csr.DNSNames).To(BeEmpty())
+		})
+	})
+
 	Context("#GenerateKeyFromSpec", func() {
 		DescribeTable("should generate a private key of the expected type and size",
 			func(keyType KeyType, usePKCS8 bool, expectedKeySize int) {
