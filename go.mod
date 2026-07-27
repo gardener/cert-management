@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/cert-manager/cert-manager v1.21.0
 	github.com/gardener/cert-management/pkg/apis v0.25.0
-	github.com/gardener/controller-manager-library v0.2.1-0.20260727103935-3acf64a48d5f
+	github.com/gardener/controller-manager-library v0.2.1-0.20260727113103-05652acf3093
 	github.com/gardener/external-dns-management v0.48.0
 	github.com/gardener/gardener v1.147.1
 	github.com/gardener/gardener/hack/tools v1.147.1
@@ -28,12 +28,12 @@ require (
 	golang.org/x/exp v0.0.0-20260527015227-08cc5374adb3
 	istio.io/api v1.29.5
 	istio.io/client-go v1.29.2
-	k8s.io/api v0.36.2
-	k8s.io/apiextensions-apiserver v0.36.2
+	k8s.io/api v0.36.3
+	k8s.io/apiextensions-apiserver v0.36.3
 	k8s.io/apimachinery v0.36.3
-	k8s.io/client-go v0.36.2
+	k8s.io/client-go v0.36.3
 	k8s.io/code-generator v0.36.3
-	k8s.io/component-base v0.36.2
+	k8s.io/component-base v0.36.3
 	k8s.io/kube-openapi v0.0.0-20260603220949-865597e52e25
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	sigs.k8s.io/controller-runtime v0.24.1
