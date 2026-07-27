@@ -69,8 +69,22 @@ func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Sig
 	if err != nil {
 		return nil, err
 	}
+	// Include the remaining certificates of the CA's own chain, so that TLS servers
+	// using the issued certificate present a complete chain up to (but excluding)
+	// the root. Without this, clients trusting only the root cannot build a path
+	// when the signing CA is itself an intermediate.
+	for i := range signerKeyPair.Chain {
+		chainCert := &signerKeyPair.Chain[i]
+		if isSelfSignedCert(chainCert) {
+			// Roots are trust anchors on the client side; serving them is pointless.
+			continue
+		}
+		if err := encodeCertPEM(issuerPEM, chainCert.Raw); err != nil {
+			return nil, err
+		}
+	}
 
-	// Return chain: leaf certificate + issuer certificate
+	// Return chain: leaf certificate + issuer certificate (+ issuer chain)
 	crtPEM = append(crtPEM, issuerPEM.Bytes()...)
 
 	return &certificate.Resource{
@@ -79,6 +93,12 @@ func issueSignedCert(csr *x509.CertificateRequest, isCA bool, privKey crypto.Sig
 		IssuerCertificate: issuerPEM.Bytes(),
 		CSR:               csrPEM,
 	}, nil
+}
+
+// isSelfSignedCert returns true if the certificate is self-signed (subject equals
+// issuer), i.e. typically a root CA certificate.
+func isSelfSignedCert(cert *x509.Certificate) bool {
+	return bytes.Equal(cert.RawSubject, cert.RawIssuer)
 }
 
 func defaultCertificatePrivateKeyDefaults() CertificatePrivateKeyDefaults {

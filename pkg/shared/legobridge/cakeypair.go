@@ -21,6 +21,9 @@ import (
 type TLSKeyPair struct {
 	Cert x509.Certificate
 	Key  crypto.Signer
+	// Chain contains the remaining certificates of the CA's own chain, if the
+	// certificate data of the CA secret contained more than one certificate.
+	Chain []x509.Certificate
 }
 
 // CAKeyPairFromSecretData restores a TLSKeyPair from a secret data map.
@@ -29,7 +32,7 @@ func CAKeyPairFromSecretData(data map[string][]byte) (*TLSKeyPair, error) {
 	if !ok {
 		return nil, fmt.Errorf("`%s` data not found in secret", corev1.TLSCertKey)
 	}
-	cert, err := DecodeCertificate(certBytes)
+	certs, err := DecodeCertificates(certBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +46,11 @@ func CAKeyPairFromSecretData(data map[string][]byte) (*TLSKeyPair, error) {
 		return nil, err
 	}
 
-	return &TLSKeyPair{Cert: *cert, Key: key}, nil
+	var chain []x509.Certificate
+	for _, c := range certs[1:] {
+		chain = append(chain, *c)
+	}
+	return &TLSKeyPair{Cert: *certs[0], Key: key, Chain: chain}, nil
 }
 
 // RawCertInfo returns some info from the CA Certificate.

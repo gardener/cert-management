@@ -244,6 +244,12 @@ metadata:
 type: kubernetes.io/tls
 ```
 
+If the signing CA is an intermediate CA, `tls.crt` may additionally contain the CA's own
+certificate chain (the signing CA certificate first, followed by its issuer(s)). Certificates
+issued by this issuer will then include the full chain in their `tls.crt`, so that TLS clients
+only need to trust the root CA. Self-signed (root) certificates are not included in the chain of
+issued certificates.
+
 Apply the secrets in the cluster and create the issuer,
 for example see [examples/20-issuer-ca.yaml](./examples/20-issuer-ca.yaml)
 
