@@ -36,6 +36,9 @@ configuration:
   # allowTargetIssuers:
   # bindAddressHttp:
   # cascadeDelete:
+  # caInjectorEnabled: false # if true, adds RBAC for the opt-in CA injector controllers.
+  #                          # The injector group must additionally be activated via `controllers`,
+  #                          # e.g. controllers: certcontrollers,certsources,certcainjector
   # certClass:
   # certTargetClass:
   # config:
