@@ -95,6 +95,27 @@ rules:
   - update
   - create
   - watch
+{{- if .Values.configuration.caInjectorEnabled }}
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - apiregistration.k8s.io
+  resources:
+  - apiservices
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+{{- end }}
 {{- if or .Values.configuration.useDnsrecords .Values.configuration.issuerUseDnsrecords }}
 - apiGroups:
   - extensions.gardener.cloud
