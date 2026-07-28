@@ -34,7 +34,7 @@ const (
 	// AnnotationInjectCAFromSecret is set on an injectable resource to inject the CA bundle taken
 	// directly from the referenced secret. Value format: "<namespace>/<secret-name>". The referenced
 	// secret must carry the AnnotationAllowDirectInjection annotation set to "true".
-	AnnotationInjectCAFromSecret = "cert.gardener.cloud/inject-ca-from-secret"
+	AnnotationInjectCAFromSecret = "cert.gardener.cloud/inject-ca-from-secret" // #nosec G101 -- not a credential, this is a Kubernetes annotation key
 	// AnnotationAllowDirectInjection must be set to "true" on a secret to allow direct CA injection
 	// via AnnotationInjectCAFromSecret.
 	AnnotationAllowDirectInjection = "cert.gardener.cloud/allow-direct-injection"
