@@ -1139,6 +1139,102 @@ Flags:
       --watch-gateways-crds.pool.size int                        Worker pool size of controller watch-gateways-crds
 ```
 
+## Injecting the CA bundle into webhooks, CRDs and API services (CA injector)
+
+The cert-controller-manager can automatically keep the `caBundle` field of
+injectable Kubernetes resources in sync with a CA certificate. This is useful
+for admission/conversion webhooks and aggregated API servers whose serving
+certificate is managed by cert-management: instead of copying the CA bundle
+manually, the resource is annotated and the CA injector fills in the bundle and
+keeps it up to date when the certificate is rotated.
+
+The following resource kinds are supported (all watched on the **source**
+cluster):
+
+| Kind | injected field |
+| --- | --- |
+| `ValidatingWebhookConfiguration` (`admissionregistration.k8s.io`) | each `webhooks[].clientConfig.caBundle` |
+| `MutatingWebhookConfiguration` (`admissionregistration.k8s.io`) | each `webhooks[].clientConfig.caBundle` |
+| `CustomResourceDefinition` (`apiextensions.k8s.io`) | `spec.conversion.webhook.clientConfig.caBundle` (only if the conversion strategy is `Webhook`) |
+| `APIService` (`apiregistration.k8s.io`) | `spec.caBundle` |
+
+### Enabling the CA injector
+
+The CA injector controllers are **disabled by default**. They belong to the
+dedicated controller group `certcainjector` and are activated explicitly via the
+`--controllers` option (see the [Usage](#usage) section). Because listing
+`--controllers` replaces the default set, add the group next to the controllers
+you already run, for example:
+
+```bash
+cert-controller-manager --controllers=certcontrollers,certsources,certcainjector ...
+```
+
+When deploying via the Helm chart, set the group in `configuration.controllers`
+and enable the additional RBAC (permissions to watch and update the injectable
+resources) with `configuration.caInjectorEnabled`:
+
+```yaml
+configuration:
+  controllers: certcontrollers,certsources,certcainjector
+  caInjectorEnabled: true
+```
+
+### Using the CA injector
+
+Annotate the injectable resource with one of the following annotations. The
+referenced certificate or secret must exist on the **source** cluster.
+
+- Inject the CA from the secret of a managed `Certificate`:
+
+  ```yaml
+  metadata:
+    annotations:
+      cert.gardener.cloud/inject-ca-from: "<namespace>/<certificate-name>"
+  ```
+
+  The injector resolves the certificate's secret (from `spec.secretName` or
+  `spec.secretRef`) and injects the `ca.crt` it contains.
+
+- Inject the CA directly from a named secret:
+
+  ```yaml
+  metadata:
+    annotations:
+      cert.gardener.cloud/inject-ca-from-secret: "<namespace>/<secret-name>"
+  ```
+
+  For safety, direct secret injection requires the referenced secret to opt in
+  explicitly by carrying the annotation
+  `cert.gardener.cloud/allow-direct-injection: "true"`. Without it, the secret
+  is ignored.
+
+If the referenced certificate/secret does not exist yet, or its `ca.crt` is not
+yet populated, the resource is rechecked periodically and left unchanged until
+the CA becomes available. A rotation of the CA is propagated automatically to
+all resources referencing it.
+
+Example: inject the CA of the `Certificate` `default/my-webhook-cert` into a
+validating webhook configuration:
+
+```yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: my-webhook
+  annotations:
+    cert.gardener.cloud/inject-ca-from: "default/my-webhook-cert"
+webhooks:
+  - name: my-webhook.example.com
+    clientConfig:
+      service:
+        name: my-webhook
+        namespace: default
+        path: /validate
+    # caBundle is filled in and kept up to date by the CA injector
+    ...
+```
+
 ## Renewal of Certificates
 
 Certificates are automatically renewed. With the standard configuration,
