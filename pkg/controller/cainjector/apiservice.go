@@ -30,7 +30,6 @@ func init() {
 		Watch(api.GroupName, api.CertificateKind).
 		WorkerPool("secrets", 1, 0).
 		Watch("core", "Secret").
-		ActivateExplicitly().
 		MustRegister(ctrl.ControllerGroupCAInjector)
 }
 
