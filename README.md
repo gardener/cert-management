@@ -546,7 +546,7 @@ spec:
     name: issuer-staging
 ```
 
-:warning: Using a CSR is only available for ACME Issuer
+:information_source: Using a CSR is supported for all issuer types (ACME, CA, and self-signed)
 
 ### Creating JKS or PKCS#12 keystores
 
