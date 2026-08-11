@@ -546,8 +546,6 @@ spec:
     name: issuer-staging
 ```
 
-:warning: Using a CSR is only available for ACME Issuer
-
 ### Creating JKS or PKCS#12 keystores
 
 By default, the certificate secret contains the TLS certificate using the standard
