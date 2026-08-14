@@ -2,7 +2,8 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
     'config:recommended',
-    'github>gardener/ci-infra//config/renovate/group-go-updates.json5'
+    'github>gardener/ci-infra//config/renovate/group-go-updates.json5',
+    'github>gardener/ci-infra//config/renovate/automerge-with-tide.json5',
   ],
   labels: [
     'kind/enhancement',
@@ -14,7 +15,14 @@
     {
       groupName: 'gardener/gardener',
       matchPackageNames: ['/^(github\\.com\\/)?gardener\\/gardener(\\/.*)?$/'],
-      enabled: true
+      postUpgradeTasks: {
+        commands: [
+          'go work use',
+          'make tidy',
+          'make generate MODE=sequential',
+        ],
+      },
+      enabled: true,
     },
     {
       // Ignore updates for internal packages.
@@ -29,7 +37,15 @@
       // keep the digest in sync with the tag on subsequent updates.
       matchManagers: ['dockerfile'],
       pinDigests: true,
-    }
+    },
+    {
+      description: 'Automerge patch and digest updates',
+      matchUpdateTypes: [
+        'patch',
+        'digest',
+      ],
+      automerge: true,
+    },
   ],
   // The following list of dependencies to ignore is updated by `make generate`.
   // DO NOT EDIT THIS SECTION MANUALLY.
