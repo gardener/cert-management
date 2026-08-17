@@ -820,6 +820,7 @@ func (r *certReconciler) obtainCertificateCA(ctx context.Context, logctx logger.
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, EmailAddresses: cert.Spec.EmailAddresses, IPAddresses: ipAddresses, URIs: uris, CSR: cert.Spec.CSR,
+		Subject: cert.Spec.Subject, LiteralSubject: cert.Spec.LiteralSubject, Usages: cert.Spec.Usages,
 		Callback: callback, Renew: renew, Duration: duration, KeySpec: keySpec, IsCA: ptr.Deref(cert.Spec.IsCA, false)}
 
 	err = r.obtainer.Obtain(ctx, input)

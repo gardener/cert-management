@@ -84,6 +84,15 @@ type ObtainInput struct {
 	IsCA bool
 	// Duration is the lifetime of the certificate
 	Duration *time.Duration
+	// Subject defines the optional requested set of X509 certificate subject attributes.
+	// Cannot be set if LiteralSubject is set.
+	Subject *api.X509Subject
+	// LiteralSubject defines the requested X.509 certificate subject as LDAP string.
+	// Cannot be set if Subject or CommonName is set.
+	LiteralSubject *string
+	// Usages defines the requested key usages and extended key usages.
+	// If unset, defaults to `digital signature` and `key encipherment`.
+	Usages []api.KeyUsage
 }
 
 // DNSControllerSettings are the settings for the DNSController.

@@ -46,6 +46,20 @@ type Certificate struct {
 
 // CertificateSpec is the spec of the certificate to request.
 type CertificateSpec struct {
+	// Subject defines the optional requested set of X509 certificate subject attributes.
+	// Cannot be set if the `literalSubject` field is set.
+	// +optional
+	Subject *X509Subject `json:"subject,omitempty"`
+	// LiteralSubject defines the requested X.509 certificate subject, represented using the LDAP "String
+	// Representation of a Distinguished Name" [1].
+	// Important: the LDAP string format also specifies the order of the attributes
+	// in the subject, this is important when issuing certs for LDAP authentication.
+	// Example: `CN=foo,DC=corp,DC=example,DC=com`
+	// More info [1]: https://datatracker.ietf.org/doc/html/rfc4514
+	//
+	// Cannot be set if the `subject` or `commonName` field is set.
+	// +optional
+	LiteralSubject *string `json:"literalSubject,omitempty"`
 	// CommonName is the CN for the certificate (max. 64 chars).
 	// +optional
 	// +kubebuilder:validation:MaxLength=64
@@ -107,6 +121,11 @@ type CertificateSpec struct {
 	// like any other requested attribute.
 	// +optional
 	IsCA *bool `json:"isCA,omitempty"`
+	// Usages defines the requested key usages and extended key usages.
+	// If unset, defaults to `digital signature` and `key encipherment`.
+	// +optional
+	// +listType=atomic
+	Usages []KeyUsage `json:"usages,omitempty"`
 	// Requested 'duration' (i.e. lifetime) of the Certificate. Note that the
 	// ACME issuer may choose to ignore the requested duration, just like any other
 	// requested attribute.
@@ -125,6 +144,82 @@ type IssuerRef struct {
 	// +optional
 	Namespace string `json:"namespace,omitempty"`
 }
+
+// X509Subject defines the X.509 subject attributes for a certificate.
+type X509Subject struct {
+	// Organizations to be used on the Certificate.
+	// +optional
+	// +listType=atomic
+	Organizations []string `json:"organizations,omitempty"`
+	// Countries to be used on the Certificate.
+	// +optional
+	// +listType=atomic
+	Countries []string `json:"countries,omitempty"`
+	// Organizational Units to be used on the Certificate.
+	// +optional
+	// +listType=atomic
+	OrganizationalUnits []string `json:"organizationalUnits,omitempty"`
+	// Cities to be used on the Certificate.
+	// +optional
+	// +listType=atomic
+	Localities []string `json:"localities,omitempty"`
+	// State/Provinces to be used on the Certificate.
+	// +optional
+	// +listType=atomic
+	Provinces []string `json:"provinces,omitempty"`
+	// Street addresses to be used on the Certificate.
+	// +optional
+	// +listType=atomic
+	StreetAddresses []string `json:"streetAddresses,omitempty"`
+	// Postal codes to be used on the Certificate.
+	// +optional
+	// +listType=atomic
+	PostalCodes []string `json:"postalCodes,omitempty"`
+	// Serial number to be used on the Certificate.
+	// +optional
+	SerialNumber string `json:"serialNumber,omitempty"`
+}
+
+// KeyUsage specifies valid usage contexts for keys.
+// See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
+//
+//	https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+//
+// Valid KeyUsage values are as follows:
+// "signing", "digital signature", "content commitment", "key encipherment",
+// "key agreement", "data encipherment", "cert sign", "crl sign",
+// "encipher only", "decipher only", "any", "server auth", "client auth",
+// "code signing", "email protection", "s/mime", "ipsec end system",
+// "ipsec tunnel", "ipsec user", "timestamping", "ocsp signing",
+// "microsoft sgc", "netscape sgc"
+// +kubebuilder:validation:Enum="signing";"digital signature";"content commitment";"key encipherment";"key agreement";"data encipherment";"cert sign";"crl sign";"encipher only";"decipher only";"any";"server auth";"client auth";"code signing";"email protection";"s/mime";"ipsec end system";"ipsec tunnel";"ipsec user";"timestamping";"ocsp signing";"microsoft sgc";"netscape sgc"
+type KeyUsage string
+
+const (
+	UsageSigning           KeyUsage = "signing"
+	UsageDigitalSignature  KeyUsage = "digital signature"
+	UsageContentCommitment KeyUsage = "content commitment"
+	UsageKeyEncipherment   KeyUsage = "key encipherment"
+	UsageKeyAgreement      KeyUsage = "key agreement"
+	UsageDataEncipherment  KeyUsage = "data encipherment"
+	UsageCertSign          KeyUsage = "cert sign"
+	UsageCRLSign           KeyUsage = "crl sign"
+	UsageEncipherOnly      KeyUsage = "encipher only"
+	UsageDecipherOnly      KeyUsage = "decipher only"
+	UsageAny               KeyUsage = "any"
+	UsageServerAuth        KeyUsage = "server auth"
+	UsageClientAuth        KeyUsage = "client auth"
+	UsageCodeSigning       KeyUsage = "code signing"
+	UsageEmailProtection   KeyUsage = "email protection"
+	UsageSMIME             KeyUsage = "s/mime"
+	UsageIPsecEndSystem    KeyUsage = "ipsec end system"
+	UsageIPsecTunnel       KeyUsage = "ipsec tunnel"
+	UsageIPsecUser         KeyUsage = "ipsec user"
+	UsageTimestamping      KeyUsage = "timestamping"
+	UsageOCSPSigning       KeyUsage = "ocsp signing"
+	UsageMicrosoftSGC      KeyUsage = "microsoft sgc"
+	UsageNetscapeSGC       KeyUsage = "netscape sgc"
+)
 
 // PrivateKeyAlgorithm is the type for the algorithm.
 // +kubebuilder:validation:Enum=RSA;ECDSA
