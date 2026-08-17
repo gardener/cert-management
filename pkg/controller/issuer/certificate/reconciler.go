@@ -1091,6 +1091,60 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 		h.Write(spec.CSR)
 		h.Write([]byte{0})
 	}
+	if spec.LiteralSubject != nil {
+		h.Write([]byte("literalSubject"))
+		h.Write([]byte{0})
+		h.Write([]byte(*spec.LiteralSubject))
+		h.Write([]byte{0})
+	}
+	if spec.Subject != nil {
+		s := spec.Subject
+		for _, v := range s.Organizations {
+			h.Write([]byte("O="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.Countries {
+			h.Write([]byte("C="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.OrganizationalUnits {
+			h.Write([]byte("OU="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.Localities {
+			h.Write([]byte("L="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.Provinces {
+			h.Write([]byte("ST="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.StreetAddresses {
+			h.Write([]byte("STREET="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.PostalCodes {
+			h.Write([]byte("PC="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		if s.SerialNumber != "" {
+			h.Write([]byte("SN="))
+			h.Write([]byte(s.SerialNumber))
+			h.Write([]byte{0})
+		}
+	}
+	for _, u := range spec.Usages {
+		h.Write([]byte("usage="))
+		h.Write([]byte(u))
+		h.Write([]byte{0})
+	}
 	h.Write([]byte(issuerKey.String()))
 	h.Write([]byte{0})
 	if keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(spec.PrivateKey); err == nil && !r.certificatePrivateKeyDefaults.IsDefaultKeyType(keyType) {
