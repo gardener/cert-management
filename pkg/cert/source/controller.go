@@ -42,6 +42,10 @@ const (
 	AnnotCertSecretLabels = "cert.gardener.cloud/secret-labels" // #nosec G101 -- this is no credential
 	// AnnotPreferredChain is the annotation for the certificate preferred chain
 	AnnotPreferredChain = "cert.gardener.cloud/preferred-chain"
+	// AnnotLiteralSubject is the annotation for the literal subject
+	AnnotLiteralSubject = "cert.gardener.cloud/literal-subject"
+	// AnnotUsages is the annotation for the certificate usages
+	AnnotUsages = "cert.gardener.cloud/usages"
 
 	// AnnotDNSRecordProviderType is the annotation for providing the provider type for DNS records.
 	AnnotDNSRecordProviderType = api.GroupName + "/dnsrecord-provider-type"

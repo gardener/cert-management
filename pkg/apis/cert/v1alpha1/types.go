@@ -221,6 +221,33 @@ const (
 	UsageNetscapeSGC       KeyUsage = "netscape sgc"
 )
 
+// AllKeyUsages contains all valid KeyUsage values.
+var AllKeyUsages = []KeyUsage{
+	UsageSigning,
+	UsageDigitalSignature,
+	UsageContentCommitment,
+	UsageKeyEncipherment,
+	UsageKeyAgreement,
+	UsageDataEncipherment,
+	UsageCertSign,
+	UsageCRLSign,
+	UsageEncipherOnly,
+	UsageDecipherOnly,
+	UsageAny,
+	UsageServerAuth,
+	UsageClientAuth,
+	UsageCodeSigning,
+	UsageEmailProtection,
+	UsageSMIME,
+	UsageIPsecEndSystem,
+	UsageIPsecTunnel,
+	UsageIPsecUser,
+	UsageTimestamping,
+	UsageOCSPSigning,
+	UsageMicrosoftSGC,
+	UsageNetscapeSGC,
+}
+
 // PrivateKeyAlgorithm is the type for the algorithm.
 // +kubebuilder:validation:Enum=RSA;ECDSA
 type PrivateKeyAlgorithm string

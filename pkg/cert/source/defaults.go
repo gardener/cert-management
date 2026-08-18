@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,6 +202,16 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		encoding = api.PKCS8
 	}
 
+	var literalSubject string
+	if value, ok := resources.GetAnnotation(objData, AnnotLiteralSubject); ok && value != "" {
+		literalSubject = value
+	}
+
+	var usages []api.KeyUsage
+	if value, ok := resources.GetAnnotation(objData, AnnotUsages); ok && value != "" {
+		usages = shared.ToKeyUsages(value)
+	}
+
 	info.Certs[secretName] = CertInfo{
 		SecretName:          secretName,
 		Domains:             annotatedDomains,
@@ -212,6 +223,8 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 		PrivateKeySize:      keySize,
 		PrivateKeyEncoding:  encoding,
 		Annotations:         CopyDNSRecordsAnnotations(objData),
+		LiteralSubject:      literalSubject,
+		Usages:              usages,
 	}
 	return info, nil
 }

@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
@@ -481,6 +482,21 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		// Update renewBefore (validation will happen in certificate reconciler)
 		if !reflect.DeepEqual(spec.RenewBefore, info.RenewBefore) {
 			spec.RenewBefore = info.RenewBefore
+			mod.Modify(true)
+		}
+
+		if ptr.Deref(spec.LiteralSubject, "") != info.LiteralSubject {
+			if info.LiteralSubject != "" {
+				s := info.LiteralSubject
+				spec.LiteralSubject = new(s)
+			} else {
+				spec.LiteralSubject = nil
+			}
+			mod.Modify(true)
+		}
+
+		if !reflect.DeepEqual(spec.Usages, info.Usages) {
+			spec.Usages = info.Usages
 			mod.Modify(true)
 		}
 
