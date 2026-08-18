@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/shared"
 )
 
@@ -72,3 +73,35 @@ func _createCSR(cn string, san []string, ips []net.IP) []byte {
 		Bytes: csr,
 	})
 }
+
+var _ = Describe("ToKeyUsages", func() {
+	It("should return valid usages for a comma-separated list", func() {
+		result := shared.ToKeyUsages("signing,digital signature,server auth")
+		Expect(result).To(ConsistOf(api.UsageSigning, api.UsageDigitalSignature, api.UsageServerAuth))
+	})
+
+	It("should ignore unknown usage values", func() {
+		result := shared.ToKeyUsages("signing,unknown-usage,server auth")
+		Expect(result).To(ConsistOf(api.UsageSigning, api.UsageServerAuth))
+	})
+
+	It("should return empty slice for empty string", func() {
+		result := shared.ToKeyUsages("")
+		Expect(result).To(BeEmpty())
+	})
+
+	It("should return empty slice if all values are unknown", func() {
+		result := shared.ToKeyUsages("foo,bar,baz")
+		Expect(result).To(BeEmpty())
+	})
+
+	It("should handle a single valid usage", func() {
+		result := shared.ToKeyUsages("client auth")
+		Expect(result).To(ConsistOf(api.UsageClientAuth))
+	})
+
+	It("should handle usages with spaces in their names", func() {
+		result := shared.ToKeyUsages("key encipherment,key agreement")
+		Expect(result).To(ConsistOf(api.UsageKeyEncipherment, api.UsageKeyAgreement))
+	})
+})
