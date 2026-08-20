@@ -2,7 +2,7 @@ module github.com/gardener/cert-management/pkg/apis
 
 go 1.26.0
 
-toolchain go1.26.7
+toolchain go1.27.0
 
 require (
 	k8s.io/api v0.36.3
