@@ -11,7 +11,7 @@ require (
 	github.com/gardener/gardener v1.149.3
 	github.com/gardener/gardener/hack/tools v1.149.3
 	github.com/gardener/gardener/pkg/apis v1.149.3
-	github.com/go-acme/lego/v5 v5.3.1
+	github.com/go-acme/lego/v5 v5.4.0
 	github.com/go-logr/logr v1.4.4
 	github.com/letsencrypt/pebble/v2 v2.10.1
 	github.com/miekg/dns v1.1.72
