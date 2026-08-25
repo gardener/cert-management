@@ -74,6 +74,21 @@ func _createCSR(cn string, san []string, ips []net.IP) []byte {
 	})
 }
 
+var _ = Describe("ExtractCommonNameFromLiteralSubject", func() {
+	It("should return the common name when present", func() {
+		Expect(shared.ExtractCommonNameFromLiteralSubject("CN=leaf.example.com,O=MyOrg,C=DE")).
+			To(HaveValue(Equal("leaf.example.com")))
+	})
+
+	It("should return nil when no common name is present", func() {
+		Expect(shared.ExtractCommonNameFromLiteralSubject("O=MyOrg,C=DE")).To(BeNil())
+	})
+
+	It("should return nil for an unparseable literal subject", func() {
+		Expect(shared.ExtractCommonNameFromLiteralSubject("not a valid DN")).To(BeNil())
+	})
+})
+
 var _ = Describe("ToKeyUsages", func() {
 	It("should return valid usages for a comma-separated list", func() {
 		result := shared.ToKeyUsages("signing,digital signature,server auth")

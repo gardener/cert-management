@@ -199,7 +199,7 @@ var _ = Describe("UtilsCertificate", func() {
 				spec := api.CertificateSpec{LiteralSubject: &ls}
 				dnsNames, err := utils.ExtractDomains(&spec)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(dnsNames).To(BeNil())
+				Expect(dnsNames).To(ConsistOf("foo"))
 			})
 		})
 
