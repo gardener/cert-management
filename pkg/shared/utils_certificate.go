@@ -68,7 +68,8 @@ func ToKeyUsages(value string) []api.KeyUsage {
 	}
 	var usages []api.KeyUsage
 	for usage := range strings.SplitSeq(value, ",") {
-		if set.Has(string(usage)) {
+		usage = strings.TrimSpace(usage)
+		if set.Has(usage) {
 			usages = append(usages, api.KeyUsage(usage))
 		}
 	}

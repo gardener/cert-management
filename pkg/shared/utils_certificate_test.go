@@ -119,4 +119,9 @@ var _ = Describe("ToKeyUsages", func() {
 		result := shared.ToKeyUsages("key encipherment,key agreement")
 		Expect(result).To(ConsistOf(api.UsageKeyEncipherment, api.UsageKeyAgreement))
 	})
+
+	It("should trim surrounding whitespace around comma-separated values", func() {
+		result := shared.ToKeyUsages("server auth, client auth ,  key encipherment")
+		Expect(result).To(ConsistOf(api.UsageServerAuth, api.UsageClientAuth, api.UsageKeyEncipherment))
+	})
 })
