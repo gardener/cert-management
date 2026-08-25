@@ -385,8 +385,8 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		return r.failedStop(logctx, obj, api.StateError, err), false
 	}
 
+	// reconstruct original certificate spec
 	spec := &api.CertificateSpec{
-		CommonName:     result.CommonName,
 		DNSNames:       result.DNSNames,
 		IPAddresses:    cert.Spec.IPAddresses,
 		EmailAddresses: cert.Spec.EmailAddresses,
@@ -394,6 +394,12 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		CSR:            result.CSR,
 		IssuerRef:      &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
 		PrivateKey:     legobridge.FromKeyType(result.KeyType),
+		LiteralSubject: cert.Spec.LiteralSubject,
+		Subject:        cert.Spec.Subject,
+		Usages:         cert.Spec.Usages,
+	}
+	if cert.Spec.LiteralSubject == nil {
+		spec.CommonName = result.CommonName
 	}
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
@@ -736,6 +742,9 @@ func (r *certReconciler) obtainCertificateSelfSigned(ctx context.Context, logctx
 		EmailAddresses: cert.Spec.EmailAddresses,
 		IPAddresses:    ipAddresses,
 		URIs:           uris,
+		Subject:        cert.Spec.Subject,
+		LiteralSubject: cert.Spec.LiteralSubject,
+		Usages:         cert.Spec.Usages,
 		Callback:       callback,
 		Renew:          renew,
 		KeySpec:        keySpec,
@@ -1413,6 +1422,10 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	dnsNames := crt.Spec.DNSNames
 	if crt.Spec.CSR != nil {
 		cn, dnsNames, _ = shared.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
+	} else if cn == nil && crt.Spec.LiteralSubject != nil {
+		// When only a literal subject is requested (no explicit common name), derive
+		// the common name from it so that the status reflects the issued certificate.
+		cn = shared.ExtractCommonNameFromLiteralSubject(*crt.Spec.LiteralSubject)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
 	utils.AssureStringSlice(mod.ModificationState, &status.DNSNames, dnsNames)
