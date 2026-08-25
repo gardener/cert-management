@@ -585,28 +585,17 @@ func pubKeySize(key any) int {
 
 // PublicKeysEqual returns true if two crypto.PublicKey are equal
 func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
-	switch pub := a.(type) {
-	case *rsa.PublicKey:
-		rsaCheck, ok := b.(*rsa.PublicKey)
-		if !ok {
-			return false, nil
-		}
-		if pub.N.Cmp(rsaCheck.N) != 0 {
-			return false, nil
-		}
-		return true, nil
-	case *ecdsa.PublicKey:
-		ecdsaCheck, ok := b.(*ecdsa.PublicKey)
-		if !ok {
-			return false, nil
-		}
-		if pub.X.Cmp(ecdsaCheck.X) != 0 || pub.Y.Cmp(ecdsaCheck.Y) != 0 {
-			return false, nil
-		}
-		return true, nil
-	default:
+	// All standard library public key types (rsa, ecdsa, ed25519, ecdh) implement
+	// an Equal method. Using it avoids operating on the raw, now-deprecated key
+	// coordinates (e.g. ecdsa.PublicKey.X/Y) and safely handles mismatched types.
+	type equalKey interface {
+		Equal(x crypto.PublicKey) bool
+	}
+	key, ok := a.(equalKey)
+	if !ok {
 		return false, fmt.Errorf("unrecognised public key type")
 	}
+	return key.Equal(b), nil
 }
 
 func pemBlockForKeyPKCS1(priv any) (*pem.Block, error) {
