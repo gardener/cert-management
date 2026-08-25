@@ -48,6 +48,7 @@ type Certificate struct {
 type CertificateSpec struct {
 	// Subject defines the optional requested set of X509 certificate subject attributes.
 	// Cannot be set if the `literalSubject` field is set.
+	// Note: The subject is typically ignored by ACME issuers.
 	// +optional
 	Subject *X509Subject `json:"subject,omitempty"`
 	// LiteralSubject defines the requested X.509 certificate subject, represented using the LDAP "String
@@ -58,6 +59,7 @@ type CertificateSpec struct {
 	// More info [1]: https://datatracker.ietf.org/doc/html/rfc4514
 	//
 	// Cannot be set if the `subject` or `commonName` field is set.
+	// Note: The literalSubject is typically ignored by ACME issuers.
 	// +optional
 	LiteralSubject *string `json:"literalSubject,omitempty"`
 	// CommonName is the CN for the certificate (max. 64 chars).
@@ -123,6 +125,7 @@ type CertificateSpec struct {
 	IsCA *bool `json:"isCA,omitempty"`
 	// Usages defines the requested key usages and extended key usages.
 	// If unset, defaults to `digital signature` and `key encipherment`.
+	// Note: Usages are typically ignored by ACME issuers.
 	// +optional
 	// +listType=atomic
 	Usages []KeyUsage `json:"usages,omitempty"`
