@@ -141,7 +141,7 @@ To create the mocks, you should create a `doc.go` file inside the mock directory
 This could look like this:
 
 ```go
-// SPDX-FileCopyrightText: SAP SE or an SAP affiliate company and Gardener contributors
+// SPDX-FileCopyrightText: Contributors to the Gardener project
 //
 // SPDX-License-Identifier: Apache-2.0
 
