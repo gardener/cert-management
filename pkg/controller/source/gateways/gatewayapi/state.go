@@ -14,6 +14,13 @@ import (
 
 var stateKey = ctxutil.SimpleKey("gatewayapi-gateways-state")
 
+// gatewayListener identifies a specific listener section within a Gateway resource.
+type gatewayListener struct {
+	Gateway resources.ObjectName
+	// ListenerSectionName is an optional field to specify a listener of the gateway.
+	ListenerSectionName string
+}
+
 type routesState struct {
 	lock sync.Mutex
 

@@ -89,7 +89,10 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 						if len(ref.Name) == 0 {
 							continue
 						}
-						tlsData := &ctrlsource.TLSData{SecretName: string(ref.Name)}
+						tlsData := &ctrlsource.TLSData{
+							SecretName:  string(ref.Name),
+							SectionName: string(listener.Name),
+						}
 						if ref.Namespace != nil {
 							ns := string(*ref.Namespace)
 							tlsData.SecretNamespace = &ns
@@ -104,7 +107,8 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 		}
 
 		if len(array) > 0 {
-			routes, err := s.lister.ListHTTPRoutes(new(resources.NewObjectNameForData(objData)))
+			gateway := resources.NewObjectNameForData(objData)
+			routes, err := s.lister.ListHTTPRoutes(new(gateway))
 			if err != nil {
 				return nil, err
 			}
@@ -113,7 +117,7 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 				if len(item.Hosts) > 0 {
 					listenerHost = item.Hosts[0]
 				}
-				item.Hosts = s.appendHostsFromHTTPRoutes(routes, item.Hosts, listenerHost)
+				item.Hosts = s.appendHostsFromHTTPRoutes(gatewayListener{Gateway: gateway, ListenerSectionName: item.SectionName}, routes, item.Hosts, listenerHost)
 			}
 		}
 
@@ -121,7 +125,7 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 	})
 }
 
-func (s *gatewaySource) appendHostsFromHTTPRoutes(routes []resources.ObjectData, hosts []string, listenerHost string) []string {
+func (s *gatewaySource) appendHostsFromHTTPRoutes(gl gatewayListener, routes []resources.ObjectData, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
 			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
@@ -140,16 +144,31 @@ func (s *gatewaySource) appendHostsFromHTTPRoutes(routes []resources.ObjectData,
 	for _, route := range routes {
 		switch r := route.(type) {
 		case *gatewayapisv1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
+			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
+				for _, h := range r.Spec.Hostnames {
+					hosts = addHost(hosts, string(h))
+				}
 			}
 		case *gatewayapisv1beta1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
+			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
+				for _, h := range r.Spec.Hostnames {
+					hosts = addHost(hosts, string(h))
+				}
 			}
 		}
 	}
 	return hosts
+}
+
+func matchesGatewayListener(parentRefs []gatewayapisv1.ParentReference, gl gatewayListener) bool {
+	for _, ref := range parentRefs {
+		if string(ref.Name) == gl.Gateway.Name() &&
+			(ref.Namespace == nil || string(*ref.Namespace) == gl.Gateway.Namespace()) &&
+			(ref.SectionName == nil || gl.ListenerSectionName == "" || string(*ref.SectionName) == gl.ListenerSectionName) {
+			return true
+		}
+	}
+	return false
 }
 
 var _ httpRouteLister = &httprouteLister{}
@@ -173,8 +192,7 @@ func (l *httprouteLister) ListHTTPRoutes(gateway *resources.ObjectName) ([]resou
 	}
 	var array []resources.ObjectData
 	for _, obj := range objs {
-		gateways := extractGatewayNames(obj.Data())
-		for g := range gateways {
+		for g := range extractGatewayNames(obj.Data()) {
 			if gateway == nil || g == *gateway {
 				array = append(array, obj.Data())
 			}

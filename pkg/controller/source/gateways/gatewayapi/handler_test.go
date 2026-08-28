@@ -79,6 +79,55 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 		}
 		mixedDomainRoutes = []*gatewayapisv1.HTTPRoute{routeExample, routeLegacy}
 
+		routeSectionWeb = &gatewayapisv1.HTTPRoute{
+			Spec: gatewayapisv1.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+					{
+						Namespace:   ptr.To(gatewayapisv1.Namespace("test")),
+						Name:        "g1",
+						SectionName: ptr.To(gatewayapisv1.SectionName("web")),
+					},
+				}},
+				Hostnames: []gatewayapisv1.Hostname{"api.web.example.com"},
+			},
+		}
+		routeSectionAdmin = &gatewayapisv1.HTTPRoute{
+			Spec: gatewayapisv1.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+					{
+						Namespace:   ptr.To(gatewayapisv1.Namespace("test")),
+						Name:        "g1",
+						SectionName: ptr.To(gatewayapisv1.SectionName("admin")),
+					},
+				}},
+				Hostnames: []gatewayapisv1.Hostname{"api.admin.example.com"},
+			},
+		}
+		routeSectionGeneric = &gatewayapisv1.HTTPRoute{
+			Spec: gatewayapisv1.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+					{
+						Namespace:   ptr.To(gatewayapisv1.Namespace("test")),
+						Name:        "g1",
+						SectionName: ptr.To(gatewayapisv1.SectionName("generic")),
+					},
+				}},
+				Hostnames: []gatewayapisv1.Hostname{"api.generic-example.com", "generic-example.com"},
+			},
+		}
+		routeNoSection = &gatewayapisv1.HTTPRoute{
+			Spec: gatewayapisv1.HTTPRouteSpec{
+				CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+					{
+						Namespace: ptr.To(gatewayapisv1.Namespace("test")),
+						Name:      "g1",
+					},
+				}},
+				Hostnames: []gatewayapisv1.Hostname{"api.shared.example.com"},
+			},
+		}
+		sectionRoutes = []*gatewayapisv1.HTTPRoute{routeSectionWeb, routeSectionAdmin, routeSectionGeneric, routeNoSection}
+
 		log                = logger.NewContext("", "TestEnv")
 		emptyMap           = map[types.NamespacedName]source.CertInfo{}
 		standardObjectMeta = metav1.ObjectMeta{
@@ -396,6 +445,63 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 				},
 			},
 		}, routes, singleCertInfo("cert-example", nil, "foo.example.com", "bar.example.com")),
+		Entry("HTTPRoutes with section name should only add hosts to the matching listener", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "web",
+						Hostname: ptr.To(gatewayapisv1.Hostname("*.example.com")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-web"}},
+						},
+					},
+					{
+						Name:     "admin",
+						Hostname: ptr.To(gatewayapisv1.Hostname("*.example.com")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-admin"}},
+						},
+					},
+					{
+						Name:     "generic",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-generic"}},
+						},
+					},
+				},
+			},
+		}, sectionRoutes, toMap(
+			makeCertInfo("cert-web", nil, "*.example.com", "api.web.example.com", "api.shared.example.com"),
+			makeCertInfo("cert-admin", nil, "*.example.com", "api.admin.example.com", "api.shared.example.com"),
+			makeCertInfo("cert-generic", nil, "api.generic-example.com", "generic-example.com", "api.shared.example.com"),
+		)),
+		Entry("listeners with different section names sharing one certificate secret should merge their hosts", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "web",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-shared"}},
+						},
+					},
+					{
+						Name:     "admin",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-shared"}},
+						},
+					},
+				},
+			},
+		}, sectionRoutes, toMap(
+			makeCertInfo("cert-shared", nil, "api.web.example.com", "api.shared.example.com", "api.admin.example.com"),
+		)),
 	)
 })
 
@@ -408,9 +514,17 @@ var _ httpRouteLister = &testRouteLister{}
 func (t testRouteLister) ListHTTPRoutes(gateway *resources.ObjectName) ([]resources.ObjectData, error) {
 	var filtered []resources.ObjectData
 	for _, r := range t.routes {
-		for _, ref := range r.Spec.ParentRefs {
-			if gateway == nil ||
-				(ref.Namespace == nil || string(*ref.Namespace) == (*gateway).Namespace()) && string(ref.Name) == (*gateway).Name() {
+		if gateway != nil {
+			gw := *gateway
+			for _, ref := range r.Spec.ParentRefs {
+				if gw.Name() == string(ref.Name) &&
+					(ref.Namespace == nil || string(*ref.Namespace) == gw.Namespace()) {
+					filtered = append(filtered, r)
+					break
+				}
+			}
+		} else {
+			if len(r.Spec.ParentRefs) > 0 {
 				filtered = append(filtered, r)
 			}
 		}
