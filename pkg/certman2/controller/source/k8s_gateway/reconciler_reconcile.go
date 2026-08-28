@@ -76,7 +76,10 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 						if len(ref.Name) == 0 {
 							continue
 						}
-						tlsData := &common.TLSData{SecretName: string(ref.Name)}
+						tlsData := &common.TLSData{
+							SecretName:  string(ref.Name),
+							SectionName: string(listener.Name),
+						}
 						if ref.Namespace != nil {
 							tlsData.SecretNamespace = string(*ref.Namespace)
 						} else {
@@ -92,7 +95,8 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 		}
 
 		if len(array) > 0 {
-			routes, err := r.listHTTPRoutes(ctx, new(client.ObjectKeyFromObject(gateway)), r.ActiveVersion)
+			gatewayKey := client.ObjectKeyFromObject(gateway)
+			routes, err := r.listHTTPRoutes(ctx, new(gatewayKey), r.ActiveVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -101,7 +105,8 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 				if len(item.Hosts) > 0 {
 					listenerHost = item.Hosts[0]
 				}
-				item.Hosts = r.appendHostsFromHTTPRoutes(routes, item.Hosts, listenerHost)
+				gl := gatewayListener{gateway: gatewayKey, listenerSectionName: item.SectionName}
+				item.Hosts = r.appendHostsFromHTTPRoutes(gl, routes, item.Hosts, listenerHost)
 			}
 		}
 
@@ -109,7 +114,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 	})
 }
 
-func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []string, listenerHost string) []string {
+func (r *Reconciler) appendHostsFromHTTPRoutes(gl gatewayListener, routes []client.Object, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
 			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
@@ -128,16 +133,38 @@ func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []s
 	for _, route := range routes {
 		switch r := route.(type) {
 		case *gatewayapisv1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
+			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
+				for _, h := range r.Spec.Hostnames {
+					hosts = addHost(hosts, string(h))
+				}
 			}
 		case *gatewayapisv1beta1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
+			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
+				for _, h := range r.Spec.Hostnames {
+					hosts = addHost(hosts, string(h))
+				}
 			}
 		}
 	}
 	return hosts
+}
+
+// gatewayListener identifies a specific listener section within a Gateway resource.
+type gatewayListener struct {
+	gateway client.ObjectKey
+	// listenerSectionName is an optional field to specify a listener of the gateway.
+	listenerSectionName string
+}
+
+func matchesGatewayListener(parentRefs []gatewayapisv1.ParentReference, gl gatewayListener) bool {
+	for _, ref := range parentRefs {
+		if string(ref.Name) == gl.gateway.Name &&
+			(ref.Namespace == nil || string(*ref.Namespace) == gl.gateway.Namespace) &&
+			(ref.SectionName == nil || gl.listenerSectionName == "" || string(*ref.SectionName) == gl.listenerSectionName) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Reconciler) listHTTPRoutes(ctx context.Context, gatewayKey *client.ObjectKey, version Version) ([]client.Object, error) {
