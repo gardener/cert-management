@@ -112,20 +112,25 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 			if err != nil {
 				return nil, err
 			}
+			listenerSectionNames := map[string]struct{}{}
+			for _, item := range array {
+				listenerSectionNames[item.SectionName] = struct{}{}
+			}
 			for _, item := range array {
 				var listenerHost string
 				if len(item.Hosts) > 0 {
 					listenerHost = item.Hosts[0]
 				}
-				item.Hosts = s.appendHostsFromHTTPRoutes(gatewayListener{Gateway: gateway, ListenerSectionName: item.SectionName}, routes, item.Hosts, listenerHost)
+				item.Hosts = s.appendHostsFromHTTPRoutes(logger, gatewayListener{Gateway: gateway, ListenerSectionName: item.SectionName}, routes, item.Hosts, listenerHost)
 			}
+			logRoutesWithUnmatchedSection(logger, gateway, routes, listenerSectionNames)
 		}
 
 		return array, nil
 	})
 }
 
-func (s *gatewaySource) appendHostsFromHTTPRoutes(gl gatewayListener, routes []resources.ObjectData, hosts []string, listenerHost string) []string {
+func (s *gatewaySource) appendHostsFromHTTPRoutes(logger logger.LogContext, gl gatewayListener, routes []resources.ObjectData, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
 			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
@@ -135,6 +140,8 @@ func (s *gatewaySource) appendHostsFromHTTPRoutes(gl gatewayListener, routes []r
 		if listenerHost != "" {
 			if !shared.MatchesWildcardAnySubdomain(host, listenerHost) && !shared.MatchesWildcardAnySubdomain(listenerHost, host) {
 				// foreign host for another listener, do not add
+				logger.Debugf("skipping HTTPRoute host %q for gateway %s listener section %q: does not match listener hostname %q",
+					host, gl.Gateway.String(), gl.ListenerSectionName, listenerHost)
 				return hosts
 			}
 		}
@@ -158,6 +165,34 @@ func (s *gatewaySource) appendHostsFromHTTPRoutes(gl gatewayListener, routes []r
 		}
 	}
 	return hosts
+}
+
+// logRoutesWithUnmatchedSection warns about HTTPRoutes that reference the gateway with a
+// listener section name that matches none of the gateway's listeners with a TLS certificate.
+// Their hosts are silently dropped from all certificates, which is otherwise hard to debug.
+func logRoutesWithUnmatchedSection(logger logger.LogContext, gateway resources.ObjectName, routes []resources.ObjectData, listenerSectionNames map[string]struct{}) {
+	warn := func(routeParentRefs []gatewayapisv1.ParentReference, routeName string) {
+		for _, ref := range routeParentRefs {
+			if ref.SectionName == nil {
+				continue
+			}
+			if string(ref.Name) == gateway.Name() &&
+				(ref.Namespace == nil || string(*ref.Namespace) == gateway.Namespace()) {
+				if _, ok := listenerSectionNames[string(*ref.SectionName)]; !ok {
+					logger.Debugf("HTTPRoute %q references listener section name %q of gateway %s that matches no TLS listener; its hosts are ignored",
+						routeName, string(*ref.SectionName), gateway.String())
+				}
+			}
+		}
+	}
+	for _, route := range routes {
+		switch r := route.(type) {
+		case *gatewayapisv1.HTTPRoute:
+			warn(r.Spec.ParentRefs, r.GetName())
+		case *gatewayapisv1beta1.HTTPRoute:
+			warn(r.Spec.ParentRefs, r.GetName())
+		}
+	}
 }
 
 func matchesGatewayListener(parentRefs []gatewayapisv1.ParentReference, gl gatewayListener) bool {
