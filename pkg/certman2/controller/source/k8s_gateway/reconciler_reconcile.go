@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -76,7 +77,10 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 						if len(ref.Name) == 0 {
 							continue
 						}
-						tlsData := &common.TLSData{SecretName: string(ref.Name)}
+						tlsData := &common.TLSData{
+							SecretName:  string(ref.Name),
+							SectionName: string(listener.Name),
+						}
 						if ref.Namespace != nil {
 							tlsData.SecretNamespace = string(*ref.Namespace)
 						} else {
@@ -92,24 +96,31 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 		}
 
 		if len(array) > 0 {
-			routes, err := r.listHTTPRoutes(ctx, new(client.ObjectKeyFromObject(gateway)), r.ActiveVersion)
+			gatewayKey := client.ObjectKeyFromObject(gateway)
+			routes, err := r.listHTTPRoutes(ctx, new(gatewayKey), r.ActiveVersion)
 			if err != nil {
 				return nil, err
+			}
+			listenerSectionNames := sets.New[string]()
+			for _, item := range array {
+				listenerSectionNames.Insert(item.SectionName)
 			}
 			for _, item := range array {
 				var listenerHost string
 				if len(item.Hosts) > 0 {
 					listenerHost = item.Hosts[0]
 				}
-				item.Hosts = r.appendHostsFromHTTPRoutes(routes, item.Hosts, listenerHost)
+				gl := gatewayListener{gateway: gatewayKey, listenerSectionName: item.SectionName}
+				item.Hosts = r.appendHostsFromHTTPRoutes(log, gl, routes, item.Hosts, listenerHost)
 			}
+			logRoutesWithUnmatchedSection(log, gatewayKey, routes, listenerSectionNames)
 		}
 
 		return array, nil
 	})
 }
 
-func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []string, listenerHost string) []string {
+func (r *Reconciler) appendHostsFromHTTPRoutes(log logr.Logger, gl gatewayListener, routes []client.Object, hosts []string, listenerHost string) []string {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
 			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
@@ -119,6 +130,9 @@ func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []s
 		if listenerHost != "" {
 			if !shared.MatchesWildcardAnySubdomain(host, listenerHost) && !shared.MatchesWildcardAnySubdomain(listenerHost, host) {
 				// foreign host for another listener, do not add
+				log.V(1).Info("skipping HTTPRoute host: does not match listener hostname",
+					"gateway", gl.gateway, "listenerSectionName", gl.listenerSectionName,
+					"listenerHostname", listenerHost, "host", host)
 				return hosts
 			}
 		}
@@ -128,16 +142,65 @@ func (r *Reconciler) appendHostsFromHTTPRoutes(routes []client.Object, hosts []s
 	for _, route := range routes {
 		switch r := route.(type) {
 		case *gatewayapisv1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
+			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
+				for _, h := range r.Spec.Hostnames {
+					hosts = addHost(hosts, string(h))
+				}
 			}
 		case *gatewayapisv1beta1.HTTPRoute:
-			for _, h := range r.Spec.Hostnames {
-				hosts = addHost(hosts, string(h))
+			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
+				for _, h := range r.Spec.Hostnames {
+					hosts = addHost(hosts, string(h))
+				}
 			}
 		}
 	}
 	return hosts
+}
+
+// logRoutesWithUnmatchedSection warns about HTTPRoutes that reference the gateway with a
+// listener section name that matches none of the gateway's listeners with a TLS certificate.
+// Their hosts are silently dropped from all certificates, which is otherwise hard to debug.
+func logRoutesWithUnmatchedSection(log logr.Logger, gatewayKey client.ObjectKey, routes []client.Object, listenerSectionNames sets.Set[string]) {
+	warn := func(routeParentRefs []gatewayapisv1.ParentReference, routeName string) {
+		for _, ref := range routeParentRefs {
+			if ref.SectionName == nil {
+				continue
+			}
+			if string(ref.Name) == gatewayKey.Name &&
+				(ref.Namespace == nil || string(*ref.Namespace) == gatewayKey.Namespace) &&
+				!listenerSectionNames.Has(string(*ref.SectionName)) {
+				log.V(1).Info("HTTPRoute references a listener section name that matches no TLS listener; its hosts are ignored",
+					"gateway", gatewayKey, "httpRoute", routeName, "sectionName", string(*ref.SectionName))
+			}
+		}
+	}
+	for _, route := range routes {
+		switch r := route.(type) {
+		case *gatewayapisv1.HTTPRoute:
+			warn(r.Spec.ParentRefs, r.Name)
+		case *gatewayapisv1beta1.HTTPRoute:
+			warn(r.Spec.ParentRefs, r.Name)
+		}
+	}
+}
+
+// gatewayListener identifies a specific listener section within a Gateway resource.
+type gatewayListener struct {
+	gateway client.ObjectKey
+	// listenerSectionName is an optional field to specify a listener of the gateway.
+	listenerSectionName string
+}
+
+func matchesGatewayListener(parentRefs []gatewayapisv1.ParentReference, gl gatewayListener) bool {
+	for _, ref := range parentRefs {
+		if string(ref.Name) == gl.gateway.Name &&
+			(ref.Namespace == nil || string(*ref.Namespace) == gl.gateway.Namespace) &&
+			(ref.SectionName == nil || gl.listenerSectionName == "" || string(*ref.SectionName) == gl.listenerSectionName) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Reconciler) listHTTPRoutes(ctx context.Context, gatewayKey *client.ObjectKey, version Version) ([]client.Object, error) {

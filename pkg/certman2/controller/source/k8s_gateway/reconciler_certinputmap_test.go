@@ -106,6 +106,63 @@ var _ = Describe("Reconciler", func() {
 			}
 			return []*gatewayapisv1.HTTPRoute{routeExample, routeLegacy}
 		}
+
+		// sectionRoutes returns routes pinned to specific listeners of g1 via ParentRef.SectionName,
+		// plus one route without a section name that contributes to all listeners.
+		sectionRoutes = func() []*gatewayapisv1.HTTPRoute {
+			routeSectionWeb := &gatewayapisv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "route-web"},
+				Spec: gatewayapisv1.HTTPRouteSpec{
+					CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+						{
+							Namespace:   ptr.To[gatewayapisv1.Namespace]("test"),
+							Name:        "g1",
+							SectionName: ptr.To(gatewayapisv1.SectionName("web")),
+						},
+					}},
+					Hostnames: []gatewayapisv1.Hostname{"api.web.example.com"},
+				},
+			}
+			routeSectionAdmin := &gatewayapisv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "route-admin"},
+				Spec: gatewayapisv1.HTTPRouteSpec{
+					CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+						{
+							Namespace:   ptr.To[gatewayapisv1.Namespace]("test"),
+							Name:        "g1",
+							SectionName: ptr.To(gatewayapisv1.SectionName("admin")),
+						},
+					}},
+					Hostnames: []gatewayapisv1.Hostname{"api.admin.example.com"},
+				},
+			}
+			routeSectionGeneric := &gatewayapisv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "route-generic"},
+				Spec: gatewayapisv1.HTTPRouteSpec{
+					CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+						{
+							Namespace:   ptr.To[gatewayapisv1.Namespace]("test"),
+							Name:        "g1",
+							SectionName: ptr.To(gatewayapisv1.SectionName("generic")),
+						},
+					}},
+					Hostnames: []gatewayapisv1.Hostname{"api.generic-example.com", "generic-example.com"},
+				},
+			}
+			routeNoSection := &gatewayapisv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "test", Name: "route-shared"},
+				Spec: gatewayapisv1.HTTPRouteSpec{
+					CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+						{
+							Namespace: ptr.To[gatewayapisv1.Namespace]("test"),
+							Name:      "g1",
+						},
+					}},
+					Hostnames: []gatewayapisv1.Hostname{"api.shared.example.com"},
+				},
+			}
+			return []*gatewayapisv1.HTTPRoute{routeSectionWeb, routeSectionAdmin, routeSectionGeneric, routeNoSection}
+		}
 	)
 
 	BeforeEach(func() {
@@ -423,6 +480,63 @@ var _ = Describe("Reconciler", func() {
 				},
 			},
 		}, allRoutes(), singleCertInput("cert-example", nil, "foo.example.com", "bar.example.com")),
+		Entry("HTTPRoutes with section name should only add hosts to the matching listener", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "web",
+						Hostname: ptr.To[gatewayapisv1.Hostname]("*.example.com"),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-web"}},
+						},
+					},
+					{
+						Name:     "admin",
+						Hostname: ptr.To[gatewayapisv1.Hostname]("*.example.com"),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-admin"}},
+						},
+					},
+					{
+						Name:     "generic",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-generic"}},
+						},
+					},
+				},
+			},
+		}, sectionRoutes(), toMap(
+			makeCertInput("cert-web", nil, "*.example.com", "api.shared.example.com", "api.web.example.com"),
+			makeCertInput("cert-admin", nil, "*.example.com", "api.admin.example.com", "api.shared.example.com"),
+			makeCertInput("cert-generic", nil, "api.generic-example.com", "generic-example.com", "api.shared.example.com"),
+		)),
+		Entry("listeners with different section names sharing one certificate secret should merge their hosts", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "web",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-shared"}},
+						},
+					},
+					{
+						Name:     "admin",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-shared"}},
+						},
+					},
+				},
+			},
+		}, sectionRoutes(), toMap(
+			makeCertInput("cert-shared", nil, "api.shared.example.com", "api.web.example.com", "api.admin.example.com"),
+		)),
 	)
 })
 

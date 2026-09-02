@@ -9,6 +9,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/controllermanager/controller/reconcile"
 	"github.com/gardener/controller-manager-library/pkg/logger"
 	"github.com/gardener/controller-manager-library/pkg/resources"
+	"k8s.io/utils/ptr"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
@@ -58,6 +59,14 @@ func (r *httproutesReconciler) triggerGateways(cluster string, gateways resource
 
 func extractGatewayNames(route resources.ObjectData) resources.ObjectNameSet {
 	gatewayNames := resources.NewObjectNameSet()
+	for _, item := range extractGatewayListeners(route) {
+		gatewayNames.Add(item.Gateway)
+	}
+	return gatewayNames
+}
+
+func extractGatewayListeners(route resources.ObjectData) []gatewayListener {
+	var gatewayListeners []gatewayListener
 	switch data := route.(type) {
 	case *gatewayapisv1.HTTPRoute:
 		for _, ref := range data.Spec.ParentRefs {
@@ -67,7 +76,10 @@ func extractGatewayNames(route resources.ObjectData) resources.ObjectNameSet {
 				if ref.Namespace != nil {
 					namespace = string(*ref.Namespace)
 				}
-				gatewayNames.Add(resources.NewObjectName(namespace, string(ref.Name)))
+				gatewayListeners = append(gatewayListeners, gatewayListener{
+					Gateway:             resources.NewObjectName(namespace, string(ref.Name)),
+					ListenerSectionName: string(ptr.Deref(ref.SectionName, "")),
+				})
 			}
 		}
 	case *gatewayapisv1beta1.HTTPRoute:
@@ -78,9 +90,12 @@ func extractGatewayNames(route resources.ObjectData) resources.ObjectNameSet {
 				if ref.Namespace != nil {
 					namespace = string(*ref.Namespace)
 				}
-				gatewayNames.Add(resources.NewObjectName(namespace, string(ref.Name)))
+				gatewayListeners = append(gatewayListeners, gatewayListener{
+					Gateway:             resources.NewObjectName(namespace, string(ref.Name)),
+					ListenerSectionName: string(ptr.Deref(ref.SectionName, "")),
+				})
 			}
 		}
 	}
-	return gatewayNames
+	return gatewayListeners
 }
