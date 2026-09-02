@@ -39,6 +39,7 @@ type TLSData struct {
 	SecretNamespace *string
 	SecretName      string
 	Hosts           []string
+	SectionName     string
 }
 
 // GetCertsInfoByCollector collects data from annotations and from the resources needed for creating certificates.
@@ -112,6 +113,14 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 		if tls.SecretNamespace != nil {
 			secretName.Namespace = *tls.SecretNamespace
 		}
+		if existing, ok := info.Certs[secretName]; ok {
+			// Multiple listeners may reference the same certificate secret (e.g. distinct
+			// listener section names sharing one certificateRef). Merge their domains instead
+			// of overwriting, so no host is silently dropped.
+			existing.Domains = mergeDomainLists(existing.Domains, domains)
+			info.Certs[secretName] = existing
+			continue
+		}
 		info.Certs[secretName] = source.CertInfo{
 			SecretName:          secretName,
 			Domains:             domains,
@@ -127,6 +136,21 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 		}
 	}
 	return info, err
+}
+
+// mergeDomainLists appends domains from add that are not already present in base, preserving order.
+func mergeDomainLists(base, add []string) []string {
+	seen := make(map[string]struct{}, len(base))
+	for _, d := range base {
+		seen[d] = struct{}{}
+	}
+	for _, d := range add {
+		if _, ok := seen[d]; !ok {
+			seen[d] = struct{}{}
+			base = append(base, d)
+		}
+	}
+	return base
 }
 
 func mergeCommonName(cn string, hosts []string) []string {
