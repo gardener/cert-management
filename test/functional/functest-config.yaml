@@ -8,3 +8,6 @@ issuers:
   autoRegistration: true
   server: https://acme-staging-v02.api.letsencrypt.org/directory
   email: some.user@mydomain.com
+  precheckNameservers:
+    - 8.8.8.8
+    - 8.8.4.4

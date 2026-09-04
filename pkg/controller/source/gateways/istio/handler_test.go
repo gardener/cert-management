@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 )
@@ -298,6 +299,84 @@ var _ = Describe("Istio Gateway Handler", func() {
 				Selector: selectorService2,
 			},
 		}, nil, singleCertInfo("mysecret", "cn.example.com", "a.example.com", "c.example.com", "d.example.com")),
+		Entry("literal subject annotation is propagated", defaultSources, &istionetworkingv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
+				Annotations: map[string]string{
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+					source.AnnotLiteralSubject:      "CN=foo.example.com,O=MyOrg,C=DE",
+				},
+			},
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
+					{
+						Hosts: []string{"foo.example.com"},
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
+							CredentialName: "mysecret",
+						},
+					},
+				},
+				Selector: selectorService1,
+			},
+		}, nil, func() map[types.NamespacedName]source.CertInfo {
+			info := makeCertInfo("mysecret", "foo.example.com")
+			info.LiteralSubject = "CN=foo.example.com,O=MyOrg,C=DE"
+			return toMap(info)
+		}()),
+		Entry("usages annotation is propagated", defaultSources, &istionetworkingv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
+				Annotations: map[string]string{
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+					source.AnnotUsages:              "digital signature,server auth",
+				},
+			},
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
+					{
+						Hosts: []string{"foo.example.com"},
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
+							CredentialName: "mysecret",
+						},
+					},
+				},
+				Selector: selectorService1,
+			},
+		}, nil, func() map[types.NamespacedName]source.CertInfo {
+			info := makeCertInfo("mysecret", "foo.example.com")
+			info.Usages = []api.KeyUsage{api.UsageDigitalSignature, api.UsageServerAuth}
+			return toMap(info)
+		}()),
+		Entry("unknown usages in annotation are silently dropped", defaultSources, &istionetworkingv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
+				Annotations: map[string]string{
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+					source.AnnotUsages:              "digital signature,not-a-valid-usage",
+				},
+			},
+			Spec: apinetworkingv1.Gateway{
+				Servers: []*apinetworkingv1.Server{
+					{
+						Hosts: []string{"foo.example.com"},
+						Tls: &apinetworkingv1.ServerTLSSettings{
+							Mode:           apinetworkingv1.ServerTLSSettings_SIMPLE,
+							CredentialName: "mysecret",
+						},
+					},
+				},
+				Selector: selectorService1,
+			},
+		}, nil, func() map[types.NamespacedName]source.CertInfo {
+			info := makeCertInfo("mysecret", "foo.example.com")
+			info.Usages = []api.KeyUsage{api.UsageDigitalSignature}
+			return toMap(info)
+		}()),
 		Entry("gateway with virtual services", defaultSources, &istionetworkingv1.Gateway{
 			ObjectMeta: standardObjectMeta,
 			Spec: apinetworkingv1.Gateway{

@@ -385,8 +385,8 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		return r.failedStop(logctx, obj, api.StateError, err), false
 	}
 
+	// reconstruct original certificate spec
 	spec := &api.CertificateSpec{
-		CommonName:     result.CommonName,
 		DNSNames:       result.DNSNames,
 		IPAddresses:    cert.Spec.IPAddresses,
 		EmailAddresses: cert.Spec.EmailAddresses,
@@ -394,6 +394,12 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		CSR:            result.CSR,
 		IssuerRef:      &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
 		PrivateKey:     legobridge.FromKeyType(result.KeyType),
+		LiteralSubject: cert.Spec.LiteralSubject,
+		Subject:        cert.Spec.Subject,
+		Usages:         cert.Spec.Usages,
+	}
+	if cert.Spec.LiteralSubject == nil {
+		spec.CommonName = result.CommonName
 	}
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
@@ -736,6 +742,9 @@ func (r *certReconciler) obtainCertificateSelfSigned(ctx context.Context, logctx
 		EmailAddresses: cert.Spec.EmailAddresses,
 		IPAddresses:    ipAddresses,
 		URIs:           uris,
+		Subject:        cert.Spec.Subject,
+		LiteralSubject: cert.Spec.LiteralSubject,
+		Usages:         cert.Spec.Usages,
 		Callback:       callback,
 		Renew:          renew,
 		KeySpec:        keySpec,
@@ -820,6 +829,7 @@ func (r *certReconciler) obtainCertificateCA(ctx context.Context, logctx logger.
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, EmailAddresses: cert.Spec.EmailAddresses, IPAddresses: ipAddresses, URIs: uris, CSR: cert.Spec.CSR,
+		Subject: cert.Spec.Subject, LiteralSubject: cert.Spec.LiteralSubject, Usages: cert.Spec.Usages,
 		Callback: callback, Renew: renew, Duration: duration, KeySpec: keySpec, IsCA: ptr.Deref(cert.Spec.IsCA, false)}
 
 	err = r.obtainer.Obtain(ctx, input)
@@ -1090,6 +1100,60 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 		h.Write(spec.CSR)
 		h.Write([]byte{0})
 	}
+	if spec.LiteralSubject != nil {
+		h.Write([]byte("literalSubject"))
+		h.Write([]byte{0})
+		h.Write([]byte(*spec.LiteralSubject))
+		h.Write([]byte{0})
+	}
+	if spec.Subject != nil {
+		s := spec.Subject
+		for _, v := range s.Organizations {
+			h.Write([]byte("O="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.Countries {
+			h.Write([]byte("C="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.OrganizationalUnits {
+			h.Write([]byte("OU="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.Localities {
+			h.Write([]byte("L="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.Provinces {
+			h.Write([]byte("ST="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.StreetAddresses {
+			h.Write([]byte("STREET="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		for _, v := range s.PostalCodes {
+			h.Write([]byte("PC="))
+			h.Write([]byte(v))
+			h.Write([]byte{0})
+		}
+		if s.SerialNumber != "" {
+			h.Write([]byte("SN="))
+			h.Write([]byte(s.SerialNumber))
+			h.Write([]byte{0})
+		}
+	}
+	for _, u := range spec.Usages {
+		h.Write([]byte("usage="))
+		h.Write([]byte(u))
+		h.Write([]byte{0})
+	}
 	h.Write([]byte(issuerKey.String()))
 	h.Write([]byte{0})
 	if keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(spec.PrivateKey); err == nil && !r.certificatePrivateKeyDefaults.IsDefaultKeyType(keyType) {
@@ -1358,6 +1422,10 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	dnsNames := crt.Spec.DNSNames
 	if crt.Spec.CSR != nil {
 		cn, dnsNames, _ = shared.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
+	} else if cn == nil && crt.Spec.LiteralSubject != nil {
+		// When only a literal subject is requested (no explicit common name), derive
+		// the common name from it so that the status reflects the issued certificate.
+		cn = shared.ExtractCommonNameFromLiteralSubject(*crt.Spec.LiteralSubject)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
 	utils.AssureStringSlice(mod.ModificationState, &status.DNSNames, dnsNames)
