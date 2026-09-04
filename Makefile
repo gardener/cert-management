@@ -197,3 +197,98 @@ verify: check format test sast
 
 .PHONY: verify-extended
 verify-extended: check-generate check format sast-report
+
+#########################################
+# Local development                     #
+#########################################
+
+.PHONY: dev
+dev: $(KIND) $(KUBECTL) ## create kind cluster, deploy CRDs, and run controller locally
+	@mkdir -p $(REPO_ROOT)/dev
+	@$(KIND) get clusters | grep -q cert-management || \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml
+	@$(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml 2>/dev/null || { \
+	  $(KIND) delete cluster --name cert-management 2>/dev/null || true; \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	  $(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	}
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f pkg/apis/cert/crds/
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f examples/11-dns.gardener.cloud_dnsentries.yaml
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml go run ./cmd/cert-controller-manager \
+	  --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml \
+	  --controllers=certcontrollers,certsources,cainjector-apiservice,cainjector-crd,cainjector-mutatingwebhook,cainjector-validatingwebhook \
+	  --omit-lease
+
+.PHONY: dev-debug
+dev-debug: $(KIND) $(KUBECTL) ## create kind cluster and deploy CRDs (controller started separately, e.g. from IDE)
+	@mkdir -p $(REPO_ROOT)/dev
+	@$(KIND) get clusters | grep -q cert-management || \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml
+	@$(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml 2>/dev/null || { \
+	  $(KIND) delete cluster --name cert-management 2>/dev/null || true; \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	  $(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	}
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f pkg/apis/cert/crds/
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f examples/11-dns.gardener.cloud_dnsentries.yaml
+	@echo "Kind cluster 'cert-management' is ready."
+	@echo "Set KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml to connect to it."
+
+.PHONY: dev-clean
+dev-clean: $(KIND) ## delete the local kind dev cluster
+	@$(KIND) delete cluster --name cert-management
+	@rm -f $(REPO_ROOT)/dev/kind-kubeconfig.yaml
+
+.PHONY: dev-test-cainjector
+dev-test-cainjector: $(KUBECTL) ## smoke-test CA injector: initial injection and CA rotation (requires controller running via make dev)
+	@set -e; \
+	KC=$(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	echo "==> Creating CA secret..."; \
+	CA_PEM=$$(openssl req -x509 -newkey rsa:2048 -keyout /dev/null -out /dev/stdout -days 1 -subj '/CN=test-ca' -nodes 2>/dev/null); \
+	KUBECONFIG=$$KC $(KUBECTL) create secret generic test-cainjector-secret -n default \
+	  --from-literal=ca.crt="$$CA_PEM" --dry-run=client -o yaml | KUBECONFIG=$$KC $(KUBECTL) apply -f -; \
+	KUBECONFIG=$$KC $(KUBECTL) annotate secret test-cainjector-secret -n default \
+	  cert.gardener.cloud/allow-direct-injection=true --overwrite; \
+	printf '%s\n' \
+	  'apiVersion: apiregistration.k8s.io/v1' \
+	  'kind: APIService' \
+	  'metadata:' \
+	  '  name: v1alpha1.cainjector-test.sap.com' \
+	  '  annotations:' \
+	  '    cert.gardener.cloud/inject-ca-from-secret: default/test-cainjector-secret' \
+	  'spec:' \
+	  '  group: cainjector-test.sap.com' \
+	  '  groupPriorityMinimum: 1000' \
+	  '  versionPriority: 15' \
+	  '  service:' \
+	  '    name: api' \
+	  '    namespace: default' \
+	  '  version: v1alpha1' \
+	  | KUBECONFIG=$$KC $(KUBECTL) apply -f -; \
+	echo "==> Waiting for initial caBundle injection (up to 60s)..."; \
+	i=0; while [ $$i -lt 60 ]; do \
+	  BUNDLE=$$(KUBECONFIG=$$KC $(KUBECTL) get apiservice v1alpha1.cainjector-test.sap.com \
+	    -o jsonpath='{.spec.caBundle}' 2>/dev/null); \
+	  [ -n "$$BUNDLE" ] && break; \
+	  sleep 1; i=$$((i+1)); \
+	done; [ $$i -lt 60 ] || { echo "ERROR: caBundle not injected within 60s — is the controller running? (make dev in another terminal)"; exit 1; }; \
+	echo "==> Initial injection confirmed."; \
+	echo "==> Simulating CA rotation..."; \
+	OLD_BUNDLE=$$BUNDLE; \
+	NEW_PEM=$$(openssl req -x509 -newkey rsa:2048 -keyout /dev/null -out /dev/stdout -days 1 -subj '/CN=rotated-ca' -nodes 2>/dev/null); \
+	KUBECONFIG=$$KC $(KUBECTL) create secret generic test-cainjector-secret -n default \
+	  --from-literal=ca.crt="$$NEW_PEM" --dry-run=client -o yaml | KUBECONFIG=$$KC $(KUBECTL) apply -f -; \
+	KUBECONFIG=$$KC $(KUBECTL) annotate secret test-cainjector-secret -n default \
+	  cert.gardener.cloud/allow-direct-injection=true --overwrite; \
+	echo "==> Waiting for caBundle to reflect the rotated CA (up to 60s)..."; \
+	i=0; while [ $$i -lt 60 ]; do \
+	  NEW=$$(KUBECONFIG=$$KC $(KUBECTL) get apiservice v1alpha1.cainjector-test.sap.com \
+	    -o jsonpath='{.spec.caBundle}' 2>/dev/null); \
+	  [ "$$NEW" != "$$OLD_BUNDLE" ] && [ -n "$$NEW" ] && break; \
+	  sleep 1; i=$$((i+1)); \
+	done; [ $$i -lt 60 ] || { echo "ERROR: caBundle was not updated after CA rotation within 60s"; exit 1; }; \
+	echo "==> caBundle updated after CA rotation — OK"; \
+	echo "==> Cleaning up..."; \
+	KUBECONFIG=$$KC $(KUBECTL) delete apiservice v1alpha1.cainjector-test.sap.com 2>/dev/null || true; \
+	KUBECONFIG=$$KC $(KUBECTL) delete secret test-cainjector-secret -n default 2>/dev/null || true; \
+	echo "==> All checks passed."
