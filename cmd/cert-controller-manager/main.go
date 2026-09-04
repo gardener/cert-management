@@ -22,15 +22,19 @@ import (
 	istionetworkingv1 "istio.io/client-go/pkg/apis/networking/v1"
 	istionetworkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istionetworkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapisv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	ctrl "github.com/gardener/cert-management/pkg/controller"
+	_ "github.com/gardener/cert-management/pkg/controller/cainjector"
 	_ "github.com/gardener/cert-management/pkg/controller/issuer"
 	_ "github.com/gardener/cert-management/pkg/controller/source/gateways/crdwatch"
 	_ "github.com/gardener/cert-management/pkg/controller/source/gateways/gatewayapi"
@@ -78,6 +82,9 @@ func init() {
 	utils.Must(resources.Register(istionetworkingv1.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1beta1.SchemeBuilder))
 	utils.Must(resources.Register(gatewayapisv1.SchemeBuilder))
+	utils.Must(resources.Register(admissionregistrationv1.SchemeBuilder))
+	utils.Must(resources.Register(apiextensionsv1.SchemeBuilder))
+	utils.Must(resources.Register(apiregistrationv1.SchemeBuilder))
 
 	server.RegisterHandler("/metrics", promhttp.Handler())
 }
