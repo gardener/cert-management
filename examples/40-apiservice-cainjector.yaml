@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2024 SAP SE or an SAP affiliate company and Gardener contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# A self-signed issuer used to mint the CA-capable serving certificate below.
+# In production you would typically reference your real CA / ACME issuer instead.
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Issuer
+metadata:
+  name: test-issuer
+  namespace: default
+spec:
+  selfSigned: {}
+
+---
+
+# Serving certificate for the aggregated API server (the `api` Service). The
+# CA injector resolves this Certificate's secret and copies its `ca.crt` into
+# the APIService `spec.caBundle`, so the kube-aggregator trusts the endpoint.
+#
+# The commonName/dnsNames match the in-cluster Service DNS name of the backing
+# Service referenced by the APIService (api.<namespace>.svc).
+apiVersion: cert.gardener.cloud/v1alpha1
+kind: Certificate
+metadata:
+  name: test-server-certificate
+  namespace: default
+spec:
+  commonName: api.default.svc
+  dnsNames:
+    - api.default.svc
+    - api.default.svc.cluster.local
+  # Required by the selfSigned issuer: a self-signed certificate must be a CA.
+  isCA: true
+  issuerRef:
+    name: test-issuer
+    namespace: default
+  # The secret that will hold tls.crt, tls.key and ca.crt. The CA injector
+  # reads `ca.crt` from this secret (resolved via spec.secretName).
+  secretName: test-server-tls
+
+---
+
+# APIService for the aggregated API server, adapted from the cert-manager
+# variant to use the gardener cert-management CA injector.
+#
+# Difference vs. cert-manager: the annotation key is
+#   cert.gardener.cloud/inject-ca-from   (NOT cert-manager.io/inject-ca-from)
+# Its value is "<namespace>/<certificate-name>" and references the Certificate
+# above. The CA injector fills in spec.caBundle from that certificate's secret
+# (ca.crt) and keeps it up to date across CA rotations.
+#
+# Prerequisite: the CA injector must be enabled (controller group certcainjector),
+# e.g. cert-controller-manager --controllers=certcontrollers,certsources,certcainjector
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1alpha1.test.sap.com
+  annotations:
+    # inject the CA from the managed Certificate's secret (ca.crt)
+    cert.gardener.cloud/inject-ca-from: default/test-server-certificate
+spec:
+  group: test.sap.com
+  groupPriorityMinimum: 1000
+  versionPriority: 15
+  service:
+    name: api
+    namespace: default
+  version: v1alpha1
+  # spec.caBundle is populated and kept in sync by the CA injector — do not set
+  # it manually. (When omitted, the value is added on first reconcile.)
