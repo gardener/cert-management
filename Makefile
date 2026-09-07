@@ -197,3 +197,48 @@ verify: check format test sast
 
 .PHONY: verify-extended
 verify-extended: check-generate check format sast-report
+
+#########################################
+# Local development                     #
+#########################################
+
+.PHONY: dev
+dev: $(KIND) $(KUBECTL) ## create kind cluster, deploy CRDs, and run controller locally
+	@mkdir -p $(REPO_ROOT)/dev
+	@$(KIND) get clusters | grep -q cert-management || \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml
+	@$(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml 2>/dev/null || { \
+	  $(KIND) delete cluster --name cert-management 2>/dev/null || true; \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	  $(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	}
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f pkg/apis/cert/crds/
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f examples/11-dns.gardener.cloud_dnsentries.yaml
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml go run ./cmd/cert-controller-manager \
+	  --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml \
+	  --controllers=certcontrollers,certsources,cainjector-apiservice,cainjector-crd,cainjector-mutatingwebhook,cainjector-validatingwebhook \
+	  --omit-lease
+
+.PHONY: dev-debug
+dev-debug: $(KIND) $(KUBECTL) ## create kind cluster and deploy CRDs (controller started separately, e.g. from IDE)
+	@mkdir -p $(REPO_ROOT)/dev
+	@$(KIND) get clusters | grep -q cert-management || \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml
+	@$(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml 2>/dev/null || { \
+	  $(KIND) delete cluster --name cert-management 2>/dev/null || true; \
+	  $(KIND) create cluster --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	  $(KIND) export kubeconfig --name cert-management --kubeconfig $(REPO_ROOT)/dev/kind-kubeconfig.yaml; \
+	}
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f pkg/apis/cert/crds/
+	@KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml $(KUBECTL) apply --validate=false -f examples/11-dns.gardener.cloud_dnsentries.yaml
+	@echo "Kind cluster 'cert-management' is ready."
+	@echo "Set KUBECONFIG=$(REPO_ROOT)/dev/kind-kubeconfig.yaml to connect to it."
+
+.PHONY: dev-clean
+dev-clean: $(KIND) ## delete the local kind dev cluster
+	@$(KIND) delete cluster --name cert-management
+	@rm -f $(REPO_ROOT)/dev/kind-kubeconfig.yaml
+
+.PHONY: dev-test-cainjector
+dev-test-cainjector: $(KUBECTL) ## smoke-test CA injector: initial injection and CA rotation (requires controller running via make dev)
+	@bash $(HACK_DIR)/dev-test-cainjector.sh $(KUBECTL)
