@@ -90,6 +90,16 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 		}
 	}
 
+	var literalSubject string
+	if value, ok := resources.GetAnnotation(objData, source.AnnotLiteralSubject); ok && value != "" {
+		literalSubject = value
+	}
+
+	var usages []api.KeyUsage
+	if value, ok := resources.GetAnnotation(objData, source.AnnotUsages); ok && value != "" {
+		usages = shared.ToKeyUsages(value)
+	}
+
 	annotatedDomains, cn := source.GetDomainsFromAnnotations(objData, false)
 
 	var issuer *string
@@ -133,6 +143,8 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 			PrivateKeyEncoding:  encoding,
 			RenewBefore:         renewBefore,
 			Annotations:         source.CopyDNSRecordsAnnotations(objData),
+			LiteralSubject:      literalSubject,
+			Usages:              usages,
 		}
 	}
 	return info, err

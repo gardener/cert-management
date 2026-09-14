@@ -32,6 +32,8 @@ type CertInput struct {
 	PrivateKeySize      int
 	PrivateKeyEncoding  string
 	RenewBefore         *metav1.Duration
+	LiteralSubject      string
+	Usages              []certmanv1alpha1.KeyUsage
 	Annotations         map[string]string
 }
 
@@ -102,6 +104,12 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 	certInput.PrivateKeySize = keySize
 	certInput.PrivateKeyEncoding = encoding
 	certInput.RenewBefore, _ = shared.ParseRenewBefore(annotations[AnnotRenewBefore])
+	if value := annotations[AnnotLiteralSubject]; value != "" {
+		certInput.LiteralSubject = value
+	}
+	if value := annotations[AnnotUsages]; value != "" {
+		certInput.Usages = shared.ToKeyUsages(value)
+	}
 	certInput.SecretLabels = extractSecretLabels(annotations)
 	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
 	return certInput
@@ -207,6 +215,10 @@ func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 
 	spec.PrivateKey = createPrivateKey(src.PrivateKeyAlgorithm, src.PrivateKeySize, src.PrivateKeyEncoding)
 	spec.RenewBefore = src.RenewBefore
+	if src.LiteralSubject != "" {
+		spec.LiteralSubject = &src.LiteralSubject
+	}
+	spec.Usages = src.Usages
 
 	return spec
 }

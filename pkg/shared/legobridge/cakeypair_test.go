@@ -193,7 +193,7 @@ var _ = Describe("CAKeyPair chain handling", func() {
 		Expect(err).To(Succeed())
 		leafKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(leafKey)})
 		csr := &x509.CertificateRequest{Subject: pkix.Name{CommonName: "server.example.com"}}
-		resource, err := issueSignedCert(csr, false, leafKey, leafKeyPEM, keyPair, time.Hour*24*90)
+		resource, err := issueSignedCert(csr, false, leafKey, leafKeyPEM, keyPair, time.Hour*24*90, nil)
 		Expect(err).To(Succeed())
 
 		By("Expecting tls.crt to contain leaf + intermediate, excluding the self-signed root")
