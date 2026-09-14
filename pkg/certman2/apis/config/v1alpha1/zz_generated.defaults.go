@@ -35,4 +35,5 @@ func SetObjectDefaults_CertManagerConfiguration(in *CertManagerConfiguration) {
 	SetDefaults_LeaderElectionConfiguration(&in.LeaderElection)
 	SetDefaults_ServerConfiguration(&in.Server)
 	SetDefaults_IssuerControllerConfig(&in.Controllers.Issuer)
+	SetDefaults_CAInjectorControllerConfig(&in.Controllers.CAInjector)
 }
