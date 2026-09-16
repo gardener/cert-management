@@ -373,7 +373,7 @@ spec:
               usages:
                 description: |-
                   Usages defines the requested key usages and extended key usages.
-                  If unset, defaults to `digital signature` and `key encipherment`.
+                  If unset, defaults to `digital signature` (and `key encipherment` for RSA keys).
                   Note: Usages are typically ignored by ACME issuers.
                 items:
                   description: "KeyUsage specifies valid usage contexts for keys.\nSee:

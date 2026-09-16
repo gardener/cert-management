@@ -362,6 +362,12 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 
 	cert.Spec.PrivateKey = createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize, info.PrivateKeyEncoding)
 
+	if info.LiteralSubject != "" {
+		s := info.LiteralSubject
+		cert.Spec.LiteralSubject = &s
+	}
+	cert.Spec.Usages = info.Usages
+
 	// Set renewBefore (validation will happen in certificate reconciler)
 	if info.RenewBefore != nil {
 		cert.Spec.RenewBefore = info.RenewBefore

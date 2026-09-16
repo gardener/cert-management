@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"hash"
 	"reflect"
 	"strings"
 	"time"
@@ -1073,10 +1074,24 @@ func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj
 	return nil
 }
 
+func hashWrite(h hash.Hash, prefix string, payloads ...string) {
+	for _, payload := range payloads {
+		h.Write([]byte(prefix))
+		h.Write([]byte{0})
+		h.Write([]byte(payload))
+		h.Write([]byte{0})
+	}
+}
+
 func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
 	h := sha256.New224()
-	if spec.CommonName != nil {
-		h.Write([]byte(*spec.CommonName))
+	commonName := spec.CommonName
+	if commonName == nil && spec.LiteralSubject == nil && spec.CSR != nil {
+		// mirror the store path: CommonName is extracted from CSR when not explicitly set
+		commonName, _, _ = shared.ExtractCommonNameAnDNSNames(spec.CSR)
+	}
+	if commonName != nil {
+		h.Write([]byte(*commonName))
 		h.Write([]byte{0})
 	}
 	for _, domain := range spec.DNSNames {
@@ -1101,59 +1116,26 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 		h.Write([]byte{0})
 	}
 	if spec.LiteralSubject != nil {
-		h.Write([]byte("literalSubject"))
-		h.Write([]byte{0})
-		h.Write([]byte(*spec.LiteralSubject))
-		h.Write([]byte{0})
+		hashWrite(h, "literalSubject", *spec.LiteralSubject)
 	}
 	if spec.Subject != nil {
 		s := spec.Subject
-		for _, v := range s.Organizations {
-			h.Write([]byte("O="))
-			h.Write([]byte(v))
-			h.Write([]byte{0})
-		}
-		for _, v := range s.Countries {
-			h.Write([]byte("C="))
-			h.Write([]byte(v))
-			h.Write([]byte{0})
-		}
-		for _, v := range s.OrganizationalUnits {
-			h.Write([]byte("OU="))
-			h.Write([]byte(v))
-			h.Write([]byte{0})
-		}
-		for _, v := range s.Localities {
-			h.Write([]byte("L="))
-			h.Write([]byte(v))
-			h.Write([]byte{0})
-		}
-		for _, v := range s.Provinces {
-			h.Write([]byte("ST="))
-			h.Write([]byte(v))
-			h.Write([]byte{0})
-		}
-		for _, v := range s.StreetAddresses {
-			h.Write([]byte("STREET="))
-			h.Write([]byte(v))
-			h.Write([]byte{0})
-		}
-		for _, v := range s.PostalCodes {
-			h.Write([]byte("PC="))
-			h.Write([]byte(v))
-			h.Write([]byte{0})
-		}
+		hashWrite(h, "O", s.Organizations...)
+		hashWrite(h, "C", s.Countries...)
+		hashWrite(h, "OU", s.OrganizationalUnits...)
+		hashWrite(h, "L", s.Localities...)
+		hashWrite(h, "ST", s.Provinces...)
+		hashWrite(h, "STREET", s.StreetAddresses...)
+		hashWrite(h, "PC", s.PostalCodes...)
 		if s.SerialNumber != "" {
-			h.Write([]byte("SN="))
-			h.Write([]byte(s.SerialNumber))
-			h.Write([]byte{0})
+			hashWrite(h, "SN", s.SerialNumber)
 		}
 	}
-	for _, u := range spec.Usages {
-		h.Write([]byte("usage="))
-		h.Write([]byte(u))
-		h.Write([]byte{0})
+	usages := make([]string, len(spec.Usages))
+	for i, u := range spec.Usages {
+		usages[i] = string(u)
 	}
+	hashWrite(h, "usage", usages...)
 	h.Write([]byte(issuerKey.String()))
 	h.Write([]byte{0})
 	if keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(spec.PrivateKey); err == nil && !r.certificatePrivateKeyDefaults.IsDefaultKeyType(keyType) {

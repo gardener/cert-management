@@ -184,12 +184,14 @@ func copyAnnotations(annotations map[string]string, keys ...string) (result map[
 // CreateSpec creates a CertificateSpec from a CertInput.
 func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 	spec := certmanv1alpha1.CertificateSpec{}
-	if len(src.Domains) > 0 {
+	if src.LiteralSubject != "" {
+		spec.LiteralSubject = &src.LiteralSubject
+		spec.DNSNames = normalizeArray(src.Domains)
+	} else if len(src.Domains) > 0 {
 		if len(src.Domains[0]) <= 64 {
 			spec.CommonName = &src.Domains[0]
 			spec.DNSNames = normalizeArray(src.Domains[1:])
 		} else {
-			spec.CommonName = nil
 			spec.DNSNames = src.Domains
 		}
 	}
@@ -215,9 +217,6 @@ func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 
 	spec.PrivateKey = createPrivateKey(src.PrivateKeyAlgorithm, src.PrivateKeySize, src.PrivateKeyEncoding)
 	spec.RenewBefore = src.RenewBefore
-	if src.LiteralSubject != "" {
-		spec.LiteralSubject = &src.LiteralSubject
-	}
 	spec.Usages = src.Usages
 
 	return spec

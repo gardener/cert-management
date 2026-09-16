@@ -124,7 +124,7 @@ type CertificateSpec struct {
 	// +optional
 	IsCA *bool `json:"isCA,omitempty"`
 	// Usages defines the requested key usages and extended key usages.
-	// If unset, defaults to `digital signature` and `key encipherment`.
+	// If unset, defaults to `digital signature` (and `key encipherment` for RSA keys).
 	// Note: Usages are typically ignored by ACME issuers.
 	// +optional
 	// +listType=atomic
