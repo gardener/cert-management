@@ -16,8 +16,11 @@ const (
 	// ControllerGroupSource is the controller group for sources (ingress and services)
 	ControllerGroupSource = "certsources"
 	// ControllerGroupCAInjector is the (opt-in) controller group for the CA injector controllers.
-	// Its controllers are registered with ActivateExplicitly, so they only run when the group or
-	// one of its controllers is named explicitly via the --controllers option.
+	// The group is pre-registered with all its members marked as ActivateExplicitly, so they are
+	// excluded from the default activation set and only run when each controller is named
+	// individually via the --controllers option (e.g. --controllers=cainjector-crd,...).
+	// Naming the group itself (certcainjector) does not activate the explicit members due to a
+	// limitation in the controller-manager-library.
 	ControllerGroupCAInjector = "certcainjector"
 	// DNSCluster is the name of the DNS cluster
 	DNSCluster = "dns"

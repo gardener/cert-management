@@ -1158,23 +1158,22 @@ cluster):
 
 ### Enabling the CA injector
 
-The CA injector controllers are **disabled by default**. They belong to the
-dedicated controller group `certcainjector` and are activated explicitly via the
-`--controllers` option (see the [Usage](#usage) section). Because listing
-`--controllers` replaces the default set, add the group next to the controllers
-you already run, for example:
+The CA injector controllers are **disabled by default**. They must be named
+individually via the `--controllers` option (see the [Usage](#usage) section).
+Because listing `--controllers` replaces the default set, include them next to
+the controllers you already run, for example:
 
 ```bash
-cert-controller-manager --controllers=certcontrollers,certsources,certcainjector ...
+cert-controller-manager --controllers=certcontrollers,certsources,cainjector-validatingwebhook,cainjector-mutatingwebhook,cainjector-crd,cainjector-apiservice ...
 ```
 
-When deploying via the Helm chart, set the group in `configuration.controllers`
+When deploying via the Helm chart, set the controllers in `configuration.controllers`
 and enable the additional RBAC (permissions to watch and update the injectable
 resources) with `configuration.caInjectorEnabled`:
 
 ```yaml
 configuration:
-  controllers: certcontrollers,certsources,certcainjector
+  controllers: certcontrollers,certsources,cainjector-validatingwebhook,cainjector-mutatingwebhook,cainjector-crd,cainjector-apiservice
   caInjectorEnabled: true
 ```
 

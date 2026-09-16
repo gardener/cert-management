@@ -30,19 +30,12 @@ var _ = Describe("controller registration", func() {
 		}
 	})
 
-	It("registers them as opt-in (ActivateExplicitly)", func() {
-		for _, name := range controllerNames {
-			def := definitions.Get(name)
-			Expect(def).NotTo(BeNil())
-			Expect(def.ActivateExplicitly()).To(BeTrue(), "controller %q must be opt-in", name)
-		}
-	})
-
 	It("groups them under the dedicated CA injector group, excluded from the default activation set", func() {
 		grp := definitions.Groups().Get(ctrl.ControllerGroupCAInjector)
 		Expect(grp).NotTo(BeNil())
 		for _, name := range controllerNames {
 			Expect(grp.Members().Contains(name)).To(BeTrue(), "controller %q must be a member of group %q", name, ctrl.ControllerGroupCAInjector)
+			Expect(grp.ActivateExplicitlyMembers().Contains(name)).To(BeTrue(), "controller %q must be marked as activate-explicitly in group %q", name, ctrl.ControllerGroupCAInjector)
 		}
 		// Opt-in controllers are not part of the set activated when --controllers is empty / "all".
 		nonExplicit := definitions.Groups().AllNonExplicitMembers()
