@@ -516,6 +516,17 @@ func (r *certReconciler) obtainCertificateAndPendingACME(ctx context.Context, lo
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
 	}
+	// ACME orders need at least one domain; literalSubject alone is ignored by ACME issuers.
+	if cert.Spec.CSR == nil {
+		domains, err := utils.ExtractDomains(&cert.Spec)
+		if err != nil {
+			return r.failedStop(logctx, obj, api.StateError, err)
+		}
+		if len(domains) == 0 {
+			return r.failedStop(logctx, obj, api.StateError,
+				fmt.Errorf("at least one domain (commonName or dnsNames) must be specified for ACME certificates; literalSubject alone is not supported by ACME issuers"))
+		}
+	}
 
 	secret, err := r.findSecretByHashLabel(cert.Namespace, &cert.Spec)
 	if err != nil {

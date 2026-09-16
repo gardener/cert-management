@@ -107,9 +107,7 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 	if value := annotations[AnnotLiteralSubject]; value != "" {
 		certInput.LiteralSubject = value
 	}
-	if value := annotations[AnnotUsages]; value != "" {
-		certInput.Usages = shared.ToKeyUsages(value)
-	}
+	certInput.Usages = shared.NormalizeUsages(annotations[AnnotUsages])
 	certInput.SecretLabels = extractSecretLabels(annotations)
 	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
 	return certInput

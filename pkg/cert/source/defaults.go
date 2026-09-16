@@ -208,8 +208,8 @@ func (s *DefaultCertSource) GetCertsInfo(logger logger.LogContext, objData resou
 	}
 
 	var usages []api.KeyUsage
-	if value, ok := resources.GetAnnotation(objData, AnnotUsages); ok && value != "" {
-		usages = shared.ToKeyUsages(value)
+	if value, ok := resources.GetAnnotation(objData, AnnotUsages); ok {
+		usages = shared.NormalizeUsages(value)
 	}
 
 	info.Certs[secretName] = CertInfo{

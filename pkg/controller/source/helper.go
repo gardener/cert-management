@@ -95,8 +95,8 @@ func GetCertsInfoByCollector(logger logger.LogContext, objData resources.ObjectD
 	}
 
 	var usages []api.KeyUsage
-	if value, ok := resources.GetAnnotation(objData, source.AnnotUsages); ok && value != "" {
-		usages = shared.ToKeyUsages(value)
+	if value, ok := resources.GetAnnotation(objData, source.AnnotUsages); ok {
+		usages = shared.NormalizeUsages(value)
 	}
 
 	annotatedDomains, cn := source.GetDomainsFromAnnotations(objData, false)

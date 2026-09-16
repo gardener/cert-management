@@ -201,6 +201,14 @@ var _ = Describe("UtilsCertificate", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dnsNames).To(ConsistOf("foo"))
 			})
+
+			It("should return no domains when literalSubject has no common name", func() {
+				ls := "O=bar,C=DE"
+				spec := api.CertificateSpec{LiteralSubject: &ls}
+				dnsNames, err := utils.ExtractDomains(&spec)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dnsNames).To(BeEmpty())
+			})
 		})
 
 		Context("ValidateSubjectExclusivity", func() {

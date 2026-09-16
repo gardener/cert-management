@@ -60,6 +60,15 @@ func extractCertificateRequest(csr []byte) (*x509.CertificateRequest, error) {
 	return x509.ParseCertificateRequest(block.Bytes)
 }
 
+// NormalizeUsages parses a usages annotation value, returning nil when the value is
+// empty. Unknown usage tokens are dropped (see ToKeyUsages).
+func NormalizeUsages(value string) []api.KeyUsage {
+	if value == "" {
+		return nil
+	}
+	return ToKeyUsages(value)
+}
+
 // ToKeyUsages parses a comma-separated list of key usage strings and returns valid KeyUsage values.
 func ToKeyUsages(value string) []api.KeyUsage {
 	set := sets.NewString()
