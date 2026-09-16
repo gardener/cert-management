@@ -233,7 +233,7 @@ func createCertReq(input ObtainInput) (*x509.CertificateRequest, error) {
 // Otherwise a pkix.Name is assembled from CommonName and the optional structured
 // Subject attributes and rawSubject is nil.
 // Mutual exclusivity of Subject/LiteralSubject/CommonName is enforced upstream by
-// utils.ValidateSubjectExclusivity.
+// shared.ValidateSubjectExclusivity.
 func subjectFromInput(input ObtainInput) (subject pkix.Name, rawSubject []byte, err error) {
 	if input.LiteralSubject != nil && *input.LiteralSubject != "" {
 		rdns, err := pki.UnmarshalSubjectStringToRDNSequence(*input.LiteralSubject)

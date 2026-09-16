@@ -75,7 +75,7 @@ func (o *CertificateObject) SafeFirstDNSName() string {
 // ExtractDomains collects CommonName and DNSNames directly from spec or from CSR.
 // The first item is the common name if provided.
 func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
-	if err := ValidateSubjectExclusivity(spec); err != nil {
+	if err := shared.ValidateSubjectExclusivity(spec); err != nil {
 		return nil, err
 	}
 
@@ -116,19 +116,4 @@ func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
 		dnsNames = append([]string{*cn}, dnsNames...)
 	}
 	return dnsNames, nil
-}
-
-// ValidateSubjectExclusivity checks the mutual exclusivity rules for Subject, LiteralSubject, and CommonName:
-// - LiteralSubject cannot be combined with Subject or CommonName.
-// - Subject cannot be combined with LiteralSubject (checked above).
-func ValidateSubjectExclusivity(spec *api.CertificateSpec) error {
-	if spec.LiteralSubject != nil {
-		if spec.Subject != nil {
-			return fmt.Errorf("subject and literalSubject are mutually exclusive")
-		}
-		if spec.CommonName != nil {
-			return fmt.Errorf("commonName and literalSubject are mutually exclusive")
-		}
-	}
-	return nil
 }

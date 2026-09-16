@@ -52,6 +52,21 @@ func ExtractCommonNameFromLiteralSubject(literalSubject string) *string {
 	return &commonName
 }
 
+// ValidateSubjectExclusivity checks the mutual exclusivity rules for Subject, LiteralSubject, and CommonName:
+// - LiteralSubject cannot be combined with Subject or CommonName.
+// - Subject cannot be combined with LiteralSubject (checked above).
+func ValidateSubjectExclusivity(spec *api.CertificateSpec) error {
+	if spec.LiteralSubject != nil {
+		if spec.Subject != nil {
+			return fmt.Errorf("subject and literalSubject are mutually exclusive")
+		}
+		if spec.CommonName != nil {
+			return fmt.Errorf("commonName and literalSubject are mutually exclusive")
+		}
+	}
+	return nil
+}
+
 func extractCertificateRequest(csr []byte) (*x509.CertificateRequest, error) {
 	block, _ := pem.Decode(csr)
 	if block == nil {

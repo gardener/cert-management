@@ -210,53 +210,6 @@ var _ = Describe("UtilsCertificate", func() {
 				Expect(dnsNames).To(BeEmpty())
 			})
 		})
-
-		Context("ValidateSubjectExclusivity", func() {
-			It("should return error when literalSubject and subject are both set", func() {
-				ls := "CN=foo"
-				spec := api.CertificateSpec{
-					LiteralSubject: &ls,
-					Subject:        &api.X509Subject{Organizations: []string{"myorg"}},
-				}
-				Expect(utils.ValidateSubjectExclusivity(&spec)).To(MatchError("subject and literalSubject are mutually exclusive"))
-			})
-
-			It("should return error when literalSubject and commonName are both set", func() {
-				ls := "CN=foo"
-				cn := "foo.example.com"
-				spec := api.CertificateSpec{
-					LiteralSubject: &ls,
-					CommonName:     &cn,
-				}
-				Expect(utils.ValidateSubjectExclusivity(&spec)).To(MatchError("commonName and literalSubject are mutually exclusive"))
-			})
-
-			It("should pass when only literalSubject is set", func() {
-				ls := "CN=foo,O=bar"
-				spec := api.CertificateSpec{LiteralSubject: &ls}
-				Expect(utils.ValidateSubjectExclusivity(&spec)).To(Succeed())
-			})
-
-			It("should pass when only subject is set", func() {
-				spec := api.CertificateSpec{Subject: &api.X509Subject{Organizations: []string{"myorg"}}}
-				Expect(utils.ValidateSubjectExclusivity(&spec)).To(Succeed())
-			})
-
-			It("should pass when only commonName is set", func() {
-				cn := "foo.example.com"
-				spec := api.CertificateSpec{CommonName: &cn}
-				Expect(utils.ValidateSubjectExclusivity(&spec)).To(Succeed())
-			})
-
-			It("should pass when subject and commonName are both set (allowed combination)", func() {
-				cn := "foo.example.com"
-				spec := api.CertificateSpec{
-					CommonName: &cn,
-					Subject:    &api.X509Subject{Organizations: []string{"myorg"}},
-				}
-				Expect(utils.ValidateSubjectExclusivity(&spec)).To(Succeed())
-			})
-		})
 	})
 })
 
