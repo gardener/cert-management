@@ -55,6 +55,10 @@ const (
 	// The value should be a valid Go duration string (e.g., "720h").
 	// If unset, the default of 30 days will be used.
 	AnnotRenewBefore = "cert.gardener.cloud/renew-before"
+	// AnnotLiteralSubject is the annotation for the literal subject
+	AnnotLiteralSubject = "cert.gardener.cloud/literal-subject"
+	// AnnotUsages is the annotation for the certificate usages
+	AnnotUsages = "cert.gardener.cloud/usages"
 	// AnnotDNSRecordProviderType is the annotation for providing the provider type for DNS records.
 	AnnotDNSRecordProviderType = "cert.gardener.cloud/dnsrecord-provider-type"
 	// AnnotDNSRecordSecretRef is the annotation for providing the secret ref for DNS records.

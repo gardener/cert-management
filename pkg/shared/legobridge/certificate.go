@@ -9,6 +9,7 @@ package legobridge
 import (
 	"context"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
 	"net"
@@ -84,6 +85,15 @@ type ObtainInput struct {
 	IsCA bool
 	// Duration is the lifetime of the certificate
 	Duration *time.Duration
+	// Subject defines the optional requested set of X509 certificate subject attributes.
+	// Cannot be set if LiteralSubject is set.
+	Subject *api.X509Subject
+	// LiteralSubject defines the requested X.509 certificate subject as LDAP string.
+	// Cannot be set if Subject or CommonName is set.
+	LiteralSubject *string
+	// Usages defines the requested key usages and extended key usages.
+	// If unset, defaults to `digital signature` and `key encipherment`.
+	Usages []api.KeyUsage
 }
 
 // DNSControllerSettings are the settings for the DNSController.
@@ -480,18 +490,17 @@ func (o *obtainer) ObtainFromCA(_ context.Context, input ObtainInput) error {
 	}
 
 	go func() {
-		var certificates *certificate.Resource
-		var err error
-
-		certificates, err = newCASignedCertFromInput(input)
+		commonName, certificates, err := newCASignedCertFromInput(input)
 		output := &ObtainOutput{
 			Certificates: certificates,
 			IssuerInfo:   shared.NewCAIssuerInfo(input.IssuerKey),
-			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			KeyType:      input.KeySpec.KeyType,
 			CSR:          input.CSR,
 			Err:          err,
+		}
+		if commonName != "" {
+			output.CommonName = &commonName
 		}
 		input.Callback(output)
 		o.releasePending(input)
@@ -553,65 +562,70 @@ func (o *obtainer) collectDomainNames(input ObtainInput) ([]string, error) {
 // ObtainFromSelfSigned starts the creation of a selfsigned certificate
 func (o *obtainer) ObtainFromSelfSigned(_ context.Context, input ObtainInput) error {
 	go func() {
-		certificates, err := newSelfSignedCertFromInput(input)
+		commonName, certificates, err := newSelfSignedCertFromInput(input)
 		output := &ObtainOutput{
 			Certificates: certificates,
 			IssuerInfo:   shared.NewSelfSignedIssuerInfo(input.IssuerKey),
-			CommonName:   input.CommonName,
 			DNSNames:     input.DNSNames,
 			KeyType:      input.KeySpec.KeyType,
 			IsCA:         input.IsCA,
 			CSR:          input.CSR,
 			Err:          err,
 		}
+		if commonName != "" {
+			output.CommonName = &commonName
+		}
 		input.Callback(output)
 	}()
 	return nil
 }
 
-func newSelfSignedCertFromInput(input ObtainInput) (certificates *certificate.Resource, err error) {
-	var certPEM, privKeyPEM []byte
+func newSelfSignedCertFromInput(input ObtainInput) (commonName string, certificates *certificate.Resource, err error) {
+	var (
+		certPEM, privKeyPEM []byte
+		subject             pkix.Name
+	)
 	if input.CSR != nil {
-		certPEM, privKeyPEM, err = newSelfSignedCertFromCSRinPEMFormat(input)
+		subject, certPEM, privKeyPEM, err = newSelfSignedCertFromCSRinPEMFormat(input)
 	} else {
-		certPEM, privKeyPEM, err = NewSelfSignedCertInPEMFormat(input)
+		subject, certPEM, privKeyPEM, err = NewSelfSignedCertInPEMFormat(input)
 	}
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	return &certificate.Resource{
+	return subject.CommonName, &certificate.Resource{
 		PrivateKey:        privKeyPEM,
 		Certificate:       certPEM,
 		IssuerCertificate: certPEM,
 	}, nil
 }
 
-func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) ([]byte, []byte, error) {
+func newSelfSignedCertFromCSRinPEMFormat(input ObtainInput) (pkix.Name, []byte, []byte, error) {
 	csr, err := extractCertificateRequest(input.CSR)
 	if err != nil {
-		return nil, nil, err
+		return pkix.Name{}, nil, nil, err
 	}
 	certPrivateKey, certPrivateKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize(csr.PublicKey), input.KeySpec.UsePKCS8)
 	if err != nil {
-		return nil, nil, err
+		return pkix.Name{}, nil, nil, err
 	}
 	csrPEM, err := generateCSRPEM(csr, certPrivateKey)
 	if err != nil {
-		return nil, nil, err
+		return pkix.Name{}, nil, nil, err
 	}
 	if input.Duration == nil {
-		return nil, nil, fmt.Errorf("duration must be set")
+		return pkix.Name{}, nil, nil, fmt.Errorf("duration must be set")
 	}
-	crt, err := generateCertFromCSR(csrPEM, *input.Duration, true)
+	crt, err := generateCertFromCSR(csrPEM, *input.Duration, true, input.Usages)
 	if err != nil {
-		return nil, nil, err
+		return pkix.Name{}, nil, nil, err
 	}
 	crtPEM, err := signCert(crt, crt, certPrivateKey.Public(), certPrivateKey)
 	if err != nil {
-		return nil, nil, err
+		return pkix.Name{}, nil, nil, err
 	}
-	return crtPEM, certPrivateKeyPEM, nil
+	return csr.Subject, crtPEM, certPrivateKeyPEM, nil
 }
 
 // CertificatesToSecretData converts a certificate resource to secret data.
@@ -684,7 +698,7 @@ func DecodeCertificates(tlsCrt []byte) ([]*x509.Certificate, error) {
 
 // newCASignedCertFromInput returns a new Certificate signed by a CA.
 // An x509.CertificateRequest is created from scratch based on and ObtainInput object
-func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) {
+func newCASignedCertFromInput(input ObtainInput) (string, *certificate.Resource, error) {
 	var csr *x509.CertificateRequest
 	var err error
 	if input.CSR == nil {
@@ -693,14 +707,15 @@ func newCASignedCertFromInput(input ObtainInput) (*certificate.Resource, error) 
 		csr, err = extractCertificateRequest(input.CSR)
 	}
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	return newCASignedCertFromCertReq(csr, input.IsCA, input.CAKeyPair, input.Duration, input.KeySpec.UsePKCS8)
+	resource, err := newCASignedCertFromCertReq(csr, input.IsCA, input.CAKeyPair, input.Duration, input.KeySpec.UsePKCS8, input.Usages)
+	return csr.Subject.CommonName, resource, err
 }
 
 // newCASignedCertFromCertReq returns a new Certificate signed by a CA based on
 // an x509.CertificateRequest and a CA key pair. A private key will be generated.
-func newCASignedCertFromCertReq(csr *x509.CertificateRequest, isCA bool, CAKeyPair *TLSKeyPair, duration *time.Duration, usePKCS8 bool) (*certificate.Resource, error) {
+func newCASignedCertFromCertReq(csr *x509.CertificateRequest, isCA bool, CAKeyPair *TLSKeyPair, duration *time.Duration, usePKCS8 bool, usages []api.KeyUsage) (*certificate.Resource, error) {
 	privKey, privKeyPEM, err := GenerateKey(csr.PublicKeyAlgorithm, pubKeySize(csr.PublicKey), usePKCS8)
 	if err != nil {
 		return nil, err
@@ -708,7 +723,7 @@ func newCASignedCertFromCertReq(csr *x509.CertificateRequest, isCA bool, CAKeyPa
 	if duration == nil {
 		return nil, fmt.Errorf("duration must be set")
 	}
-	return issueSignedCert(csr, isCA, privKey, privKeyPEM, CAKeyPair, *duration)
+	return issueSignedCert(csr, isCA, privKey, privKeyPEM, CAKeyPair, *duration, usages)
 }
 
 // RevokeCertificate revokes a certificate
