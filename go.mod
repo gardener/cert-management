@@ -8,9 +8,9 @@ require (
 	github.com/gardener/cert-management/pkg/apis v0.27.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20260918073533-fcde3b4f2fc1
 	github.com/gardener/external-dns-management v0.51.0
-	github.com/gardener/gardener v1.151.0
-	github.com/gardener/gardener/hack/tools v1.151.0
-	github.com/gardener/gardener/pkg/apis v1.151.0
+	github.com/gardener/gardener v1.151.1
+	github.com/gardener/gardener/hack/tools v1.151.1
+	github.com/gardener/gardener/pkg/apis v1.151.1
 	github.com/go-acme/lego/v5 v5.5.1
 	github.com/go-logr/logr v1.4.4
 	github.com/letsencrypt/pebble/v2 v2.10.1
