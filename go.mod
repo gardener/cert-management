@@ -7,7 +7,7 @@ require (
 	github.com/cert-manager/cert-manager v1.21.2
 	github.com/gardener/cert-management/pkg/apis v0.27.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20260918073533-fcde3b4f2fc1
-	github.com/gardener/external-dns-management v0.51.0
+	github.com/gardener/external-dns-management v0.51.1
 	github.com/gardener/gardener v1.151.1
 	github.com/gardener/gardener/hack/tools v1.151.1
 	github.com/gardener/gardener/pkg/apis v1.151.1
