@@ -15,7 +15,9 @@ helm template charts/cert-management -n default \
     --set configuration.defaultIssuer=kind-issuer \
     --set configuration.caCertificates="$(cat dev/pebble-cert.pem)" \
     --set configuration.precheckAdditionalWait=1s \
-    --set configuration..configuration.issuerDefaultPoolSize=5 \
+    --set configuration.issuerDefaultPoolSize=5 \
+    --set configuration.caInjectorEnabled=true \
+    --set-string configuration.controllers='certcontrollers\,certsources\,cainjector-apiservice\,cainjector-crd\,cainjector-mutatingwebhook\,cainjector-validatingwebhook' \
     > dev/manifests.yaml
 
 helm template charts/cert-management -n default \
@@ -26,6 +28,8 @@ helm template charts/cert-management -n default \
     --set configuration.defaultIssuer=kind-issuer \
     --set configuration.caCertificates="$(cat dev/pebble-cert.pem)" \
     --set configuration.precheckAdditionalWait=1s \
-    --set configuration..configuration.issuerDefaultPoolSize=5 \
+    --set configuration.issuerDefaultPoolSize=5 \
+    --set configuration.caInjectorEnabled=true \
+    --set-string configuration.controllers='certcontrollers\,certsources\,cainjector-apiservice\,cainjector-crd\,cainjector-mutatingwebhook\,cainjector-validatingwebhook' \
     --set configuration.useDnsrecords=true \
     > dev/manifests-dnsrecords.yaml
