@@ -75,25 +75,36 @@ func (o *CertificateObject) SafeFirstDNSName() string {
 // ExtractDomains collects CommonName and DNSNames directly from spec or from CSR.
 // The first item is the common name if provided.
 func ExtractDomains(spec *api.CertificateSpec) ([]string, error) {
+	if err := shared.ValidateSubjectExclusivity(spec); err != nil {
+		return nil, err
+	}
+
 	var err error
 	cn := spec.CommonName
+	if spec.LiteralSubject != nil {
+		cn = shared.ExtractCommonNameFromLiteralSubject(*spec.LiteralSubject)
+	}
 	dnsNames := spec.DNSNames
-	if spec.CommonName != nil || len(spec.DNSNames) > 0 {
+	if cn != nil || len(spec.DNSNames) > 0 {
 		if spec.CSR != nil {
 			return nil, fmt.Errorf("cannot specify both commonName and csr")
 		}
 		if len(spec.DNSNames) >= 100 {
 			return nil, fmt.Errorf("invalid number of DNS names: %d (max 99)", len(spec.DNSNames))
 		}
-		if spec.CommonName != nil {
-			count := utf8.RuneCount([]byte(*spec.CommonName))
+		if cn != nil {
+			count := utf8.RuneCount([]byte(*cn))
 			if count > 64 {
-				return nil, fmt.Errorf("the Common Name is limited to 64 characters (X.509 ASN.1 specification), but first given domain %s has %d characters", *spec.CommonName, count)
+				return nil, fmt.Errorf("the Common Name is limited to 64 characters (X.509 ASN.1 specification), but first given domain %s has %d characters", *cn, count)
 			}
 		}
 	} else {
+		if spec.CSR == nil && spec.LiteralSubject == nil {
+			return nil, fmt.Errorf("either domains, csr, or literalSubject must be specified")
+		}
 		if spec.CSR == nil {
-			return nil, fmt.Errorf("either domains or csr must be specified")
+			// LiteralSubject only — no DNS names to extract here; the subject is encoded in the CSR built later.
+			return nil, nil
 		}
 		cn, dnsNames, err = shared.ExtractCommonNameAnDNSNames(spec.CSR)
 		if err != nil {

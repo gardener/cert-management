@@ -115,5 +115,6 @@ func newSelfSignedCertInPEMFormat() ([]byte, []byte, error) {
 		KeySpec:    legobridge.KeySpec{KeyType: legobridge.RSA2048},
 		IsCA:       true,
 	}
-	return legobridge.NewSelfSignedCertInPEMFormat(input)
+	_, cert, key, err := legobridge.NewSelfSignedCertInPEMFormat(input)
+	return cert, key, err
 }

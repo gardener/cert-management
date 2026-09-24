@@ -32,6 +32,8 @@ type CertInput struct {
 	PrivateKeySize      int
 	PrivateKeyEncoding  string
 	RenewBefore         *metav1.Duration
+	LiteralSubject      string
+	Usages              []certmanv1alpha1.KeyUsage
 	Annotations         map[string]string
 }
 
@@ -102,6 +104,10 @@ func augmentFromCommonAnnotations(annotations map[string]string, certInput CertI
 	certInput.PrivateKeySize = keySize
 	certInput.PrivateKeyEncoding = encoding
 	certInput.RenewBefore, _ = shared.ParseRenewBefore(annotations[AnnotRenewBefore])
+	if value := annotations[AnnotLiteralSubject]; value != "" {
+		certInput.LiteralSubject = value
+	}
+	certInput.Usages = shared.NormalizeUsages(annotations[AnnotUsages])
 	certInput.SecretLabels = extractSecretLabels(annotations)
 	certInput.Annotations = copyAnnotations(annotations, AnnotClass, AnnotDNSRecordProviderType, AnnotDNSRecordSecretRef)
 	return certInput
@@ -176,12 +182,14 @@ func copyAnnotations(annotations map[string]string, keys ...string) (result map[
 // CreateSpec creates a CertificateSpec from a CertInput.
 func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 	spec := certmanv1alpha1.CertificateSpec{}
-	if len(src.Domains) > 0 {
+	if src.LiteralSubject != "" {
+		spec.LiteralSubject = &src.LiteralSubject
+		spec.DNSNames = normalizeArray(src.Domains)
+	} else if len(src.Domains) > 0 {
 		if len(src.Domains[0]) <= 64 {
 			spec.CommonName = &src.Domains[0]
 			spec.DNSNames = normalizeArray(src.Domains[1:])
 		} else {
-			spec.CommonName = nil
 			spec.DNSNames = src.Domains
 		}
 	}
@@ -207,6 +215,7 @@ func CreateSpec(src CertInput) certmanv1alpha1.CertificateSpec {
 
 	spec.PrivateKey = createPrivateKey(src.PrivateKeyAlgorithm, src.PrivateKeySize, src.PrivateKeyEncoding)
 	spec.RenewBefore = src.RenewBefore
+	spec.Usages = src.Usages
 
 	return spec
 }

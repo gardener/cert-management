@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"hash"
 	"reflect"
 	"strings"
 	"time"
@@ -385,8 +386,8 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		return r.failedStop(logctx, obj, api.StateError, err), false
 	}
 
+	// reconstruct original certificate spec
 	spec := &api.CertificateSpec{
-		CommonName:     result.CommonName,
 		DNSNames:       result.DNSNames,
 		IPAddresses:    cert.Spec.IPAddresses,
 		EmailAddresses: cert.Spec.EmailAddresses,
@@ -394,6 +395,12 @@ func (r *certReconciler) handleObtainOutput(logctx logger.LogContext, obj resour
 		CSR:            result.CSR,
 		IssuerRef:      &api.IssuerRef{Name: result.IssuerInfo.Key().Name(), Namespace: result.IssuerInfo.Key().Namespace()},
 		PrivateKey:     legobridge.FromKeyType(result.KeyType),
+		LiteralSubject: cert.Spec.LiteralSubject,
+		Subject:        cert.Spec.Subject,
+		Usages:         cert.Spec.Usages,
+	}
+	if cert.Spec.LiteralSubject == nil {
+		spec.CommonName = result.CommonName
 	}
 	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
@@ -508,6 +515,17 @@ func (r *certReconciler) obtainCertificateAndPendingACME(ctx context.Context, lo
 	err = r.validateDomainsAndCsr(&cert.Spec, issuer.Spec.ACME.Domains, issuerKey)
 	if err != nil {
 		return r.failedStop(logctx, obj, api.StateError, err)
+	}
+	// ACME orders need at least one domain; literalSubject alone is ignored by ACME issuers.
+	if cert.Spec.CSR == nil {
+		domains, err := utils.ExtractDomains(&cert.Spec)
+		if err != nil {
+			return r.failedStop(logctx, obj, api.StateError, err)
+		}
+		if len(domains) == 0 {
+			return r.failedStop(logctx, obj, api.StateError,
+				fmt.Errorf("at least one domain (commonName or dnsNames) must be specified for ACME certificates; literalSubject alone is not supported by ACME issuers"))
+		}
 	}
 
 	secret, err := r.findSecretByHashLabel(cert.Namespace, &cert.Spec)
@@ -736,6 +754,9 @@ func (r *certReconciler) obtainCertificateSelfSigned(ctx context.Context, logctx
 		EmailAddresses: cert.Spec.EmailAddresses,
 		IPAddresses:    ipAddresses,
 		URIs:           uris,
+		Subject:        cert.Spec.Subject,
+		LiteralSubject: cert.Spec.LiteralSubject,
+		Usages:         cert.Spec.Usages,
 		Callback:       callback,
 		Renew:          renew,
 		KeySpec:        keySpec,
@@ -820,6 +841,7 @@ func (r *certReconciler) obtainCertificateCA(ctx context.Context, logctx logger.
 
 	input := legobridge.ObtainInput{CAKeyPair: CAKeyPair, IssuerKey: issuerKey,
 		CommonName: cert.Spec.CommonName, DNSNames: cert.Spec.DNSNames, EmailAddresses: cert.Spec.EmailAddresses, IPAddresses: ipAddresses, URIs: uris, CSR: cert.Spec.CSR,
+		Subject: cert.Spec.Subject, LiteralSubject: cert.Spec.LiteralSubject, Usages: cert.Spec.Usages,
 		Callback: callback, Renew: renew, Duration: duration, KeySpec: keySpec, IsCA: ptr.Deref(cert.Spec.IsCA, false)}
 
 	err = r.obtainer.Obtain(ctx, input)
@@ -1063,10 +1085,24 @@ func (r *certReconciler) updateForRenewalAndRepeat(logctx logger.LogContext, obj
 	return nil
 }
 
+func hashWrite(h hash.Hash, prefix string, payloads ...string) {
+	for _, payload := range payloads {
+		h.Write([]byte(prefix))
+		h.Write([]byte{0})
+		h.Write([]byte(payload))
+		h.Write([]byte{0})
+	}
+}
+
 func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey utils.IssuerKey) string {
 	h := sha256.New224()
-	if spec.CommonName != nil {
-		h.Write([]byte(*spec.CommonName))
+	commonName := spec.CommonName
+	if commonName == nil && spec.LiteralSubject == nil && spec.CSR != nil {
+		// mirror the store path: CommonName is extracted from CSR when not explicitly set
+		commonName, _, _ = shared.ExtractCommonNameAnDNSNames(spec.CSR)
+	}
+	if commonName != nil {
+		h.Write([]byte(*commonName))
 		h.Write([]byte{0})
 	}
 	for _, domain := range spec.DNSNames {
@@ -1090,6 +1126,27 @@ func (r *certReconciler) buildSpecNewHash(spec *api.CertificateSpec, issuerKey u
 		h.Write(spec.CSR)
 		h.Write([]byte{0})
 	}
+	if spec.LiteralSubject != nil {
+		hashWrite(h, "literalSubject", *spec.LiteralSubject)
+	}
+	if spec.Subject != nil {
+		s := spec.Subject
+		hashWrite(h, "O", s.Organizations...)
+		hashWrite(h, "C", s.Countries...)
+		hashWrite(h, "OU", s.OrganizationalUnits...)
+		hashWrite(h, "L", s.Localities...)
+		hashWrite(h, "ST", s.Provinces...)
+		hashWrite(h, "STREET", s.StreetAddresses...)
+		hashWrite(h, "PC", s.PostalCodes...)
+		if s.SerialNumber != "" {
+			hashWrite(h, "SN", s.SerialNumber)
+		}
+	}
+	usages := make([]string, len(spec.Usages))
+	for i, u := range spec.Usages {
+		usages[i] = string(u)
+	}
+	hashWrite(h, "usage", usages...)
 	h.Write([]byte(issuerKey.String()))
 	h.Write([]byte{0})
 	if keyType, err := r.certificatePrivateKeyDefaults.ToKeyType(spec.PrivateKey); err == nil && !r.certificatePrivateKeyDefaults.IsDefaultKeyType(keyType) {
@@ -1358,6 +1415,10 @@ func (r *certReconciler) prepareUpdateStatus(obj resources.Object, state string,
 	dnsNames := crt.Spec.DNSNames
 	if crt.Spec.CSR != nil {
 		cn, dnsNames, _ = shared.ExtractCommonNameAnDNSNames(crt.Spec.CSR)
+	} else if cn == nil && crt.Spec.LiteralSubject != nil {
+		// When only a literal subject is requested (no explicit common name), derive
+		// the common name from it so that the status reflects the issued certificate.
+		cn = shared.ExtractCommonNameFromLiteralSubject(*crt.Spec.LiteralSubject)
 	}
 	mod.AssureStringPtrPtr(&status.CommonName, cn)
 	utils.AssureStringSlice(mod.ModificationState, &status.DNSNames, dnsNames)

@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	certmanv1alpha1 "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
+	"github.com/gardener/cert-management/pkg/shared"
 )
 
 // ReconcilerBase is base for source reconcilers.
@@ -78,7 +79,11 @@ func (r *ReconcilerBase) DoReconcile(ctx context.Context, log logr.Logger, obj c
 func (r *ReconcilerBase) createOrUpdateCert(ctx context.Context, log logr.Logger, obj client.Object, certInput CertInput, cert *certmanv1alpha1.Certificate) error {
 	modifier := func() error {
 		cert.Annotations = utils.MergeStringMaps(cert.Annotations, certInput.Annotations)
-		cert.Spec = CreateSpec(certInput)
+		spec := CreateSpec(certInput)
+		if err := shared.ValidateSubjectExclusivity(&spec); err != nil {
+			return err
+		}
+		cert.Spec = spec
 		return nil
 	}
 	if cert.Name == "" {
