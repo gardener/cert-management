@@ -8,14 +8,14 @@ require (
 	github.com/gardener/cert-management/pkg/apis v0.27.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20260918073533-fcde3b4f2fc1
 	github.com/gardener/external-dns-management v0.51.1
-	github.com/gardener/gardener v1.151.1
-	github.com/gardener/gardener/hack/tools v1.151.1
-	github.com/gardener/gardener/pkg/apis v1.151.1
+	github.com/gardener/gardener v1.152.0
+	github.com/gardener/gardener/hack/tools v1.152.0
+	github.com/gardener/gardener/pkg/apis v1.152.0
 	github.com/go-acme/lego/v5 v5.5.2
 	github.com/go-logr/logr v1.4.4
 	github.com/letsencrypt/pebble/v2 v2.10.1
 	github.com/miekg/dns v1.1.73
-	github.com/onsi/ginkgo/v2 v2.32.1
+	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.43.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/prometheus/client_golang v1.24.1
@@ -24,7 +24,7 @@ require (
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/exp v0.0.0-20260611194520-c48552f49976
-	istio.io/api v1.29.7
+	istio.io/api v1.29.8
 	istio.io/client-go v1.29.2
 	k8s.io/api v0.36.4
 	k8s.io/apiextensions-apiserver v0.36.4
@@ -56,7 +56,7 @@ require (
 	github.com/VictoriaMetrics/metrics v1.44.0 // indirect
 	github.com/VictoriaMetrics/metricsql v0.87.3 // indirect
 	github.com/VictoriaMetrics/operator/api v0.74.1 // indirect
-	github.com/andybalholm/brotli v1.2.3 // indirect
+	github.com/andybalholm/brotli v1.2.4 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.0 // indirect
@@ -219,7 +219,7 @@ require (
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/tools v0.50.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688 // indirect
