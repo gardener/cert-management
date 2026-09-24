@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/tools/clientcmd"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -48,6 +49,7 @@ func init() {
 	utils.Must(resources.Register(v1alpha1.SchemeBuilder))
 	utils.Must(resources.Register(extensionsv1alpha.SchemeBuilder))
 	utils.Must(resources.Register(dnsapi.SchemeBuilder))
+	utils.Must(resources.Register(apiregistrationv1.SchemeBuilder))
 }
 
 func CreateDefaultTestUtils() (*TestUtils, error) {
