@@ -564,5 +564,196 @@ var _ = Describe("Certificate controller tests", func() {
 				g.Expect(certificate.Status.State).To(Equal("Ready"))
 			}).WithTimeout(10 * time.Second).Should(Succeed())
 		})
+
+		It("should be properly created with subject and usages", func() {
+			By("Create certificate from CA with subject and usages")
+			certificate := &certv1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testNamespace.Name,
+					GenerateName: "ca-certificate-with-subject-",
+				},
+				Spec: certv1alpha1.CertificateSpec{
+					IssuerRef: &certv1alpha1.IssuerRef{
+						Namespace: caIssuer.Namespace,
+						Name:      caIssuer.Name,
+					},
+					CommonName: new("example.com"),
+					Duration: &metav1.Duration{
+						Duration: 48 * time.Hour,
+					},
+					Subject: &certv1alpha1.X509Subject{
+						Organizations:       []string{"MyOrg"},
+						Countries:           []string{"DE"},
+						OrganizationalUnits: []string{"Engineering"},
+						Localities:          []string{"Berlin"},
+						Provinces:           []string{"Berlin"},
+					},
+					Usages: []certv1alpha1.KeyUsage{
+						certv1alpha1.UsageDigitalSignature,
+						certv1alpha1.UsageKeyEncipherment,
+						certv1alpha1.UsageServerAuth,
+						certv1alpha1.UsageClientAuth,
+						certv1alpha1.UsageEmailProtection,
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Ready"))
+			}).WithTimeout(10 * time.Second).Should(Succeed())
+
+			By("Read certificate secret")
+			secret := &corev1.Secret{}
+			Expect(testClient.Get(ctx, client.ObjectKey{
+				Namespace: certificate.Spec.SecretRef.Namespace,
+				Name:      certificate.Spec.SecretRef.Name,
+			}, secret)).To(Succeed())
+
+			By("Decode certificate from secret")
+			certBlock, _ := pem.Decode(secret.Data[corev1.TLSCertKey])
+			Expect(certBlock).NotTo(BeNil())
+			parsedCert, err := x509.ParseCertificate(certBlock.Bytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Check subject and usages in the certificate")
+			Expect(parsedCert.Subject.CommonName).To(Equal("example.com"))
+			Expect(parsedCert.Subject.Organization).To(ConsistOf("MyOrg"))
+			Expect(parsedCert.Subject.Country).To(ConsistOf("DE"))
+			Expect(parsedCert.Subject.OrganizationalUnit).To(ConsistOf("Engineering"))
+			Expect(parsedCert.Subject.Locality).To(ConsistOf("Berlin"))
+			Expect(parsedCert.Subject.Province).To(ConsistOf("Berlin"))
+			Expect(parsedCert.KeyUsage & x509.KeyUsageDigitalSignature).NotTo(BeZero())
+			Expect(parsedCert.KeyUsage & x509.KeyUsageKeyEncipherment).NotTo(BeZero())
+			Expect(parsedCert.ExtKeyUsage).To(ConsistOf(x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageEmailProtection))
+		})
+
+		It("should be properly created with literalSubject and must not set common name", func() {
+			By("Create certificate from CA with literalSubject")
+			certificate := &certv1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testNamespace.Name,
+					GenerateName: "ca-certificate-with-literal-subject-",
+				},
+				Spec: certv1alpha1.CertificateSpec{
+					IssuerRef: &certv1alpha1.IssuerRef{
+						Namespace: caIssuer.Namespace,
+						Name:      caIssuer.Name,
+					},
+					Duration: &metav1.Duration{
+						Duration: 48 * time.Hour,
+					},
+					LiteralSubject: new("O=MyOrg,C=DE"),
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Ready"))
+			}).WithTimeout(10 * time.Second).Should(Succeed())
+
+			By("Read certificate secret")
+			secret := &corev1.Secret{}
+			Expect(testClient.Get(ctx, client.ObjectKey{
+				Namespace: certificate.Spec.SecretRef.Namespace,
+				Name:      certificate.Spec.SecretRef.Name,
+			}, secret)).To(Succeed())
+
+			By("Decode certificate from secret")
+			certBlock, _ := pem.Decode(secret.Data[corev1.TLSCertKey])
+			Expect(certBlock).NotTo(BeNil())
+			parsedCert, err := x509.ParseCertificate(certBlock.Bytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Check that literalSubject is reflected and common name is empty")
+			Expect(parsedCert.Subject.CommonName).To(BeEmpty())
+			Expect(parsedCert.Subject.Organization).To(ConsistOf("MyOrg"))
+			Expect(parsedCert.Subject.Country).To(ConsistOf("DE"))
+		})
+
+		It("should set the common name in status and DNS names when the literalSubject has a CN", func() {
+			By("Create certificate from CA with literalSubject containing a CN")
+			certificate := &certv1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testNamespace.Name,
+					GenerateName: "ca-certificate-with-literal-subject-cn-",
+				},
+				Spec: certv1alpha1.CertificateSpec{
+					IssuerRef: &certv1alpha1.IssuerRef{
+						Namespace: caIssuer.Namespace,
+						Name:      caIssuer.Name,
+					},
+					Duration: &metav1.Duration{
+						Duration: 48 * time.Hour,
+					},
+					LiteralSubject: new("CN=leaf.example.com,O=MyOrg,C=DE"),
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Ready"))
+			}).WithTimeout(10 * time.Second).Should(Succeed())
+
+			By("Check that the common name is reflected in the status")
+			Expect(certificate.Status.CommonName).To(HaveValue(Equal("leaf.example.com")))
+
+			By("Read certificate secret")
+			secret := &corev1.Secret{}
+			Expect(testClient.Get(ctx, client.ObjectKey{
+				Namespace: certificate.Spec.SecretRef.Namespace,
+				Name:      certificate.Spec.SecretRef.Name,
+			}, secret)).To(Succeed())
+
+			By("Decode certificate from secret")
+			certBlock, _ := pem.Decode(secret.Data[corev1.TLSCertKey])
+			Expect(certBlock).NotTo(BeNil())
+			parsedCert, err := x509.ParseCertificate(certBlock.Bytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Check that the common name is set and promoted to a DNS SAN")
+			Expect(parsedCert.Subject.CommonName).To(Equal("leaf.example.com"))
+			Expect(parsedCert.Subject.Organization).To(ConsistOf("MyOrg"))
+			Expect(parsedCert.DNSNames).To(ConsistOf("leaf.example.com"))
+		})
+
+		It("should reject literalSubject combined with commonName", func() {
+			By("Create certificate with literalSubject and commonName")
+			certificate := &certv1alpha1.Certificate{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testNamespace.Name,
+					GenerateName: "ca-certificate-literal-subject-with-cn-",
+				},
+				Spec: certv1alpha1.CertificateSpec{
+					IssuerRef: &certv1alpha1.IssuerRef{
+						Namespace: caIssuer.Namespace,
+						Name:      caIssuer.Name,
+					},
+					Duration: &metav1.Duration{
+						Duration: 48 * time.Hour,
+					},
+					CommonName:     new("example.com"),
+					LiteralSubject: new("O=MyOrg,C=DE"),
+				},
+			}
+			Expect(testClient.Create(ctx, certificate)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+			})
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(certificate), certificate)).To(Succeed())
+				g.Expect(certificate.Status.State).To(Equal("Error"))
+				g.Expect(*certificate.Status.Message).To(ContainSubstring("commonName and literalSubject are mutually exclusive"))
+			}).WithTimeout(10 * time.Second).Should(Succeed())
+		})
 	})
 })

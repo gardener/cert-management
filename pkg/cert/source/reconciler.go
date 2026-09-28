@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	certutils "github.com/gardener/cert-management/pkg/cert/utils"
@@ -325,7 +326,13 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 	if r.targetclass != "" {
 		resources.SetAnnotation(cert, AnnotClass, r.targetclass)
 	}
-	if len(info.Domains) > 0 {
+	if info.LiteralSubject != "" {
+		// commonName and literalSubject are mutually exclusive (see
+		// shared.ValidateSubjectExclusivity), so route all domains to DNSNames
+		// and leave CommonName unset when a literal subject is requested.
+		cert.Spec.CommonName = nil
+		cert.Spec.DNSNames = info.Domains
+	} else if len(info.Domains) > 0 {
 		if len(info.Domains[0]) <= 64 {
 			cert.Spec.CommonName = &info.Domains[0]
 			cert.Spec.DNSNames = info.Domains[1:]
@@ -360,6 +367,12 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 	}
 
 	cert.Spec.PrivateKey = createPrivateKey(info.PrivateKeyAlgorithm, info.PrivateKeySize, info.PrivateKeyEncoding)
+
+	if info.LiteralSubject != "" {
+		s := info.LiteralSubject
+		cert.Spec.LiteralSubject = &s
+	}
+	cert.Spec.Usages = info.Usages
 
 	// Set renewBefore (validation will happen in certificate reconciler)
 	if info.RenewBefore != nil {
@@ -416,7 +429,13 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		mod.Modify(changed)
 		var cn *string
 		var dnsNames []string
-		if len(info.Domains) > 0 {
+		if info.LiteralSubject != "" {
+			// commonName and literalSubject are mutually exclusive (see
+			// shared.ValidateSubjectExclusivity), so route all domains to DNSNames
+			// and leave CommonName unset when a literal subject is requested.
+			cn = nil
+			dnsNames = info.Domains
+		} else if len(info.Domains) > 0 {
 			if len(info.Domains[0]) <= 64 {
 				cn = &info.Domains[0]
 				dnsNames = info.Domains[1:]
@@ -481,6 +500,21 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		// Update renewBefore (validation will happen in certificate reconciler)
 		if !reflect.DeepEqual(spec.RenewBefore, info.RenewBefore) {
 			spec.RenewBefore = info.RenewBefore
+			mod.Modify(true)
+		}
+
+		if ptr.Deref(spec.LiteralSubject, "") != info.LiteralSubject {
+			if info.LiteralSubject != "" {
+				s := info.LiteralSubject
+				spec.LiteralSubject = new(s)
+			} else {
+				spec.LiteralSubject = nil
+			}
+			mod.Modify(true)
+		}
+
+		if !reflect.DeepEqual(spec.Usages, info.Usages) {
+			spec.Usages = info.Usages
 			mod.Modify(true)
 		}
 

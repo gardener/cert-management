@@ -9,30 +9,46 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"time"
 
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
+
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 )
+
+// parseSelfSignedCert creates a self-signed certificate from the input and returns
+// the parsed x509 certificate, failing the test on any error.
+func parseSelfSignedCert(input ObtainInput) *x509.Certificate {
+	_, certPEM, _, err := NewSelfSignedCertInPEMFormat(input)
+	Expect(err).NotTo(HaveOccurred())
+	p, _ := pem.Decode(certPEM)
+	Expect(p).NotTo(BeNil())
+	cert, err := x509.ParseCertificate(p.Bytes)
+	Expect(err).NotTo(HaveOccurred())
+	return cert
+}
 
 var _ = Describe("PKI", func() {
 	Context("#NewSelfSignedCertInPEMFormat", func() {
 		It("returns an error with empty input", func() {
-			_, _, err := NewSelfSignedCertInPEMFormat(ObtainInput{})
+			_, _, _, err := NewSelfSignedCertInPEMFormat(ObtainInput{})
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("returns an error when no common name is set", func() {
+		It("returns an error when no common name or literal subject is set", func() {
 			input := ObtainInput{Duration: ptr.To(time.Hour)}
-			_, _, err := NewSelfSignedCertInPEMFormat(input)
-			Expect(err).To(MatchError("common name must be set"))
+			_, _, _, err := NewSelfSignedCertInPEMFormat(input)
+			Expect(err).To(MatchError("common name or literal subject must be set"))
 		})
 
 		It("returns an error when no duration is set", func() {
 			input := ObtainInput{CommonName: new("test-common-name")}
-			_, _, err := NewSelfSignedCertInPEMFormat(input)
+			_, _, _, err := NewSelfSignedCertInPEMFormat(input)
 			Expect(err).To(MatchError("duration must be set"))
 		})
 
@@ -49,8 +65,9 @@ var _ = Describe("PKI", func() {
 					Duration:   duration,
 					KeySpec:    KeySpec{KeyType: RSA2048, UsePKCS8: usePKCS8},
 				}
-				certPEM, certPrivateKeyPEM, err := NewSelfSignedCertInPEMFormat(input)
+				subject, certPEM, certPrivateKeyPEM, err := NewSelfSignedCertInPEMFormat(input)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(subject.CommonName).To(Equal(*input.CommonName))
 				Expect(certPEM).NotTo(BeNil())
 				Expect(certPEM).NotTo(BeEmpty())
 				Expect(certPrivateKeyPEM).NotTo(BeNil())
@@ -82,6 +99,108 @@ var _ = Describe("PKI", func() {
 			Entry("with PKCS1 format", false),
 			Entry("with PKCS8 format", true),
 		)
+
+		It("sets the structured subject attributes", func() {
+			input := ObtainInput{
+				CommonName: new("test-common-name"),
+				Duration:   ptr.To(time.Hour),
+				KeySpec:    KeySpec{KeyType: RSA2048},
+				Subject: &api.X509Subject{
+					Organizations:       []string{"org-a", "org-b"},
+					Countries:           []string{"DE"},
+					OrganizationalUnits: []string{"ou-a"},
+					Localities:          []string{"Walldorf"},
+					Provinces:           []string{"BW"},
+					StreetAddresses:     []string{"Dietmar-Hopp-Allee 16"},
+					PostalCodes:         []string{"69190"},
+					SerialNumber:        "12345",
+				},
+			}
+			cert := parseSelfSignedCert(input)
+			Expect(cert.Subject.CommonName).To(Equal("test-common-name"))
+			Expect(cert.Subject.Organization).To(Equal([]string{"org-a", "org-b"}))
+			Expect(cert.Subject.Country).To(Equal([]string{"DE"}))
+			Expect(cert.Subject.OrganizationalUnit).To(Equal([]string{"ou-a"}))
+			Expect(cert.Subject.Locality).To(Equal([]string{"Walldorf"}))
+			Expect(cert.Subject.Province).To(Equal([]string{"BW"}))
+			Expect(cert.Subject.StreetAddress).To(Equal([]string{"Dietmar-Hopp-Allee 16"}))
+			Expect(cert.Subject.PostalCode).To(Equal([]string{"69190"}))
+			Expect(cert.Subject.SerialNumber).To(Equal("12345"))
+		})
+
+		It("sets the subject from a literal subject", func() {
+			input := ObtainInput{
+				LiteralSubject: new("CN=foo,O=bar,C=DE"),
+				Duration:       ptr.To(time.Hour),
+				KeySpec:        KeySpec{KeyType: RSA2048},
+			}
+			cert := parseSelfSignedCert(input)
+			Expect(cert.Subject.CommonName).To(Equal("foo"))
+			Expect(cert.Subject.Organization).To(Equal([]string{"bar"}))
+			Expect(cert.Subject.Country).To(Equal([]string{"DE"}))
+		})
+
+		It("preserves the attribute order and non-structured attributes of a literal subject", func() {
+			// The order of RDNs and attribute types without a dedicated pkix.Name field
+			// (here: domainComponent / DC) must be preserved verbatim. Go re-marshals the
+			// structured pkix.Name fields in its own canonical order and drops unknown
+			// attribute types, so the RawSubject of the issued certificate must equal the
+			// DER encoding of the requested literal subject exactly.
+			literalSubject := "CN=foo,DC=corp,DC=example,DC=com"
+			input := ObtainInput{
+				LiteralSubject: new(literalSubject),
+				Duration:       ptr.To(time.Hour),
+				KeySpec:        KeySpec{KeyType: RSA2048},
+			}
+			cert := parseSelfSignedCert(input)
+
+			expectedRDNs, err := pki.UnmarshalSubjectStringToRDNSequence(literalSubject)
+			Expect(err).NotTo(HaveOccurred())
+			expectedDER, err := pki.MarshalRDNSequenceToRawDERBytes(expectedRDNs)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cert.RawSubject).To(Equal(expectedDER))
+			// Round-trip the issued subject back to a string and compare the ordered RDNs.
+			actualRDNs, err := pki.UnmarshalRawDerBytesToRDNSequence(cert.RawSubject)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(actualRDNs).To(Equal(expectedRDNs))
+		})
+
+		It("returns an error for an invalid literal subject", func() {
+			input := ObtainInput{
+				LiteralSubject: new("not a valid DN"),
+				Duration:       ptr.To(time.Hour),
+				KeySpec:        KeySpec{KeyType: RSA2048},
+			}
+			_, _, _, err := NewSelfSignedCertInPEMFormat(input)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("literalSubject"))
+		})
+
+		It("applies the requested key usages and always includes cert sign", func() {
+			input := ObtainInput{
+				CommonName: new("test-common-name"),
+				Duration:   ptr.To(time.Hour),
+				KeySpec:    KeySpec{KeyType: RSA2048},
+				Usages:     []api.KeyUsage{api.UsageDigitalSignature, api.UsageClientAuth},
+			}
+			cert := parseSelfSignedCert(input)
+			Expect(cert.KeyUsage & x509.KeyUsageDigitalSignature).NotTo(BeZero())
+			Expect(cert.KeyUsage & x509.KeyUsageCertSign).NotTo(BeZero())
+			Expect(cert.ExtKeyUsage).To(ConsistOf(x509.ExtKeyUsageClientAuth))
+		})
+
+		It("defaults to server auth extended usage when no usages are set", func() {
+			input := ObtainInput{
+				CommonName: new("test-common-name"),
+				Duration:   ptr.To(time.Hour),
+				KeySpec:    KeySpec{KeyType: RSA2048},
+			}
+			cert := parseSelfSignedCert(input)
+			Expect(cert.ExtKeyUsage).To(ConsistOf(x509.ExtKeyUsageServerAuth))
+			Expect(cert.KeyUsage & x509.KeyUsageCertSign).NotTo(BeZero())
+			Expect(cert.KeyUsage & x509.KeyUsageKeyEncipherment).NotTo(BeZero())
+		})
 	})
 
 	Context("#createCertReq", func() {
@@ -117,6 +236,65 @@ var _ = Describe("PKI", func() {
 			csr, err := createCertReq(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(csr.DNSNames).To(BeEmpty())
+		})
+
+		It("uses the requested structured subject instead of the CA attributes", func() {
+			input := baseInput()
+			input.CAKeyPair = &TLSKeyPair{Cert: x509.Certificate{Subject: pkix.Name{Organization: []string{"ca-org"}}}}
+			input.CommonName = new("leaf.example.com")
+			input.Subject = &api.X509Subject{Organizations: []string{"requested-org"}}
+			csr, err := createCertReq(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(csr.Subject.CommonName).To(Equal("leaf.example.com"))
+			Expect(csr.Subject.Organization).To(Equal([]string{"requested-org"}))
+		})
+
+		It("promotes the common name of a literal subject to a DNS SAN for leaf certificates", func() {
+			input := baseInput()
+			input.LiteralSubject = new("CN=leaf.example.com,O=bar")
+			csr, err := createCertReq(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(csr.Subject.CommonName).To(Equal("leaf.example.com"))
+			Expect(csr.Subject.Organization).To(Equal([]string{"bar"}))
+			Expect(csr.DNSNames).To(ConsistOf("leaf.example.com"))
+		})
+
+		It("does not promote the common name of a literal subject for CA certificates", func() {
+			input := baseInput()
+			input.IsCA = true
+			input.LiteralSubject = new("CN=Intermediate CA,O=bar")
+			csr, err := createCertReq(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(csr.Subject.CommonName).To(Equal("Intermediate CA"))
+			Expect(csr.DNSNames).To(BeEmpty())
+		})
+
+		It("preserves the attribute order of a literal subject in the CSR", func() {
+			// The DN order must survive CSR creation: RawSubject must hold the DER
+			// encoding of the requested literal subject in the requested order.
+			literalSubject := "CN=leaf.example.com,DC=corp,DC=example,DC=com,O=bar,C=DE"
+			input := baseInput()
+			input.LiteralSubject = new(literalSubject)
+			csr, err := createCertReq(input)
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedRDNs, err := pki.UnmarshalSubjectStringToRDNSequence(literalSubject)
+			Expect(err).NotTo(HaveOccurred())
+			expectedDER, err := pki.MarshalRDNSequenceToRawDERBytes(expectedRDNs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(csr.RawSubject).To(Equal(expectedDER))
+
+			// The order must also be preserved after the CSR is serialized to PEM and
+			// parsed back (this is the form actually handed to the signer).
+			key, _, err := GenerateKeyFromSpec(input.KeySpec)
+			Expect(err).NotTo(HaveOccurred())
+			csrPEM, err := generateCSRPEM(csr, key)
+			Expect(err).NotTo(HaveOccurred())
+			parsedCSR, err := extractCertificateRequest(csrPEM)
+			Expect(err).NotTo(HaveOccurred())
+			parsedRDNs, err := pki.UnmarshalRawDerBytesToRDNSequence(parsedCSR.RawSubject)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(parsedRDNs).To(Equal(expectedRDNs))
 		})
 	})
 

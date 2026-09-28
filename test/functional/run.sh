@@ -114,9 +114,6 @@ fi
 if [ "$NOBOOTSTRAP" == "" ] && [ "$LOCAL_APISERVER" == "" ]; then
   echo Starting Kubernetes IN Docker...
 
-  # prepare Kubernetes IN Docker - local clusters for testing Kubernetes
-  go install sigs.k8s.io/kind
-
   rm $INTEGRATION_KUBECONFIG || true
   touch $INTEGRATION_KUBECONFIG
   export KUBECONFIG=$INTEGRATION_KUBECONFIG

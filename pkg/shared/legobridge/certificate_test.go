@@ -114,12 +114,12 @@ var _ = Describe("Certificate", func() {
 
 	Context("#newSelfSignedCertFromCSRinPEMFormat", func() {
 		It("should fail decoding the CSR with empty input", func() {
-			_, _, err := newSelfSignedCertFromCSRinPEMFormat(ObtainInput{})
+			_, _, _, err := newSelfSignedCertFromCSRinPEMFormat(ObtainInput{})
 			Expect(err).To(MatchError("decoding CSR failed"))
 		})
 
 		It("should fail decoding an invalid CSR", func() {
-			_, _, err := newSelfSignedCertFromCSRinPEMFormat(ObtainInput{CSR: []byte("invalid")})
+			_, _, _, err := newSelfSignedCertFromCSRinPEMFormat(ObtainInput{CSR: []byte("invalid")})
 			Expect(err).To(MatchError("decoding CSR failed"))
 		})
 
@@ -131,14 +131,15 @@ var _ = Describe("Certificate", func() {
 			})
 
 			It("should fail when no duration is set", func() {
-				_, _, err := newSelfSignedCertFromCSRinPEMFormat(input)
+				_, _, _, err := newSelfSignedCertFromCSRinPEMFormat(input)
 				Expect(err).To(MatchError("duration must be set"))
 			})
 
 			It("should succeed when the duration is set", func() {
 				input.Duration = ptr.To(time.Hour)
-				cert, key, err := newSelfSignedCertFromCSRinPEMFormat(input)
+				subject, cert, key, err := newSelfSignedCertFromCSRinPEMFormat(input)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(subject.CommonName).To(BeEmpty())
 				Expect(cert).NotTo(BeNil())
 				Expect(key).NotTo(BeNil())
 			})
@@ -147,8 +148,8 @@ var _ = Describe("Certificate", func() {
 
 	Context("#newSelfSignedCertFromInput", func() {
 		It("should fail with empty input", func() {
-			_, err := newSelfSignedCertFromInput(ObtainInput{})
-			Expect(err).To(MatchError("common name must be set"))
+			_, _, err := newSelfSignedCertFromInput(ObtainInput{})
+			Expect(err).To(MatchError("common name or literal subject must be set"))
 		})
 
 		It("should create a self-signed certificate from the input", func() {
@@ -157,16 +158,18 @@ var _ = Describe("Certificate", func() {
 				Duration:   ptr.To(time.Hour),
 				CommonName: new("test-common-name"),
 			}
-			cert, err := newSelfSignedCertFromInput(input)
+			commonName, cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(commonName).To(Equal("test-common-name"))
 			Expect(cert).NotTo(BeNil())
 			assertRSAPrivateKeySize(cert.PrivateKey, 2048)
 		})
 
 		It("should create a self-signed certificate from a CSR", func() {
 			input := ObtainInput{CSR: _createCSR(), Duration: ptr.To(time.Hour)}
-			cert, err := newSelfSignedCertFromInput(input)
+			commonName, cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(commonName).To(BeEmpty())
 			Expect(cert).NotTo(BeNil())
 			assertRSAPrivateKeySize(cert.PrivateKey, 2048)
 		})
@@ -177,7 +180,7 @@ var _ = Describe("Certificate", func() {
 				KeySpec:  KeySpec{KeyType: EC256},
 				Duration: ptr.To(time.Hour),
 			}
-			cert, err := newSelfSignedCertFromInput(input)
+			_, cert, err := newSelfSignedCertFromInput(input)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cert).NotTo(BeNil())
 			assertRSAPrivateKeySize(cert.PrivateKey, 2048)

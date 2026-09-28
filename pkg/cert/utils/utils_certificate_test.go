@@ -172,7 +172,7 @@ var _ = Describe("UtilsCertificate", func() {
 				spec := api.CertificateSpec{}
 				dnsNames, err := utils.ExtractDomains(&spec)
 				Expect(dnsNames).To(BeNil())
-				Expect(err).To(MatchError("either domains or csr must be specified"))
+				Expect(err).To(MatchError("either domains, csr, or literalSubject must be specified"))
 			})
 
 			It("should extract the DNSNames from the CSR if CRN is specified and valid", func() {
@@ -192,6 +192,22 @@ var _ = Describe("UtilsCertificate", func() {
 				dnsNames, err := utils.ExtractDomains(&spec)
 				Expect(dnsNames).To(BeNil())
 				Expect(err).To(MatchError("parsing CSR failed: decoding CSR failed"))
+			})
+
+			It("should return nil domains when only literalSubject is specified", func() {
+				ls := "CN=foo,O=bar"
+				spec := api.CertificateSpec{LiteralSubject: &ls}
+				dnsNames, err := utils.ExtractDomains(&spec)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dnsNames).To(ConsistOf("foo"))
+			})
+
+			It("should return no domains when literalSubject has no common name", func() {
+				ls := "O=bar,C=DE"
+				spec := api.CertificateSpec{LiteralSubject: &ls}
+				dnsNames, err := utils.ExtractDomains(&spec)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dnsNames).To(BeEmpty())
 			})
 		})
 	})

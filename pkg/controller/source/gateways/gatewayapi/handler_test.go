@@ -14,6 +14,7 @@ import (
 	"k8s.io/utils/ptr"
 	gatewayapisv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/cert/source"
 	ctrlsource "github.com/gardener/cert-management/pkg/controller/source"
 )
@@ -392,6 +393,84 @@ var _ = Describe("Kubernetes Networking Gateway Handler", func() {
 				source.AnnotDNSRecordProviderType: "dummy-type",
 				source.AnnotDNSRecordSecretRef:    "dummy",
 			}
+			return info
+		}))),
+		Entry("literal subject annotation is propagated", &gatewayapisv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
+				Annotations: map[string]string{
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+					source.AnnotLiteralSubject:      "CN=foo.example.com,O=MyOrg,C=DE",
+				},
+			},
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Hostname: ptr.To(gatewayapisv1.Hostname("foo.example.com")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{
+								{Name: "mysecret"},
+							},
+						},
+					},
+				},
+			},
+		}, nil, toMap(modifyCertInfo(makeCertInfo("mysecret", nil, "foo.example.com"), func(info source.CertInfo) source.CertInfo {
+			info.LiteralSubject = "CN=foo.example.com,O=MyOrg,C=DE"
+			return info
+		}))),
+		Entry("usages annotation is propagated", &gatewayapisv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
+				Annotations: map[string]string{
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+					source.AnnotUsages:              "digital signature,server auth",
+				},
+			},
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Hostname: ptr.To(gatewayapisv1.Hostname("foo.example.com")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{
+								{Name: "mysecret"},
+							},
+						},
+					},
+				},
+			},
+		}, nil, toMap(modifyCertInfo(makeCertInfo("mysecret", nil, "foo.example.com"), func(info source.CertInfo) source.CertInfo {
+			info.Usages = []api.KeyUsage{api.UsageDigitalSignature, api.UsageServerAuth}
+			return info
+		}))),
+		Entry("unknown usages in annotation are silently dropped", &gatewayapisv1.Gateway{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "test",
+				Name:      "g1",
+				Annotations: map[string]string{
+					ctrlsource.AnnotationPurposeKey: ctrlsource.AnnotationPurposeValueManaged,
+					source.AnnotUsages:              "digital signature,not-a-valid-usage",
+				},
+			},
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Hostname: ptr.To(gatewayapisv1.Hostname("foo.example.com")),
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{
+								{Name: "mysecret"},
+							},
+						},
+					},
+				},
+			},
+		}, nil, toMap(modifyCertInfo(makeCertInfo("mysecret", nil, "foo.example.com"), func(info source.CertInfo) source.CertInfo {
+			info.Usages = []api.KeyUsage{api.UsageDigitalSignature}
 			return info
 		}))),
 		Entry("multiple listeners with mixed-domain HTTPRoutes should not pollute SANs", &gatewayapisv1.Gateway{

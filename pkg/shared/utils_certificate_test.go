@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
 	"github.com/gardener/cert-management/pkg/shared"
 )
 
@@ -72,3 +73,102 @@ func _createCSR(cn string, san []string, ips []net.IP) []byte {
 		Bytes: csr,
 	})
 }
+
+var _ = Describe("ExtractCommonNameFromLiteralSubject", func() {
+	It("should return the common name when present", func() {
+		Expect(shared.ExtractCommonNameFromLiteralSubject("CN=leaf.example.com,O=MyOrg,C=DE")).
+			To(HaveValue(Equal("leaf.example.com")))
+	})
+
+	It("should return nil when no common name is present", func() {
+		Expect(shared.ExtractCommonNameFromLiteralSubject("O=MyOrg,C=DE")).To(BeNil())
+	})
+
+	It("should return nil for an unparseable literal subject", func() {
+		Expect(shared.ExtractCommonNameFromLiteralSubject("not a valid DN")).To(BeNil())
+	})
+})
+
+var _ = Describe("ToKeyUsages", func() {
+	It("should return valid usages for a comma-separated list", func() {
+		result := shared.ToKeyUsages("signing,digital signature,server auth")
+		Expect(result).To(ConsistOf(api.UsageSigning, api.UsageDigitalSignature, api.UsageServerAuth))
+	})
+
+	It("should ignore unknown usage values", func() {
+		result := shared.ToKeyUsages("signing,unknown-usage,server auth")
+		Expect(result).To(ConsistOf(api.UsageSigning, api.UsageServerAuth))
+	})
+
+	It("should return empty slice for empty string", func() {
+		result := shared.ToKeyUsages("")
+		Expect(result).To(BeEmpty())
+	})
+
+	It("should return empty slice if all values are unknown", func() {
+		result := shared.ToKeyUsages("foo,bar,baz")
+		Expect(result).To(BeEmpty())
+	})
+
+	It("should handle a single valid usage", func() {
+		result := shared.ToKeyUsages("client auth")
+		Expect(result).To(ConsistOf(api.UsageClientAuth))
+	})
+
+	It("should handle usages with spaces in their names", func() {
+		result := shared.ToKeyUsages("key encipherment,key agreement")
+		Expect(result).To(ConsistOf(api.UsageKeyEncipherment, api.UsageKeyAgreement))
+	})
+
+	It("should trim surrounding whitespace around comma-separated values", func() {
+		result := shared.ToKeyUsages("server auth, client auth ,  key encipherment")
+		Expect(result).To(ConsistOf(api.UsageServerAuth, api.UsageClientAuth, api.UsageKeyEncipherment))
+	})
+})
+
+var _ = Describe("ValidateSubjectExclusivity", func() {
+	It("should return error when literalSubject and subject are both set", func() {
+		ls := "CN=foo"
+		spec := api.CertificateSpec{
+			LiteralSubject: &ls,
+			Subject:        &api.X509Subject{Organizations: []string{"myorg"}},
+		}
+		Expect(shared.ValidateSubjectExclusivity(&spec)).To(MatchError("subject and literalSubject are mutually exclusive"))
+	})
+
+	It("should return error when literalSubject and commonName are both set", func() {
+		ls := "CN=foo"
+		cn := "foo.example.com"
+		spec := api.CertificateSpec{
+			LiteralSubject: &ls,
+			CommonName:     &cn,
+		}
+		Expect(shared.ValidateSubjectExclusivity(&spec)).To(MatchError("commonName and literalSubject are mutually exclusive"))
+	})
+
+	It("should pass when only literalSubject is set", func() {
+		ls := "CN=foo,O=bar"
+		spec := api.CertificateSpec{LiteralSubject: &ls}
+		Expect(shared.ValidateSubjectExclusivity(&spec)).To(Succeed())
+	})
+
+	It("should pass when only subject is set", func() {
+		spec := api.CertificateSpec{Subject: &api.X509Subject{Organizations: []string{"myorg"}}}
+		Expect(shared.ValidateSubjectExclusivity(&spec)).To(Succeed())
+	})
+
+	It("should pass when only commonName is set", func() {
+		cn := "foo.example.com"
+		spec := api.CertificateSpec{CommonName: &cn}
+		Expect(shared.ValidateSubjectExclusivity(&spec)).To(Succeed())
+	})
+
+	It("should pass when subject and commonName are both set (allowed combination)", func() {
+		cn := "foo.example.com"
+		spec := api.CertificateSpec{
+			CommonName: &cn,
+			Subject:    &api.X509Subject{Organizations: []string{"myorg"}},
+		}
+		Expect(shared.ValidateSubjectExclusivity(&spec)).To(Succeed())
+	})
+})

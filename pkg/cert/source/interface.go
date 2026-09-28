@@ -31,6 +31,8 @@ type CertInfo struct {
 	PrivateKeyEncoding  api.PrivateKeyEncoding
 	RenewBefore         *metav1.Duration
 	Annotations         map[string]string
+	LiteralSubject      string
+	Usages              []api.KeyUsage
 }
 
 // CertsInfo contains a map of CertInfo.
