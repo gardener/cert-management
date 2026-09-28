@@ -52,6 +52,9 @@ Currently, the `cert-controller-manager` supports certificate authorities via:
   - [Revoking Certificates](#revoking-certificates)
     - [Revoking certificates with renewal](#revoking-certificates-with-renewal)
     - [Checking OCSP revocation using OpenSSL](#checking-ocsp-revocation-using-openssl)
+  - [Injecting the CA bundle into webhooks, CRDs, and API services (CA injector)](#injecting-the-ca-bundle-into-webhooks-crds-and-api-services-ca-injector)
+    - [Enabling the CA injector](#enabling-the-ca-injector)
+    - [Using the CA injector](#using-the-ca-injector)
   - [Metrics](#metrics)
   - [Using DNSRecords](#using-dnsrecords)
   - [Troubleshooting](#troubleshooting)
@@ -994,150 +997,183 @@ Usage:
   cert-controller-manager [flags]
 
 Flags:
-      --accepted-maintainers string                              accepted maintainer key(s) for crds
-      --acme-deactivate-authorizations                           if true authorizations are always deactivated after each ACME certificate request
-      --allow-target-issuers                                     If true, issuers are also watched on the target cluster
-      --bind-address-http string                                 HTTP server bind address
-      --cascade-delete                                           If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted
-      --cert-class string                                        Identifier used to differentiate responsible controllers for entries
-      --cert-target-class string                                 Identifier used to differentiate responsible dns controllers for target entries
-      --config string                                            config file
-  -c, --controllers string                                       comma separated list of controllers to start (<name>,<group>,all)
-      --cpuprofile string                                        set file for cpu profiling
-      --default-ecdsa-private-key-size int                       Default certificate private key size for 'ecdsa' algorithm.
-      --default-issuer string                                    name of default issuer (from default cluster)
-      --default-issuer-domain-ranges string                      domain range restrictions when using default issuer separated by comma
-      --default-private-key-algorithm string                     default algorithm for certificate private keys
-      --default-requests-per-day-quota int                       Default value for requestsPerDayQuota if not set explicitly in the issuer spec.
-      --default-rsa-private-key-size int                         Default certificate private key size for 'rsa' algorithm.
-      --default.pool.resync-period duration                      Period for resynchronization for pool default
-      --default.pool.size int                                    Worker pool size for pool default
-      --disable-namespace-restriction                            disable access restriction for namespace local access only
-      --dns string                                               cluster for writing challenge DNSEntries or DNSRecords
-      --dns-class string                                         class for creating challenge DNSEntries (in DNS cluster)
-      --dns-namespace string                                     namespace for creating challenge DNSEntries or DNSRecords (in DNS cluster)
-      --dns-owner-id string                                      ownerId for creating challenge DNSEntries
-      --dns.disable-deploy-crds                                  disable deployment of required crds for cluster dns
-      --dns.id string                                            id for cluster dns
-      --dns.migration-ids string                                 migration id for cluster dns
-      --force-crd-update                                         enforce update of crds even they are unmanaged
-      --grace-period duration                                    inactivity grace period for detecting end of cleanup for shutdown
-  -h, --help                                                     help for cert-controller-manager
-      --httproutes.pool.size int                                 Worker pool size for pool httproutes
-      --ingress-cert.cert-class string                           Identifier used to differentiate responsible controllers for entries of controller ingress-cert
-      --ingress-cert.cert-target-class string                    Identifier used to differentiate responsible dns controllers for target entries of controller ingress-cert
-      --ingress-cert.default.pool.resync-period duration         Period for resynchronization for pool default of controller ingress-cert
-      --ingress-cert.default.pool.size int                       Worker pool size for pool default of controller ingress-cert
-      --ingress-cert.pool.resync-period duration                 Period for resynchronization of controller ingress-cert
-      --ingress-cert.pool.size int                               Worker pool size of controller ingress-cert
-      --ingress-cert.target-name-prefix string                   name prefix in target namespace for cross cluster generation of controller ingress-cert
-      --ingress-cert.target-namespace string                     target namespace for cross cluster generation of controller ingress-cert
-      --ingress-cert.targets.pool.size int                       Worker pool size for pool targets of controller ingress-cert
-      --issuer-namespace string                                  namespace to lookup issuers on default cluster
-      --issuer.acme-deactivate-authorizations                    if true authorizations are always deactivated after each ACME certificate request of controller issuer
-      --issuer.allow-target-issuers                              If true, issuers are also watched on the target cluster of controller issuer
-      --issuer.cascade-delete                                    If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted of controller issuer
-      --issuer.cert-class string                                 Identifier used to differentiate responsible controllers for entries of controller issuer
-      --issuer.default-ecdsa-private-key-size int                Default certificate private key size for 'ecdsa' algorithm. of controller issuer
-      --issuer.default-issuer string                             name of default issuer (from default cluster) of controller issuer
-      --issuer.default-issuer-domain-ranges string               domain range restrictions when using default issuer separated by comma of controller issuer
-      --issuer.default-private-key-algorithm string              default algorithm for certificate private keys of controller issuer
-      --issuer.default-requests-per-day-quota int                Default value for requestsPerDayQuota if not set explicitly in the issuer spec. of controller issuer
-      --issuer.default-rsa-private-key-size int                  Default certificate private key size for 'rsa' algorithm. of controller issuer
-      --issuer.default.pool.resync-period duration               Period for resynchronization for pool default of controller issuer
-      --issuer.default.pool.size int                             Worker pool size for pool default of controller issuer
-      --issuer.dns-class string                                  class for creating challenge DNSEntries (in DNS cluster) of controller issuer
-      --issuer.dns-namespace string                              namespace for creating challenge DNSEntries or DNSRecords (in DNS cluster) of controller issuer
-      --issuer.dns-owner-id string                               ownerId for creating challenge DNSEntries of controller issuer
-      --issuer.issuer-namespace string                           namespace to lookup issuers on default cluster of controller issuer
-      --issuer.issuers.pool.size int                             Worker pool size for pool issuers of controller issuer
-      --issuer.pool.resync-period duration                       Period for resynchronization of controller issuer
-      --issuer.pool.size int                                     Worker pool size of controller issuer
-      --issuer.precheck-additional-wait duration                 additional wait time after DNS propagation check of controller issuer
-      --issuer.precheck-nameservers string                       Default DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf of controller issuer
-      --issuer.propagation-timeout duration                      propagation timeout for DNS challenge of controller issuer
-      --issuer.renewal-overdue-window duration                   certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates) of controller issuer
-      --issuer.renewal-window duration                           certificate is renewed if its validity period is shorter of controller issuer
-      --issuer.revocations.pool.size int                         Worker pool size for pool revocations of controller issuer
-      --issuer.secrets.pool.size int                             Worker pool size for pool secrets of controller issuer
-      --issuer.use-dnsrecords                                    if true, DNSRecords (using Gardener Provider extensions) are created instead of DNSEntries of controller issuer
-      --issuers.pool.size int                                    Worker pool size for pool issuers
-      --istio-gateways-dns.cert-class string                     Identifier used to differentiate responsible controllers for entries of controller istio-gateways-dns
-      --istio-gateways-dns.cert-target-class string              Identifier used to differentiate responsible dns controllers for target entries of controller istio-gateways-dns
-      --istio-gateways-dns.default.pool.resync-period duration   Period for resynchronization for pool default of controller istio-gateways-dns
-      --istio-gateways-dns.default.pool.size int                 Worker pool size for pool default of controller istio-gateways-dns
-      --istio-gateways-dns.pool.resync-period duration           Period for resynchronization of controller istio-gateways-dns
-      --istio-gateways-dns.pool.size int                         Worker pool size of controller istio-gateways-dns
-      --istio-gateways-dns.target-name-prefix string             name prefix in target namespace for cross cluster generation of controller istio-gateways-dns
-      --istio-gateways-dns.target-namespace string               target namespace for cross cluster generation of controller istio-gateways-dns
-      --istio-gateways-dns.targets.pool.size int                 Worker pool size for pool targets of controller istio-gateways-dns
-      --istio-gateways-dns.targetsources.pool.size int           Worker pool size for pool targetsources of controller istio-gateways-dns
-      --istio-gateways-dns.virtualservices.pool.size int         Worker pool size for pool virtualservices of controller istio-gateways-dns
-      --k8s-gateways-dns.cert-class string                       Identifier used to differentiate responsible controllers for entries of controller k8s-gateways-dns
-      --k8s-gateways-dns.cert-target-class string                Identifier used to differentiate responsible dns controllers for target entries of controller k8s-gateways-dns
-      --k8s-gateways-dns.default.pool.resync-period duration     Period for resynchronization for pool default of controller k8s-gateways-dns
-      --k8s-gateways-dns.default.pool.size int                   Worker pool size for pool default of controller k8s-gateways-dns
-      --k8s-gateways-dns.httproutes.pool.size int                Worker pool size for pool httproutes of controller k8s-gateways-dns
-      --k8s-gateways-dns.pool.resync-period duration             Period for resynchronization of controller k8s-gateways-dns
-      --k8s-gateways-dns.pool.size int                           Worker pool size of controller k8s-gateways-dns
-      --k8s-gateways-dns.target-name-prefix string               name prefix in target namespace for cross cluster generation of controller k8s-gateways-dns
-      --k8s-gateways-dns.target-namespace string                 target namespace for cross cluster generation of controller k8s-gateways-dns
-      --k8s-gateways-dns.targets.pool.size int                   Worker pool size for pool targets of controller k8s-gateways-dns
-      --kubeconfig string                                        default cluster access
-      --kubeconfig.disable-deploy-crds                           disable deployment of required crds for cluster default
-      --kubeconfig.id string                                     id for cluster default
-      --kubeconfig.migration-ids string                          migration id for cluster default
-      --lease-duration duration                                  lease duration
-      --lease-name string                                        name for lease object
-      --lease-renew-deadline duration                            lease renew deadline
-      --lease-resource-lock string                               determines which resource lock to use for leader election, defaults to 'leases'
-      --lease-retry-period duration                              lease retry period
-  -D, --log-level string                                         logrus log level
-      --maintainer string                                        maintainer key for crds (default "cert-controller-manager")
-      --name string                                              name used for controller manager (default "cert-controller-manager")
-      --namespace string                                         namespace for lease (default "kube-system")
-  -n, --namespace-local-access-only                              enable access restriction for namespace local access only (deprecated)
-      --omit-lease                                               omit lease for development
-      --plugin-file string                                       directory containing go plugins
-      --pool.resync-period duration                              Period for resynchronization
-      --pool.size int                                            Worker pool size
-      --precheck-additional-wait duration                        additional wait time after DNS propagation check
-      --precheck-nameservers string                              Default DNS nameservers used for checking DNS propagation. If explicity set empty, it is tried to read them from /etc/resolv.conf
-      --propagation-timeout duration                             propagation timeout for DNS challenge
-      --renewal-overdue-window duration                          certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates)
-      --renewal-window duration                                  certificate is renewed if its validity period is shorter
-      --revocations.pool.size int                                Worker pool size for pool revocations
-      --secrets.pool.size int                                    Worker pool size for pool secrets
-      --server-port-http int                                     HTTP server port (serving /healthz, /metrics, ...)
-      --service-cert.cert-class string                           Identifier used to differentiate responsible controllers for entries of controller service-cert
-      --service-cert.cert-target-class string                    Identifier used to differentiate responsible dns controllers for target entries of controller service-cert
-      --service-cert.default.pool.resync-period duration         Period for resynchronization for pool default of controller service-cert
-      --service-cert.default.pool.size int                       Worker pool size for pool default of controller service-cert
-      --service-cert.pool.resync-period duration                 Period for resynchronization of controller service-cert
-      --service-cert.pool.size int                               Worker pool size of controller service-cert
-      --service-cert.target-name-prefix string                   name prefix in target namespace for cross cluster generation of controller service-cert
-      --service-cert.target-namespace string                     target namespace for cross cluster generation of controller service-cert
-      --service-cert.targets.pool.size int                       Worker pool size for pool targets of controller service-cert
-      --source string                                            source cluster to watch for ingresses and services
-      --source.disable-deploy-crds                               disable deployment of required crds for cluster source
-      --source.id string                                         id for cluster source
-      --source.migration-ids string                              migration id for cluster source
-      --target string                                            target cluster for certificates
-      --target-name-prefix string                                name prefix in target namespace for cross cluster generation
-      --target-namespace string                                  target namespace for cross cluster generation
-      --target.disable-deploy-crds                               disable deployment of required crds for cluster target
-      --target.id string                                         id for cluster target
-      --target.migration-ids string                              migration id for cluster target
-      --targets.pool.size int                                    Worker pool size for pool targets
-      --targetsources.pool.size int                              Worker pool size for pool targetsources
-      --use-dnsrecords                                           if true, DNSRecords (using Gardener Provider extensions) are created instead of DNSEntries
-  -v, --version                                                  version for cert-controller-manager
-      --virtualservices.pool.size int                            Worker pool size for pool virtualservices
-      --watch-gateways-crds.default.pool.size int                Worker pool size for pool default of controller watch-gateways-crds
-      --watch-gateways-crds.pool.size int                        Worker pool size of controller watch-gateways-crds
+      --accepted-maintainers string                               accepted maintainer key(s) for crds
+      --acme-deactivate-authorizations                            if true authorizations are always deactivated after each ACME certificate request
+      --allow-target-issuers                                      If true, issuers are also watched on the target cluster
+      --bind-address-http string                                  HTTP server bind address
+      --cainjector-apiservice.certificates.pool.size int          Worker pool size for pool certificates of controller cainjector-apiservice
+      --cainjector-apiservice.default.pool.size int               Worker pool size for pool default of controller cainjector-apiservice
+      --cainjector-apiservice.pool.size int                       Worker pool size of controller cainjector-apiservice
+      --cainjector-apiservice.secrets.pool.size int               Worker pool size for pool secrets of controller cainjector-apiservice
+      --cainjector-crd.certificates.pool.size int                 Worker pool size for pool certificates of controller cainjector-crd
+      --cainjector-crd.default.pool.size int                      Worker pool size for pool default of controller cainjector-crd
+      --cainjector-crd.pool.size int                              Worker pool size of controller cainjector-crd
+      --cainjector-crd.secrets.pool.size int                      Worker pool size for pool secrets of controller cainjector-crd
+      --cainjector-mutatingwebhook.certificates.pool.size int     Worker pool size for pool certificates of controller cainjector-mutatingwebhook
+      --cainjector-mutatingwebhook.default.pool.size int          Worker pool size for pool default of controller cainjector-mutatingwebhook
+      --cainjector-mutatingwebhook.pool.size int                  Worker pool size of controller cainjector-mutatingwebhook
+      --cainjector-mutatingwebhook.secrets.pool.size int          Worker pool size for pool secrets of controller cainjector-mutatingwebhook
+      --cainjector-validatingwebhook.certificates.pool.size int   Worker pool size for pool certificates of controller cainjector-validatingwebhook
+      --cainjector-validatingwebhook.default.pool.size int        Worker pool size for pool default of controller cainjector-validatingwebhook
+      --cainjector-validatingwebhook.pool.size int                Worker pool size of controller cainjector-validatingwebhook
+      --cainjector-validatingwebhook.secrets.pool.size int        Worker pool size for pool secrets of controller cainjector-validatingwebhook
+      --cascade-delete                                            If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted
+      --cert-class string                                         Identifier used to differentiate responsible controllers for entries, Identifier used to differentiate responsible controllers for certificates and issuers
+      --cert-target-class string                                  Identifier used to differentiate responsible dns controllers for target entries
+      --certificates.pool.size int                                Worker pool size for pool certificates
+      --config string                                             config file
+  -c, --controllers string                                        comma separated list of controllers to start (<name>,<group>,all)
+      --cpuprofile string                                         set file for cpu profiling
+      --default-ecdsa-private-key-size int                        Default certificate private key size for 'ecdsa' algorithm.
+      --default-issuer string                                     name of default issuer (from default cluster)
+      --default-issuer-domain-ranges string                       domain range restrictions when using default issuer separated by comma
+      --default-private-key-algorithm string                      default algorithm for certificate private keys
+      --default-requests-per-day-quota int                        Default value for requestsPerDayQuota if not set explicitly in the issuer spec.
+      --default-rsa-private-key-size int                          Default certificate private key size for 'rsa' algorithm.
+      --default.pool.resync-period duration                       Period for resynchronization for pool default
+      --default.pool.size int                                     Worker pool size for pool default
+      --disable-namespace-restriction                             disable access restriction for namespace local access only
+      --dns string                                                cluster for writing challenge DNSEntries or DNSRecords
+      --dns-class string                                          class for creating challenge DNSEntries (in DNS cluster)
+      --dns-namespace string                                      namespace for creating challenge DNSEntries or DNSRecords (in DNS cluster)
+      --dns-owner-id string                                       ownerId for creating challenge DNSEntries
+      --dns.burst int                                             option to set the maximum burst to the apiserver of the cluster dns (default 100)
+      --dns.conditional-deploy-crds                               deployment of required crds for cluster dns only if there is no managed resource in garden namespace deploying it
+      --dns.crds-shoot-no-cleanup-label                           add the label 'shoot.gardener.cloud/no-cleanup=true' for CRDS deployed on cluster dns
+      --dns.disable-deploy-crds                                   disable deployment of required crds for cluster dns
+      --dns.id string                                             id for cluster dns
+      --dns.migration-ids string                                  migration id for cluster dns
+      --dns.qps int                                               option to set the maximum QPS to the apiserver of the cluster dns (default 50)
+      --force-crd-update                                          enforce update of crds even they are unmanaged
+      --grace-period duration                                     inactivity grace period for detecting end of cleanup for shutdown
+  -h, --help                                                      help for cert-controller-manager
+      --httproutes.pool.size int                                  Worker pool size for pool httproutes
+      --ingress-cert.cert-class string                            Identifier used to differentiate responsible controllers for entries of controller ingress-cert
+      --ingress-cert.cert-target-class string                     Identifier used to differentiate responsible dns controllers for target entries of controller ingress-cert
+      --ingress-cert.default.pool.resync-period duration          Period for resynchronization for pool default of controller ingress-cert
+      --ingress-cert.default.pool.size int                        Worker pool size for pool default of controller ingress-cert
+      --ingress-cert.pool.resync-period duration                  Period for resynchronization of controller ingress-cert
+      --ingress-cert.pool.size int                                Worker pool size of controller ingress-cert
+      --ingress-cert.target-name-prefix string                    name prefix in target namespace for cross cluster generation of controller ingress-cert
+      --ingress-cert.target-namespace string                      target namespace for cross cluster generation of controller ingress-cert
+      --ingress-cert.targets.pool.size int                        Worker pool size for pool targets of controller ingress-cert
+      --issuer-namespace string                                   namespace to lookup issuers on default cluster
+      --issuer.acme-deactivate-authorizations                     if true authorizations are always deactivated after each ACME certificate request of controller issuer
+      --issuer.allow-target-issuers                               If true, issuers are also watched on the target cluster of controller issuer
+      --issuer.cascade-delete                                     If true, certificate secrets are deleted if dependent resources (certificate, ingress) are deleted of controller issuer
+      --issuer.cert-class string                                  Identifier used to differentiate responsible controllers for certificates and issuers of controller issuer
+      --issuer.default-ecdsa-private-key-size int                 Default certificate private key size for 'ecdsa' algorithm. of controller issuer
+      --issuer.default-issuer string                              name of default issuer (from default cluster) of controller issuer
+      --issuer.default-issuer-domain-ranges string                domain range restrictions when using default issuer separated by comma of controller issuer
+      --issuer.default-private-key-algorithm string               default algorithm for certificate private keys of controller issuer
+      --issuer.default-requests-per-day-quota int                 Default value for requestsPerDayQuota if not set explicitly in the issuer spec. of controller issuer
+      --issuer.default-rsa-private-key-size int                   Default certificate private key size for 'rsa' algorithm. of controller issuer
+      --issuer.default.pool.resync-period duration                Period for resynchronization for pool default of controller issuer
+      --issuer.default.pool.size int                              Worker pool size for pool default of controller issuer
+      --issuer.dns-class string                                   class for creating challenge DNSEntries (in DNS cluster) of controller issuer
+      --issuer.dns-namespace string                               namespace for creating challenge DNSEntries or DNSRecords (in DNS cluster) of controller issuer
+      --issuer.dns-owner-id string                                ownerId for creating challenge DNSEntries of controller issuer
+      --issuer.issuer-namespace string                            namespace to lookup issuers on default cluster of controller issuer
+      --issuer.issuers.pool.size int                              Worker pool size for pool issuers of controller issuer
+      --issuer.pool.resync-period duration                        Period for resynchronization of controller issuer
+      --issuer.pool.size int                                      Worker pool size of controller issuer
+      --issuer.precheck-additional-wait duration                  additional wait time after DNS propagation check of controller issuer
+      --issuer.precheck-nameservers string                        Default DNS nameservers used for checking DNS propagation. If explicitly set empty, it is tried to read them from /etc/resolv.conf of controller issuer
+      --issuer.propagation-timeout duration                       propagation timeout for DNS challenge of controller issuer
+      --issuer.renewal-overdue-window duration                    certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates) of controller issuer
+      --issuer.renewal-window duration                            certificate is renewed if its validity period is shorter of controller issuer
+      --issuer.revocations.pool.size int                          Worker pool size for pool revocations of controller issuer
+      --issuer.secrets.pool.size int                              Worker pool size for pool secrets of controller issuer
+      --issuer.use-dnsrecords                                     if true, DNSRecords (using Gardener Provider extensions) are created instead of DNSEntries of controller issuer
+      --issuers.pool.size int                                     Worker pool size for pool issuers
+      --istio-gateways-dns.cert-class string                      Identifier used to differentiate responsible controllers for entries of controller istio-gateways-dns
+      --istio-gateways-dns.cert-target-class string               Identifier used to differentiate responsible dns controllers for target entries of controller istio-gateways-dns
+      --istio-gateways-dns.default.pool.resync-period duration    Period for resynchronization for pool default of controller istio-gateways-dns
+      --istio-gateways-dns.default.pool.size int                  Worker pool size for pool default of controller istio-gateways-dns
+      --istio-gateways-dns.pool.resync-period duration            Period for resynchronization of controller istio-gateways-dns
+      --istio-gateways-dns.pool.size int                          Worker pool size of controller istio-gateways-dns
+      --istio-gateways-dns.target-name-prefix string              name prefix in target namespace for cross cluster generation of controller istio-gateways-dns
+      --istio-gateways-dns.target-namespace string                target namespace for cross cluster generation of controller istio-gateways-dns
+      --istio-gateways-dns.targets.pool.size int                  Worker pool size for pool targets of controller istio-gateways-dns
+      --istio-gateways-dns.targetsources.pool.size int            Worker pool size for pool targetsources of controller istio-gateways-dns
+      --istio-gateways-dns.virtualservices.pool.size int          Worker pool size for pool virtualservices of controller istio-gateways-dns
+      --k8s-gateways-dns.cert-class string                        Identifier used to differentiate responsible controllers for entries of controller k8s-gateways-dns
+      --k8s-gateways-dns.cert-target-class string                 Identifier used to differentiate responsible dns controllers for target entries of controller k8s-gateways-dns
+      --k8s-gateways-dns.default.pool.resync-period duration      Period for resynchronization for pool default of controller k8s-gateways-dns
+      --k8s-gateways-dns.default.pool.size int                    Worker pool size for pool default of controller k8s-gateways-dns
+      --k8s-gateways-dns.httproutes.pool.size int                 Worker pool size for pool httproutes of controller k8s-gateways-dns
+      --k8s-gateways-dns.pool.resync-period duration              Period for resynchronization of controller k8s-gateways-dns
+      --k8s-gateways-dns.pool.size int                            Worker pool size of controller k8s-gateways-dns
+      --k8s-gateways-dns.target-name-prefix string                name prefix in target namespace for cross cluster generation of controller k8s-gateways-dns
+      --k8s-gateways-dns.target-namespace string                  target namespace for cross cluster generation of controller k8s-gateways-dns
+      --k8s-gateways-dns.targets.pool.size int                    Worker pool size for pool targets of controller k8s-gateways-dns
+      --kubeconfig string                                         default cluster access
+      --kubeconfig.burst int                                      option to set the maximum burst to the apiserver of the cluster default (default 100)
+      --kubeconfig.conditional-deploy-crds                        deployment of required crds for cluster default only if there is no managed resource in garden namespace deploying it
+      --kubeconfig.crds-shoot-no-cleanup-label                    add the label 'shoot.gardener.cloud/no-cleanup=true' for CRDS deployed on cluster default
+      --kubeconfig.disable-deploy-crds                            disable deployment of required crds for cluster default
+      --kubeconfig.id string                                      id for cluster default
+      --kubeconfig.migration-ids string                           migration id for cluster default
+      --kubeconfig.qps int                                        option to set the maximum QPS to the apiserver of the cluster default (default 50)
+      --lease-duration duration                                   lease duration
+      --lease-name string                                         name for lease object
+      --lease-renew-deadline duration                             lease renew deadline
+      --lease-resource-lock string                                determines which resource lock to use for leader election, defaults to 'leases'
+      --lease-retry-period duration                               lease retry period
+  -D, --log-level string                                          logrus log level
+      --maintainer string                                         maintainer key for crds (default "cert-controller-manager")
+      --name string                                               name used for controller manager (default "cert-controller-manager")
+      --namespace string                                          namespace for lease (default "kube-system")
+  -n, --namespace-local-access-only                               enable access restriction for namespace local access only (deprecated)
+      --omit-lease                                                omit lease for development
+      --plugin-file string                                        directory containing go plugins
+      --pool.resync-period duration                               Period for resynchronization
+      --pool.size int                                             Worker pool size
+      --precheck-additional-wait duration                         additional wait time after DNS propagation check
+      --precheck-nameservers string                               Default DNS nameservers used for checking DNS propagation. If explicitly set empty, it is tried to read them from /etc/resolv.conf
+      --propagation-timeout duration                              propagation timeout for DNS challenge
+      --renewal-overdue-window duration                           certificate is counted as 'renewal overdue' if its validity period is shorter (metrics cert_management_overdue_renewal_certificates)
+      --renewal-window duration                                   certificate is renewed if its validity period is shorter
+      --revocations.pool.size int                                 Worker pool size for pool revocations
+      --secrets.pool.size int                                     Worker pool size for pool secrets
+      --server-port-http int                                      HTTP server port (serving /healthz, /metrics, ...)
+      --service-cert.cert-class string                            Identifier used to differentiate responsible controllers for entries of controller service-cert
+      --service-cert.cert-target-class string                     Identifier used to differentiate responsible dns controllers for target entries of controller service-cert
+      --service-cert.default.pool.resync-period duration          Period for resynchronization for pool default of controller service-cert
+      --service-cert.default.pool.size int                        Worker pool size for pool default of controller service-cert
+      --service-cert.pool.resync-period duration                  Period for resynchronization of controller service-cert
+      --service-cert.pool.size int                                Worker pool size of controller service-cert
+      --service-cert.target-name-prefix string                    name prefix in target namespace for cross cluster generation of controller service-cert
+      --service-cert.target-namespace string                      target namespace for cross cluster generation of controller service-cert
+      --service-cert.targets.pool.size int                        Worker pool size for pool targets of controller service-cert
+      --source string                                             source cluster to watch for ingresses and services
+      --source.burst int                                          option to set the maximum burst to the apiserver of the cluster source (default 100)
+      --source.conditional-deploy-crds                            deployment of required crds for cluster source only if there is no managed resource in garden namespace deploying it
+      --source.crds-shoot-no-cleanup-label                        add the label 'shoot.gardener.cloud/no-cleanup=true' for CRDS deployed on cluster source
+      --source.disable-deploy-crds                                disable deployment of required crds for cluster source
+      --source.id string                                          id for cluster source
+      --source.migration-ids string                               migration id for cluster source
+      --source.qps int                                            option to set the maximum QPS to the apiserver of the cluster source (default 50)
+      --target string                                             target cluster for certificates
+      --target-name-prefix string                                 name prefix in target namespace for cross cluster generation
+      --target-namespace string                                   target namespace for cross cluster generation
+      --target.burst int                                          option to set the maximum burst to the apiserver of the cluster target (default 100)
+      --target.conditional-deploy-crds                            deployment of required crds for cluster target only if there is no managed resource in garden namespace deploying it
+      --target.crds-shoot-no-cleanup-label                        add the label 'shoot.gardener.cloud/no-cleanup=true' for CRDS deployed on cluster target
+      --target.disable-deploy-crds                                disable deployment of required crds for cluster target
+      --target.id string                                          id for cluster target
+      --target.migration-ids string                               migration id for cluster target
+      --target.qps int                                            option to set the maximum QPS to the apiserver of the cluster target (default 50)
+      --targets.pool.size int                                     Worker pool size for pool targets
+      --targetsources.pool.size int                               Worker pool size for pool targetsources
+      --use-dnsrecords                                            if true, DNSRecords (using Gardener Provider extensions) are created instead of DNSEntries
+  -v, --version                                                   version for cert-controller-manager
+      --virtualservices.pool.size int                             Worker pool size for pool virtualservices
+      --watch-gateways-crds.default.pool.size int                 Worker pool size for pool default of controller watch-gateways-crds
+      --watch-gateways-crds.pool.size int                         Worker pool size of controller watch-gateways-crds
 ```
 
-## Injecting the CA bundle into webhooks, CRDs and API services (CA injector)
+## Injecting the CA bundle into webhooks, CRDs, and API services (CA injector)
 
 The cert-controller-manager can automatically keep the `caBundle` field of
 injectable Kubernetes resources in sync with a CA certificate. This is useful

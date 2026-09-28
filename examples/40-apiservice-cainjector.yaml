@@ -50,8 +50,8 @@ spec:
 # above. The CA injector fills in spec.caBundle from that certificate's secret
 # (ca.crt) and keeps it up to date across CA rotations.
 #
-# Prerequisite: the CA injector must be enabled (controller group certcainjector),
-# e.g. cert-controller-manager --controllers=certcontrollers,certsources,certcainjector
+# Prerequisite: the CA injector controllers must be enabled
+# e.g. cert-controller-manager --controllers=certcontrollers,certsources,cainjector-validatingwebhook,cainjector-mutatingwebhook,cainjector-crd,cainjector-apiservice
 apiVersion: apiregistration.k8s.io/v1
 kind: APIService
 metadata:

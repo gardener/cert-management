@@ -17,22 +17,22 @@ KUBECONFIG="$KC" "$KUBECTL" create secret generic test-cainjector-secret -n defa
 KUBECONFIG="$KC" "$KUBECTL" annotate secret test-cainjector-secret -n default \
   cert.gardener.cloud/allow-direct-injection=true --overwrite
 
-printf '%s\n' \
-  'apiVersion: apiregistration.k8s.io/v1' \
-  'kind: APIService' \
-  'metadata:' \
-  '  name: v1alpha1.cainjector-test.sap.com' \
-  '  annotations:' \
-  '    cert.gardener.cloud/inject-ca-from-secret: default/test-cainjector-secret' \
-  'spec:' \
-  '  group: cainjector-test.sap.com' \
-  '  groupPriorityMinimum: 1000' \
-  '  versionPriority: 15' \
-  '  service:' \
-  '    name: api' \
-  '    namespace: default' \
-  '  version: v1alpha1' \
-  | KUBECONFIG="$KC" "$KUBECTL" apply -f -
+cat <<EOF | KUBECONFIG="$KC" "$KUBECTL" apply -f -
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1alpha1.cainjector-test.sap.com
+  annotations:
+    cert.gardener.cloud/inject-ca-from-secret: default/test-cainjector-secret
+spec:
+  group: cainjector-test.sap.com
+  groupPriorityMinimum: 1000
+  versionPriority: 15
+  service:
+    name: api
+    namespace: default
+  version: v1alpha1
+EOF
 
 echo "==> Waiting for initial caBundle injection (up to 60s)..."
 i=0
