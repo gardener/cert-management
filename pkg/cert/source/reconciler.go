@@ -326,7 +326,13 @@ func (r *sourceReconciler) createEntryFor(logger logger.LogContext, obj resource
 	if r.targetclass != "" {
 		resources.SetAnnotation(cert, AnnotClass, r.targetclass)
 	}
-	if len(info.Domains) > 0 {
+	if info.LiteralSubject != "" {
+		// commonName and literalSubject are mutually exclusive (see
+		// shared.ValidateSubjectExclusivity), so route all domains to DNSNames
+		// and leave CommonName unset when a literal subject is requested.
+		cert.Spec.CommonName = nil
+		cert.Spec.DNSNames = info.Domains
+	} else if len(info.Domains) > 0 {
 		if len(info.Domains[0]) <= 64 {
 			cert.Spec.CommonName = &info.Domains[0]
 			cert.Spec.DNSNames = info.Domains[1:]
@@ -423,7 +429,13 @@ func (r *sourceReconciler) updateEntry(logger logger.LogContext, info CertInfo, 
 		mod.Modify(changed)
 		var cn *string
 		var dnsNames []string
-		if len(info.Domains) > 0 {
+		if info.LiteralSubject != "" {
+			// commonName and literalSubject are mutually exclusive (see
+			// shared.ValidateSubjectExclusivity), so route all domains to DNSNames
+			// and leave CommonName unset when a literal subject is requested.
+			cn = nil
+			dnsNames = info.Domains
+		} else if len(info.Domains) > 0 {
 			if len(info.Domains[0]) <= 64 {
 				cn = &info.Domains[0]
 				dnsNames = info.Domains[1:]
