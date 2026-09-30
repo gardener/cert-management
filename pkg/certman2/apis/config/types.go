@@ -87,6 +87,16 @@ type Server struct {
 type ControllerConfiguration struct {
 	// Issuer is the configuration for the issuer controller.
 	Issuer IssuerControllerConfig
+	// CAInjector is the configuration for the ca-injector controller.
+	CAInjector CAInjectorControllerConfig
+}
+
+// CAInjectorControllerConfig is the configuration for the ca-injector controller.
+type CAInjectorControllerConfig struct {
+	// Enabled turns the ca-injector controllers on. Defaults to false.
+	Enabled *bool
+	// ConcurrentSyncs is the number of concurrent worker routines.
+	ConcurrentSyncs *int
 }
 
 // IssuerControllerConfig is the configuration for the issuer controller.
