@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"hash"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -169,6 +170,16 @@ func CertReconciler(c controller.Interface, support *core.Support) (reconcile.In
 	reconciler.additionalWait, _ = c.GetDurationOption(core.OptPrecheckAdditionalWait)
 	c.Infof("Additional wait time: %d seconds", int(reconciler.additionalWait.Seconds()))
 
+	reconciler.namespaceRestricted, _ = c.GetBoolOption(core.OptNamespaceRestriction)
+	if reconciler.namespaceRestricted {
+		targetNamespaces, err := c.GetStringOption(core.OptNamespaceRestrictionAllowedTargetNamespaces)
+		if err != nil {
+			return nil, err
+		}
+		if targetNamespaces != "" {
+			reconciler.namespaceRestrictionTargetNamespaces = strings.Split(targetNamespaces, ",")
+		}
+	}
 	return reconciler, nil
 }
 
@@ -197,6 +208,9 @@ type certReconciler struct {
 	classes                *controller.Classes
 	cascadeDelete          bool
 	garbageCollectorTicker *time.Ticker
+
+	namespaceRestricted                  bool
+	namespaceRestrictionTargetNamespaces []string
 
 	alwaysDeactivateAuthorizations bool
 	certificatePrivateKeyDefaults  legobridge.CertificatePrivateKeyDefaults
@@ -295,6 +309,10 @@ func (r *certReconciler) isOrphanedPendingCertificate(cert *api.Certificate) boo
 
 func (r *certReconciler) reconcileCert(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) reconcile.Status {
 	ctx := context.Background()
+
+	if status := r.checkNamespaceRestriction(logctx, obj, cert); status != nil {
+		return *status
+	}
 
 	r.support.AddCertificate(cert)
 
@@ -1200,6 +1218,10 @@ func (r *certReconciler) determineSecretRef(namespace string, spec *api.Certific
 }
 
 func (r *certReconciler) findSecretByHashLabel(namespace string, spec *api.CertificateSpec) (*secretRecord, error) {
+	if r.namespaceRestricted {
+		return nil, nil // reuse across namespaces disabled under namespace restriction
+	}
+
 	issuerKey := r.support.IssuerClusterObjectKey(namespace, spec)
 	specHash := r.buildSpecNewHash(spec, issuerKey)
 	objs, err := FindAllCertificateSecretsByNewHashLabel(r.certSecretResources, specHash)
@@ -1711,6 +1733,26 @@ func (r *certReconciler) cleanupOrphanOutdatedCertificateSecrets() error {
 
 	logger.Infof("issuer: cleanup-secrets: %d/%d orphan outdated certificate secrets deleted (%d total, %d backups, %d revoked)",
 		deleted, outdated, len(secrets), backup, revoked)
+	return nil
+}
+
+func (r *certReconciler) checkNamespaceRestriction(logctx logger.LogContext, obj resources.Object, cert *api.Certificate) *reconcile.Status {
+	if !r.namespaceRestricted {
+		return nil
+	}
+
+	if secretRef := cert.Spec.SecretRef; secretRef != nil && secretRef.Namespace != "" {
+		allowedNamespaces := append([]string{cert.Namespace}, r.namespaceRestrictionTargetNamespaces...)
+		if !slices.Contains(allowedNamespaces, secretRef.Namespace) {
+			return new(r.failedStop(logctx, obj, api.StateError, fmt.Errorf("namespace restriction is enabled, `.spec.secretRef.Namespace`=%s is not allowed (allowed namespaces: \"%s\")", secretRef.Namespace, strings.Join(allowedNamespaces, "\", \""))))
+		}
+	}
+
+	issuerKey := r.support.IssuerClusterObjectKey(cert.Namespace, &cert.Spec)
+	if issuerKey.Cluster() == utils.ClusterTarget && issuerKey.Namespace() != cert.Namespace {
+		return new(r.failedStop(logctx, obj, api.StateError, fmt.Errorf("namespace restriction is enabled, `.spec.issuerRef` resolves to %s, which is not allowed", issuerKey)))
+	}
+
 	return nil
 }
 

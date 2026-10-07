@@ -51,6 +51,8 @@ func init() {
 		DefaultedIntOption(core.OptDefaultECDSAPrivateKeySize, 256,
 			"Default certificate private key size for 'ecdsa' algorithm.").
 		DefaultedStringOption(core.OptDefaultPrivateKeyAlgorithm, "RSA", "default algorithm for certificate private keys").
+		DefaultedBoolOption(core.OptNamespaceRestriction, false, "If true, restricts namespace of the certificate secret, issuer on target cluster, and disables reuse of existing certificates secrets").
+		StringOption(core.OptNamespaceRestrictionAllowedTargetNamespaces, "If namespace-restriction option is enabled, specifies comma-separated list of allowed other namespaces for storing the certificate secrets").
 		FinalizerDomain(api.GroupName).
 		Cluster(ctrl.TargetCluster).
 		DefaultWorkerPool(2, 24*time.Hour).
