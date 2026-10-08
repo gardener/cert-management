@@ -14,14 +14,16 @@ import (
 	"time"
 
 	dnsapi "github.com/gardener/external-dns-management/pkg/apis/dns/v1alpha1"
+	"github.com/gardener/external-dns-management/pkg/dnsman2/dns"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/cert-management/pkg/shared"
 )
 
-func newDNSControllerProvider(settings DNSControllerSettings, targetClass string) (internalProvider, error) {
+func newDNSControllerProvider(settings DNSControllerSettings, certKey client.ObjectKey, targetClass string) (internalProvider, error) {
 	return &dnsControllerProvider{
 		settings:    settings,
+		certKey:     certKey,
 		targetClass: targetClass,
 		entries:     map[string]*dnsapi.DNSEntry{},
 	}, nil
@@ -29,6 +31,7 @@ func newDNSControllerProvider(settings DNSControllerSettings, targetClass string
 
 type dnsControllerProvider struct {
 	settings    DNSControllerSettings
+	certKey     client.ObjectKey
 	targetClass string
 	entries     map[string]*dnsapi.DNSEntry
 }
@@ -45,6 +48,7 @@ func (p *dnsControllerProvider) present(ctx context.Context, log LoggerInfof, do
 			addAnnotation(e, shared.AnnotDNSClass, p.targetClass)
 		}
 		addAnnotation(e, shared.AnnotACMEDNSChallenge, "true")
+		addAnnotation(e, dns.AnnotationOwners, fmt.Sprintf("source:cert.gardener.cloud/Certificate/%s/%s", p.certKey.Namespace, p.certKey.Name))
 	}
 
 	entry := p.prepareEntry(domain)
