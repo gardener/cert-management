@@ -1330,11 +1330,13 @@ func (r *certReconciler) writeCertificateSecret(logctx logger.LogContext, issuer
 	}
 	legobridge.RemoveKeystoresFromSecret(secret)
 
-	ref, created, err := BackupSecret(r.certSecretResources, secret, specHash, issuerInfo)
-	if err != nil {
-		logctx.Warnf("Backup of secret %s/%s failed: %s", secret.Namespace, secret.Name, err)
-	} else if created {
-		logctx.Infof("Created backup secret %s/%s", ref.Namespace, ref.Name)
+	if !r.namespaceRestricted {
+		ref, created, err := BackupSecret(r.certSecretResources, secret, specHash, issuerInfo)
+		if err != nil {
+			logctx.Warnf("Backup of secret %s/%s failed: %s", secret.Namespace, secret.Name, err)
+		} else if created {
+			logctx.Infof("Created backup secret %s/%s", ref.Namespace, ref.Name)
+		}
 	}
 
 	return &corev1.SecretReference{Name: obj.GetName(), Namespace: obj.GetNamespace()}, nil
