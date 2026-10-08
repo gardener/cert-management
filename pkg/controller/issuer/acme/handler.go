@@ -56,6 +56,15 @@ func (r *acmeIssuerHandler) Reconcile(logger logger.LogContext, obj resources.Ob
 		return r.failedAcme(logger, obj, api.StateError, fmt.Errorf("missing server in ACME spec"))
 	}
 
+	if err := r.support.CheckNamespaceRestriction(obj.ClusterKey(), acme.PrivateKeySecretRef, ".spec.acme.PrivateKeySecretRef"); err != nil {
+		return r.failedAcme(logger, obj, api.StateError, err)
+	}
+	if acme.ExternalAccountBinding != nil {
+		if err := r.support.CheckNamespaceRestriction(obj.ClusterKey(), acme.ExternalAccountBinding.KeySecretRef, ".spec.acme.externalAccountBinding.keySecretRef"); err != nil {
+			return r.failedAcme(logger, obj, api.StateError, err)
+		}
+	}
+
 	r.support.AddIssuerDomains(obj.ClusterKey(), acme.Domains)
 
 	r.support.RememberIssuerSecret(obj.ClusterKey(), acme.PrivateKeySecretRef, "")
