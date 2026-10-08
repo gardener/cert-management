@@ -13,11 +13,11 @@ import (
 // Interface provides access to all the informers in this group version.
 type Interface interface {
 	// Certificates returns a CertificateInformer.
-	Certificates() CertificateInformer
+	Certificates() TypedCertificateInformer
 	// CertificateRevocations returns a CertificateRevocationInformer.
-	CertificateRevocations() CertificateRevocationInformer
+	CertificateRevocations() TypedCertificateRevocationInformer
 	// Issuers returns a IssuerInformer.
-	Issuers() IssuerInformer
+	Issuers() TypedIssuerInformer
 }
 
 type version struct {
@@ -31,17 +31,17 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// Certificates returns a CertificateInformer.
-func (v *version) Certificates() CertificateInformer {
+// Certificates returns a TypedCertificateInformer.
+func (v *version) Certificates() TypedCertificateInformer {
 	return &certificateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// CertificateRevocations returns a CertificateRevocationInformer.
-func (v *version) CertificateRevocations() CertificateRevocationInformer {
+// CertificateRevocations returns a TypedCertificateRevocationInformer.
+func (v *version) CertificateRevocations() TypedCertificateRevocationInformer {
 	return &certificateRevocationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Issuers returns a IssuerInformer.
-func (v *version) Issuers() IssuerInformer {
+// Issuers returns a TypedIssuerInformer.
+func (v *version) Issuers() TypedIssuerInformer {
 	return &issuerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

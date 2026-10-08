@@ -22,11 +22,39 @@ import (
 )
 
 // CertificateRevocationInformer provides access to a shared informer and lister for
-// CertificateRevocations.
+// CertificateRevocations. Prefer using the type-safe variant (see [TypedCertificateRevocationInformer]).
 type CertificateRevocationInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() certv1alpha1.CertificateRevocationLister
 }
+
+// TypedCertificateRevocationInformer provides access to a shared informer and lister for
+// CertificateRevocations, including the type-safe TypedInformer variant.
+// It is a superset of CertificateRevocationInformer.
+type TypedCertificateRevocationInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() CertificateRevocationIndexInformer
+	Lister() certv1alpha1.CertificateRevocationLister
+}
+
+// CertificateRevocationIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type CertificateRevocationIndexInformer cache.TypedSharedIndexInformer[*apiscertv1alpha1.CertificateRevocation]
+
+// CertificateRevocationHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for CertificateRevocation.
+type CertificateRevocationHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apiscertv1alpha1.CertificateRevocation]
+
+// CertificateRevocationDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for CertificateRevocation.
+type CertificateRevocationDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apiscertv1alpha1.CertificateRevocation]
+
+// CertificateRevocationFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for CertificateRevocation.
+type CertificateRevocationFilteringHandler = cache.TypedFilteringResourceEventHandler[*apiscertv1alpha1.CertificateRevocation]
+
+// CertificateRevocationIndexers is a specialization of [cache.TypedIndexers] for CertificateRevocation.
+type CertificateRevocationIndexers = cache.TypedIndexers[*apiscertv1alpha1.CertificateRevocation]
+
+// DeletedCertificateRevocation is a specialization of [cache.DeletedObject] for CertificateRevocation.
+type DeletedCertificateRevocation = cache.DeletedObject[*apiscertv1alpha1.CertificateRevocation]
 
 type certificateRevocationInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -37,25 +65,49 @@ type certificateRevocationInformer struct {
 // NewCertificateRevocationInformer constructs a new informer for CertificateRevocation type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedCertificateRevocationInformer]).
 func NewCertificateRevocationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewCertificateRevocationInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedCertificateRevocationInformer constructs a new informer for CertificateRevocation type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedCertificateRevocationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers CertificateRevocationIndexers) CertificateRevocationIndexInformer {
+	return NewTypedCertificateRevocationInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredCertificateRevocationInformer constructs a new informer for CertificateRevocation type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredCertificateRevocationInformer]).
 func NewFilteredCertificateRevocationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return NewCertificateRevocationInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+	return NewTypedCertificateRevocationInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredCertificateRevocationInformer constructs a new informer for CertificateRevocation type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredCertificateRevocationInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers CertificateRevocationIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) CertificateRevocationIndexInformer {
+	return NewTypedCertificateRevocationInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
 }
 
 // NewCertificateRevocationInformerWithOptions constructs a new informer for CertificateRevocation type with additional options.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedCertificateRevocationInformerWithOptions]).
 func NewCertificateRevocationInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedCertificateRevocationInformerWithOptions(client, namespace, options)
+}
+
+// NewTypedCertificateRevocationInformerWithOptions constructs a new informer for CertificateRevocation type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedCertificateRevocationInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) CertificateRevocationIndexInformer {
 	gvr := schema.GroupVersionResource{Group: "cert.gardener.cloud", Version: "v1alpha1", Resource: "certificaterevocations"}
 	identifier := options.InformerName.WithResource(gvr)
 	tweakListOptions := options.TweakListOptions
-	return cache.NewSharedIndexInformerWithOptions(
+	return cache.NewTypedSharedIndexInformer[*apiscertv1alpha1.CertificateRevocation](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(opts v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
@@ -88,17 +140,57 @@ func NewCertificateRevocationInformerWithOptions(client versioned.Interface, nam
 			Indexers:     options.Indexers,
 			Identifier:   identifier,
 		},
-	)
+	))
 }
 
 func (f *certificateRevocationInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewCertificateRevocationInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
+	return NewTypedCertificateRevocationInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *certificateRevocationInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apiscertv1alpha1.CertificateRevocation{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *certificateRevocationInformer) TypedInformer() CertificateRevocationIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertv1alpha1.CertificateRevocation](f.factory.InformerFor(&apiscertv1alpha1.CertificateRevocation{}, f.defaultInformer))
 }
 
 func (f *certificateRevocationInformer) Lister() certv1alpha1.CertificateRevocationLister {
 	return certv1alpha1.NewCertificateRevocationLister(f.Informer().GetIndexer())
+}
+
+// ToTypedCertificateRevocationInformer converts an untyped informer into a TypedCertificateRevocationInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *CertificateRevocation. If that is not the case, calling type-safe methods of the returned
+// TypedCertificateRevocationInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedCertificateRevocationInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedCertificateRevocationInformer(informer CertificateRevocationInformer) TypedCertificateRevocationInformer {
+	if informer, ok := informer.(TypedCertificateRevocationInformer); ok {
+		return informer
+	}
+	return &certificateRevocationTypedInformerAdapter{informer}
+}
+
+type certificateRevocationTypedInformerAdapter struct {
+	CertificateRevocationInformer
+}
+
+func (a *certificateRevocationTypedInformerAdapter) TypedInformer() CertificateRevocationIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiscertv1alpha1.CertificateRevocation](a.Informer())
+}
+
+// ToCertificateRevocationIndexInformer converts an untyped informer into a CertificateRevocationIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *CertificateRevocation. If that is not the case, calling type-safe methods of the returned
+// CertificateRevocationIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a CertificateRevocationIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToCertificateRevocationIndexInformer(informer cache.SharedIndexInformer) CertificateRevocationIndexInformer {
+	if informer, ok := informer.(CertificateRevocationIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apiscertv1alpha1.CertificateRevocation](informer)
 }
