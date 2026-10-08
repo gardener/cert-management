@@ -94,6 +94,19 @@ type Server struct {
 type ControllerConfiguration struct {
 	// Issuer is the configuration for the issuer controller.
 	Issuer IssuerControllerConfig `json:"issuer"`
+	// CAInjector is the configuration for the ca-injector controller.
+	// +optional
+	CAInjector CAInjectorControllerConfig `json:"caInjector,omitempty"`
+}
+
+// CAInjectorControllerConfig is the configuration for the ca-injector controller.
+type CAInjectorControllerConfig struct {
+	// Enabled turns the ca-injector controllers on. Defaults to false.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
+	// ConcurrentSyncs is the number of concurrent worker routines.
+	// +optional
+	ConcurrentSyncs *int `json:"concurrentSyncs,omitempty"`
 }
 
 // IssuerControllerConfig is the configuration for the issuer controller.
