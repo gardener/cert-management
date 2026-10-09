@@ -6,6 +6,9 @@ build:
   local:
     useBuildkit: true
     push: false
+  tagPolicy:
+    gitCommit:
+      variant: AbbrevCommitSha
   artifacts:
     - image: local-skaffold/cert-controller-manager
       docker:
