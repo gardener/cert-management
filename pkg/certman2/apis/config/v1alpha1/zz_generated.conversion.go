@@ -13,7 +13,6 @@ import (
 	unsafe "unsafe"
 
 	config "github.com/gardener/cert-management/pkg/certman2/apis/config"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	componentbaseconfig "k8s.io/component-base/config"
@@ -177,8 +176,7 @@ func Convert_config_CertManagerConfiguration_To_v1alpha1_CertManagerConfiguratio
 }
 
 func autoConvert_v1alpha1_ClientConnection_To_config_ClientConnection(in *ClientConnection, out *config.ClientConnection, s conversion.Scope) error {
-	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
-	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
+	*out = *(*config.ClientConnection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -188,8 +186,7 @@ func Convert_v1alpha1_ClientConnection_To_config_ClientConnection(in *ClientConn
 }
 
 func autoConvert_config_ClientConnection_To_v1alpha1_ClientConnection(in *config.ClientConnection, out *ClientConnection, s conversion.Scope) error {
-	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
-	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
+	*out = *(*ClientConnection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -199,8 +196,7 @@ func Convert_config_ClientConnection_To_v1alpha1_ClientConnection(in *config.Cli
 }
 
 func autoConvert_v1alpha1_ControlPlaneClientConnection_To_config_ControlPlaneClientConnection(in *ControlPlaneClientConnection, out *config.ControlPlaneClientConnection, s conversion.Scope) error {
-	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
-	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
+	*out = *(*config.ControlPlaneClientConnection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -210,8 +206,7 @@ func Convert_v1alpha1_ControlPlaneClientConnection_To_config_ControlPlaneClientC
 }
 
 func autoConvert_config_ControlPlaneClientConnection_To_v1alpha1_ControlPlaneClientConnection(in *config.ControlPlaneClientConnection, out *ControlPlaneClientConnection, s conversion.Scope) error {
-	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
-	out.CacheResyncPeriod = (*v1.Duration)(unsafe.Pointer(in.CacheResyncPeriod))
+	*out = *(*ControlPlaneClientConnection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -221,9 +216,7 @@ func Convert_config_ControlPlaneClientConnection_To_v1alpha1_ControlPlaneClientC
 }
 
 func autoConvert_v1alpha1_ControllerConfiguration_To_config_ControllerConfiguration(in *ControllerConfiguration, out *config.ControllerConfiguration, s conversion.Scope) error {
-	if err := Convert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfig(&in.Issuer, &out.Issuer, s); err != nil {
-		return err
-	}
+	*out = *(*config.ControllerConfiguration)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -233,9 +226,7 @@ func Convert_v1alpha1_ControllerConfiguration_To_config_ControllerConfiguration(
 }
 
 func autoConvert_config_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(in *config.ControllerConfiguration, out *ControllerConfiguration, s conversion.Scope) error {
-	if err := Convert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig(&in.Issuer, &out.Issuer, s); err != nil {
-		return err
-	}
+	*out = *(*ControllerConfiguration)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -245,7 +236,7 @@ func Convert_config_ControllerConfiguration_To_v1alpha1_ControllerConfiguration(
 }
 
 func autoConvert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(in *DNSClientConnection, out *config.DNSClientConnection, s conversion.Scope) error {
-	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
+	*out = *(*config.DNSClientConnection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -255,7 +246,7 @@ func Convert_v1alpha1_DNSClientConnection_To_config_DNSClientConnection(in *DNSC
 }
 
 func autoConvert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(in *config.DNSClientConnection, out *DNSClientConnection, s conversion.Scope) error {
-	out.ClientConnectionConfiguration = in.ClientConnectionConfiguration
+	*out = *(*DNSClientConnection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -265,11 +256,7 @@ func Convert_config_DNSClientConnection_To_v1alpha1_DNSClientConnection(in *conf
 }
 
 func autoConvert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfig(in *IssuerControllerConfig, out *config.IssuerControllerConfig, s conversion.Scope) error {
-	out.ConcurrentSyncs = (*int)(unsafe.Pointer(in.ConcurrentSyncs))
-	out.SyncPeriod = (*v1.Duration)(unsafe.Pointer(in.SyncPeriod))
-	out.Namespace = in.Namespace
-	out.DefaultIssuerName = in.DefaultIssuerName
-	out.DefaultRequestsPerDayQuota = in.DefaultRequestsPerDayQuota
+	*out = *(*config.IssuerControllerConfig)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -279,11 +266,7 @@ func Convert_v1alpha1_IssuerControllerConfig_To_config_IssuerControllerConfig(in
 }
 
 func autoConvert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig(in *config.IssuerControllerConfig, out *IssuerControllerConfig, s conversion.Scope) error {
-	out.ConcurrentSyncs = (*int)(unsafe.Pointer(in.ConcurrentSyncs))
-	out.SyncPeriod = (*v1.Duration)(unsafe.Pointer(in.SyncPeriod))
-	out.Namespace = in.Namespace
-	out.DefaultIssuerName = in.DefaultIssuerName
-	out.DefaultRequestsPerDayQuota = in.DefaultRequestsPerDayQuota
+	*out = *(*IssuerControllerConfig)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -293,8 +276,7 @@ func Convert_config_IssuerControllerConfig_To_v1alpha1_IssuerControllerConfig(in
 }
 
 func autoConvert_v1alpha1_Server_To_config_Server(in *Server, out *config.Server, s conversion.Scope) error {
-	out.BindAddress = in.BindAddress
-	out.Port = in.Port
+	*out = *(*config.Server)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -304,8 +286,7 @@ func Convert_v1alpha1_Server_To_config_Server(in *Server, out *config.Server, s 
 }
 
 func autoConvert_config_Server_To_v1alpha1_Server(in *config.Server, out *Server, s conversion.Scope) error {
-	out.BindAddress = in.BindAddress
-	out.Port = in.Port
+	*out = *(*Server)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -315,11 +296,7 @@ func Convert_config_Server_To_v1alpha1_Server(in *config.Server, out *Server, s 
 }
 
 func autoConvert_v1alpha1_ServerConfiguration_To_config_ServerConfiguration(in *ServerConfiguration, out *config.ServerConfiguration, s conversion.Scope) error {
-	if err := Convert_v1alpha1_Server_To_config_Server(&in.Webhooks, &out.Webhooks, s); err != nil {
-		return err
-	}
-	out.HealthProbes = (*config.Server)(unsafe.Pointer(in.HealthProbes))
-	out.Metrics = (*config.Server)(unsafe.Pointer(in.Metrics))
+	*out = *(*config.ServerConfiguration)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -329,11 +306,7 @@ func Convert_v1alpha1_ServerConfiguration_To_config_ServerConfiguration(in *Serv
 }
 
 func autoConvert_config_ServerConfiguration_To_v1alpha1_ServerConfiguration(in *config.ServerConfiguration, out *ServerConfiguration, s conversion.Scope) error {
-	if err := Convert_config_Server_To_v1alpha1_Server(&in.Webhooks, &out.Webhooks, s); err != nil {
-		return err
-	}
-	out.HealthProbes = (*Server)(unsafe.Pointer(in.HealthProbes))
-	out.Metrics = (*Server)(unsafe.Pointer(in.Metrics))
+	*out = *(*ServerConfiguration)(unsafe.Pointer(in))
 	return nil
 }
 

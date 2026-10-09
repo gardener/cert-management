@@ -7,6 +7,7 @@ CONTROLLER_MANAGER_LIB_HACK_DIR   := $(shell go list -m -f "{{.Dir}}" github.com
 ENSURE_GARDENER_MOD               := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 ENSURE_GARDENER_TOOLS_MOD         := $(shell go get github.com/gardener/gardener/hack/tools@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener/hack/tools))
 GARDENER_HACK_DIR                 := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
+ENSURE_EXTERNAL_DNS_MAN_MOD       := $(shell go get github.com/gardener/external-dns-management@$$(go list -m -f "{{.Version}}" github.com/gardener/external-dns-management))
 EXTERNAL_DNS_MAN_DIR              := $(shell go list -m -f "{{.Dir}}" github.com/gardener/external-dns-management)
 REGISTRY                          := europe-docker.pkg.dev/gardener-project/public
 EXECUTABLE                        := cert-controller-manager
