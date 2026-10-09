@@ -1745,8 +1745,7 @@ func (r *certReconciler) checkNamespaceRestriction(logctx logger.LogContext, obj
 	}
 
 	if secretRef := cert.Spec.SecretRef; secretRef != nil && secretRef.Namespace != "" {
-		allowedNamespaces := append([]string{cert.Namespace}, r.namespaceRestrictionTargetNamespaces...)
-		if !slices.Contains(allowedNamespaces, secretRef.Namespace) {
+		if allowed, allowedNamespaces := r.isSecretNamespaceAllowed(cert.Namespace, secretRef.Namespace); !allowed {
 			return new(r.failedStop(logctx, obj, api.StateError, fmt.Errorf("namespace restriction is enabled, `.spec.secretRef.Namespace`=%s is not allowed (allowed namespaces: \"%s\")", secretRef.Namespace, strings.Join(allowedNamespaces, "\", \""))))
 		}
 	}
@@ -1757,6 +1756,14 @@ func (r *certReconciler) checkNamespaceRestriction(logctx logger.LogContext, obj
 	}
 
 	return nil
+}
+
+// isSecretNamespaceAllowed reports whether a certificate's secretRef may point to secretNamespace
+// under namespace restriction: the certificate's own namespace plus any configured target namespaces.
+// It also returns the list of allowed namespaces for error messages.
+func (r *certReconciler) isSecretNamespaceAllowed(certNamespace, secretNamespace string) (bool, []string) {
+	allowedNamespaces := append([]string{certNamespace}, r.namespaceRestrictionTargetNamespaces...)
+	return slices.Contains(allowedNamespaces, secretNamespace), allowedNamespaces
 }
 
 func createDNSRecordSettings(cert *api.Certificate) (*legobridge.DNSRecordSettings, error) {
