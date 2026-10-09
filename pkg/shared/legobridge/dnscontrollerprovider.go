@@ -48,7 +48,9 @@ func (p *dnsControllerProvider) present(ctx context.Context, log LoggerInfof, do
 			addAnnotation(e, shared.AnnotDNSClass, p.targetClass)
 		}
 		addAnnotation(e, shared.AnnotACMEDNSChallenge, "true")
-		addAnnotation(e, dns.AnnotationOwners, fmt.Sprintf("source:cert.gardener.cloud/Certificate/%s/%s", p.certKey.Namespace, p.certKey.Name))
+		if p.settings.NamespaceRestriction {
+			addAnnotation(e, dns.AnnotationOwners, fmt.Sprintf("source:cert.gardener.cloud/Certificate/%s/%s", p.certKey.Namespace, p.certKey.Name))
+		}
 	}
 
 	entry := p.prepareEntry(domain)

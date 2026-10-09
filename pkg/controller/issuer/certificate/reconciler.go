@@ -603,13 +603,14 @@ func (r *certReconciler) obtainCertificateAndPendingACME(ctx context.Context, lo
 			precheckNameservers = shared.PreparePrecheckNameservers(issuer.Spec.ACME.PrecheckNameservers)
 		}
 		dnsSettings = &legobridge.DNSControllerSettings{
-			Client:              r.dnsClient,
-			Namespace:           cert.Namespace,
-			OwnerID:             r.dnsOwnerID,
-			PrecheckNameservers: precheckNameservers,
-			AdditionalWait:      r.additionalWait,
-			PropagationTimeout:  r.propagationTimeout,
-			FollowCNAME:         followCNAME,
+			Client:               r.dnsClient,
+			Namespace:            cert.Namespace,
+			OwnerID:              r.dnsOwnerID,
+			PrecheckNameservers:  precheckNameservers,
+			AdditionalWait:       r.additionalWait,
+			PropagationTimeout:   r.propagationTimeout,
+			FollowCNAME:          followCNAME,
+			NamespaceRestriction: r.namespaceRestricted,
 		}
 		if r.dnsNamespace != nil {
 			dnsSettings.Namespace = *r.dnsNamespace
