@@ -116,6 +116,8 @@ type DNSControllerSettings struct {
 	FollowCNAME bool
 	// DNSRecordSettings are additional fields needed to create a DNSRecord. If set, DNSChallenge will use DNSRecords instead of DNSEntries.
 	DNSRecordSettings *DNSRecordSettings
+	// NamespaceRestriction if namespace restriction is enabled.
+	NamespaceRestriction bool
 }
 
 // DNSRecordSettings are additional fields needed to create a DNSRecord.

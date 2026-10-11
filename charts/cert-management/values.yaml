@@ -35,12 +35,29 @@ configuration:
   # acmeDeactivateAuthorizations:
   # allowTargetIssuers:
   # bindAddressHttp:
+  # cainjectorApiserviceCertificatesPoolSize:
+  # cainjectorApiserviceDefaultPoolSize:
+  # cainjectorApiservicePoolSize:
+  # cainjectorApiserviceSecretsPoolSize:
+  # cainjectorCrdCertificatesPoolSize:
+  # cainjectorCrdDefaultPoolSize:
+  # cainjectorCrdPoolSize:
+  # cainjectorCrdSecretsPoolSize:
+  # cainjectorMutatingwebhookCertificatesPoolSize:
+  # cainjectorMutatingwebhookDefaultPoolSize:
+  # cainjectorMutatingwebhookPoolSize:
+  # cainjectorMutatingwebhookSecretsPoolSize:
+  # cainjectorValidatingwebhookCertificatesPoolSize:
+  # cainjectorValidatingwebhookDefaultPoolSize:
+  # cainjectorValidatingwebhookPoolSize:
+  # cainjectorValidatingwebhookSecretsPoolSize:
   # cascadeDelete:
   # caInjectorEnabled: false # if true, adds RBAC for the opt-in CA injector controllers.
   #                          # The injector group must additionally be activated via `controllers`,
   #                          # e.g. controllers: certcontrollers,certsources,cainjector-validatingwebhook,cainjector-mutatingwebhook,cainjector-crd,cainjector-apiservice
   # certClass:
   # certTargetClass:
+  # certificatesPoolSize:
   # config:
   # controllers:
   # cpuprofile:
@@ -57,9 +74,13 @@ configuration:
   # dnsClass:
   # dnsNamespace:
   # dnsOwnerId:
+  # dnsBurst:
+  # dnsConditionalDeployCrds:
+  # dnsCrdsShootNoCleanupLabel:
   # dnsDisableDeployCrds:
   # dnsId:
   # dnsMigrationIds:
+  # dnsQps:
   # forceCrdUpdate:
   # gracePeriod:
   # httproutesPoolSize:
@@ -90,6 +111,8 @@ configuration:
   # issuerDnsOwnerId:
   # issuerIssuerNamespace:
   # issuerIssuersPoolSize:
+  # issuerNamespaceRestriction:
+  # issuerNamespaceRestrictionAllowedTargetNamespaces:
   # issuerPoolResyncPeriod:
   # issuerPoolSize:
   # issuerPrecheckAdditionalWait:
@@ -123,9 +146,13 @@ configuration:
   # k8sGatewaysDnsTargetNamespace:
   # k8sGatewaysDnsTargetsPoolSize:
   # kubeconfig:
+  # kubeconfigBurst:
+  # kubeconfigConditionalDeployCrds:
+  # kubeconfigCrdsShootNoCleanupLabel:
   # kubeconfigDisableDeployCrds:
   # kubeconfigId:
   # kubeconfigMigrationIds:
+  # kubeconfigQps:
   # leaseDuration:
   # leaseName:
   # leaseRenewDeadline:
@@ -135,6 +162,8 @@ configuration:
   # maintainer:
   # namespace:
   # namespaceLocalAccessOnly:
+  # namespaceRestriction:
+  # namespaceRestrictionAllowedTargetNamespaces:
   # omitLease:
   # pluginFile:
   # poolResyncPeriod:
@@ -157,15 +186,23 @@ configuration:
   # serviceCertTargetNamespace:
   # serviceCertTargetsPoolSize:
   # source:
+  # sourceBurst:
+  # sourceConditionalDeployCrds:
+  # sourceCrdsShootNoCleanupLabel:
   # sourceDisableDeployCrds:
   # sourceId:
   # sourceMigrationIds:
+  # sourceQps:
   # target:
   # targetNamePrefix:
   # targetNamespace:
+  # targetBurst:
+  # targetConditionalDeployCrds:
+  # targetCrdsShootNoCleanupLabel:
   # targetDisableDeployCrds:
   # targetId:
   # targetMigrationIds:
+  # targetQps:
   # targetsPoolSize:
   # targetsourcesPoolSize:
   # useDnsrecords:

@@ -110,6 +110,7 @@ func NewHandlerSupport(c controller.Interface) (*Support, error) {
 	if s.defaultRequestsPerDayQuota < 1 {
 		return nil, fmt.Errorf("invalid value for %s: %d", OptDefaultRequestsPerDayQuota, s.defaultRequestsPerDayQuota)
 	}
+	s.namespaceRestricted, _ = c.GetBoolOption(OptNamespaceRestriction)
 	return s, err
 }
 
@@ -240,6 +241,7 @@ type Support struct {
 	issuerNamespace            string
 	defaultRequestsPerDayQuota int
 	defaultIssuerDomainRanges  []string
+	namespaceRestricted        bool
 }
 
 // Cluster returns the cluster enum for the given `ClusterObjectKey`
@@ -256,6 +258,19 @@ func (s *Support) Cluster(key resources.ClusterObjectKey) utils.Cluster {
 // EnqueueKey forwards to an enqueuer
 func (s *Support) EnqueueKey(key resources.ClusterObjectKey) error {
 	return s.enqueuer.EnqueueKey(key)
+}
+
+// CheckNamespaceRestriction returns an error if namespace-restriction is enabled and the issuer's
+// secretRef points to a different namespace than the issuer itself. It only applies to issuers on
+// the target cluster; a nil secretRef or empty secretRef namespace is always allowed.
+func (s *Support) CheckNamespaceRestriction(key resources.ClusterObjectKey, secretRef *corev1.SecretReference, fieldPath string) error {
+	if !s.namespaceRestricted || s.Cluster(key) != utils.ClusterTarget {
+		return nil
+	}
+	if secretRef == nil || secretRef.Namespace == "" || secretRef.Namespace == key.Namespace() {
+		return nil
+	}
+	return fmt.Errorf("namespace restriction is enabled, `%s`=%s must match the issuer namespace %s", fieldPath, secretRef.Namespace, key.Namespace())
 }
 
 // WriteIssuerSecretFromRegistrationUser writes an issuer secret
