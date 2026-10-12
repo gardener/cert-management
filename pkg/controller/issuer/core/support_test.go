@@ -12,6 +12,7 @@ import (
 	"github.com/gardener/controller-manager-library/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
 	api "github.com/gardener/cert-management/pkg/apis/cert/v1alpha1"
@@ -159,6 +160,29 @@ var _ = Describe("Support", func() {
 		Expect(key.Name()).To(Equal("issuer-bar"))
 		Expect(key.Cluster()).To(Equal(certutils.ClusterTarget))
 		Expect(key.Namespace()).To(Equal("foo"))
+	})
+	Context("CheckNamespaceRestriction", func() {
+		secretRef := func(ns string) *corev1.SecretReference {
+			return &corev1.SecretReference{Name: "s", Namespace: ns}
+		}
+		const fieldPath = "spec.acme.privateKeySecretRef.namespace"
+		It("", func() {
+			support := newSupport()
+
+			// disabled: anything allowed
+			Expect(support.CheckNamespaceRestriction(issuer1t, secretRef("other"), fieldPath)).To(Succeed())
+
+			support.namespaceRestricted = true
+			// target cluster, foreign namespace -> error
+			Expect(support.CheckNamespaceRestriction(issuer1t, secretRef("other"), fieldPath)).NotTo(Succeed())
+			// target cluster, same namespace -> ok
+			Expect(support.CheckNamespaceRestriction(issuer1t, secretRef(namespace1), fieldPath)).To(Succeed())
+			// target cluster, nil/empty secretRef -> ok
+			Expect(support.CheckNamespaceRestriction(issuer1t, nil, fieldPath)).To(Succeed())
+			Expect(support.CheckNamespaceRestriction(issuer1t, secretRef(""), fieldPath)).To(Succeed())
+			// default cluster -> not restricted
+			Expect(support.CheckNamespaceRestriction(issuer1c, secretRef("other"), fieldPath)).To(Succeed())
+		})
 	})
 })
 

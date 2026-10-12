@@ -53,6 +53,54 @@ spec:
         {{- if .Values.configuration.bindAddressHttp }}
         - --bind-address-http={{ .Values.configuration.bindAddressHttp }}
         {{- end }}
+        {{- if .Values.configuration.cainjectorApiserviceCertificatesPoolSize }}
+        - --cainjector-apiservice.certificates.pool.size={{ .Values.configuration.cainjectorApiserviceCertificatesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorApiserviceDefaultPoolSize }}
+        - --cainjector-apiservice.default.pool.size={{ .Values.configuration.cainjectorApiserviceDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorApiservicePoolSize }}
+        - --cainjector-apiservice.pool.size={{ .Values.configuration.cainjectorApiservicePoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorApiserviceSecretsPoolSize }}
+        - --cainjector-apiservice.secrets.pool.size={{ .Values.configuration.cainjectorApiserviceSecretsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorCrdCertificatesPoolSize }}
+        - --cainjector-crd.certificates.pool.size={{ .Values.configuration.cainjectorCrdCertificatesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorCrdDefaultPoolSize }}
+        - --cainjector-crd.default.pool.size={{ .Values.configuration.cainjectorCrdDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorCrdPoolSize }}
+        - --cainjector-crd.pool.size={{ .Values.configuration.cainjectorCrdPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorCrdSecretsPoolSize }}
+        - --cainjector-crd.secrets.pool.size={{ .Values.configuration.cainjectorCrdSecretsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorMutatingwebhookCertificatesPoolSize }}
+        - --cainjector-mutatingwebhook.certificates.pool.size={{ .Values.configuration.cainjectorMutatingwebhookCertificatesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorMutatingwebhookDefaultPoolSize }}
+        - --cainjector-mutatingwebhook.default.pool.size={{ .Values.configuration.cainjectorMutatingwebhookDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorMutatingwebhookPoolSize }}
+        - --cainjector-mutatingwebhook.pool.size={{ .Values.configuration.cainjectorMutatingwebhookPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorMutatingwebhookSecretsPoolSize }}
+        - --cainjector-mutatingwebhook.secrets.pool.size={{ .Values.configuration.cainjectorMutatingwebhookSecretsPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorValidatingwebhookCertificatesPoolSize }}
+        - --cainjector-validatingwebhook.certificates.pool.size={{ .Values.configuration.cainjectorValidatingwebhookCertificatesPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorValidatingwebhookDefaultPoolSize }}
+        - --cainjector-validatingwebhook.default.pool.size={{ .Values.configuration.cainjectorValidatingwebhookDefaultPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorValidatingwebhookPoolSize }}
+        - --cainjector-validatingwebhook.pool.size={{ .Values.configuration.cainjectorValidatingwebhookPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.cainjectorValidatingwebhookSecretsPoolSize }}
+        - --cainjector-validatingwebhook.secrets.pool.size={{ .Values.configuration.cainjectorValidatingwebhookSecretsPoolSize }}
+        {{- end }}
         {{- if .Values.configuration.cascadeDelete }}
         - --cascade-delete={{ .Values.configuration.cascadeDelete }}
         {{- end }}
@@ -61,6 +109,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.certTargetClass }}
         - --cert-target-class={{ .Values.configuration.certTargetClass }}
+        {{- end }}
+        {{- if .Values.configuration.certificatesPoolSize }}
+        - --certificates.pool.size={{ .Values.configuration.certificatesPoolSize }}
         {{- end }}
         {{- if .Values.configuration.config }}
         - --config={{ .Values.configuration.config }}
@@ -110,6 +161,15 @@ spec:
         {{- if .Values.configuration.dnsOwnerId }}
         - --dns-owner-id={{ .Values.configuration.dnsOwnerId }}
         {{- end }}
+        {{- if .Values.configuration.dnsBurst }}
+        - --dns.burst={{ .Values.configuration.dnsBurst }}
+        {{- end }}
+        {{- if .Values.configuration.dnsConditionalDeployCrds }}
+        - --dns.conditional-deploy-crds={{ .Values.configuration.dnsConditionalDeployCrds }}
+        {{- end }}
+        {{- if .Values.configuration.dnsCrdsShootNoCleanupLabel }}
+        - --dns.crds-shoot-no-cleanup-label={{ .Values.configuration.dnsCrdsShootNoCleanupLabel }}
+        {{- end }}
         {{- if .Values.configuration.dnsDisableDeployCrds }}
         - --dns.disable-deploy-crds={{ .Values.configuration.dnsDisableDeployCrds }}
         {{- end }}
@@ -118,6 +178,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.dnsMigrationIds }}
         - --dns.migration-ids={{ .Values.configuration.dnsMigrationIds }}
+        {{- end }}
+        {{- if .Values.configuration.dnsQps }}
+        - --dns.qps={{ .Values.configuration.dnsQps }}
         {{- end }}
         {{- if .Values.configuration.forceCrdUpdate }}
         - --force-crd-update={{ .Values.configuration.forceCrdUpdate }}
@@ -208,6 +271,12 @@ spec:
         {{- end }}
         {{- if .Values.configuration.issuerIssuersPoolSize }}
         - --issuer.issuers.pool.size={{ .Values.configuration.issuerIssuersPoolSize }}
+        {{- end }}
+        {{- if .Values.configuration.issuerNamespaceRestriction }}
+        - --issuer.namespace-restriction={{ .Values.configuration.issuerNamespaceRestriction }}
+        {{- end }}
+        {{- if .Values.configuration.issuerNamespaceRestrictionAllowedTargetNamespaces }}
+        - --issuer.namespace-restriction-allowed-target-namespaces={{ .Values.configuration.issuerNamespaceRestrictionAllowedTargetNamespaces }}
         {{- end }}
         {{- if .Values.configuration.issuerPoolResyncPeriod }}
         - --issuer.pool.resync-period={{ .Values.configuration.issuerPoolResyncPeriod }}
@@ -308,6 +377,15 @@ spec:
         {{- if .Values.configuration.kubeconfig }}
         - --kubeconfig={{ .Values.configuration.kubeconfig }}
         {{- end }}
+        {{- if .Values.configuration.kubeconfigBurst }}
+        - --kubeconfig.burst={{ .Values.configuration.kubeconfigBurst }}
+        {{- end }}
+        {{- if .Values.configuration.kubeconfigConditionalDeployCrds }}
+        - --kubeconfig.conditional-deploy-crds={{ .Values.configuration.kubeconfigConditionalDeployCrds }}
+        {{- end }}
+        {{- if .Values.configuration.kubeconfigCrdsShootNoCleanupLabel }}
+        - --kubeconfig.crds-shoot-no-cleanup-label={{ .Values.configuration.kubeconfigCrdsShootNoCleanupLabel }}
+        {{- end }}
         {{- if .Values.configuration.kubeconfigDisableDeployCrds }}
         - --kubeconfig.disable-deploy-crds={{ .Values.configuration.kubeconfigDisableDeployCrds }}
         {{- end }}
@@ -316,6 +394,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.kubeconfigMigrationIds }}
         - --kubeconfig.migration-ids={{ .Values.configuration.kubeconfigMigrationIds }}
+        {{- end }}
+        {{- if .Values.configuration.kubeconfigQps }}
+        - --kubeconfig.qps={{ .Values.configuration.kubeconfigQps }}
         {{- end }}
         {{- if .Values.configuration.leaseDuration }}
         - --lease-duration={{ .Values.configuration.leaseDuration }}
@@ -343,6 +424,12 @@ spec:
         {{- end }}
         {{- if .Values.configuration.namespaceLocalAccessOnly }}
         - --namespace-local-access-only={{ .Values.configuration.namespaceLocalAccessOnly }}
+        {{- end }}
+        {{- if .Values.configuration.namespaceRestriction }}
+        - --namespace-restriction={{ .Values.configuration.namespaceRestriction }}
+        {{- end }}
+        {{- if .Values.configuration.namespaceRestrictionAllowedTargetNamespaces }}
+        - --namespace-restriction-allowed-target-namespaces={{ .Values.configuration.namespaceRestrictionAllowedTargetNamespaces }}
         {{- end }}
         {{- if .Values.configuration.omitLease }}
         - --omit-lease={{ .Values.configuration.omitLease }}
@@ -410,6 +497,15 @@ spec:
         {{- if .Values.configuration.source }}
         - --source={{ .Values.configuration.source }}
         {{- end }}
+        {{- if .Values.configuration.sourceBurst }}
+        - --source.burst={{ .Values.configuration.sourceBurst }}
+        {{- end }}
+        {{- if .Values.configuration.sourceConditionalDeployCrds }}
+        - --source.conditional-deploy-crds={{ .Values.configuration.sourceConditionalDeployCrds }}
+        {{- end }}
+        {{- if .Values.configuration.sourceCrdsShootNoCleanupLabel }}
+        - --source.crds-shoot-no-cleanup-label={{ .Values.configuration.sourceCrdsShootNoCleanupLabel }}
+        {{- end }}
         {{- if .Values.configuration.sourceDisableDeployCrds }}
         - --source.disable-deploy-crds={{ .Values.configuration.sourceDisableDeployCrds }}
         {{- end }}
@@ -418,6 +514,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.sourceMigrationIds }}
         - --source.migration-ids={{ .Values.configuration.sourceMigrationIds }}
+        {{- end }}
+        {{- if .Values.configuration.sourceQps }}
+        - --source.qps={{ .Values.configuration.sourceQps }}
         {{- end }}
         {{- if .Values.configuration.target }}
         - --target={{ .Values.configuration.target }}
@@ -428,6 +527,15 @@ spec:
         {{- if .Values.configuration.targetNamespace }}
         - --target-namespace={{ .Values.configuration.targetNamespace }}
         {{- end }}
+        {{- if .Values.configuration.targetBurst }}
+        - --target.burst={{ .Values.configuration.targetBurst }}
+        {{- end }}
+        {{- if .Values.configuration.targetConditionalDeployCrds }}
+        - --target.conditional-deploy-crds={{ .Values.configuration.targetConditionalDeployCrds }}
+        {{- end }}
+        {{- if .Values.configuration.targetCrdsShootNoCleanupLabel }}
+        - --target.crds-shoot-no-cleanup-label={{ .Values.configuration.targetCrdsShootNoCleanupLabel }}
+        {{- end }}
         {{- if .Values.configuration.targetDisableDeployCrds }}
         - --target.disable-deploy-crds={{ .Values.configuration.targetDisableDeployCrds }}
         {{- end }}
@@ -436,6 +544,9 @@ spec:
         {{- end }}
         {{- if .Values.configuration.targetMigrationIds }}
         - --target.migration-ids={{ .Values.configuration.targetMigrationIds }}
+        {{- end }}
+        {{- if .Values.configuration.targetQps }}
+        - --target.qps={{ .Values.configuration.targetQps }}
         {{- end }}
         {{- if .Values.configuration.targetsPoolSize }}
         - --targets.pool.size={{ .Values.configuration.targetsPoolSize }}

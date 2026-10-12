@@ -60,7 +60,7 @@ func newDelegatingProvider(
 	var internalPrvdr internalProvider
 	var err error
 	if settings.DNSRecordSettings == nil {
-		internalPrvdr, err = newDNSControllerProvider(settings, targetClass)
+		internalPrvdr, err = newDNSControllerProvider(settings, certificateName, targetClass)
 	} else {
 		internalPrvdr, err = newDNSRecordProvider(settings)
 	}

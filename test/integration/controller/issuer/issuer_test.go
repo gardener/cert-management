@@ -723,6 +723,124 @@ var _ = Describe("Issuer controller tests", func() {
 	})
 })
 
+// These specs share a single manager started with --namespace-restriction=true.
+// They use their own Ordered container with a BeforeAll so the (expensive) manager
+// is started once for all of them, instead of restarting it per spec. The specs are
+// read-only with respect to the shared issuer and use distinct certificate names,
+// so order does not matter between them.
+var _ = Describe("Issuer controller tests with namespace restriction", Ordered, func() {
+	var (
+		testRunID     string
+		testNamespace *corev1.Namespace
+		issuer        *v1alpha1.Issuer
+
+		waitForCertState = func(cert *v1alpha1.Certificate, matcher OmegaMatcher) {
+			GinkgoHelper()
+			Eventually(func(g Gomega) v1alpha1.CertificateStatus {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(cert), cert)).To(Succeed())
+				return cert.Status
+			}).WithPolling(500 * time.Millisecond).WithTimeout(10 * time.Second).Should(matcher)
+		}
+	)
+
+	BeforeAll(func() {
+		ctxLocal := context.Background()
+
+		By("Create test Namespace")
+		testNamespace = &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{GenerateName: "issuer-ns-restricted-"},
+		}
+		Expect(testClient.Create(ctxLocal, testNamespace)).To(Succeed())
+		testRunID = testNamespace.Name
+		DeferCleanup(func() {
+			Expect(testClient.Delete(ctxLocal, testNamespace)).To(Or(Succeed(), BeNotFoundError()))
+		})
+
+		By("Start manager with namespace restriction enabled")
+		startManager(testRunID, "--namespace-restriction=true")
+		DeferCleanup(stopManager)
+
+		By("Create self-signed issuer")
+		issuer = &v1alpha1.Issuer{
+			ObjectMeta: metav1.ObjectMeta{Namespace: testRunID, Name: "self-signed-issuer"},
+			Spec:       v1alpha1.IssuerSpec{SelfSigned: &v1alpha1.SelfSignedSpec{}},
+		}
+		Expect(testClient.Create(ctx, issuer)).To(Succeed())
+		Eventually(func(g Gomega) string {
+			g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(issuer), issuer)).To(Succeed())
+			return issuer.Status.State
+		}).Should(Equal("Ready"))
+	})
+
+	It("should not reuse a certificate secret across namespaces", func() {
+		// Regression test for the cross-namespace certificate-secret reuse leak:
+		// with --namespace-restriction, two certificates of the same identity must
+		// each get a freshly issued key instead of a copy of an existing secret.
+		tlsKey := func(certificate *v1alpha1.Certificate) []byte {
+			GinkgoHelper()
+			secret := &corev1.Secret{}
+			Expect(testClient.Get(ctx, client.ObjectKey{
+				Name:      certificate.Spec.SecretRef.Name,
+				Namespace: certificate.Spec.SecretRef.Namespace,
+			}, secret)).To(Succeed())
+			Expect(secret.Data[corev1.TLSPrivateKeyKey]).NotTo(BeEmpty())
+			return secret.Data[corev1.TLSPrivateKeyKey]
+		}
+
+		By("Create first self-signed certificate")
+		cert1 := getCertificate(testRunID, "ns-restricted-cert1", "ca.mydomain.com", issuer.Namespace, issuer.Name)
+		cert1.Spec.IsCA = new(true)
+		Expect(testClient.Create(ctx, cert1)).To(Succeed())
+		DeferCleanup(func() {
+			Expect(testClient.Delete(ctx, cert1)).To(Succeed())
+		})
+		waitForCertState(cert1, HaveField("State", Equal("Ready")))
+
+		By("Create second certificate with the same identity")
+		cert2 := getCertificate(testRunID, "ns-restricted-cert2", "ca.mydomain.com", issuer.Namespace, issuer.Name)
+		cert2.Spec.IsCA = new(true)
+		Expect(testClient.Create(ctx, cert2)).To(Succeed())
+		DeferCleanup(func() {
+			Expect(testClient.Delete(ctx, cert2)).To(Succeed())
+		})
+		waitForCertState(cert2, HaveField("State", Equal("Ready")))
+
+		By("Verify no secret reuse: the two certificates have distinct private keys")
+		Expect(tlsKey(cert1)).NotTo(Equal(tlsKey(cert2)))
+	})
+
+	It("should reject a certificate with a secretRef in a disallowed namespace", func() {
+		By("Create certificate with secretRef in another namespace")
+		certificate := getCertificate(testRunID, "ns-restricted-secretref", "ca.mydomain.com", issuer.Namespace, issuer.Name)
+		certificate.Spec.IsCA = new(true)
+		certificate.Spec.SecretRef = &corev1.SecretReference{Name: "cert-secret", Namespace: "other-namespace"}
+		Expect(testClient.Create(ctx, certificate)).To(Succeed())
+		DeferCleanup(func() {
+			Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+		})
+
+		waitForCertState(certificate, And(
+			HaveField("State", Equal("Error")),
+			HaveField("Message", PointTo(ContainSubstring("`.spec.secretRef.Namespace`=other-namespace is not allowed"))),
+		))
+	})
+
+	It("should reject a certificate with an issuerRef in a different namespace", func() {
+		By("Create certificate with issuerRef in another namespace")
+		certificate := getCertificate(testRunID, "ns-restricted-issuerref", "ca.mydomain.com", "other-namespace", issuer.Name)
+		certificate.Spec.IsCA = new(true)
+		Expect(testClient.Create(ctx, certificate)).To(Succeed())
+		DeferCleanup(func() {
+			Expect(testClient.Delete(ctx, certificate)).To(Succeed())
+		})
+
+		waitForCertState(certificate, And(
+			HaveField("State", Equal("Error")),
+			HaveField("Message", PointTo(ContainSubstring("`.spec.issuerRef` resolves to target:other-namespace/"))),
+		))
+	})
+})
+
 func getAcmeIssuer(namespace string) *v1alpha1.Issuer {
 	return &v1alpha1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
@@ -808,7 +926,7 @@ func createPemCertificate(privateKey crypto.PrivateKey, pubKey crypto.PublicKey,
 	}, nil
 }
 
-func startManager(testRunID string) {
+func startManager(testRunID string, extraArgs ...string) {
 	newContext()
 	go func() {
 		defer GinkgoRecover()
@@ -820,6 +938,7 @@ func startManager(testRunID string) {
 			"--pool.size", "1",
 			"--issuer.renewal-window", "24h",
 		}
+		args = append(args, extraArgs...)
 		runControllerManager(ctx, args)
 	}()
 }

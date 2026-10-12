@@ -54,4 +54,8 @@ const (
 	OptDefaultECDSAPrivateKeySize = "default-ecdsa-private-key-size"
 	// OptDefaultPrivateKeyAlgorithm allows to override the default algorithm for certificate private keys ('rsa' if not specified)
 	OptDefaultPrivateKeyAlgorithm = "default-private-key-algorithm"
+	// OptNamespaceRestriction restricts namespace of the certificate secret, issuer on target cluster, and disables reuse of existing certificates secrets for ACME issuers.
+	OptNamespaceRestriction = "namespace-restriction"
+	// OptNamespaceRestrictionAllowedTargetNamespaces if namespace-restriction is enabled, specifies allowed other namespaces for storing the certificate secrets.
+	OptNamespaceRestrictionAllowedTargetNamespaces = "namespace-restriction-allowed-target-namespaces"
 )

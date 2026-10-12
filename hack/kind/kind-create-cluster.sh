@@ -37,7 +37,7 @@ apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 nodes:
 - role: control-plane
-  image: kindest/node:v1.30.0
+  image: kindest/node:v1.37.0
   extraMounts:
   - hostPath: ${SOURCE_PATH}/dev/local-registry
     containerPath: /var/local-registry

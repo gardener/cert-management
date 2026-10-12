@@ -137,4 +137,32 @@ var _ = Describe("Utils", func() {
 			Expect(uris).To(BeNil())
 		})
 	})
+
+	Context("#isSecretNamespaceAllowed", func() {
+		It("should allow the certificate's own namespace", func() {
+			r := &certReconciler{}
+			allowed, _ := r.isSecretNamespaceAllowed("ns1", "ns1")
+			Expect(allowed).To(BeTrue())
+		})
+
+		It("should reject another namespace when no target namespaces are configured", func() {
+			r := &certReconciler{}
+			allowed, allowedNamespaces := r.isSecretNamespaceAllowed("ns1", "ns2")
+			Expect(allowed).To(BeFalse())
+			Expect(allowedNamespaces).To(Equal([]string{"ns1"}))
+		})
+
+		It("should allow a configured target namespace", func() {
+			r := &certReconciler{namespaceRestrictionTargetNamespaces: []string{"ns2", "ns3"}}
+			allowed, allowedNamespaces := r.isSecretNamespaceAllowed("ns1", "ns2")
+			Expect(allowed).To(BeTrue())
+			Expect(allowedNamespaces).To(Equal([]string{"ns1", "ns2", "ns3"}))
+		})
+
+		It("should reject a namespace that is neither the cert's nor a configured target", func() {
+			r := &certReconciler{namespaceRestrictionTargetNamespaces: []string{"ns2"}}
+			allowed, _ := r.isSecretNamespaceAllowed("ns1", "ns4")
+			Expect(allowed).To(BeFalse())
+		})
+	})
 })
