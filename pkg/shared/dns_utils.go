@@ -95,12 +95,20 @@ func checkTXTValue(answer []dns.RR, values []string) bool {
 	return true
 }
 
+// maxCNAMEChainLength caps the number of CNAME hops to follow, preventing unbounded
+// recursion on an attacker-controlled chain of ever-fresh names (loop detection alone
+// never trips on non-repeating names).
+const maxCNAMEChainLength = 10
+
 // FollowCNAMEs follows the CNAME records and returns the last non-CNAME fully qualified domain name
 // that it finds. Returns an error when a loop is found in the CNAME chain. The
 // argument fqdnChain is used by the function itself to keep track of which fqdns it
 // already encountered and detect loops.
 // Method copied from https://github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util/wait.go
 func FollowCNAMEs(fqdn string, nameservers []string, fqdnChain ...string) (string, error) {
+	if len(fqdnChain) > maxCNAMEChainLength {
+		return "", fmt.Errorf("too many CNAME records (>%d) when looking up %q", maxCNAMEChainLength, fqdn)
+	}
 	r, err := dnsQuery(fqdn, dns.TypeCNAME, nameservers, true)
 	if err != nil {
 		return "", err
