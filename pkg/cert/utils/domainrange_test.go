@@ -16,7 +16,6 @@ import (
 var _ = Describe("DomainRange", func() {
 	DescribeTable("IsInDomainRange",
 		func(domain, domainRange string, wanted bool) {
-			domainRange = utils.NormalizeDomainRange(domainRange)
 			result := utils.IsInDomainRange(domain, domainRange)
 			Expect(result).To(Equal(wanted))
 		},
@@ -32,6 +31,13 @@ var _ = Describe("DomainRange", func() {
 		Entry("a.b in b.", "a.b", "b.", true),
 		Entry("a.b. in b", "a.b.", "b", true),
 		Entry("Empty domain range acts as wildcard", "a.b.c", "", true),
+		// raw (unnormalized) range must still match: fail-open bypass
+		Entry("x.internal.example.com in raw *.internal.example.com", "x.internal.example.com", "*.internal.example.com", true),
+		Entry("x.internal.example.com in raw INTERNAL.example.com.", "x.internal.example.com", "INTERNAL.example.com.", true),
+		// wildcard request is covered by a range one label below its zone
+		Entry("*.example.com covers secret.example.com", "*.example.com", "secret.example.com", true),
+		Entry("*.example.com in example.com", "*.example.com", "example.com", true),
+		Entry("*.example.com not in a.secret.example.com", "*.example.com", "a.secret.example.com", false),
 	)
 
 	DescribeTable("IsInDomainRanges",
