@@ -954,10 +954,22 @@ func (r *certReconciler) loadSecret(secretRef *corev1.SecretReference) (*corev1.
 	return secret, nil
 }
 
+func isReservedSecretLabel(key string) bool {
+	switch key {
+	case LabelCertificateNewHashKey, LabelCertificateKey, LabelCertificateBackup:
+		return true
+	default:
+		return false
+	}
+}
+
 func (r *certReconciler) updateSecretLabels(obj resources.Object, secret *corev1.Secret) error {
 	crt := obj.Data().(*api.Certificate)
 	modified := false
 	for k, v := range crt.Spec.SecretLabels {
+		if isReservedSecretLabel(k) {
+			continue // never let tenant-supplied labels overwrite reserved pool/hash labels
+		}
 		if secret.Labels[k] != v {
 			resources.SetLabel(secret, k, v)
 			modified = true
