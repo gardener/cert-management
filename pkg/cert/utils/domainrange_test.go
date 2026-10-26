@@ -34,8 +34,8 @@ var _ = Describe("DomainRange", func() {
 		// raw (unnormalized) range must still match: fail-open bypass
 		Entry("x.internal.example.com in raw *.internal.example.com", "x.internal.example.com", "*.internal.example.com", true),
 		Entry("x.internal.example.com in raw INTERNAL.example.com.", "x.internal.example.com", "INTERNAL.example.com.", true),
-		// wildcard request is covered by a range one label below its zone
-		Entry("*.example.com covers secret.example.com", "*.example.com", "secret.example.com", true),
+		// wildcard *.example.com is NOT in a narrower range like secret.example.com
+		Entry("*.example.com not in secret.example.com", "*.example.com", "secret.example.com", false),
 		Entry("*.example.com in example.com", "*.example.com", "example.com", true),
 		Entry("*.example.com not in a.secret.example.com", "*.example.com", "a.secret.example.com", false),
 	)
