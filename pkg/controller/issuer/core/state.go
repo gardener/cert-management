@@ -7,6 +7,7 @@
 package core
 
 import (
+	"sync"
 	"time"
 
 	"github.com/gardener/controller-manager-library/pkg/resources"
@@ -26,6 +27,7 @@ type state struct {
 	overdueCerts             objectNameSet
 	revokedCerts             objectNameSet
 	scheduledReconciliations map[resources.ObjectName]time.Time
+	scheduledLock            sync.Mutex
 }
 
 func newState() *state {
@@ -150,10 +152,14 @@ func (s *state) GetRevokedCount() int {
 }
 
 func (s *state) AddScheduledReconciliation(certName resources.ObjectName, renewalDate time.Time) {
+	s.scheduledLock.Lock()
+	defer s.scheduledLock.Unlock()
 	s.scheduledReconciliations[certName] = renewalDate
 }
 
 func (s *state) HasScheduledReconciliation(certName resources.ObjectName, renewalDate time.Time) bool {
+	s.scheduledLock.Lock()
+	defer s.scheduledLock.Unlock()
 	scheduledRenewalDate, ok := s.scheduledReconciliations[certName]
 	if !ok {
 		return false
@@ -162,5 +168,7 @@ func (s *state) HasScheduledReconciliation(certName resources.ObjectName, renewa
 }
 
 func (s *state) RemoveScheduledReconciliation(certName resources.ObjectName) {
+	s.scheduledLock.Lock()
+	defer s.scheduledLock.Unlock()
 	delete(s.scheduledReconciliations, certName)
 }
