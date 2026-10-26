@@ -48,12 +48,24 @@ func BestDomainRange(domain string, domainRanges []string) string {
 }
 
 // IsInDomainRange returns true if domain is in domain range.
+// A wildcard domain (e.g. *.example.com) also matches a range below its zone
+// (e.g. secret.example.com), since the issued certificate covers that name.
 func IsInDomainRange(domain, domainRange string) bool {
+	wildcard := strings.HasPrefix(strings.ToLower(domain), "*.")
+	domainRange = NormalizeDomainRange(domainRange)
 	if domainRange == "" {
 		return true
 	}
-	domain = strings.ToLower(domain)
-	domain = strings.TrimSuffix(domain, ".")
+	domain = NormalizeDomainRange(domain)
+	// wildcard *.example.com covers single-label children, so a range like
+	// secret.example.com (one label below the zone) is within its coverage.
+	// domain is ".example.com" here, so rest is the single child label.
+	if wildcard && strings.HasSuffix(domainRange, domain) {
+		rest := domainRange[:len(domainRange)-len(domain)]
+		if rest != "" && !strings.Contains(rest, ".") {
+			return true
+		}
+	}
 	if !strings.HasSuffix(domain, domainRange) {
 		return false
 	}
