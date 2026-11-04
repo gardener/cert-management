@@ -1,10 +1,14 @@
 name: Build
 on:
   push:
+    branches:
+      - master
+      - 'release-v*'
   pull_request:
 
 jobs:
   build:
+    if: ${{ github.repository == 'gardener/cert-management' }}
     uses: ./.github/workflows/build.yaml
     with:
       mode: snapshot
@@ -15,6 +19,7 @@ jobs:
       id-token: write
 
   component-descriptor:
+    if: ${{ github.repository == 'gardener/cert-management' }}
     uses: gardener/cc-utils/.github/workflows/post-build.yaml@v1
     needs:
       - build
