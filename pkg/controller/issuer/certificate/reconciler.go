@@ -1542,7 +1542,10 @@ func (r *certReconciler) failedStop(logctx logger.LogContext, obj resources.Obje
 }
 
 func (r *certReconciler) status(logctx logger.LogContext, obj resources.Object, state string, err error, stop bool) reconcile.Status {
-	msg := err.Error()
+	msg, ok := legobridge.SanitizeACMEError(err)
+	if ok {
+		logctx.Errorf("ACME server error detail: %s", err)
+	}
 
 	var rerr *core.RecoverableError
 	isRecoverable := errors.As(err, &rerr)
@@ -1571,7 +1574,11 @@ func (r *certReconciler) delay(logctx logger.LogContext, obj resources.Object, s
 }
 
 func (r *certReconciler) recheck(logctx logger.LogContext, obj resources.Object, state string, err error, interval time.Duration) reconcile.Status {
-	return r.status(logctx, obj, state, &core.RecoverableError{Msg: err.Error(), Interval: interval}, false)
+	msg, ok := legobridge.SanitizeACMEError(err)
+	if ok {
+		logctx.Errorf("ACME server error detail: %s", err)
+	}
+	return r.status(logctx, obj, state, &core.RecoverableError{Msg: msg, Interval: interval}, false)
 }
 
 func (r *certReconciler) succeeded(logctx logger.LogContext, obj resources.Object, msg *string) reconcile.Status {

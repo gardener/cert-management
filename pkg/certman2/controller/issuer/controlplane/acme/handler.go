@@ -53,10 +53,10 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 	acme := issuer.Spec.ACME
 
 	if acme.Email == "" {
-		return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("missing email in ACME spec"))
+		return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("missing email in ACME spec"))
 	}
 	if acme.Server == "" {
-		return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("missing server in ACME spec"))
+		return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("missing server in ACME spec"))
 	}
 
 	h.support.AddIssuerDomains(issuerKey, acme.Domains)
@@ -69,7 +69,7 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 		secret = &corev1.Secret{}
 		if err := h.client.Get(ctx, core.ObjectKeyFromSecretReference(acme.PrivateKeySecretRef), secret); err != nil {
 			if !acme.AutoRegistration {
-				return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
+				return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("loading issuer secret failed: %w", err))
 			}
 			secret = nil
 			log.Info("spec.acme.privateKeySecretRef not existing, creating new account")
@@ -79,7 +79,7 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 	}
 	eabKeyID, eabHmacKey, err := h.support.LoadEABHmacKey(ctx, h.client, issuerKey, acme)
 	if err != nil {
-		return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("loading EAB secret failed: %w", err))
+		return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("loading EAB secret failed: %w", err))
 	}
 
 	var rawReg []byte
@@ -88,15 +88,15 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 			rawReg = issuer.Status.ACME.Raw
 		} else {
 			if err := legobridge.ValidatePrivateKeySecretDataKeys(secret.Data); err != nil {
-				return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("validation of data keys failed for secret %s: %w", client.ObjectKeyFromObject(secret), err))
+				return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("validation of data keys failed for secret %s: %w", client.ObjectKeyFromObject(secret), err))
 			}
 			user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, secret.Data, eabKeyID, eabHmacKey)
 			if err != nil {
-				return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("creating registration user failed: %w", err))
+				return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("creating registration user failed: %w", err))
 			}
 			rawReg, err = user.RawRegistration()
 			if err != nil {
-				return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("registration marshalling failed: %w", err))
+				return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("registration marshalling failed: %w", err))
 			}
 		}
 		result, err := legobridge.RegistrationUserFromConfig(&legobridge.RegistrationConfig{
@@ -110,28 +110,28 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 			AllowV4ToV5Migration: true,
 		})
 		if err != nil {
-			return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("extracting registration user from secret failed: %w", err))
+			return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("extracting registration user from secret failed: %w", err))
 		}
 		user, rawReg := result.User, result.UpdatedRaw
 		if result.WasMigrated {
 			log.Info("v4 registration format migrated to v5")
 		}
 		if user.GetEmail() != acme.Email {
-			return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.GetEmail(), acme.Email))
+			return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("email of registration user from secret does not match %s != %s", user.GetEmail(), acme.Email))
 		}
 		rawReg, err = core.WrapRegistration(rawReg, secretHash)
 		if err != nil {
-			return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("wrapped registration marshalling failed: %w", err))
+			return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("wrapped registration marshalling failed: %w", err))
 		}
 		return h.SucceededAndTriggerCertificates(ctx, issuer, rawReg)
 	} else if acme.AutoRegistration {
 		user, err := legobridge.NewRegistrationUserFromEmail(issuerKey, acme.Email, acme.Server, nil, eabKeyID, eabHmacKey)
 		if err != nil {
-			return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("creating registration user failed: %w", err))
+			return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("creating registration user failed: %w", err))
 		}
 		secretRef, secret, err := h.WriteIssuerSecretFromRegistrationUser(ctx, issuerKey, issuer, user, acme.PrivateKeySecretRef)
 		if err != nil {
-			return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("writing issuer secret failed: %w", err))
+			return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("writing issuer secret failed: %w", err))
 		}
 		acme.PrivateKeySecretRef = secretRef
 		secretHash = h.support.CalcSecretHash(secret)
@@ -139,21 +139,21 @@ func (h *acmeIssuerHandler) Reconcile(ctx context.Context, log logr.Logger, issu
 
 		rawReg, err = user.RawRegistration()
 		if err != nil {
-			return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("registration marshalling failed: %w", err))
+			return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("registration marshalling failed: %w", err))
 		}
 
 		err = h.client.Update(ctx, issuer)
 		if err != nil {
-			return h.failedAcmeRetry(ctx, issuer, v1alpha1.StateError, fmt.Errorf("updating issuer resource failed: %w", err))
+			return h.failedAcmeRetry(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("updating issuer resource failed: %w", err))
 		}
 
 		rawReg, err := core.WrapRegistration(rawReg, secretHash)
 		if err != nil {
-			return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("wrapped registration marshalling failed: %w", err))
+			return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("wrapped registration marshalling failed: %w", err))
 		}
 		return h.SucceededAndTriggerCertificates(ctx, issuer, rawReg)
 	} else {
-		return h.failedAcme(ctx, issuer, v1alpha1.StateError, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
+		return h.failedAcme(ctx, log, issuer, v1alpha1.StateError, fmt.Errorf("neither `SecretRef` or `AutoRegistration: true` provided"))
 	}
 }
 
@@ -164,15 +164,15 @@ func (h *acmeIssuerHandler) Delete(_ context.Context, log logr.Logger, issuer *v
 	return reconcile.Result{}, nil
 }
 
-func (h *acmeIssuerHandler) failedAcme(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
-	if err2 := h.updateStatusFailed(ctx, issuer, state, err); err2 != nil {
+func (h *acmeIssuerHandler) failedAcme(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
+	if err2 := h.updateStatusFailed(ctx, log, issuer, state, err); err2 != nil {
 		return reconcile.Result{}, err
 	}
 	return reconcile.Result{}, nil
 }
 
-func (h *acmeIssuerHandler) failedAcmeRetry(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
-	if err2 := h.updateStatusFailed(ctx, issuer, state, err); err2 != nil {
+func (h *acmeIssuerHandler) failedAcmeRetry(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer, state string, err error) (reconcile.Result, error) {
+	if err2 := h.updateStatusFailed(ctx, log, issuer, state, err); err2 != nil {
 		return reconcile.Result{}, errors.Join(err, err2)
 	}
 	return reconcile.Result{}, err
@@ -182,9 +182,20 @@ func (h *acmeIssuerHandler) issuerKey(issuer *v1alpha1.Issuer) core.IssuerKey {
 	return core.NewIssuerKey(client.ObjectKeyFromObject(issuer), h.secondary)
 }
 
-func (h *acmeIssuerHandler) updateStatusFailed(ctx context.Context, issuer *v1alpha1.Issuer, state string, err error) error {
+// sanitizeACMEError returns a version of err safe for status.message, logging the full detail.
+// ProblemDetails.Detail comes from the ACME server response body and must not be exposed to CR status.
+func sanitizeACMEError(log logr.Logger, err error) string {
+	msg, ok := legobridge.SanitizeACMEError(err)
+	if ok {
+		log.Error(err, "ACME server error detail")
+	}
+	return msg
+}
+
+func (h *acmeIssuerHandler) updateStatusFailed(ctx context.Context, log logr.Logger, issuer *v1alpha1.Issuer, state string, err error) error {
 	patch := client.MergeFrom(issuer.DeepCopy())
-	issuer.Status.Message = new(err.Error())
+	msg := sanitizeACMEError(log, err)
+	issuer.Status.Message = &msg
 	issuer.Status.Type = ptr.To(core.CAType)
 	issuer.Status.State = state
 	issuer.Status.ObservedGeneration = issuer.Generation

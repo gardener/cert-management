@@ -379,9 +379,19 @@ func (s *Support) updateStatus(mod *resources.ModificationState) {
 	}
 }
 
+// sanitizeACMEError returns a version of err safe for status.message, logging the full detail.
+// ProblemDetails.Detail comes from the ACME server response body and must not be exposed to CR status.
+func sanitizeACMEError(log logger.LogContext, err error) string {
+	msg, ok := legobridge.SanitizeACMEError(err)
+	if ok {
+		log.Errorf("ACME server error detail: %s", err)
+	}
+	return msg
+}
+
 // Failed handles failed.
 func (s *Support) Failed(logger logger.LogContext, obj resources.Object, state string, itype *string, err error, retry bool) reconcile.Status {
-	msg := err.Error()
+	msg := sanitizeACMEError(logger, err)
 
 	mod, _ := s.prepareUpdateStatus(obj, state, itype, &msg)
 	s.updateStatus(mod)
