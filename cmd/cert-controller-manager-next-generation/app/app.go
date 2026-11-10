@@ -125,6 +125,9 @@ func (o *options) Complete() error {
 
 // Validate validates the provided command options.
 func (o *options) Validate() error {
+	if o.config == nil {
+		return fmt.Errorf("missing config")
+	}
 	return nil
 }
 
@@ -148,7 +151,7 @@ func (o *options) run(ctx context.Context, log logr.Logger) error {
 		return err
 	}
 	controlPlaneRestConfig := restConfig
-	if cfg.ControlPlaneClientConnection.Kubeconfig != "" {
+	if cfg.ControlPlaneClientConnection != nil && cfg.ControlPlaneClientConnection.Kubeconfig != "" {
 		log.Info("Using control plane kubeconfig", "kubeconfig", cfg.ControlPlaneClientConnection.Kubeconfig)
 		controlPlaneRestConfig, err = kubernetes.RESTConfigFromClientConnectionConfiguration(&cfg.ControlPlaneClientConnection.ClientConnectionConfiguration, nil, kubernetes.AuthTokenFile)
 		if err != nil {
