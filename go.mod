@@ -13,7 +13,7 @@ require (
 	github.com/gardener/gardener/pkg/apis v1.155.0
 	github.com/go-acme/lego/v5 v5.6.0
 	github.com/go-logr/logr v1.4.4
-	github.com/letsencrypt/pebble/v2 v2.10.1
+	github.com/letsencrypt/pebble/v2 v2.10.3
 	github.com/miekg/dns v1.1.73
 	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
@@ -97,7 +97,7 @@ require (
 	github.com/gardener/machine-controller-manager v0.63.1 // indirect
 	github.com/gardener/pvc-autoscaler v0.3.2 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.6 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.8 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.13 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
