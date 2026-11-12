@@ -8,9 +8,9 @@ require (
 	github.com/gardener/cert-management/pkg/apis v0.28.0
 	github.com/gardener/controller-manager-library v0.2.1-0.20260918073533-fcde3b4f2fc1
 	github.com/gardener/external-dns-management v0.55.0
-	github.com/gardener/gardener v1.155.0
-	github.com/gardener/gardener/hack/tools v1.155.0
-	github.com/gardener/gardener/pkg/apis v1.155.0
+	github.com/gardener/gardener v1.155.1
+	github.com/gardener/gardener/hack/tools v1.155.1
+	github.com/gardener/gardener/pkg/apis v1.155.1
 	github.com/go-acme/lego/v5 v5.6.0
 	github.com/go-logr/logr v1.4.4
 	github.com/letsencrypt/pebble/v2 v2.10.3
@@ -95,7 +95,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.6 // indirect
 	github.com/gardener/etcd-druid/api v0.39.2 // indirect
 	github.com/gardener/machine-controller-manager v0.63.1 // indirect
-	github.com/gardener/pvc-autoscaler v0.3.2 // indirect
+	github.com/gardener/pvc-autoscaler v0.3.3 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.8 // indirect
 	github.com/go-ldap/ldap/v3 v3.4.13 // indirect
