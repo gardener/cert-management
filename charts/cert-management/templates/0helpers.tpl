@@ -32,9 +32,10 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{- define "image" -}}
-{{- if hasPrefix "sha256:" (required "$.tag is required" $.tag) -}}
-{{ required "$.repository is required" $.repository }}@{{ required "$.tag is required" $.tag }}
+{{- $tag := required "$.tag is required" $.tag | toString -}}
+{{- if hasPrefix "sha256:" $tag -}}
+{{ required "$.repository is required" $.repository }}@{{ $tag }}
 {{- else -}}
-{{ required "$.repository is required" $.repository }}:{{ required "$.tag is required" $.tag }}
+{{ required "$.repository is required" $.repository }}:{{ $tag }}
 {{- end -}}
 {{- end -}}
