@@ -101,6 +101,10 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 			if err != nil {
 				return nil, err
 			}
+			// Per Gateway API allowedRoutes, admission is evaluated per listener: a route's
+			// hostnames may only land on a listener whose namespace rules admit the route's
+			// namespace, so a route cannot inject hostnames into a listener across namespaces.
+			allowedRoutes := listenerAllowedRoutes(gateway)
 			listenerSectionNames := sets.New[string]()
 			for _, item := range array {
 				listenerSectionNames.Insert(item.SectionName)
@@ -111,7 +115,10 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 					listenerHost = item.Hosts[0]
 				}
 				gl := gatewayListener{gateway: gatewayKey, listenerSectionName: item.SectionName}
-				item.Hosts = r.appendHostsFromHTTPRoutes(log, gl, routes, item.Hosts, listenerHost)
+				item.Hosts, err = r.appendHostsFromHTTPRoutes(ctx, log, gl, routes, item.Hosts, listenerHost, gateway.GetNamespace(), allowedRoutes[item.SectionName])
+				if err != nil {
+					return nil, err
+				}
 			}
 			logRoutesWithUnmatchedSection(log, gatewayKey, routes, listenerSectionNames)
 		}
@@ -120,7 +127,7 @@ func (r *Reconciler) getCertificateInputMap(ctx context.Context, log logr.Logger
 	})
 }
 
-func (r *Reconciler) appendHostsFromHTTPRoutes(log logr.Logger, gl gatewayListener, routes []client.Object, hosts []string, listenerHost string) []string {
+func (r *Reconciler) appendHostsFromHTTPRoutes(ctx context.Context, log logr.Logger, gl gatewayListener, routes []client.Object, hosts []string, listenerHost, gatewayNamespace string, allowedRoutes *gatewayapisv1.AllowedRoutes) ([]string, error) {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
 			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
@@ -140,22 +147,39 @@ func (r *Reconciler) appendHostsFromHTTPRoutes(log logr.Logger, gl gatewayListen
 	}
 
 	for _, route := range routes {
+		var parentRefs []gatewayapisv1.ParentReference
 		switch r := route.(type) {
 		case *gatewayapisv1.HTTPRoute:
-			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
-				for _, h := range r.Spec.Hostnames {
-					hosts = addHost(hosts, string(h))
-				}
+			parentRefs = r.Spec.ParentRefs
+		case *gatewayapisv1beta1.HTTPRoute:
+			parentRefs = r.Spec.ParentRefs
+		default:
+			continue
+		}
+		if !matchesGatewayListener(parentRefs, gl) {
+			continue
+		}
+		// Enforce this listener's allowedRoutes before letting the route's hostnames
+		// attach, so a route cannot inject hostnames into a listener across namespaces.
+		admitted, err := r.listenerAdmitsNamespace(ctx, gatewayNamespace, route.GetNamespace(), allowedRoutes)
+		if err != nil {
+			return nil, err
+		}
+		if !admitted {
+			continue
+		}
+		switch route := route.(type) {
+		case *gatewayapisv1.HTTPRoute:
+			for _, h := range route.Spec.Hostnames {
+				hosts = addHost(hosts, string(h))
 			}
 		case *gatewayapisv1beta1.HTTPRoute:
-			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
-				for _, h := range r.Spec.Hostnames {
-					hosts = addHost(hosts, string(h))
-				}
+			for _, h := range route.Spec.Hostnames {
+				hosts = addHost(hosts, string(h))
 			}
 		}
 	}
-	return hosts
+	return hosts, nil
 }
 
 // logRoutesWithUnmatchedSection warns about HTTPRoutes that reference the gateway with a
