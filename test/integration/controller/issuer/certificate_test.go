@@ -756,4 +756,31 @@ var _ = Describe("Certificate controller tests", func() {
 			}).WithTimeout(10 * time.Second).Should(Succeed())
 		})
 	})
+
+	Context("Certificate revocation", func() {
+		It("should reject a revocation referencing a certificate in another namespace", func() {
+			By("Create certificate revocation with cross-namespace reference")
+			revocation := &certv1alpha1.CertificateRevocation{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:    testNamespace.Name,
+					GenerateName: "revocation-",
+				},
+				Spec: certv1alpha1.CertificateRevocationSpec{
+					CertificateRef: certv1alpha1.CertificateRef{
+						Namespace: "other-" + testNamespace.Name,
+						Name:      "some-certificate",
+					},
+				},
+			}
+			Expect(testClient.Create(ctx, revocation)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(testClient.Delete(ctx, revocation)).To(Succeed())
+			})
+			Eventually(func(g Gomega) {
+				g.Expect(testClient.Get(ctx, client.ObjectKeyFromObject(revocation), revocation)).To(Succeed())
+				g.Expect(revocation.Status.State).To(Equal("Error"))
+				g.Expect(*revocation.Status.Message).To(ContainSubstring("same namespace"))
+			}).WithTimeout(10 * time.Second).Should(Succeed())
+		})
+	})
 })

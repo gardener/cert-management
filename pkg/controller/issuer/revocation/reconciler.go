@@ -117,6 +117,10 @@ func (r *revokeReconciler) Reconcile(logctx logger.LogContext, obj resources.Obj
 		return reconcile.Recheck(logctx, nil, 500*time.Millisecond)
 	}
 
+	if revocation.Spec.CertificateRef.Namespace != revocation.Namespace {
+		return r.failedStop(logctx, obj, api.StateError, fmt.Errorf("certificateRef must reference a certificate in the same namespace as the CertificateRevocation"))
+	}
+
 	name := resources.NewObjectName(revocation.Spec.CertificateRef.Namespace, revocation.Spec.CertificateRef.Name)
 	certObj, err := r.certResources.GetInto(name, &api.Certificate{})
 	if err != nil {
