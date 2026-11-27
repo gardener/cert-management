@@ -26,8 +26,9 @@ type httpRouteLister interface {
 
 type gatewaySource struct {
 	source.DefaultCertSource
-	lister httpRouteLister
-	state  *routesState
+	lister   httpRouteLister
+	nsLister namespaceLister
+	state    *routesState
 }
 
 // NewGatewaySource is the DNSSource for gateways.gateway.networking.k8s.io resources.
@@ -36,15 +37,19 @@ func NewGatewaySource(c controller.Interface) (source.CertSource, error) {
 	if err != nil {
 		return nil, err
 	}
+	nsLister, err := newNamespaceLister(c)
+	if err != nil {
+		return nil, err
+	}
 	state, err := getOrCreateSharedState(c)
 	if err != nil {
 		return nil, err
 	}
-	return newGatewaySourceWithRouteLister(lister, state)
+	return newGatewaySourceWithRouteLister(lister, nsLister, state)
 }
 
-func newGatewaySourceWithRouteLister(lister httpRouteLister, state *routesState) (source.CertSource, error) {
-	return &gatewaySource{lister: lister, DefaultCertSource: source.NewDefaultCertSource(nil), state: state}, nil
+func newGatewaySourceWithRouteLister(lister httpRouteLister, nsLister namespaceLister, state *routesState) (source.CertSource, error) {
+	return &gatewaySource{lister: lister, nsLister: nsLister, DefaultCertSource: source.NewDefaultCertSource(nil), state: state}, nil
 }
 
 func (s *gatewaySource) Setup() error {
@@ -112,6 +117,10 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 			if err != nil {
 				return nil, err
 			}
+			// Per Gateway API allowedRoutes, admission is evaluated per listener: a route's
+			// hostnames may only land on a listener whose namespace rules admit the route's
+			// namespace, so a route cannot inject hostnames into a listener across namespaces.
+			allowedRoutes := listenerAllowedRoutes(objData)
 			listenerSectionNames := map[string]struct{}{}
 			for _, item := range array {
 				listenerSectionNames[item.SectionName] = struct{}{}
@@ -121,7 +130,10 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 				if len(item.Hosts) > 0 {
 					listenerHost = item.Hosts[0]
 				}
-				item.Hosts = s.appendHostsFromHTTPRoutes(logger, gatewayListener{Gateway: gateway, ListenerSectionName: item.SectionName}, routes, item.Hosts, listenerHost)
+				item.Hosts, err = s.appendHostsFromHTTPRoutes(logger, gatewayListener{Gateway: gateway, ListenerSectionName: item.SectionName}, routes, item.Hosts, listenerHost, objData.GetNamespace(), allowedRoutes[item.SectionName])
+				if err != nil {
+					return nil, err
+				}
 			}
 			logRoutesWithUnmatchedSection(logger, gateway, routes, listenerSectionNames)
 		}
@@ -130,7 +142,7 @@ func (s *gatewaySource) GetCertsInfo(logger logger.LogContext, objData resources
 	})
 }
 
-func (s *gatewaySource) appendHostsFromHTTPRoutes(logger logger.LogContext, gl gatewayListener, routes []resources.ObjectData, hosts []string, listenerHost string) []string {
+func (s *gatewaySource) appendHostsFromHTTPRoutes(logger logger.LogContext, gl gatewayListener, routes []resources.ObjectData, hosts []string, listenerHost, gatewayNamespace string, allowedRoutes *gatewayapisv1.AllowedRoutes) ([]string, error) {
 	addHost := func(hosts []string, host string) []string {
 		for _, h := range hosts {
 			if h == host || shared.MatchesWildcardSingleSubdomain(host, h) {
@@ -149,22 +161,39 @@ func (s *gatewaySource) appendHostsFromHTTPRoutes(logger logger.LogContext, gl g
 	}
 
 	for _, route := range routes {
+		var parentRefs []gatewayapisv1.ParentReference
 		switch r := route.(type) {
 		case *gatewayapisv1.HTTPRoute:
-			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
-				for _, h := range r.Spec.Hostnames {
-					hosts = addHost(hosts, string(h))
-				}
+			parentRefs = r.Spec.ParentRefs
+		case *gatewayapisv1beta1.HTTPRoute:
+			parentRefs = r.Spec.ParentRefs
+		default:
+			continue
+		}
+		if !matchesGatewayListener(parentRefs, gl) {
+			continue
+		}
+		// Enforce this listener's allowedRoutes before letting the route's hostnames
+		// attach, so a route cannot inject hostnames into a listener across namespaces.
+		admitted, err := listenerAdmitsNamespace(s.nsLister, gatewayNamespace, route.GetNamespace(), allowedRoutes)
+		if err != nil {
+			return nil, err
+		}
+		if !admitted {
+			continue
+		}
+		switch r := route.(type) {
+		case *gatewayapisv1.HTTPRoute:
+			for _, h := range r.Spec.Hostnames {
+				hosts = addHost(hosts, string(h))
 			}
 		case *gatewayapisv1beta1.HTTPRoute:
-			if matchesGatewayListener(r.Spec.ParentRefs, gl) {
-				for _, h := range r.Spec.Hostnames {
-					hosts = addHost(hosts, string(h))
-				}
+			for _, h := range r.Spec.Hostnames {
+				hosts = addHost(hosts, string(h))
 			}
 		}
 	}
-	return hosts
+	return hosts, nil
 }
 
 // logRoutesWithUnmatchedSection warns about HTTPRoutes that reference the gateway with a

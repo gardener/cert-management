@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -163,6 +164,23 @@ var _ = Describe("Reconciler", func() {
 			}
 			return []*gatewayapisv1.HTTPRoute{routeSectionWeb, routeSectionAdmin, routeSectionGeneric, routeNoSection}
 		}
+
+		// foreignRoute lives in another namespace and targets g1 with no sectionName,
+		// so it attaches to every listener unless allowedRoutes rejects its namespace.
+		foreignRoute = func() []*gatewayapisv1.HTTPRoute {
+			return []*gatewayapisv1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "attacker", Name: "route-foreign"},
+				Spec: gatewayapisv1.HTTPRouteSpec{
+					CommonRouteSpec: gatewayapisv1.CommonRouteSpec{ParentRefs: []gatewayapisv1.ParentReference{
+						{
+							Namespace: ptr.To[gatewayapisv1.Namespace]("test"),
+							Name:      "g1",
+						},
+					}},
+					Hostnames: []gatewayapisv1.Hostname{"evil.example.com"},
+				},
+			}}
+		}
 	)
 
 	BeforeEach(func() {
@@ -171,6 +189,10 @@ var _ = Describe("Reconciler", func() {
 		reconciler.Client = fakeClient
 		reconciler.ActiveVersion = VersionV1
 		reconciler.Complete()
+		// namespace of foreignRoute, labeled for the allowedRoutes Selector case.
+		Expect(fakeClient.Create(ctx, &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: "attacker", Labels: map[string]string{"team": "trusted"}},
+		})).To(Succeed())
 	})
 
 	_ = DescribeTable("#getCertificateInputMap",
@@ -537,6 +559,87 @@ var _ = Describe("Reconciler", func() {
 		}, sectionRoutes(), toMap(
 			makeCertInput("cert-shared", nil, "api.shared.example.com", "api.web.example.com", "api.admin.example.com"),
 		)),
+		Entry("cross-namespace route is dropped when gateway does not opt in (allowedRoutes default Same)", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "web",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-web"}},
+						},
+					},
+				},
+			},
+		}, foreignRoute(), singleCertInput("cert-web", nil)),
+		Entry("cross-namespace route attaches only to the listener that admits it, not to a sibling Same listener on the same gateway", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "open",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-open"}},
+						},
+						AllowedRoutes: &gatewayapisv1.AllowedRoutes{
+							Namespaces: &gatewayapisv1.RouteNamespaces{From: ptr.To(gatewayapisv1.NamespacesFromAll)},
+						},
+					},
+					{
+						Name:     "closed",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-closed"}},
+						},
+					},
+				},
+			},
+		}, foreignRoute(), toMap(
+			makeCertInput("cert-open", nil, "evil.example.com"),
+			makeCertInput("cert-closed", nil),
+		)),
+		Entry("cross-namespace route is admitted when the listener Selector matches the route namespace labels", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "web",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-web"}},
+						},
+						AllowedRoutes: &gatewayapisv1.AllowedRoutes{
+							Namespaces: &gatewayapisv1.RouteNamespaces{
+								From:     ptr.To(gatewayapisv1.NamespacesFromSelector),
+								Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"team": "trusted"}},
+							},
+						},
+					},
+				},
+			},
+		}, foreignRoute(), singleCertInput("cert-web", nil, "evil.example.com")),
+		Entry("cross-namespace route is dropped when the listener Selector does not match the route namespace labels", &gatewayapisv1.Gateway{
+			ObjectMeta: standardObjectMeta,
+			Spec: gatewayapisv1.GatewaySpec{
+				Listeners: []gatewayapisv1.Listener{
+					{
+						Name:     "web",
+						Protocol: gatewayapisv1.HTTPSProtocolType,
+						TLS: &gatewayapisv1.ListenerTLSConfig{
+							CertificateRefs: []gatewayapisv1.SecretObjectReference{{Name: "cert-web"}},
+						},
+						AllowedRoutes: &gatewayapisv1.AllowedRoutes{
+							Namespaces: &gatewayapisv1.RouteNamespaces{
+								From:     ptr.To(gatewayapisv1.NamespacesFromSelector),
+								Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"team": "other"}},
+							},
+						},
+					},
+				},
+			},
+		}, foreignRoute(), singleCertInput("cert-web", nil)),
 	)
 })
 
